@@ -82,6 +82,8 @@ CREATE TABLE documents (
     doc_code VARCHAR(50) UNIQUE NOT NULL,
     doc_title VARCHAR(255) NOT NULL,
     doc_type VARCHAR(50) NOT NULL,
+    department VARCHAR(100),
+    standard VARCHAR(100) DEFAULT 'ISO 22000:2018',
     current_version VARCHAR(20) DEFAULT '1.0' NOT NULL,
     status VARCHAR(30) DEFAULT 'DRAFT',
     file_url TEXT,
