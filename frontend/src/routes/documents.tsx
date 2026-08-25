@@ -354,10 +354,23 @@ function DocumentsPage() {
   // Mở Form Thêm Mới
   const handleOpenCreate = () => {
     setEditingDoc(null);
+    const targetType = selectedType !== "ALL" ? selectedType : "SOP";
+    const prefixMap: Record<string, string> = {
+      POLICY: "POL-FSMS",
+      MANUAL: "MAN-FSMS",
+      SOP: "SOP-FSMS",
+      WI: "WI-FSMS",
+      FORM: "FORM-FSMS",
+      RECORD: "REC-FSMS",
+    };
+    const prefix = prefixMap[targetType] || "DOC-FSMS";
+    const countForType = documents.filter((d) => d.doc_type === targetType).length + 1;
+    const docCode = `${prefix}-${String(countForType).padStart(2, "0")}`;
+
     setFormData({
-      doc_code: `SOP-FSMS-0${documents.length + 1}`,
+      doc_code: docCode,
       doc_title: "",
-      doc_type: "SOP",
+      doc_type: targetType,
       department: "Ban QLCL & ATTP",
       standard: "ISO 22000:2018",
       current_version: "1.0",
@@ -741,7 +754,7 @@ function DocumentsPage() {
               <tr>
                 <th className="w-12 px-4 py-3 text-center">STT</th>
                 <th className="w-32 px-4 py-3">Mã tài liệu</th>
-                <th className="px-4 py-3">Tên tài liệu / SOP</th>
+                <th className="px-4 py-3">Tên tài liệu</th>
                 <th className="w-28 px-4 py-3">Phân cấp</th>
                 <th className="w-36 px-4 py-3">Phòng ban</th>
                 <th className="w-20 px-4 py-3 text-center">Phiên bản</th>
@@ -910,7 +923,7 @@ function DocumentsPage() {
         <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-base font-bold">
-              {editingDoc ? `Chỉnh sửa tài liệu: ${editingDoc.doc_code}` : "Tạo mới tài liệu & SOP ISO 22000"}
+              {editingDoc ? `Chỉnh sửa tài liệu: ${editingDoc.doc_code}` : "Tạo mới tài liệu ISO 22000"}
             </DialogTitle>
           </DialogHeader>
 
@@ -935,7 +948,28 @@ function DocumentsPage() {
                 </Label>
                 <select
                   value={formData.doc_type}
-                  onChange={(e) => setFormData({ ...formData, doc_type: e.target.value })}
+                  onChange={(e) => {
+                    const newType = e.target.value;
+                    if (!editingDoc) {
+                      const prefixMap: Record<string, string> = {
+                        POLICY: "POL-FSMS",
+                        MANUAL: "MAN-FSMS",
+                        SOP: "SOP-FSMS",
+                        WI: "WI-FSMS",
+                        FORM: "FORM-FSMS",
+                        RECORD: "REC-FSMS",
+                      };
+                      const prefix = prefixMap[newType] || "DOC-FSMS";
+                      const countForType = documents.filter((d) => d.doc_type === newType).length + 1;
+                      setFormData({
+                        ...formData,
+                        doc_type: newType,
+                        doc_code: `${prefix}-${String(countForType).padStart(2, "0")}`,
+                      });
+                    } else {
+                      setFormData({ ...formData, doc_type: newType });
+                    }
+                  }}
                   className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-xs shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
                 >
                   <option value="POLICY">Cấp 1 — Chính sách (POLICY)</option>
@@ -949,7 +983,7 @@ function DocumentsPage() {
 
               <div className="space-y-1.5 sm:col-span-2">
                 <Label className="text-xs">
-                  Tên tài liệu / SOP <span className="text-destructive">*</span>
+                  Tên tài liệu <span className="text-destructive">*</span>
                 </Label>
                 <Input
                   required
