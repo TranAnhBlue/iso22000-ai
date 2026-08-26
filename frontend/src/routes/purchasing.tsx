@@ -929,96 +929,98 @@ function PurchasingPage() {
       </div>
 
       {/* 4 NAVIGATION TABS */}
-      <div className="flex flex-wrap items-center gap-2 border-b border-border pb-2">
-        <button
-          onClick={() => {
-            setActiveTab("suppliers");
-            setSearchQuery("");
-          }}
-          className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all ${
-            activeTab === "suppliers"
-              ? "bg-primary text-primary-foreground shadow-sm"
-              : "text-muted-foreground hover:bg-muted hover:text-foreground"
-          }`}
-        >
-          <Building2 className="h-4 w-4" />
-          <span>Danh bạ Nhà cung cấp (ASL)</span>
-          <span
-            className={`ml-1 rounded-full px-1.5 py-0.5 text-xs ${
+      <div className="border-b border-border overflow-x-auto no-scrollbar pb-2">
+        <div className="flex items-center gap-2 min-w-max">
+          <button
+            onClick={() => {
+              setActiveTab("suppliers");
+              setSearchQuery("");
+            }}
+            className={`flex items-center gap-2 rounded-lg px-3.5 py-2 text-xs sm:text-sm font-medium transition-all ${
               activeTab === "suppliers"
-                ? "bg-white/20 text-white"
-                : "bg-muted text-muted-foreground"
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground"
             }`}
           >
-            {suppliers.length}
-          </span>
-        </button>
+            <Building2 className="h-4 w-4 shrink-0" />
+            <span>Danh bạ Nhà cung cấp (ASL)</span>
+            <span
+              className={`ml-1 rounded-full px-1.5 py-0.5 text-[11px] ${
+                activeTab === "suppliers"
+                  ? "bg-white/20 text-white"
+                  : "bg-muted text-muted-foreground"
+              }`}
+            >
+              {suppliers.length}
+            </span>
+          </button>
 
-        <button
-          onClick={() => {
-            setActiveTab("lots");
-            setSearchQuery("");
-          }}
-          className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all ${
-            activeTab === "lots"
-              ? "bg-primary text-primary-foreground shadow-sm"
-              : "text-muted-foreground hover:bg-muted hover:text-foreground"
-          }`}
-        >
-          <Boxes className="h-4 w-4" />
-          <span>Tiếp nhận Lô Nguyên liệu</span>
-          <span
-            className={`ml-1 rounded-full px-1.5 py-0.5 text-xs ${
+          <button
+            onClick={() => {
+              setActiveTab("lots");
+              setSearchQuery("");
+            }}
+            className={`flex items-center gap-2 rounded-lg px-3.5 py-2 text-xs sm:text-sm font-medium transition-all ${
               activeTab === "lots"
-                ? "bg-white/20 text-white"
-                : "bg-muted text-muted-foreground"
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground"
             }`}
           >
-            {lots.length}
-          </span>
-        </button>
+            <Boxes className="h-4 w-4 shrink-0" />
+            <span>Lô Nguyên vật liệu (FEFO)</span>
+            <span
+              className={`ml-1 rounded-full px-1.5 py-0.5 text-[11px] ${
+                activeTab === "lots"
+                  ? "bg-white/20 text-white"
+                  : "bg-muted text-muted-foreground"
+              }`}
+            >
+              {lots.length}
+            </span>
+          </button>
 
-        <button
-          onClick={() => {
-            setActiveTab("inspections");
-            setSearchQuery("");
-          }}
-          className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all ${
-            activeTab === "inspections"
-              ? "bg-primary text-primary-foreground shadow-sm"
-              : "text-muted-foreground hover:bg-muted hover:text-foreground"
-          }`}
-        >
-          <FileCheck className="h-4 w-4" />
-          <span>Kiểm định Tiếp nhận (IQC)</span>
-          <span
-            className={`ml-1 rounded-full px-1.5 py-0.5 text-xs ${
+          <button
+            onClick={() => {
+              setActiveTab("inspections");
+              setSearchQuery("");
+            }}
+            className={`flex items-center gap-2 rounded-lg px-3.5 py-2 text-xs sm:text-sm font-medium transition-all ${
               activeTab === "inspections"
-                ? "bg-white/20 text-white"
-                : "bg-muted text-muted-foreground"
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground"
             }`}
           >
-            {inspections.length}
-          </span>
-        </button>
+            <FileCheck className="h-4 w-4 shrink-0" />
+            <span>Biên bản Kiểm định (IQC)</span>
+            <span
+              className={`ml-1 rounded-full px-1.5 py-0.5 text-[11px] ${
+                activeTab === "inspections"
+                  ? "bg-white/20 text-white"
+                  : "bg-muted text-muted-foreground"
+              }`}
+            >
+              {inspections.length}
+            </span>
+          </button>
 
-        <button
-          onClick={() => {
-            setActiveTab("ai_coa");
-            if (!coaAiResult) handleAnalyzeCoa("SEAFOOD");
-          }}
-          className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all ${
-            activeTab === "ai_coa"
-              ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-sm"
-              : "text-purple-700 hover:bg-purple-50 dark:text-purple-400 dark:hover:bg-purple-950/30"
-          }`}
-        >
-          <Sparkles className="h-4 w-4" />
-          <span>Trợ lý AI Thẩm định COA</span>
-          <span className="rounded bg-purple-500/20 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider">
-            AI Tool
-          </span>
-        </button>
+          <button
+            onClick={() => {
+              setActiveTab("ai_coa");
+              if (!coaAiResult) handleAnalyzeCoa("SEAFOOD");
+            }}
+            className={`flex items-center gap-2 rounded-lg px-3.5 py-2 text-xs sm:text-sm font-medium transition-all ${
+              activeTab === "ai_coa"
+                ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-sm"
+                : "text-purple-700 hover:bg-purple-50 dark:text-purple-400 dark:hover:bg-purple-950/30"
+            }`}
+          >
+            <Sparkles className="h-4 w-4 shrink-0" />
+            <span>Trợ lý AI Thẩm định COA</span>
+            <span className="rounded bg-purple-500/20 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider">
+              AI Tool
+            </span>
+          </button>
+        </div>
       </div>
 
       {/* SEARCH & FILTER BAR (FOR TAB 1, 2, 3) */}

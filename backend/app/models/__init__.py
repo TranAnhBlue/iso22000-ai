@@ -1,6 +1,14 @@
 from .user import User, Role, user_roles
 from .document import Document
 from .purchasing import Supplier, MaterialLot, IQCInspection
+from .haccp import (
+    ProcessStep,
+    HazardAnalysis,
+    CCPDefinition,
+    CCPMonitoringLog,
+    PRPProgram,
+    PRPChecklistLog,
+)
 
 __all__ = [
     "User",
@@ -10,4 +18,10 @@ __all__ = [
     "Supplier",
     "MaterialLot",
     "IQCInspection",
+    "ProcessStep",
+    "HazardAnalysis",
+    "CCPDefinition",
+    "CCPMonitoringLog",
+    "PRPProgram",
+    "PRPChecklistLog",
 ]

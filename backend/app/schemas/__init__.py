@@ -11,6 +11,16 @@ from .purchasing import (
     PurchasingStatsResponse, AICoAAnalysisRequest, AICoAAnalysisResponse,
     AISupplierEvaluationRequest, AISupplierEvaluationResponse
 )
+from .haccp import (
+    ProcessStepBase, ProcessStepCreate, ProcessStepUpdate, ProcessStepResponse,
+    HazardAnalysisBase, HazardAnalysisCreate, HazardAnalysisUpdate, HazardAnalysisResponse,
+    CCPDefinitionBase, CCPDefinitionCreate, CCPDefinitionUpdate, CCPDefinitionResponse,
+    CCPMonitoringLogBase, CCPMonitoringLogCreate, CCPMonitoringLogUpdate, CCPMonitoringLogResponse,
+    PRPProgramBase, PRPProgramCreate, PRPProgramUpdate, PRPProgramResponse,
+    PRPChecklistLogBase, PRPChecklistLogCreate, PRPChecklistLogUpdate, PRPChecklistLogResponse,
+    HACCPStatsResponse, AIHazardSuggestRequest, AIHazardSuggestResponse,
+    AICCPDeviationRequest, AICCPDeviationResponse
+)
 
 __all__ = [
     "UserRegisterRequest",
@@ -44,4 +54,33 @@ __all__ = [
     "AICoAAnalysisResponse",
     "AISupplierEvaluationRequest",
     "AISupplierEvaluationResponse",
+    "ProcessStepBase",
+    "ProcessStepCreate",
+    "ProcessStepUpdate",
+    "ProcessStepResponse",
+    "HazardAnalysisBase",
+    "HazardAnalysisCreate",
+    "HazardAnalysisUpdate",
+    "HazardAnalysisResponse",
+    "CCPDefinitionBase",
+    "CCPDefinitionCreate",
+    "CCPDefinitionUpdate",
+    "CCPDefinitionResponse",
+    "CCPMonitoringLogBase",
+    "CCPMonitoringLogCreate",
+    "CCPMonitoringLogUpdate",
+    "CCPMonitoringLogResponse",
+    "PRPProgramBase",
+    "PRPProgramCreate",
+    "PRPProgramUpdate",
+    "PRPProgramResponse",
+    "PRPChecklistLogBase",
+    "PRPChecklistLogCreate",
+    "PRPChecklistLogUpdate",
+    "PRPChecklistLogResponse",
+    "HACCPStatsResponse",
+    "AIHazardSuggestRequest",
+    "AIHazardSuggestResponse",
+    "AICCPDeviationRequest",
+    "AICCPDeviationResponse",
 ]

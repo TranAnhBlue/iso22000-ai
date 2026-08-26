@@ -119,7 +119,7 @@ export function CrudTable({
 
       {/* Table Content */}
       <div className="overflow-x-auto">
-        <table className="w-full text-left text-xs">
+        <table className="w-full text-left text-xs min-w-[600px]">
           <thead className="border-b bg-muted/40 font-semibold text-muted-foreground">
             <tr>
               <th className="px-4 py-3 text-center w-12">STT</th>

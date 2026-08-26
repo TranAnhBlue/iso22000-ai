@@ -21,6 +21,8 @@ import {
   Sparkles,
   Bell,
   RefreshCw,
+  Menu,
+  X,
 } from "lucide-react";
 import { AIChatWidget } from "@/components/AIChatWidget";
 
@@ -40,6 +42,7 @@ const NAV = [
 export function AppShell({ children, module }: { children: ReactNode; module?: ModuleKey }) {
   const [session, setS] = useState<Session | null>(null);
   const [checking, setChecking] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
@@ -51,6 +54,11 @@ export function AppShell({ children, module }: { children: ReactNode; module?: M
     }
     setS(s);
   }, [navigate]);
+
+  // Đóng mobile drawer khi chuyển trang
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [pathname]);
 
   if (!session) {
     return (
@@ -91,12 +99,12 @@ export function AppShell({ children, module }: { children: ReactNode; module?: M
   // MÀN HÌNH CHẶN KHI TÀI KHOẢN CHƯA ĐƯỢC PHÂN QUYỀN (ROLE = user)
   if (session.role === "user") {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-muted/40 p-6 text-center">
-        <div className="max-w-md rounded-2xl border bg-card p-8 shadow-sm">
+      <div className="flex min-h-screen flex-col items-center justify-center bg-muted/40 p-4 sm:p-6 text-center">
+        <div className="max-w-md rounded-2xl border bg-card p-6 sm:p-8 shadow-sm">
           <div className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-amber-500/10 text-amber-600">
             <ShieldAlert className="h-8 w-8" />
           </div>
-          <h2 className="mt-4 text-2xl font-bold tracking-tight">Tài khoản chưa được phân quyền</h2>
+          <h2 className="mt-4 text-xl sm:text-2xl font-bold tracking-tight">Tài khoản chưa được phân quyền</h2>
           <p className="mt-2 text-sm text-muted-foreground">
             Xin chào <b>{session.name}</b>, tài khoản của bạn đã được tạo thành công nhưng chưa được gán vai trò phòng ban cụ thể trong hệ thống.
           </p>
@@ -124,6 +132,7 @@ export function AppShell({ children, module }: { children: ReactNode; module?: M
 
   return (
     <div className="min-h-screen bg-muted/30">
+      {/* SIDEBAR DESKTOP */}
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r bg-sidebar lg:flex">
         <div className="flex h-16 items-center gap-3 border-b px-5">
           <img src={logoImg} alt="WCERT" className="h-10 w-auto object-contain" />
@@ -142,12 +151,12 @@ export function AppShell({ children, module }: { children: ReactNode; module?: M
                 to={item.to}
                 className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition ${
                   active
-                    ? "bg-primary text-primary-foreground shadow-sm"
+                    ? "bg-primary text-primary-foreground shadow-sm font-medium"
                     : "text-sidebar-foreground hover:bg-sidebar-accent"
                 }`}
               >
-                <Icon className="h-4 w-4" />
-                {item.label}
+                <Icon className="h-4 w-4 shrink-0" />
+                <span className="truncate">{item.label}</span>
               </Link>
             );
           })}
@@ -155,7 +164,7 @@ export function AppShell({ children, module }: { children: ReactNode; module?: M
         <div className="border-t p-3">
           <div className="rounded-lg bg-primary/5 p-3 text-xs">
             <div className="flex items-center gap-1.5 font-semibold text-primary">
-              <Sparkles className="h-3.5 w-3.5" /> AI Assistant
+              <Sparkles className="h-3.5 w-3.5 shrink-0" /> AI Assistant
             </div>
             <p className="mt-1 text-muted-foreground">
               Trợ lý AI sẵn sàng hỗ trợ nghiệp vụ ISO 22000.
@@ -164,34 +173,114 @@ export function AppShell({ children, module }: { children: ReactNode; module?: M
         </div>
       </aside>
 
-      <div className="lg:pl-64">
-        <header className="sticky top-0 z-20 flex h-16 items-center justify-between gap-4 border-b bg-background/80 px-6 backdrop-blur">
-          <div className="flex items-center gap-3">
+      {/* MOBILE DRAWER OVERLAY & SIDEBAR */}
+      {mobileMenuOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden">
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity"
+            onClick={() => setMobileMenuOpen(false)}
+          />
+          {/* Slide-out Panel */}
+          <aside className="fixed inset-y-0 left-0 z-50 flex w-4/5 max-w-xs flex-col border-r bg-sidebar shadow-2xl animate-in slide-in-from-left duration-200">
+            <div className="flex h-16 items-center justify-between border-b px-4">
+              <div className="flex items-center gap-2.5">
+                <img src={logoImg} alt="WCERT" className="h-9 w-auto object-contain" />
+                <div className="flex flex-col">
+                  <span className="text-sm font-bold tracking-tight text-primary leading-tight">WCERT FSMS</span>
+                  <span className="text-[10px] text-muted-foreground font-medium">ISO 22000:2018</span>
+                </div>
+              </div>
+              <button
+                onClick={() => setMobileMenuOpen(false)}
+                className="rounded-lg p-1.5 text-muted-foreground hover:bg-sidebar-accent hover:text-foreground"
+                aria-label="Đóng menu"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* User badge on mobile drawer */}
+            <div className="border-b bg-muted/40 p-3">
+              <div className="text-xs font-semibold text-primary">{roleLabel(session.role)}</div>
+              <div className="text-sm font-medium text-foreground truncate">{session.name}</div>
+              {session.department && (
+                <div className="text-[11px] text-muted-foreground truncate">{session.department}</div>
+              )}
+            </div>
+
+            <nav className="flex-1 space-y-1 overflow-y-auto p-3">
+              {allowed.map((item) => {
+                const active = pathname === item.to;
+                const Icon = item.icon;
+                return (
+                  <Link
+                    key={item.to}
+                    to={item.to}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition ${
+                      active
+                        ? "bg-primary text-primary-foreground shadow-sm font-medium"
+                        : "text-sidebar-foreground hover:bg-sidebar-accent"
+                    }`}
+                  >
+                    <Icon className="h-4 w-4 shrink-0" />
+                    <span className="truncate">{item.label}</span>
+                  </Link>
+                );
+              })}
+            </nav>
+
+            <div className="border-t p-3 space-y-2">
+              <button
+                onClick={logout}
+                className="flex w-full items-center justify-center gap-2 rounded-lg border border-destructive/30 bg-destructive/5 py-2 text-xs font-medium text-destructive hover:bg-destructive/10"
+              >
+                <LogOut className="h-3.5 w-3.5" /> Đăng xuất
+              </button>
+            </div>
+          </aside>
+        </div>
+      )}
+
+      {/* MAIN CONTENT AREA */}
+      <div className="lg:pl-64 flex flex-col min-h-screen">
+        <header className="sticky top-0 z-20 flex h-16 items-center justify-between gap-3 border-b bg-background/80 px-4 sm:px-6 backdrop-blur">
+          <div className="flex items-center gap-2 sm:gap-3">
+            {/* Mobile Hamburger Button */}
+            <button
+              onClick={() => setMobileMenuOpen(true)}
+              className="rounded-lg p-2 text-foreground hover:bg-muted lg:hidden"
+              aria-label="Mở menu điều hướng"
+            >
+              <Menu className="h-5 w-5" />
+            </button>
             <img src={logoImg} alt="WCERT" className="h-8 w-auto object-contain lg:hidden" />
-            <h1 className="text-sm font-semibold md:text-base">
+            <h1 className="text-xs sm:text-sm font-semibold md:text-base truncate">
               FSMS – ISO 22000:2018
             </h1>
           </div>
-          <div className="flex items-center gap-4">
-            <button className="relative rounded-lg p-2 hover:bg-muted">
-              <Bell className="h-5 w-5" />
+          <div className="flex items-center gap-2 sm:gap-4">
+            <button className="relative rounded-lg p-2 hover:bg-muted" aria-label="Thông báo">
+              <Bell className="h-4 w-4 sm:h-5 sm:w-5" />
               <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-destructive" />
             </button>
             <div className="hidden sm:block text-right">
-              <div className="text-sm font-medium">{roleLabel(session.role)}</div>
-              <div className="text-xs text-muted-foreground">{session.name}</div>
+              <div className="text-xs sm:text-sm font-medium">{roleLabel(session.role)}</div>
+              <div className="text-[11px] sm:text-xs text-muted-foreground truncate max-w-[150px]">{session.name}</div>
             </div>
             <button
               onClick={logout}
-              className="inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs hover:bg-muted"
+              className="hidden sm:inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs hover:bg-muted"
             >
               <LogOut className="h-3.5 w-3.5" /> Đăng xuất
             </button>
           </div>
         </header>
-        <main className="p-6">
+
+        <main className="flex-1 p-3 sm:p-6 max-w-full overflow-x-hidden">
           {denied ? (
-            <div className="mx-auto mt-10 max-w-md rounded-2xl border bg-card p-8 text-center">
+            <div className="mx-auto mt-10 max-w-md rounded-2xl border bg-card p-6 sm:p-8 text-center">
               <div className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-destructive/10 text-destructive">
                 <Lock className="h-6 w-6" />
               </div>
