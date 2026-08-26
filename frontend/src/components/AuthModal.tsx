@@ -7,6 +7,7 @@ import { RoleInfo, setSession } from "@/lib/auth";
 import api from "@/lib/api";
 import { useNavigate } from "@tanstack/react-router";
 import { Lock, User, Mail, Building, Phone } from "lucide-react";
+import logoImg from "@/assets/logo.png";
 
 interface AuthModalProps {
   role: RoleInfo | null;
@@ -94,13 +95,16 @@ export function AuthModal({ role, isOpen, onClose }: AuthModalProps) {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle className="text-xl">
-            {isLogin ? "Đăng nhập" : "Đăng ký tài khoản"}
-          </DialogTitle>
-          <DialogDescription>
-            Vai trò: <span className="font-semibold text-primary">{role.name}</span>
-          </DialogDescription>
+        <DialogHeader className="flex flex-row items-center gap-3 space-y-0 text-left">
+          <img src={logoImg} alt="WCERT" className="h-10 w-auto object-contain" />
+          <div>
+            <DialogTitle className="text-xl">
+              {isLogin ? "Đăng nhập" : "Đăng ký tài khoản"}
+            </DialogTitle>
+            <DialogDescription>
+              Vai trò: <span className="font-semibold text-primary">{role.name}</span>
+            </DialogDescription>
+          </div>
         </DialogHeader>
 
         {errorMsg && (

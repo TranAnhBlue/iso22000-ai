@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { getSession, setSession } from "@/lib/auth";
 import api from "@/lib/api";
+import logoImg from "@/assets/logo.png";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -115,8 +116,12 @@ function LoginPage() {
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-background to-teal-50">
       <div className="mx-auto max-w-7xl px-6 py-10">
         <header className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-2xl font-bold tracking-tight text-primary">WCERT FSMS</span>
+          <div className="flex items-center gap-3">
+            <img src={logoImg} alt="WCERT Logo" className="h-12 w-auto object-contain" />
+            <div>
+              <span className="text-2xl font-bold tracking-tight text-primary leading-tight block">WCERT FSMS</span>
+              <span className="text-xs text-muted-foreground font-medium">ISO 22000:2018 Management System</span>
+            </div>
           </div>
           <div className="hidden md:flex items-center gap-2 text-sm text-muted-foreground">
             <ShieldCheck className="h-4 w-4 text-primary" />
@@ -145,15 +150,18 @@ function LoginPage() {
           </div>
 
           <div className="rounded-2xl border bg-card p-6 shadow-sm md:p-8">
-            <div className="mb-6">
-              <h2 className="text-2xl font-bold tracking-tight">
-                {isLogin ? "Đăng nhập hệ thống" : "Đăng ký tài khoản mới"}
-              </h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                {isLogin
-                  ? "Nhập tài khoản để đăng nhập vào phân hệ làm việc của bạn."
-                  : "Tài khoản mới sẽ được chuyển đến Quản trị viên để kích hoạt phân quyền."}
-              </p>
+            <div className="mb-6 flex items-start justify-between gap-4">
+              <div>
+                <h2 className="text-2xl font-bold tracking-tight">
+                  {isLogin ? "Đăng nhập hệ thống" : "Đăng ký tài khoản mới"}
+                </h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {isLogin
+                    ? "Nhập tài khoản để đăng nhập vào phân hệ làm việc của bạn."
+                    : "Tài khoản mới sẽ được chuyển đến Quản trị viên để kích hoạt phân quyền."}
+                </p>
+              </div>
+              <img src={logoImg} alt="WCERT" className="h-12 w-auto object-contain shrink-0 hidden sm:block opacity-90" />
             </div>
 
             {errorMsg && (

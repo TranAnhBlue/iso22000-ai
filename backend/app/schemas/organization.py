@@ -1,9 +1,10 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, ConfigDict
 from typing import Optional
-import uuid
 
 # Schema Người dùng
 class UserOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: str
     name: str
     username: str
@@ -34,11 +35,13 @@ class UserUpdate(BaseModel):
 
 # Schema Phòng ban
 class DepartmentOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: str
     name: str
     role_code: str
-    count: int
-    head: str
+    count: int = 0
+    head: str = ""
     description: Optional[str] = None
 
 class DepartmentCreate(BaseModel):

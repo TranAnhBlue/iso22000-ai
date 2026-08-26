@@ -2,7 +2,7 @@ import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useEffect, useState, type ReactNode } from "react";
 import { canView, clearSession, getSession, roleLabel, setSession, type ModuleKey, type Session } from "@/lib/auth";
 import { ModuleAccessProvider } from "@/lib/rbac";
-import wcertLogo from "@/assets/wcert-logo.jpg.asset.json";
+import logoImg from "@/assets/logo.png";
 import api from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import {
@@ -125,8 +125,12 @@ export function AppShell({ children, module }: { children: ReactNode; module?: M
   return (
     <div className="min-h-screen bg-muted/30">
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r bg-sidebar lg:flex">
-        <div className="flex h-16 items-center border-b px-5">
-          <img src={wcertLogo.url} alt="WCERT" className="h-10 w-auto object-contain" />
+        <div className="flex h-16 items-center gap-3 border-b px-5">
+          <img src={logoImg} alt="WCERT" className="h-10 w-auto object-contain" />
+          <div className="flex flex-col">
+            <span className="text-sm font-bold tracking-tight text-primary leading-tight">WCERT FSMS</span>
+            <span className="text-[10px] text-muted-foreground font-medium">ISO 22000:2018</span>
+          </div>
         </div>
         <nav className="flex-1 space-y-1 overflow-y-auto p-3">
           {allowed.map((item) => {
@@ -163,7 +167,7 @@ export function AppShell({ children, module }: { children: ReactNode; module?: M
       <div className="lg:pl-64">
         <header className="sticky top-0 z-20 flex h-16 items-center justify-between gap-4 border-b bg-background/80 px-6 backdrop-blur">
           <div className="flex items-center gap-3">
-            <img src={wcertLogo.url} alt="WCERT" className="h-9 w-auto object-contain lg:hidden" />
+            <img src={logoImg} alt="WCERT" className="h-8 w-auto object-contain lg:hidden" />
             <h1 className="text-sm font-semibold md:text-base">
               FSMS – ISO 22000:2018
             </h1>
