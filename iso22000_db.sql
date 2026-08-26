@@ -86,6 +86,7 @@ CREATE TABLE documents (
     standard VARCHAR(100) DEFAULT 'ISO 22000:2018',
     current_version VARCHAR(20) DEFAULT '1.0' NOT NULL,
     status VARCHAR(30) DEFAULT 'DRAFT',
+    content TEXT,
     file_url TEXT,
     approved_by UUID REFERENCES users(user_id),
     effective_date DATE,

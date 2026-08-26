@@ -8,9 +8,12 @@ import { Label } from "@/components/ui/label";
 export interface CrudField {
   key: string;
   label: string;
-  type?: "text" | "number" | "select" | "date";
+  type?: "text" | "number" | "select" | "date" | "textarea";
   options?: string[];
   required?: boolean;
+  placeholder?: string;
+  mono?: boolean;
+  hideInTable?: boolean;
   render?: (val: any, row: any) => React.ReactNode;
 }
 
@@ -31,6 +34,7 @@ interface CrudTableProps {
   onDelete: (id: string) => void;
   onReset?: () => void;
   idPrefix?: string;
+  idLabel?: string;
   addLabel?: string;
   canEdit?: boolean;
 }
