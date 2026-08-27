@@ -10,6 +10,13 @@ from .haccp import (
     PRPChecklistLog,
 )
 from .equipment import Equipment, EquipmentMaintenanceLog, EquipmentCalibrationLog
+from .inventory import (
+    ProductionBatch,
+    BatchMaterialUsage,
+    WarehouseInventory,
+    RetainedSample,
+    OrderDispatch,
+)
 
 __all__ = [
     "User",
@@ -28,4 +35,9 @@ __all__ = [
     "Equipment",
     "EquipmentMaintenanceLog",
     "EquipmentCalibrationLog",
+    "ProductionBatch",
+    "BatchMaterialUsage",
+    "WarehouseInventory",
+    "RetainedSample",
+    "OrderDispatch",
 ]

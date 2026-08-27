@@ -20,6 +20,7 @@ import { Route as InventoryRouteImport } from './routes/inventory'
 import { Route as OrganizationRouteImport } from './routes/organization'
 import { Route as PrpRouteImport } from './routes/prp'
 import { Route as PurchasingRouteImport } from './routes/purchasing'
+import { Route as TraceabilityRouteImport } from './routes/traceability'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -76,6 +77,11 @@ const PurchasingRoute = PurchasingRouteImport.update({
   path: '/purchasing',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TraceabilityRoute = TraceabilityRouteImport.update({
+  id: '/traceability',
+  path: '/traceability',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -89,6 +95,7 @@ export interface FileRoutesByFullPath {
   '/organization': typeof OrganizationRoute
   '/prp': typeof PrpRoute
   '/purchasing': typeof PurchasingRoute
+  '/traceability': typeof TraceabilityRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -102,6 +109,7 @@ export interface FileRoutesByTo {
   '/organization': typeof OrganizationRoute
   '/prp': typeof PrpRoute
   '/purchasing': typeof PurchasingRoute
+  '/traceability': typeof TraceabilityRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -116,6 +124,7 @@ export interface FileRoutesById {
   '/organization': typeof OrganizationRoute
   '/prp': typeof PrpRoute
   '/purchasing': typeof PurchasingRoute
+  '/traceability': typeof TraceabilityRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -131,6 +140,7 @@ export interface FileRouteTypes {
     | '/organization'
     | '/prp'
     | '/purchasing'
+    | '/traceability'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -144,6 +154,7 @@ export interface FileRouteTypes {
     | '/organization'
     | '/prp'
     | '/purchasing'
+    | '/traceability'
   id:
     | '__root__'
     | '/'
@@ -157,6 +168,7 @@ export interface FileRouteTypes {
     | '/organization'
     | '/prp'
     | '/purchasing'
+    | '/traceability'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -171,6 +183,7 @@ export interface RootRouteChildren {
   OrganizationRoute: typeof OrganizationRoute
   PrpRoute: typeof PrpRoute
   PurchasingRoute: typeof PurchasingRoute
+  TraceabilityRoute: typeof TraceabilityRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -252,6 +265,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PurchasingRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/traceability': {
+      id: '/traceability'
+      path: '/traceability'
+      fullPath: '/traceability'
+      preLoaderRoute: typeof TraceabilityRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -267,6 +287,7 @@ const rootRouteChildren: RootRouteChildren = {
   OrganizationRoute: OrganizationRoute,
   PrpRoute: PrpRoute,
   PurchasingRoute: PurchasingRoute,
+  TraceabilityRoute: TraceabilityRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

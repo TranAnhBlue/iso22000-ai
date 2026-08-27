@@ -223,10 +223,12 @@ Cơ sở dữ liệu được chuẩn hóa cho toàn bộ 10 luồng nghiệp v�
 - [x] **Phase 3: Luồng 1 — Mua hàng & IQC Nhà cung ứng** (`/purchasing`) — *Đã hoàn thành*
 - [x] **Phase 4: Luồng 2 — Kế hoạch HACCP, Giám sát CCP & Vệ sinh PRP** (`/haccp`, `/prp`) — *Đã hoàn thành*
 - [x] **Phase 5: Luồng 2 — Thiết bị, Hiệu chuẩn & Bảo trì** (`/equipment`) — *Đã hoàn thành*
-- [ ] **Phase 6 [BƯỚC KẾ TIẾP]: Luồng 3 & 4 — Quản lý Kho, Lưu mẫu & Truy xuất nguồn gốc 1 chạm** (`/inventory`, `/traceability`)
-  - **Mục đích:** Quản lý xuất nhập tồn theo nguyên tắc FEFO (Hạn dùng trước - Xuất trước), quản lý vị trí bin/kệ kho lạnh, quản lý mẫu lưu nghiệm thức (Retained Samples) và công cụ Truy xuất nguồn gốc 1 chạm (One-touch Backward/Forward Traceability) theo ISO 22000 Điều khoản 8.5.2 & Điều khoản 8.3.
-  - **Dự kiến Backend:** Models `WarehouseInventory`, `RetainedSample`, `OrderDispatch`, `ProductionBatch`; API CRUD, tính toán cảnh báo hạn sử dụng kho, API phân tích cây phả hệ truy xuất nguồn gốc ngược (Backward) & xuôi (Forward).
-  - **Dự kiến Frontend:** Quản lý kho dạng ma trận trực quan, quét mã QR/Barcode lô hàng, form lưu mẫu định kỳ, giao diện sơ đồ cây phả hệ truy xuất nguồn gốc một chạm và in Biên bản Truy xuất Nguồn gốc (BM-TX-01).
-- [ ] **Phase 7: Luồng 5 — Sự không phù hợp & Hành động khắc phục CAPA** (`/capa`)
+- [x] **Phase 6: Luồng 3 & 4 — Quản lý Kho, Lưu mẫu & Truy xuất nguồn gốc 1 chạm** (`/inventory`, `/traceability`) — *Đã hoàn thành*
+  - **Kho FEFO & Lưu Mẫu (`/inventory`):** Quản lý xuất nhập tồn tự động tính toán thứ tự ưu tiên FEFO (`EXPIRED`, `CRITICAL_NEAR_EXPIRY`, `NEAR_EXPIRY`, `GOOD`), bản đồ ma trận vị trí kệ/ô kho lạnh (Kho đông $\le -18^\circ\text{C}$, Kho mát $0-4^\circ\text{C}$, Kho khô $\le 25^\circ\text{C}$), quản lý mẫu lưu nghiệm thức (HSD + 30 ngày) và mẻ sản xuất/phiếu xuất kho.
+  - **Truy xuất Nguồn gốc 1 Chạm (`/traceability`):**
+    - *Truy xuất ngược (Backward):* Sơ đồ Cây phả hệ 4 tầng: `NCC/Nguyên liệu IQC` $\rightarrow$ `Mẻ SX & CCP` $\rightarrow$ `Tồn kho & Mẫu lưu` $\rightarrow$ `Đơn xuất & Khách hàng`.
+    - *Truy xuất xuôi (Forward & Mock Recall):* Quét toàn bộ mẻ đã dùng nguyên liệu sự cố, kích hoạt nút khóa biệt trữ tồn kho và danh sách khách hàng cần thu hồi khẩn trong 2 giờ.
+    - *In Biểu mẫu ISO BM-TX-01:* Biên bản Truy xuất nguồn gốc có Logo WCERT chuẩn đẹp, in trực tiếp trong trang.
+- [ ] **Phase 7 [BƯỚC KẾ TIẾP]: Luồng 5 — Sự không phù hợp & Hành động khắc phục CAPA** (`/capa`)
 - [ ] **Phase 8: Luồng 6 — Đào tạo nhân sự, Đánh giá nội bộ & Khai báo sức khỏe** (`/audits`)
 - [ ] **Phase 9: Luồng 8 — Dashboard điều hành, Báo cáo & Trợ lý AI tích hợp** (`/dashboard`)
