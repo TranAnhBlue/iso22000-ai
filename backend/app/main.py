@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.database import engine, Base
 import app.models  # ensure models are loaded
-from app.api.v1.endpoints import auth, organization, documents, purchasing
+from app.api.v1.endpoints import auth, organization, documents, purchasing, haccp, equipment, inventory, traceability, capa, builder
 
 from sqlalchemy import text
 
@@ -34,6 +34,137 @@ try:
         conn.execute(text("ALTER TABLE iqc_inspections ADD COLUMN IF NOT EXISTS temperature_c NUMERIC(5,2);"))
         conn.execute(text("ALTER TABLE iqc_inspections ADD COLUMN IF NOT EXISTS coa_compliance BOOLEAN DEFAULT TRUE;"))
 
+        # CCP Definitions columns migration
+        conn.execute(text("ALTER TABLE ccp_definitions ALTER COLUMN process_step DROP NOT NULL;"))
+        conn.execute(text("ALTER TABLE ccp_definitions ADD COLUMN IF NOT EXISTS process_step_id UUID REFERENCES process_steps(step_id) ON DELETE SET NULL;"))
+        conn.execute(text("ALTER TABLE ccp_definitions ADD COLUMN IF NOT EXISTS monitoring_method TEXT;"))
+        conn.execute(text("ALTER TABLE ccp_definitions ADD COLUMN IF NOT EXISTS corrective_action_plan TEXT;"))
+        conn.execute(text("ALTER TABLE ccp_definitions ADD COLUMN IF NOT EXISTS responsible_role VARCHAR(100) DEFAULT 'QC / Trưởng ca Sản xuất';"))
+        conn.execute(text("ALTER TABLE ccp_definitions ADD COLUMN IF NOT EXISTS status VARCHAR(30) DEFAULT 'ACTIVE';"))
+        conn.execute(text("ALTER TABLE ccp_definitions ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP;"))
+
+        # CCP Monitoring Logs columns migration
+        conn.execute(text("ALTER TABLE ccp_monitoring_logs ADD COLUMN IF NOT EXISTS batch_number VARCHAR(100);"))
+        conn.execute(text("ALTER TABLE ccp_monitoring_logs ALTER COLUMN batch_id DROP NOT NULL;"))
+        conn.execute(text("ALTER TABLE ccp_monitoring_logs ALTER COLUMN measured_values DROP NOT NULL;"))
+        conn.execute(text("ALTER TABLE ccp_monitoring_logs ADD COLUMN IF NOT EXISTS status VARCHAR(30) DEFAULT 'NORMAL';"))
+        conn.execute(text("ALTER TABLE ccp_monitoring_logs ADD COLUMN IF NOT EXISTS unit VARCHAR(20) DEFAULT '°C';"))
+        conn.execute(text("ALTER TABLE ccp_monitoring_logs ADD COLUMN IF NOT EXISTS measured_value NUMERIC(8,2);"))
+        conn.execute(text("ALTER TABLE ccp_monitoring_logs ADD COLUMN IF NOT EXISTS verification_status VARCHAR(30) DEFAULT 'VERIFIED';"))
+        conn.execute(text("ALTER TABLE ccp_monitoring_logs ADD COLUMN IF NOT EXISTS verified_by UUID REFERENCES users(user_id);"))
+        conn.execute(text("ALTER TABLE ccp_monitoring_logs ADD COLUMN IF NOT EXISTS notes TEXT;"))
+        conn.execute(text("ALTER TABLE ccp_monitoring_logs ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP;"))
+
+        # PRP Programs & Checklists
+        try:
+            conn.execute(text('ALTER TABLE prp_programs ADD COLUMN IF NOT EXISTS "group" VARCHAR(50) DEFAULT \'GMP\';'))
+            conn.execute(text("ALTER TABLE prp_programs ADD COLUMN IF NOT EXISTS frequency VARCHAR(50) DEFAULT 'Theo ca sản xuất';"))
+            conn.execute(text("ALTER TABLE prp_programs ADD COLUMN IF NOT EXISTS responsible_dept VARCHAR(100) DEFAULT 'Phòng Sản xuất';"))
+            conn.execute(text("ALTER TABLE prp_programs ADD COLUMN IF NOT EXISTS status VARCHAR(30) DEFAULT 'ACTIVE';"))
+            conn.commit()
+        except Exception as err:
+            print(f"PRP migration note: {err}")
+
+        # Equipment & Maintenance Migrations
+        conn.execute(text("ALTER TABLE equipments ADD COLUMN IF NOT EXISTS calibration_frequency_months INTEGER DEFAULT 12;"))
+        conn.execute(text("ALTER TABLE equipments ADD COLUMN IF NOT EXISTS maintenance_frequency_days INTEGER DEFAULT 30;"))
+        conn.execute(text("ALTER TABLE equipments ADD COLUMN IF NOT EXISTS specifications JSONB;"))
+
+        # Phase 6: Production Batches Migrations
+        conn.execute(text("ALTER TABLE production_batches ADD COLUMN IF NOT EXISTS product_code VARCHAR(50);"))
+        conn.execute(text("ALTER TABLE production_batches ADD COLUMN IF NOT EXISTS production_line VARCHAR(100) DEFAULT 'Dây chuyền Chế biến 01';"))
+        conn.execute(text("ALTER TABLE production_batches ADD COLUMN IF NOT EXISTS shift VARCHAR(50) DEFAULT 'Ca 1 (06:00 - 14:00)';"))
+        conn.execute(text("ALTER TABLE production_batches ADD COLUMN IF NOT EXISTS planned_quantity NUMERIC(12,2) DEFAULT 0.0;"))
+        conn.execute(text("ALTER TABLE production_batches ADD COLUMN IF NOT EXISTS actual_quantity NUMERIC(12,2) DEFAULT 0.0;"))
+        conn.execute(text("ALTER TABLE production_batches ADD COLUMN IF NOT EXISTS unit VARCHAR(20) DEFAULT 'kg';"))
+        conn.execute(text("ALTER TABLE production_batches ADD COLUMN IF NOT EXISTS qc_inspector VARCHAR(100) DEFAULT 'QC Thẩm định';"))
+        conn.execute(text("ALTER TABLE production_batches ADD COLUMN IF NOT EXISTS notes TEXT;"))
+        conn.execute(text("ALTER TABLE production_batches ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP;"))
+
+        # Phase 6: Batch Material Usage Migrations
+        conn.execute(text("ALTER TABLE batch_material_usage ADD COLUMN IF NOT EXISTS material_name VARCHAR(255) DEFAULT 'Nguyên liệu';"))
+        conn.execute(text("ALTER TABLE batch_material_usage ADD COLUMN IF NOT EXISTS lot_number VARCHAR(100) DEFAULT 'NL-LOT';"))
+
+        # Phase 6: Warehouse Inventory Migrations
+        conn.execute(text("ALTER TABLE warehouse_inventory ADD COLUMN IF NOT EXISTS item_code VARCHAR(50) DEFAULT 'NL-01';"))
+        conn.execute(text("ALTER TABLE warehouse_inventory ADD COLUMN IF NOT EXISTS item_name VARCHAR(255) DEFAULT 'Nguyên liệu';"))
+        conn.execute(text("ALTER TABLE warehouse_inventory ADD COLUMN IF NOT EXISTS category VARCHAR(50) DEFAULT 'RAW_MATERIAL';"))
+        conn.execute(text("ALTER TABLE warehouse_inventory ADD COLUMN IF NOT EXISTS lot_number VARCHAR(100) DEFAULT 'LOT-01';"))
+        conn.execute(text("ALTER TABLE warehouse_inventory ADD COLUMN IF NOT EXISTS unit VARCHAR(20) DEFAULT 'kg';"))
+        conn.execute(text("ALTER TABLE warehouse_inventory ADD COLUMN IF NOT EXISTS min_stock_level NUMERIC(12,2) DEFAULT 100.0;"))
+        conn.execute(text("ALTER TABLE warehouse_inventory ADD COLUMN IF NOT EXISTS warehouse_type VARCHAR(50) DEFAULT 'COLD_STORAGE';"))
+        conn.execute(text("ALTER TABLE warehouse_inventory ADD COLUMN IF NOT EXISTS temperature_c NUMERIC(5,2);"))
+        conn.execute(text("ALTER TABLE warehouse_inventory ADD COLUMN IF NOT EXISTS notes TEXT;"))
+        conn.execute(text("ALTER TABLE warehouse_inventory ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP;"))
+        conn.execute(text("ALTER TABLE warehouse_inventory ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP;"))
+
+        # Phase 6: Retained Samples Migrations
+        conn.execute(text("ALTER TABLE retained_samples ADD COLUMN IF NOT EXISTS batch_number VARCHAR(100) DEFAULT 'LOT-SAMPLE';"))
+        conn.execute(text("ALTER TABLE retained_samples ADD COLUMN IF NOT EXISTS product_name VARCHAR(255) DEFAULT 'Mẫu lưu sản phẩm';"))
+        conn.execute(text("ALTER TABLE retained_samples ADD COLUMN IF NOT EXISTS sample_weight_g NUMERIC(8,2) DEFAULT 200.0;"))
+        conn.execute(text("ALTER TABLE retained_samples ADD COLUMN IF NOT EXISTS storage_cabinet VARCHAR(100) DEFAULT 'Tủ đông mẫu T-01';"))
+        conn.execute(text("ALTER TABLE retained_samples ADD COLUMN IF NOT EXISTS storage_temperature_c NUMERIC(5,2) DEFAULT -18.0;"))
+        conn.execute(text("ALTER TABLE retained_samples ADD COLUMN IF NOT EXISTS sampled_by VARCHAR(100) DEFAULT 'QC Ca';"))
+        conn.execute(text("ALTER TABLE retained_samples ADD COLUMN IF NOT EXISTS test_result VARCHAR(30) DEFAULT 'PASS';"))
+        conn.execute(text("ALTER TABLE retained_samples ADD COLUMN IF NOT EXISTS test_details JSONB;"))
+        conn.execute(text("ALTER TABLE retained_samples ADD COLUMN IF NOT EXISTS disposed_date DATE;"))
+        conn.execute(text("ALTER TABLE retained_samples ADD COLUMN IF NOT EXISTS disposed_by VARCHAR(100);"))
+        conn.execute(text("ALTER TABLE retained_samples ADD COLUMN IF NOT EXISTS notes TEXT;"))
+        conn.execute(text("ALTER TABLE retained_samples ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP;"))
+
+        # Phase 6: Order Dispatches Migrations
+        conn.execute(text("ALTER TABLE order_dispatches ADD COLUMN IF NOT EXISTS dispatch_code VARCHAR(100) DEFAULT 'PXK-01';"))
+        conn.execute(text("ALTER TABLE order_dispatches ADD COLUMN IF NOT EXISTS customer_phone VARCHAR(50);"))
+        conn.execute(text("ALTER TABLE order_dispatches ADD COLUMN IF NOT EXISTS destination_address VARCHAR(255);"))
+        conn.execute(text("ALTER TABLE order_dispatches ADD COLUMN IF NOT EXISTS batch_number VARCHAR(100) DEFAULT 'LOT-01';"))
+        conn.execute(text("ALTER TABLE order_dispatches ADD COLUMN IF NOT EXISTS product_name VARCHAR(255) DEFAULT 'Thành phẩm xuất kho';"))
+        conn.execute(text("ALTER TABLE order_dispatches ADD COLUMN IF NOT EXISTS unit VARCHAR(20) DEFAULT 'thùng';"))
+        conn.execute(text("ALTER TABLE order_dispatches ADD COLUMN IF NOT EXISTS vehicle_number VARCHAR(50) DEFAULT '59C-128.45';"))
+        conn.execute(text("ALTER TABLE order_dispatches ADD COLUMN IF NOT EXISTS vehicle_temp_c NUMERIC(5,2) DEFAULT -18.0;"))
+        conn.execute(text("ALTER TABLE order_dispatches ADD COLUMN IF NOT EXISTS status VARCHAR(30) DEFAULT 'DELIVERED';"))
+        conn.execute(text("ALTER TABLE order_dispatches ADD COLUMN IF NOT EXISTS notes TEXT;"))
+
+        # Process Steps plan_id migration
+        conn.execute(text("ALTER TABLE process_steps ADD COLUMN IF NOT EXISTS plan_id UUID REFERENCES haccp_plans(plan_id) ON DELETE SET NULL;"))
+
+        # Phase 7: Non-Conformances & CAPA Migrations
+        conn.execute(text("ALTER TABLE non_conformances ADD COLUMN IF NOT EXISTS title VARCHAR(255) DEFAULT 'Sự không phù hợp phát sinh';"))
+        conn.execute(text("ALTER TABLE non_conformances ADD COLUMN IF NOT EXISTS occurred_date DATE DEFAULT CURRENT_DATE;"))
+        conn.execute(text("ALTER TABLE non_conformances ADD COLUMN IF NOT EXISTS occurred_location VARCHAR(150);"))
+        conn.execute(text("ALTER TABLE non_conformances ADD COLUMN IF NOT EXISTS immediate_action TEXT;"))
+        conn.execute(text("ALTER TABLE non_conformances ADD COLUMN IF NOT EXISTS affected_lot_number VARCHAR(100);"))
+        conn.execute(text("ALTER TABLE non_conformances ADD COLUMN IF NOT EXISTS affected_quantity VARCHAR(100);"))
+        conn.execute(text("ALTER TABLE non_conformances ADD COLUMN IF NOT EXISTS reported_by_name VARCHAR(150) DEFAULT 'KCS Ca sản xuất';"))
+        conn.execute(text("ALTER TABLE non_conformances ADD COLUMN IF NOT EXISTS status VARCHAR(30) DEFAULT 'NEW';"))
+        conn.execute(text("ALTER TABLE non_conformances ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP;"))
+
+        conn.execute(text("ALTER TABLE capa_records ADD COLUMN IF NOT EXISTS capa_number VARCHAR(50);"))
+        conn.execute(text("ALTER TABLE capa_records ADD COLUMN IF NOT EXISTS title VARCHAR(255) DEFAULT 'Kế hoạch hành động khắc phục phòng ngừa';"))
+        conn.execute(text("ALTER TABLE capa_records ADD COLUMN IF NOT EXISTS root_cause_method VARCHAR(50) DEFAULT '5_WHYS';"))
+        conn.execute(text("ALTER TABLE capa_records ADD COLUMN IF NOT EXISTS root_cause_summary TEXT;"))
+        conn.execute(text("ALTER TABLE capa_records ADD COLUMN IF NOT EXISTS assigned_to_name VARCHAR(150) DEFAULT 'Trưởng bộ phận';"))
+        conn.execute(text("ALTER TABLE capa_records ADD COLUMN IF NOT EXISTS assigned_dept VARCHAR(150) DEFAULT 'Phòng Sản xuất';"))
+        conn.execute(text("ALTER TABLE capa_records ADD COLUMN IF NOT EXISTS target_date DATE DEFAULT (CURRENT_DATE + INTERVAL '14 days');"))
+        conn.execute(text("ALTER TABLE capa_records ADD COLUMN IF NOT EXISTS completed_date DATE;"))
+        conn.execute(text("ALTER TABLE capa_records ADD COLUMN IF NOT EXISTS verified_by_name VARCHAR(150);"))
+        conn.execute(text("ALTER TABLE capa_records ADD COLUMN IF NOT EXISTS verification_date DATE;"))
+        conn.execute(text("ALTER TABLE capa_records ADD COLUMN IF NOT EXISTS verification_status VARCHAR(30) DEFAULT 'PENDING_VERIFY';"))
+        conn.execute(text("ALTER TABLE capa_records ADD COLUMN IF NOT EXISTS evidence_urls JSONB DEFAULT '[]'::jsonb;"))
+        conn.execute(text("ALTER TABLE capa_records ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP;"))
+        conn.execute(text("ALTER TABLE capa_records ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP;"))
+        
+        try:
+            conn.execute(text("ALTER TABLE capa_records ALTER COLUMN due_date DROP NOT NULL;"))
+            conn.execute(text("ALTER TABLE capa_records ALTER COLUMN corrective_action DROP NOT NULL;"))
+        except Exception:
+            pass
+
+        # Convert root_cause_analysis to JSONB if it was TEXT
+        try:
+            conn.execute(text("ALTER TABLE capa_records ALTER COLUMN root_cause_analysis TYPE JSONB USING (CASE WHEN root_cause_analysis IS NULL OR root_cause_analysis = '' THEN '{}'::jsonb ELSE root_cause_analysis::jsonb END);"))
+        except Exception:
+            pass
+
         conn.commit()
 except Exception as e:
     print(f"Database tables create_all note: {e}")
@@ -45,16 +176,31 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "http://localhost:8080",
+        "http://127.0.0.1:8080",
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+    ],
+    allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1)(:[0-9]+)?$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 app.include_router(auth.router, prefix="/api/v1")
 app.include_router(organization.router, prefix="/api/v1")
 app.include_router(documents.router, prefix="/api/v1")
 app.include_router(purchasing.router, prefix="/api/v1")
+app.include_router(haccp.router, prefix="/api/v1")
+app.include_router(equipment.router, prefix="/api/v1/equipment", tags=["Equipment & Maintenance"])
+app.include_router(inventory.router, prefix="/api/v1/inventory", tags=["Warehouse & Inventory FEFO"])
+app.include_router(traceability.router, prefix="/api/v1/traceability", tags=["Traceability & Mock Recall"])
+app.include_router(capa.router, prefix="/api/v1/capa", tags=["CAPA & Non-Conformance"])
+app.include_router(builder.router, prefix="/api/v1")
 
 @app.get("/")
 def root():

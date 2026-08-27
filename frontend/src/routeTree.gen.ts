@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuditsRouteImport } from './routes/audits'
+import { Route as BuilderRouteImport } from './routes/builder'
 import { Route as CapaRouteImport } from './routes/capa'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as DocumentsRouteImport } from './routes/documents'
@@ -20,6 +21,7 @@ import { Route as InventoryRouteImport } from './routes/inventory'
 import { Route as OrganizationRouteImport } from './routes/organization'
 import { Route as PrpRouteImport } from './routes/prp'
 import { Route as PurchasingRouteImport } from './routes/purchasing'
+import { Route as TraceabilityRouteImport } from './routes/traceability'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -29,6 +31,11 @@ const IndexRoute = IndexRouteImport.update({
 const AuditsRoute = AuditsRouteImport.update({
   id: '/audits',
   path: '/audits',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BuilderRoute = BuilderRouteImport.update({
+  id: '/builder',
+  path: '/builder',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CapaRoute = CapaRouteImport.update({
@@ -76,10 +83,16 @@ const PurchasingRoute = PurchasingRouteImport.update({
   path: '/purchasing',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TraceabilityRoute = TraceabilityRouteImport.update({
+  id: '/traceability',
+  path: '/traceability',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/audits': typeof AuditsRoute
+  '/builder': typeof BuilderRoute
   '/capa': typeof CapaRoute
   '/dashboard': typeof DashboardRoute
   '/documents': typeof DocumentsRoute
@@ -89,10 +102,12 @@ export interface FileRoutesByFullPath {
   '/organization': typeof OrganizationRoute
   '/prp': typeof PrpRoute
   '/purchasing': typeof PurchasingRoute
+  '/traceability': typeof TraceabilityRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/audits': typeof AuditsRoute
+  '/builder': typeof BuilderRoute
   '/capa': typeof CapaRoute
   '/dashboard': typeof DashboardRoute
   '/documents': typeof DocumentsRoute
@@ -102,11 +117,13 @@ export interface FileRoutesByTo {
   '/organization': typeof OrganizationRoute
   '/prp': typeof PrpRoute
   '/purchasing': typeof PurchasingRoute
+  '/traceability': typeof TraceabilityRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/audits': typeof AuditsRoute
+  '/builder': typeof BuilderRoute
   '/capa': typeof CapaRoute
   '/dashboard': typeof DashboardRoute
   '/documents': typeof DocumentsRoute
@@ -116,12 +133,14 @@ export interface FileRoutesById {
   '/organization': typeof OrganizationRoute
   '/prp': typeof PrpRoute
   '/purchasing': typeof PurchasingRoute
+  '/traceability': typeof TraceabilityRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/audits'
+    | '/builder'
     | '/capa'
     | '/dashboard'
     | '/documents'
@@ -131,10 +150,12 @@ export interface FileRouteTypes {
     | '/organization'
     | '/prp'
     | '/purchasing'
+    | '/traceability'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/audits'
+    | '/builder'
     | '/capa'
     | '/dashboard'
     | '/documents'
@@ -144,10 +165,12 @@ export interface FileRouteTypes {
     | '/organization'
     | '/prp'
     | '/purchasing'
+    | '/traceability'
   id:
     | '__root__'
     | '/'
     | '/audits'
+    | '/builder'
     | '/capa'
     | '/dashboard'
     | '/documents'
@@ -157,11 +180,13 @@ export interface FileRouteTypes {
     | '/organization'
     | '/prp'
     | '/purchasing'
+    | '/traceability'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuditsRoute: typeof AuditsRoute
+  BuilderRoute: typeof BuilderRoute
   CapaRoute: typeof CapaRoute
   DashboardRoute: typeof DashboardRoute
   DocumentsRoute: typeof DocumentsRoute
@@ -171,6 +196,7 @@ export interface RootRouteChildren {
   OrganizationRoute: typeof OrganizationRoute
   PrpRoute: typeof PrpRoute
   PurchasingRoute: typeof PurchasingRoute
+  TraceabilityRoute: typeof TraceabilityRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -187,6 +213,13 @@ declare module '@tanstack/react-router' {
       path: '/audits'
       fullPath: '/audits'
       preLoaderRoute: typeof AuditsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/builder': {
+      id: '/builder'
+      path: '/builder'
+      fullPath: '/builder'
+      preLoaderRoute: typeof BuilderRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/capa': {
@@ -252,12 +285,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PurchasingRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/traceability': {
+      id: '/traceability'
+      path: '/traceability'
+      fullPath: '/traceability'
+      preLoaderRoute: typeof TraceabilityRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuditsRoute: AuditsRoute,
+  BuilderRoute: BuilderRoute,
   CapaRoute: CapaRoute,
   DashboardRoute: DashboardRoute,
   DocumentsRoute: DocumentsRoute,
@@ -267,6 +308,7 @@ const rootRouteChildren: RootRouteChildren = {
   OrganizationRoute: OrganizationRoute,
   PrpRoute: PrpRoute,
   PurchasingRoute: PurchasingRoute,
+  TraceabilityRoute: TraceabilityRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

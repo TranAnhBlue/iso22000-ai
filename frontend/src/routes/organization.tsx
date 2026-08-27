@@ -204,7 +204,7 @@ function Org() {
         </button>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <Kpi icon={<Users className="h-5 w-5" />} v={String(totalUsers)} l="Nhân sự" />
         <Kpi icon={<Building2 className="h-5 w-5" />} v={String(depts.length)} l="Phòng ban" />
         <Kpi icon={<UserCheck className="h-5 w-5" />} v={String(users.filter((u) => u.status === "Hoạt động").length)} l="Đang hoạt động" />
@@ -212,29 +212,31 @@ function Org() {
       </div>
 
       {/* 2 Tabs chuyển đổi */}
-      <div className="flex border-b">
-        <button
-          onClick={() => setActiveTab("users")}
-          className={`flex items-center gap-2 border-b-2 px-6 py-3 text-sm font-semibold transition ${
-            activeTab === "users"
-              ? "border-primary text-primary"
-              : "border-transparent text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          <Users className="h-4 w-4" />
-          Danh sách Người dùng ({users.length})
-        </button>
-        <button
-          onClick={() => setActiveTab("depts")}
-          className={`flex items-center gap-2 border-b-2 px-6 py-3 text-sm font-semibold transition ${
-            activeTab === "depts"
-              ? "border-primary text-primary"
-              : "border-transparent text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          <Building2 className="h-4 w-4" />
-          Danh sách Phòng ban ({depts.length})
-        </button>
+      <div className="border-b overflow-x-auto no-scrollbar">
+        <div className="flex space-x-1 sm:space-x-4 min-w-max pb-1">
+          <button
+            onClick={() => setActiveTab("users")}
+            className={`flex items-center gap-1.5 sm:gap-2 border-b-2 px-3 sm:px-6 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold transition whitespace-nowrap ${
+              activeTab === "users"
+                ? "border-primary text-primary"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Users className="h-4 w-4 shrink-0" />
+            Danh sách Người dùng ({users.length})
+          </button>
+          <button
+            onClick={() => setActiveTab("depts")}
+            className={`flex items-center gap-1.5 sm:gap-2 border-b-2 px-3 sm:px-6 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold transition whitespace-nowrap ${
+              activeTab === "depts"
+                ? "border-primary text-primary"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Building2 className="h-4 w-4 shrink-0" />
+            Danh sách Phòng ban ({depts.length})
+          </button>
+        </div>
       </div>
 
       {activeTab === "users" ? (

@@ -87,7 +87,9 @@ export type ModuleKey =
   | "capa"
   | "equipment"
   | "inventory"
-  | "purchasing";
+  | "traceability"
+  | "purchasing"
+  | "builder";
 
 export type Access = "none" | "view" | "edit";
 
@@ -101,7 +103,9 @@ const ALL_EDIT: Record<ModuleKey, Access> = {
   capa: "edit",
   equipment: "edit",
   inventory: "edit",
+  traceability: "edit",
   purchasing: "edit",
+  builder: "edit",
 };
 
 const ALL_VIEW: Record<ModuleKey, Access> = {
@@ -114,7 +118,9 @@ const ALL_VIEW: Record<ModuleKey, Access> = {
   capa: "view",
   equipment: "view",
   inventory: "view",
+  traceability: "view",
   purchasing: "view",
+  builder: "view",
 };
 
 const ALL_NONE: Record<ModuleKey, Access> = {
@@ -127,7 +133,9 @@ const ALL_NONE: Record<ModuleKey, Access> = {
   capa: "none",
   equipment: "none",
   inventory: "none",
+  traceability: "none",
   purchasing: "none",
+  builder: "none",
 };
 
 // MA TRẬN PHÂN QUYỀN ĐỒNG BỘ CẢ CHỮ HOA VÀ CHỮ THƯỜNG
@@ -203,16 +211,12 @@ export const PERMISSIONS: Record<string, Record<ModuleKey, Access>> = {
   },
   // Cán bộ nhân viên
   staff: {
-    dashboard: "view",
+    ...ALL_VIEW,
     organization: "none",
-    documents: "view",
-    audits: "view",
     haccp: "none",
-    prp: "view",
-    capa: "edit",
     equipment: "none",
-    inventory: "view",
     purchasing: "none",
+    capa: "edit",
   },
 };
 

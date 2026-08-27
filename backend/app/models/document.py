@@ -19,6 +19,7 @@ class Document(Base):
     status: Mapped[str] = mapped_column(String(30), default="DRAFT", nullable=False)  # DRAFT, PENDING_APPROVAL, APPROVED, OBSOLETE
     department: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)  # Ban QLCL, Sản xuất, QC, Mua hàng...
     standard: Mapped[Optional[str]] = mapped_column(String(100), default="ISO 22000:2018", nullable=True)  # ISO 22000, HACCP, PRP...
+    content: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # Toàn văn quy trình SOP / Nội dung văn bản
     file_url: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     approved_by: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), ForeignKey("users.user_id"), nullable=True)
     effective_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)

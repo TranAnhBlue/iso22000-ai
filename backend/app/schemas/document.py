@@ -13,6 +13,7 @@ class DocumentBase(BaseModel):
     status: str = "DRAFT"
     department: Optional[str] = None
     standard: Optional[str] = "ISO 22000:2018"
+    content: Optional[str] = None
     file_url: Optional[str] = None
     effective_date: Optional[date] = None
 
@@ -27,6 +28,7 @@ class DocumentUpdate(BaseModel):
     status: Optional[str] = None
     department: Optional[str] = None
     standard: Optional[str] = None
+    content: Optional[str] = None
     file_url: Optional[str] = None
     approved_by: Optional[UUID] = None
     effective_date: Optional[date] = None

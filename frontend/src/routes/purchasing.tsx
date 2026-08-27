@@ -45,19 +45,25 @@ import {
   Clock,
   XCircle,
   Percent,
+  GitFork,
+  Sliders,
+  ClipboardList,
 } from "lucide-react";
 import api from "@/lib/api";
 import { toast } from "sonner";
 import logoImg from "@/assets/logo.png";
+import { DynamicFormRenderer } from "@/components/builder/DynamicFormRenderer";
+import { WorkflowBuilder, type WorkflowTemplateData } from "@/components/builder/WorkflowBuilder";
+import type { FormTemplateData } from "@/components/builder/types";
 
 export const Route = createFileRoute("/purchasing")({
   head: () => ({
     meta: [
-      { title: "Mua hàng, NCC & Kiểm định IQC – WCERT ISO 22000" },
+      { title: "Nhà Cung Cấp & Kiểm Định Tiếp Nhận IQC – WCERT ISO 22000" },
       {
         name: "description",
         content:
-          "Quản lý danh bạ nhà cung cấp (ASL), tiếp nhận lô nguyên liệu (FEFO) và thẩm định COA/IQC theo tiêu chuẩn ISO 22000:2018 Điều khoản 7.1.6.",
+          "Kiểm soát các quá trình, sản phẩm hoặc dịch vụ do bên ngoài cung cấp (ASL), tiếp nhận lô nguyên liệu (FEFO) và thẩm định COA/IQC theo tiêu chuẩn ISO 22000:2018 Điều khoản 7.1.6.",
       },
     ],
   }),
@@ -380,6 +386,18 @@ function PurchasingPage() {
     notes: "",
   });
 
+  // Dynamic Form States
+  const [showDynamicVendorModal, setShowDynamicVendorModal] = useState(false);
+  const [vendorFormTemplate, setVendorFormTemplate] = useState<FormTemplateData | null>(null);
+  const [selectedSupplierForForm, setSelectedSupplierForForm] = useState<SupplierItem | null>(null);
+
+  const [showDynamicIqcModal, setShowDynamicIqcModal] = useState(false);
+  const [iqcFormTemplate, setIqcFormTemplate] = useState<FormTemplateData | null>(null);
+  const [selectedLotForForm, setSelectedLotForForm] = useState<MaterialLotItem | null>(null);
+
+  const [showWorkflowModal, setShowWorkflowModal] = useState(false);
+  const [workflowTemplate, setWorkflowTemplate] = useState<WorkflowTemplateData | null>(null);
+
   // Fetch Stats & Data
   const fetchData = async () => {
     setLoading(true);
@@ -556,6 +574,151 @@ function PurchasingPage() {
       fetchData();
     } catch (err: any) {
       toast.error("Không thể đánh giá AI lúc này.");
+    }
+  };
+
+  // ==================== DYNAMIC FORM & WORKFLOW HANDLERS ====================
+  const handleOpenVendorDynamicForm = async (supplier: SupplierItem) => {
+    setSelectedSupplierForForm(supplier);
+    try {
+      const res = await api.get("/builders/forms");
+      const found = res.data.find((f: any) => f.code === "FORM-VENDOR-01");
+      if (found) {
+        setVendorFormTemplate(found);
+      } else {
+        setVendorFormTemplate({
+          module: "SUPPLIER_AUDIT",
+          code: "FORM-VENDOR-01",
+          title: "Bảng Đánh Giá Năng Lực & ATTP Nhà Cung Cấp (BM-NCC-01)",
+          description: "Đánh giá định kỳ hàng năm điều kiện nhà xưởng và chứng chỉ ISO 22000/HACCP của đối tác.",
+          version: "1.0",
+          fields: [
+            { id: "v_name", name: "supplier_name", label: "Tên đối tác / Nhà cung cấp", type: "TEXT", required: true, default_value: supplier.supplier_name },
+            { id: "v_iso", name: "has_iso_cert", label: "Đã có chứng nhận ISO 22000 / HACCP còn hiệu lực?", type: "YESNO", required: true, default_value: true },
+            { id: "v_score", name: "quality_score", label: "Điểm chất lượng hàng hóa giao trong năm (Thang 1-100)", type: "NUMBER", required: true, min_val: 0, max_val: 100, default_value: supplier.rating_score || 95 },
+            { id: "v_delivery", name: "ontime_delivery_rate", label: "Tỷ lệ giao hàng đúng hẹn (%)", type: "NUMBER", required: true, unit: "%", min_val: 0, max_val: 100, default_value: 98 },
+            { id: "v_ranking", name: "supplier_ranking", label: "Xếp loại nhà cung cấp", type: "SELECT", options: ["Hạng A (Ưu tiên)", "Hạng B (Đạt chuẩn)", "Hạng C (Cần khắc phục)", "Hạng D (Đình chỉ)"], required: true, default_value: "Hạng A (Ưu tiên)" },
+            { id: "v_notes", name: "audit_notes", label: "Ghi chú & Kiến nghị hành động", type: "TEXT", required: false, default_value: "Đạt yêu cầu thẩm định định kỳ." },
+          ],
+          status: "ACTIVE",
+        });
+      }
+      setShowDynamicVendorModal(true);
+    } catch (err) {
+      toast.error("Không thể tải biểu mẫu đánh giá NCC");
+    }
+  };
+
+  const handleSaveVendorDynamicForm = async (vals: Record<string, any>) => {
+    if (!selectedSupplierForForm) return;
+    try {
+      await api.post("/builders/submissions", {
+        template_id: vendorFormTemplate?.template_id || "FORM-VENDOR-01",
+        reference_id: selectedSupplierForForm.supplier_id,
+        reference_type: "SUPPLIER",
+        submitted_by_name: "Chuyên viên QA Đánh giá NCC",
+        form_data: vals,
+        status: "COMPLETED",
+      });
+      toast.success(`Đã lưu kết quả đánh giá cho "${selectedSupplierForForm.supplier_name}" thành công!`);
+      setShowDynamicVendorModal(false);
+      fetchData();
+    } catch (err: any) {
+      toast.error("Lỗi khi lưu kết quả đánh giá: " + (err.response?.data?.detail || err.message));
+    }
+  };
+
+  const handleOpenIqcDynamicForm = async (lot: MaterialLotItem) => {
+    setSelectedLotForForm(lot);
+    try {
+      const res = await api.get("/builders/forms");
+      const found = res.data.find((f: any) => f.code === "FORM-IQC-01");
+      if (found) {
+        setIqcFormTemplate(found);
+      } else {
+        setIqcFormTemplate({
+          module: "IQC",
+          code: "FORM-IQC-01",
+          title: "Phiếu Nghiệm Thu Nguyên Liệu Thủy Sản Đầu Vào (IQC-01)",
+          description: "Đánh giá chất lượng cảm quan, nhiệt độ xe đông lạnh và phiếu COA nhà cung cấp theo ISO 22000 Điều khoản 8.2.",
+          version: "1.0",
+          fields: [
+            { id: "f_lot", name: "lot_number", label: "Số Lô Nguyên Liệu", type: "TEXT", required: true, default_value: lot.lot_number },
+            { id: "f_material", name: "material_name", label: "Tên Nguyên Liệu", type: "TEXT", required: true, default_value: lot.material_name },
+            { id: "f_temp", name: "temp_delivery", label: "Nhiệt độ thùng xe lúc giao nhận (°C - Yêu cầu ≤ -18°C)", type: "NUMBER", required: true, unit: "°C", default_value: -19.2 },
+            { id: "f_sensory", name: "sensory_pass", label: "Cảm quan đạt độ tươi sống, không ươn hỏng, không mùi lạ?", type: "YESNO", required: true, default_value: true },
+            { id: "f_coa", name: "has_coa", label: "Hồ sơ COA & kiểm dịch đầy đủ hợp lệ?", type: "YESNO", required: true, default_value: true },
+            { id: "f_decision", name: "qc_decision", label: "Kết luận IQC Tiếp nhận", type: "SELECT", options: ["CHẤP NHẬN NHẬP KHO (PASS)", "CÁCH LY / BIỆT TRỮ (QUARANTINE)", "TỪ CHỐI NHẬN HÀNG (REJECT)"], required: true, default_value: "CHẤP NHẬN NHẬP KHO (PASS)" },
+          ],
+          status: "ACTIVE",
+        });
+      }
+      setShowDynamicIqcModal(true);
+    } catch (err) {
+      toast.error("Không thể tải biểu mẫu IQC");
+    }
+  };
+
+  const handleSaveIqcDynamicForm = async (vals: Record<string, any>) => {
+    if (!selectedLotForForm) return;
+    try {
+      await api.post("/builders/submissions", {
+        template_id: iqcFormTemplate?.template_id || "FORM-IQC-01",
+        reference_id: selectedLotForForm.material_lot_id,
+        reference_type: "MATERIAL_LOT",
+        submitted_by_name: "QC Tiếp Nhận IQC",
+        form_data: vals,
+        status: "COMPLETED",
+      });
+      // Cập nhật trạng thái lô hàng
+      const decision = vals["qc_decision"] || vals["decision"];
+      let newStatus = "APPROVED";
+      if (String(decision).includes("REJECT")) newStatus = "REJECTED";
+      else if (String(decision).includes("QUARANTINE")) newStatus = "QUARANTINE";
+
+      await api.put(`/purchasing/lots/${selectedLotForForm.material_lot_id}`, {
+        ...selectedLotForForm,
+        status: newStatus,
+      });
+
+      toast.success(`Đã lưu biên bản nghiệm thu IQC cho lô "${selectedLotForForm.lot_number}" thành công!`);
+      setShowDynamicIqcModal(false);
+      fetchData();
+    } catch (err: any) {
+      toast.error("Lỗi khi lưu kết quả IQC: " + (err.response?.data?.detail || err.message));
+    }
+  };
+
+  const handleOpenSupplierWorkflow = async () => {
+    try {
+      const res = await api.get("/builders/workflows");
+      const found = res.data.find((w: any) => w.code === "WF-SUPPLIER-AUDIT" || w.module === "SUPPLIER_AUDIT");
+      if (found) {
+        setWorkflowTemplate(found);
+      } else {
+        setWorkflowTemplate({
+          module: "SUPPLIER_AUDIT",
+          code: "WF-SUPPLIER-AUDIT",
+          title: "Quy Trình Thẩm Định & Phê Duyệt Nhà Cung Cấp ASL (ISO 7.1.6)",
+          description: "Quy trình 4 bước thẩm định hồ sơ pháp lý, đánh giá thực địa và cấp mã ASL chính thức.",
+          version: "1.0",
+          nodes: [
+            { id: "wf_1", type: "process", label: "1. Tiếp nhận Hồ sơ Năng lực & Pháp lý", role: "Phòng Mua hàng", description: "Thu thập ĐKKD, Chứng chỉ ATTP (ISO 22000/HACCP) và bảng giá.", is_ccp: false, step_number: 1 },
+            { id: "wf_2", type: "approval", label: "2. Thẩm tra Kỹ thuật & Thử nghiệm mẫu", role: "Phòng QC & QA", description: "Test mẫu thử nghiệm vi sinh, kim loại nặng và dư lượng kháng sinh.", is_ccp: false, step_number: 2 },
+            { id: "wf_3", type: "approval", label: "3. Đánh giá Thực địa Nhà xưởng", role: "Đoàn Đánh giá ISO", description: "Kiểm tra thực tế điều kiện vệ sinh, nhà xưởng và kho lạnh của đối tác.", is_ccp: false, step_number: 3 },
+            { id: "wf_4", type: "process", label: "4. Phê duyệt & Cấp mã Danh bạ ASL", role: "Ban Giám Đốc", description: "Ký quyết định công nhận nhà cung cấp chính thức và đưa vào ASL.", is_ccp: false, step_number: 4 },
+          ],
+          edges: [
+            { id: "e1_2", source: "wf_1", target: "wf_2", label: "Hồ sơ hợp lệ" },
+            { id: "e2_3", source: "wf_2", target: "wf_3", label: "Mẫu thử Đạt" },
+            { id: "e3_4", source: "wf_3", target: "wf_4", label: "Hiện trường Đạt" },
+          ],
+          status: "ACTIVE",
+        });
+      }
+      setShowWorkflowModal(true);
+    } catch (err) {
+      toast.error("Không thể tải quy trình NCC");
     }
   };
 
@@ -781,10 +944,20 @@ function PurchasingPage() {
       {/* HEADER & QUICK ACTIONS */}
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <PageHeader
-          title="Mua hàng, Nhà cung cấp & Kiểm định Tiếp nhận IQC"
-          description="Đánh giá định kỳ Nhà cung cấp (ASL), Kiểm soát tiếp nhận Lô nguyên liệu (FEFO) và Thẩm định COA theo ISO 22000:2018 Điều khoản 7.1.6."
+          title="Đánh Giá Nhà Cung Cấp & Tiếp Nhận Kiểm Định IQC"
+          description="Kiểm soát các quá trình, sản phẩm hoặc dịch vụ do bên ngoài cung cấp (ASL), tiếp nhận lô nguyên liệu (FEFO) và thẩm định COA theo ISO 22000:2018 Điều khoản 7.1.6."
         />
         <div className="flex flex-wrap items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleOpenSupplierWorkflow}
+            className="border-purple-300 text-purple-700 bg-purple-50 hover:bg-purple-100 flex items-center gap-1.5 font-semibold text-xs"
+          >
+            <GitFork className="h-4 w-4 text-purple-600" />
+            <span>Quy Trình Phê Duyệt ASL (Workflow)</span>
+          </Button>
+
           <Button
             variant="outline"
             size="sm"
@@ -929,96 +1102,98 @@ function PurchasingPage() {
       </div>
 
       {/* 4 NAVIGATION TABS */}
-      <div className="flex flex-wrap items-center gap-2 border-b border-border pb-2">
-        <button
-          onClick={() => {
-            setActiveTab("suppliers");
-            setSearchQuery("");
-          }}
-          className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all ${
-            activeTab === "suppliers"
-              ? "bg-primary text-primary-foreground shadow-sm"
-              : "text-muted-foreground hover:bg-muted hover:text-foreground"
-          }`}
-        >
-          <Building2 className="h-4 w-4" />
-          <span>Danh bạ Nhà cung cấp (ASL)</span>
-          <span
-            className={`ml-1 rounded-full px-1.5 py-0.5 text-xs ${
+      <div className="border-b border-border overflow-x-auto no-scrollbar pb-2">
+        <div className="flex items-center gap-2 min-w-max">
+          <button
+            onClick={() => {
+              setActiveTab("suppliers");
+              setSearchQuery("");
+            }}
+            className={`flex items-center gap-2 rounded-lg px-3.5 py-2 text-xs sm:text-sm font-medium transition-all ${
               activeTab === "suppliers"
-                ? "bg-white/20 text-white"
-                : "bg-muted text-muted-foreground"
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground"
             }`}
           >
-            {suppliers.length}
-          </span>
-        </button>
+            <Building2 className="h-4 w-4 shrink-0" />
+            <span>Danh bạ Nhà cung cấp (ASL)</span>
+            <span
+              className={`ml-1 rounded-full px-1.5 py-0.5 text-[11px] ${
+                activeTab === "suppliers"
+                  ? "bg-white/20 text-white"
+                  : "bg-muted text-muted-foreground"
+              }`}
+            >
+              {suppliers.length}
+            </span>
+          </button>
 
-        <button
-          onClick={() => {
-            setActiveTab("lots");
-            setSearchQuery("");
-          }}
-          className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all ${
-            activeTab === "lots"
-              ? "bg-primary text-primary-foreground shadow-sm"
-              : "text-muted-foreground hover:bg-muted hover:text-foreground"
-          }`}
-        >
-          <Boxes className="h-4 w-4" />
-          <span>Tiếp nhận Lô Nguyên liệu</span>
-          <span
-            className={`ml-1 rounded-full px-1.5 py-0.5 text-xs ${
+          <button
+            onClick={() => {
+              setActiveTab("lots");
+              setSearchQuery("");
+            }}
+            className={`flex items-center gap-2 rounded-lg px-3.5 py-2 text-xs sm:text-sm font-medium transition-all ${
               activeTab === "lots"
-                ? "bg-white/20 text-white"
-                : "bg-muted text-muted-foreground"
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground"
             }`}
           >
-            {lots.length}
-          </span>
-        </button>
+            <Boxes className="h-4 w-4 shrink-0" />
+            <span>Lô Nguyên vật liệu (FEFO)</span>
+            <span
+              className={`ml-1 rounded-full px-1.5 py-0.5 text-[11px] ${
+                activeTab === "lots"
+                  ? "bg-white/20 text-white"
+                  : "bg-muted text-muted-foreground"
+              }`}
+            >
+              {lots.length}
+            </span>
+          </button>
 
-        <button
-          onClick={() => {
-            setActiveTab("inspections");
-            setSearchQuery("");
-          }}
-          className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all ${
-            activeTab === "inspections"
-              ? "bg-primary text-primary-foreground shadow-sm"
-              : "text-muted-foreground hover:bg-muted hover:text-foreground"
-          }`}
-        >
-          <FileCheck className="h-4 w-4" />
-          <span>Kiểm định Tiếp nhận (IQC)</span>
-          <span
-            className={`ml-1 rounded-full px-1.5 py-0.5 text-xs ${
+          <button
+            onClick={() => {
+              setActiveTab("inspections");
+              setSearchQuery("");
+            }}
+            className={`flex items-center gap-2 rounded-lg px-3.5 py-2 text-xs sm:text-sm font-medium transition-all ${
               activeTab === "inspections"
-                ? "bg-white/20 text-white"
-                : "bg-muted text-muted-foreground"
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground"
             }`}
           >
-            {inspections.length}
-          </span>
-        </button>
+            <FileCheck className="h-4 w-4 shrink-0" />
+            <span>Biên bản Kiểm định (IQC)</span>
+            <span
+              className={`ml-1 rounded-full px-1.5 py-0.5 text-[11px] ${
+                activeTab === "inspections"
+                  ? "bg-white/20 text-white"
+                  : "bg-muted text-muted-foreground"
+              }`}
+            >
+              {inspections.length}
+            </span>
+          </button>
 
-        <button
-          onClick={() => {
-            setActiveTab("ai_coa");
-            if (!coaAiResult) handleAnalyzeCoa("SEAFOOD");
-          }}
-          className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all ${
-            activeTab === "ai_coa"
-              ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-sm"
-              : "text-purple-700 hover:bg-purple-50 dark:text-purple-400 dark:hover:bg-purple-950/30"
-          }`}
-        >
-          <Sparkles className="h-4 w-4" />
-          <span>Trợ lý AI Thẩm định COA</span>
-          <span className="rounded bg-purple-500/20 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider">
-            AI Tool
-          </span>
-        </button>
+          <button
+            onClick={() => {
+              setActiveTab("ai_coa");
+              if (!coaAiResult) handleAnalyzeCoa("SEAFOOD");
+            }}
+            className={`flex items-center gap-2 rounded-lg px-3.5 py-2 text-xs sm:text-sm font-medium transition-all ${
+              activeTab === "ai_coa"
+                ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-sm"
+                : "text-purple-700 hover:bg-purple-50 dark:text-purple-400 dark:hover:bg-purple-950/30"
+            }`}
+          >
+            <Sparkles className="h-4 w-4 shrink-0" />
+            <span>Trợ lý AI Thẩm định COA</span>
+            <span className="rounded bg-purple-500/20 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider">
+              AI Tool
+            </span>
+          </button>
+        </div>
       </div>
 
       {/* SEARCH & FILTER BAR (FOR TAB 1, 2, 3) */}
@@ -1230,6 +1405,16 @@ function PurchasingPage() {
                             <Button
                               variant="ghost"
                               size="sm"
+                              title="Đánh giá bằng Form Động (BM-NCC-01)"
+                              onClick={() => handleOpenVendorDynamicForm(s)}
+                              className="h-8 w-8 p-0 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
+                            >
+                              <Sliders className="h-4 w-4" />
+                            </Button>
+
+                            <Button
+                              variant="ghost"
+                              size="sm"
                               title="AI Đánh giá lại rủi ro"
                               onClick={() => handleAiEvaluateSupplier(s)}
                               className="h-8 w-8 p-0 text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-950/30"
@@ -1368,6 +1553,17 @@ function PurchasingPage() {
                         </td>
                         <td className="whitespace-nowrap px-4 py-3 text-right">
                           <div className="flex items-center justify-end gap-1">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              title="Nghiệm thu IQC bằng Form Động (FORM-IQC-01)"
+                              onClick={() => handleOpenIqcDynamicForm(lot)}
+                              className="h-8 gap-1 border-sky-500/30 bg-sky-500/10 text-sky-700 hover:bg-sky-500/20 dark:text-sky-300 font-semibold text-xs"
+                            >
+                              <Sliders className="h-3.5 w-3.5" />
+                              <span>Form IQC</span>
+                            </Button>
+
                             {lot.status === "PENDING_IQC" && (
                               <Button
                                 size="sm"
@@ -2974,6 +3170,53 @@ function PurchasingPage() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* ==================== MODAL: DYNAMIC FORM - SUPPLIER AUDIT (BM-NCC-01) ==================== */}
+      {showDynamicVendorModal && vendorFormTemplate && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-3xl">
+            <DynamicFormRenderer
+              template={vendorFormTemplate}
+              onSubmit={handleSaveVendorDynamicForm}
+              onCancel={() => setShowDynamicVendorModal(false)}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* ==================== MODAL: DYNAMIC FORM - IQC INSPECTION (FORM-IQC-01) ==================== */}
+      {showDynamicIqcModal && iqcFormTemplate && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-3xl">
+            <DynamicFormRenderer
+              template={iqcFormTemplate}
+              onSubmit={handleSaveIqcDynamicForm}
+              onCancel={() => setShowDynamicIqcModal(false)}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* ==================== MODAL: WORKFLOW BUILDER - SUPPLIER AUDIT FLOW ==================== */}
+      {showWorkflowModal && workflowTemplate && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-6xl h-[90vh] bg-white rounded-2xl overflow-hidden shadow-2xl border border-slate-200 flex flex-col">
+            <WorkflowBuilder
+              initialData={workflowTemplate}
+              onSave={async (wf) => {
+                try {
+                  await api.post("/builders/workflows", wf);
+                  toast.success("Đã lưu quy trình thẩm định nhà cung cấp thành công!");
+                  setShowWorkflowModal(false);
+                } catch (err: any) {
+                  toast.error("Lỗi khi lưu quy trình: " + (err.response?.data?.detail || err.message));
+                }
+              }}
+              onCancel={() => setShowWorkflowModal(false)}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

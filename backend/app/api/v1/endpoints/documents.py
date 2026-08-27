@@ -20,7 +20,7 @@ SEED_DOCUMENTS = [
         "current_version": "2.0",
         "status": "APPROVED",
         "effective_date": date(2026, 1, 1),
-        "file_url": "https://docs.google.com/document/d/1POL-FSMS-01/view"
+        "file_url": None
     },
     {
         "doc_code": "MAN-FSMS-01",
@@ -31,7 +31,7 @@ SEED_DOCUMENTS = [
         "current_version": "1.2",
         "status": "APPROVED",
         "effective_date": date(2026, 1, 15),
-        "file_url": "https://docs.google.com/document/d/1MAN-FSMS-01/view"
+        "file_url": None
     },
     {
         "doc_code": "SOP-HACCP-01",
@@ -42,7 +42,7 @@ SEED_DOCUMENTS = [
         "current_version": "2.1",
         "status": "APPROVED",
         "effective_date": date(2026, 2, 1),
-        "file_url": "https://docs.google.com/document/d/1SOP-HACCP-01/view"
+        "file_url": None
     },
     {
         "doc_code": "SOP-PRP-02",
@@ -53,7 +53,7 @@ SEED_DOCUMENTS = [
         "current_version": "1.0",
         "status": "APPROVED",
         "effective_date": date(2026, 2, 10),
-        "file_url": "https://docs.google.com/document/d/1SOP-PRP-02/view"
+        "file_url": None
     },
     {
         "doc_code": "SOP-IQC-03",
@@ -64,7 +64,7 @@ SEED_DOCUMENTS = [
         "current_version": "1.1",
         "status": "APPROVED",
         "effective_date": date(2026, 3, 1),
-        "file_url": "https://docs.google.com/document/d/1SOP-IQC-03/view"
+        "file_url": None
     },
     {
         "doc_code": "SOP-CAPA-04",
@@ -75,7 +75,7 @@ SEED_DOCUMENTS = [
         "current_version": "1.0",
         "status": "APPROVED",
         "effective_date": date(2026, 3, 15),
-        "file_url": "https://docs.google.com/document/d/1SOP-CAPA-04/view"
+        "file_url": None
     },
     {
         "doc_code": "WI-PROD-01",
@@ -86,7 +86,7 @@ SEED_DOCUMENTS = [
         "current_version": "1.0",
         "status": "APPROVED",
         "effective_date": date(2026, 4, 1),
-        "file_url": "https://docs.google.com/document/d/1WI-PROD-01/view"
+        "file_url": None
     },
     {
         "doc_code": "FORM-HACCP-01",
@@ -97,7 +97,7 @@ SEED_DOCUMENTS = [
         "current_version": "2.0",
         "status": "APPROVED",
         "effective_date": date(2026, 4, 5),
-        "file_url": "https://docs.google.com/spreadsheets/d/1FORM-HACCP-01/view"
+        "file_url": None
     },
     {
         "doc_code": "SOP-AUDIT-05",
@@ -108,7 +108,7 @@ SEED_DOCUMENTS = [
         "current_version": "0.9",
         "status": "DRAFT",
         "effective_date": date(2026, 6, 1),
-        "file_url": "https://docs.google.com/document/d/1SOP-AUDIT-05/view"
+        "file_url": None
     }
 ]
 
@@ -204,6 +204,7 @@ def create_document(doc_in: DocumentCreate, db: Session = Depends(get_db)):
         standard=doc_in.standard or "ISO 22000:2018",
         current_version=doc_in.current_version,
         status=doc_in.status,
+        content=doc_in.content,
         file_url=doc_in.file_url,
         approved_by=doc_in.approved_by,
         effective_date=doc_in.effective_date
@@ -246,6 +247,8 @@ def update_document(
         doc.current_version = doc_in.current_version
     if doc_in.status is not None:
         doc.status = doc_in.status
+    if doc_in.content is not None:
+        doc.content = doc_in.content
     if doc_in.file_url is not None:
         doc.file_url = doc_in.file_url
     if doc_in.approved_by is not None:

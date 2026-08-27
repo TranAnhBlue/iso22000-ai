@@ -302,6 +302,89 @@ CREATE TABLE management_reviews (
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
+-- 11. Bổ sung: Kế hoạch HACCP (HACCP Plans) & Quy trình công đoạn
+CREATE TABLE IF NOT EXISTS haccp_plans (
+    plan_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    plan_code VARCHAR(50) UNIQUE NOT NULL,
+    plan_name VARCHAR(255) NOT NULL,
+    product_line VARCHAR(100) DEFAULT 'Chế biến Thủy hải sản' NOT NULL,
+    version VARCHAR(20) DEFAULT '1.0' NOT NULL,
+    team_leader VARCHAR(100) DEFAULT 'Trưởng ban HACCP / QA' NOT NULL,
+    approved_by VARCHAR(100) DEFAULT 'Giám đốc Nhà máy',
+    effective_date DATE DEFAULT CURRENT_DATE,
+    scope_description TEXT,
+    status VARCHAR(30) DEFAULT 'ACTIVE' NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS process_steps (
+    step_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    plan_id UUID REFERENCES haccp_plans(plan_id) ON DELETE SET NULL,
+    step_number INT NOT NULL,
+    step_name VARCHAR(255) NOT NULL,
+    product_line VARCHAR(100) DEFAULT 'Chế biến Thủy hải sản' NOT NULL,
+    description TEXT,
+    is_ccp_or_oprp BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 12. Bổ sung: Trình tạo Biểu mẫu Động (Dynamic Form Builder) & Kết quả Gửi mẫu
+CREATE TABLE IF NOT EXISTS dynamic_form_templates (
+    template_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    module VARCHAR(50) NOT NULL, -- HACCP, PRP, IQC, SUPPLIER_AUDIT, EQUIPMENT, CAPA, INTERNAL_AUDIT, GENERAL
+    code VARCHAR(50) UNIQUE NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    version VARCHAR(20) DEFAULT '1.0' NOT NULL,
+    fields JSONB NOT NULL,
+    status VARCHAR(30) DEFAULT 'ACTIVE' NOT NULL,
+    created_by UUID REFERENCES users(user_id) ON DELETE SET NULL,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS dynamic_form_submissions (
+    submission_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    template_id UUID REFERENCES dynamic_form_templates(template_id) ON DELETE CASCADE,
+    reference_id VARCHAR(100),
+    reference_type VARCHAR(50),
+    submitted_by UUID REFERENCES users(user_id) ON DELETE SET NULL,
+    submitted_by_name VARCHAR(100),
+    form_data JSONB NOT NULL,
+    score NUMERIC(5,2),
+    status VARCHAR(30) DEFAULT 'COMPLETED' NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 13. Bổ sung: Trình thiết kế Quy trình Động (Dynamic Workflow Builder) & Tiến trình Thực thi
+CREATE TABLE IF NOT EXISTS dynamic_workflow_templates (
+    workflow_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    module VARCHAR(50) NOT NULL, -- HACCP_FLOW, DOC_APPROVAL, SUPPLIER_APPROVAL, CAPA_FLOW, AUDIT_FLOW, GENERAL
+    code VARCHAR(50) UNIQUE NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    version VARCHAR(20) DEFAULT '1.0' NOT NULL,
+    nodes JSONB NOT NULL,
+    edges JSONB NOT NULL,
+    status VARCHAR(30) DEFAULT 'ACTIVE' NOT NULL,
+    created_by UUID REFERENCES users(user_id) ON DELETE SET NULL,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS workflow_instances (
+    instance_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    workflow_id UUID REFERENCES dynamic_workflow_templates(workflow_id) ON DELETE CASCADE,
+    reference_id VARCHAR(100),
+    reference_type VARCHAR(50),
+    current_node_id VARCHAR(50) NOT NULL,
+    history JSONB DEFAULT '[]'::jsonb,
+    status VARCHAR(30) DEFAULT 'IN_PROGRESS' NOT NULL,
+    started_by UUID REFERENCES users(user_id) ON DELETE SET NULL,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Nạp sẵn 8 Vai trò (Roles) chuẩn vào hệ thống
 INSERT INTO roles (role_code, role_name, description) VALUES
 ('ADMIN', 'Quản trị hệ thống', 'Toàn quyền cấu hình, RBAC, audit log'),
