@@ -3,8 +3,44 @@ from uuid import UUID
 from datetime import datetime, date
 from pydantic import BaseModel, Field, ConfigDict
 
+# ==================== 0. HACCP PLAN SCHEMAS ====================
+class HACCPPlanBase(BaseModel):
+    plan_code: str = Field(..., max_length=50, description="Mã kế hoạch, ví dụ: HACCP-2026-CB01")
+    plan_name: str = Field(..., max_length=255, description="Tên kế hoạch HACCP")
+    product_line: str = Field(default="Chế biến Thủy hải sản", max_length=100)
+    version: str = Field(default="1.0", max_length=20)
+    team_leader: str = Field(default="Trưởng ban HACCP / QA", max_length=100)
+    approved_by: Optional[str] = Field(default="Giám đốc Nhà máy", max_length=100)
+    effective_date: Optional[date] = None
+    scope_description: Optional[str] = None
+    status: str = Field(default="ACTIVE", max_length=30)
+
+class HACCPPlanCreate(HACCPPlanBase):
+    pass
+
+class HACCPPlanUpdate(BaseModel):
+    plan_code: Optional[str] = None
+    plan_name: Optional[str] = None
+    product_line: Optional[str] = None
+    version: Optional[str] = None
+    team_leader: Optional[str] = None
+    approved_by: Optional[str] = None
+    effective_date: Optional[date] = None
+    scope_description: Optional[str] = None
+    status: Optional[str] = None
+
+class HACCPPlanResponse(HACCPPlanBase):
+    plan_id: UUID
+    step_count: int = 0
+    ccp_count: int = 0
+    created_at: Optional[datetime] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 # ==================== 1. PROCESS STEP SCHEMAS ====================
 class ProcessStepBase(BaseModel):
+    plan_id: Optional[UUID] = None
     step_number: int = Field(..., ge=1, description="Số thứ tự công đoạn trong lưu đồ")
     step_name: str = Field(..., max_length=255, description="Tên công đoạn sản xuất")
     product_line: str = Field(default="Chế biến Thủy hải sản", max_length=100)
@@ -15,6 +51,7 @@ class ProcessStepCreate(ProcessStepBase):
     pass
 
 class ProcessStepUpdate(BaseModel):
+    plan_id: Optional[UUID] = None
     step_number: Optional[int] = None
     step_name: Optional[str] = None
     product_line: Optional[str] = None
@@ -24,6 +61,7 @@ class ProcessStepUpdate(BaseModel):
 class ProcessStepResponse(ProcessStepBase):
     step_id: UUID
     hazard_count: int = 0
+    plan_name: Optional[str] = None
     created_at: Optional[datetime] = None
 
     model_config = ConfigDict(from_attributes=True)

@@ -23,6 +23,8 @@ import {
   RefreshCw,
   Menu,
   X,
+  QrCode,
+  Layers,
 } from "lucide-react";
 import { AIChatWidget } from "@/components/AIChatWidget";
 
@@ -35,8 +37,10 @@ const NAV = [
   { to: "/prp", label: "PRP / GMP / SSOP", icon: ClipboardCheck, module: "prp" as ModuleKey },
   { to: "/capa", label: "CAPA & Không phù hợp", icon: AlertTriangle, module: "capa" as ModuleKey },
   { to: "/equipment", label: "Thiết bị & Bảo trì", icon: Wrench, module: "equipment" as ModuleKey },
-  { to: "/inventory", label: "Kho & Truy xuất", icon: Package, module: "inventory" as ModuleKey },
-  { to: "/purchasing", label: "Mua hàng & NCC", icon: ShoppingCart, module: "purchasing" as ModuleKey },
+  { to: "/inventory", label: "Kho & Tồn kho FEFO", icon: Package, module: "inventory" as ModuleKey },
+  { to: "/traceability", label: "Truy xuất 1 Chạm", icon: QrCode, module: "traceability" as ModuleKey },
+  { to: "/purchasing", label: "Nhà cung cấp & IQC", icon: ShoppingCart, module: "purchasing" as ModuleKey },
+  { to: "/builder", label: "Biểu mẫu & Lưu đồ", icon: Layers, module: "builder" as ModuleKey },
 ] as const;
 
 export function AppShell({ children, module }: { children: ReactNode; module?: ModuleKey }) {

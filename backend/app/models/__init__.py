@@ -2,6 +2,7 @@ from .user import User, Role, user_roles
 from .document import Document
 from .purchasing import Supplier, MaterialLot, IQCInspection
 from .haccp import (
+    HACCPPlan,
     ProcessStep,
     HazardAnalysis,
     CCPDefinition,
@@ -17,6 +18,13 @@ from .inventory import (
     RetainedSample,
     OrderDispatch,
 )
+from .builder import (
+    DynamicFormTemplate,
+    DynamicFormSubmission,
+    DynamicWorkflowTemplate,
+    WorkflowInstance,
+)
+from .capa import NonConformance, CAPARecord
 
 __all__ = [
     "User",
@@ -26,6 +34,7 @@ __all__ = [
     "Supplier",
     "MaterialLot",
     "IQCInspection",
+    "HACCPPlan",
     "ProcessStep",
     "HazardAnalysis",
     "CCPDefinition",
@@ -40,4 +49,10 @@ __all__ = [
     "WarehouseInventory",
     "RetainedSample",
     "OrderDispatch",
+    "DynamicFormTemplate",
+    "DynamicFormSubmission",
+    "DynamicWorkflowTemplate",
+    "WorkflowInstance",
+    "NonConformance",
+    "CAPARecord",
 ]

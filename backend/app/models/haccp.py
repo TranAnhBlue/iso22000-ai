@@ -8,11 +8,31 @@ from sqlalchemy.sql import func
 from app.core.database import Base
 from app.models.user import User
 
+# ==================== 0. HACCP PLAN (KẾ HOẠCH HACCP TỔNG THỂ) ====================
+class HACCPPlan(Base):
+    __tablename__ = "haccp_plans"
+
+    plan_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    plan_code: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)  # HACCP-2026-CB01
+    plan_name: Mapped[str] = mapped_column(String(255), nullable=False)  # Kế hoạch HACCP Chế biến Chả cá Ba Sa
+    product_line: Mapped[str] = mapped_column(String(100), default="Chế biến Thủy hải sản", nullable=False)
+    version: Mapped[str] = mapped_column(String(20), default="1.0", nullable=False)
+    team_leader: Mapped[str] = mapped_column(String(100), default="Trưởng ban HACCP / QA", nullable=False)
+    approved_by: Mapped[Optional[str]] = mapped_column(String(100), default="Giám đốc Nhà máy", nullable=True)
+    effective_date: Mapped[date] = mapped_column(Date, default=date.today, nullable=False)
+    scope_description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    status: Mapped[str] = mapped_column(String(30), default="ACTIVE", nullable=False)  # ACTIVE, DRAFT, ARCHIVED
+    created_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    steps: Mapped[List["ProcessStep"]] = relationship("ProcessStep", back_populates="haccp_plan", cascade="all, delete-orphan")
+
+
 # ==================== 1. PROCESS STEPS (LƯU ĐỒ CÔNG ĐOẠN) ====================
 class ProcessStep(Base):
     __tablename__ = "process_steps"
 
     step_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    plan_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), ForeignKey("haccp_plans.plan_id", ondelete="SET NULL"), nullable=True)
     step_number: Mapped[int] = mapped_column(Integer, nullable=False)
     step_name: Mapped[str] = mapped_column(String(255), nullable=False)
     product_line: Mapped[str] = mapped_column(String(100), default="Chế biến Thủy hải sản", nullable=False)
@@ -20,6 +40,7 @@ class ProcessStep(Base):
     is_ccp_or_oprp: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     created_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
+    haccp_plan: Mapped[Optional["HACCPPlan"]] = relationship("HACCPPlan", back_populates="steps", lazy="joined")
     hazards: Mapped[List["HazardAnalysis"]] = relationship("HazardAnalysis", back_populates="process_step", cascade="all, delete-orphan")
     ccp_definitions: Mapped[List["CCPDefinition"]] = relationship("CCPDefinition", back_populates="process_step", cascade="all, delete-orphan")
 

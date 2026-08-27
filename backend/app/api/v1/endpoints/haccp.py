@@ -8,6 +8,7 @@ from sqlalchemy import select, desc, func, and_, or_
 
 from app.core.database import get_db
 from app.models.haccp import (
+    HACCPPlan,
     ProcessStep,
     HazardAnalysis,
     CCPDefinition,
@@ -17,6 +18,9 @@ from app.models.haccp import (
 )
 from app.models.user import User
 from app.schemas.haccp import (
+    HACCPPlanCreate,
+    HACCPPlanUpdate,
+    HACCPPlanResponse,
     ProcessStepCreate,
     ProcessStepUpdate,
     ProcessStepResponse,
@@ -47,19 +51,46 @@ router = APIRouter(prefix="/haccp", tags=["HACCP, CCP & PRP Management"])
 
 
 # ==================== SERIALIZER HELPERS ====================
+def format_plan_out(plan: Any) -> HACCPPlanResponse:
+    plan_id_val = getattr(plan, "plan_id", None)
+    steps_list = getattr(plan, "steps", []) or []
+    step_count = len(steps_list)
+    ccp_count = sum(1 for s in steps_list if getattr(s, "is_ccp_or_oprp", False))
+
+    return HACCPPlanResponse(
+        plan_id=UUID(str(plan_id_val)) if plan_id_val is not None else uuid.uuid4(),
+        plan_code=str(getattr(plan, "plan_code", "")),
+        plan_name=str(getattr(plan, "plan_name", "")),
+        product_line=str(getattr(plan, "product_line", "Chế biến Thủy hải sản")),
+        version=str(getattr(plan, "version", "1.0")),
+        team_leader=str(getattr(plan, "team_leader", "Trưởng ban HACCP / QA")),
+        approved_by=getattr(plan, "approved_by", "Giám đốc Nhà máy"),
+        effective_date=getattr(plan, "effective_date", None),
+        scope_description=getattr(plan, "scope_description", None),
+        status=str(getattr(plan, "status", "ACTIVE")),
+        step_count=step_count,
+        ccp_count=ccp_count,
+        created_at=getattr(plan, "created_at", None),
+    )
+
+
 def format_step_out(step: Any) -> ProcessStepResponse:
     step_id_val = getattr(step, "step_id", None)
+    plan_id_val = getattr(step, "plan_id", None)
+    plan_obj = getattr(step, "haccp_plan", None)
     hazards_list = getattr(step, "hazards", [])
     h_count = len(hazards_list) if hazards_list is not None else 0
     
     return ProcessStepResponse(
         step_id=UUID(str(step_id_val)) if step_id_val is not None else uuid.uuid4(),
+        plan_id=UUID(str(plan_id_val)) if plan_id_val is not None else None,
         step_number=int(getattr(step, "step_number", 1)),
         step_name=str(getattr(step, "step_name", "")),
         product_line=str(getattr(step, "product_line", "Chế biến Thủy hải sản")),
         description=getattr(step, "description", None),
         is_ccp_or_oprp=bool(getattr(step, "is_ccp_or_oprp", False)),
         hazard_count=h_count,
+        plan_name=str(getattr(plan_obj, "plan_name", "")) if plan_obj else None,
         created_at=getattr(step, "created_at", None),
     )
 
@@ -207,8 +238,24 @@ def seed_haccp_data_if_empty(db: Session):
     if has_steps and has_steps > 0:
         return
 
+    # 0. Seed HACCP Plan
+    plan1 = HACCPPlan(
+        plan_code="HACCP-2026-TUNA01",
+        plan_name="Kế hoạch HACCP Chế biến Cá Ngừ Đại Dương & Chả Cá Đông Lạnh",
+        product_line="Chế biến Cá ngừ đại dương xuất khẩu",
+        version="2.1",
+        team_leader="Nguyễn Văn An (Trưởng ban HACCP / QA)",
+        approved_by="Lê Hoàng Quân (Giám đốc Nhà máy)",
+        effective_date=date(2026, 1, 15),
+        scope_description="Áp dụng cho toàn bộ dây chuyền tiếp nhận, sơ chế, gia nhiệt, dò kim loại và cấp đông tại Nhà máy WCERT.",
+        status="ACTIVE",
+    )
+    db.add(plan1)
+    db.flush()
+
     # 1. Seed 6 Process Steps
     step1 = ProcessStep(
+        plan_id=plan1.plan_id,
         step_number=1,
         step_name="Tiếp nhận nguyên liệu cá ngừ tươi/đông lạnh",
         product_line="Chế biến Cá ngừ đại dương xuất khẩu",
@@ -216,6 +263,7 @@ def seed_haccp_data_if_empty(db: Session):
         is_ccp_or_oprp=True,
     )
     step2 = ProcessStep(
+        plan_id=plan1.plan_id,
         step_number=2,
         step_name="Rã đông & Rửa sơ chế",
         product_line="Chế biến Cá ngừ đại dương xuất khẩu",
@@ -223,6 +271,7 @@ def seed_haccp_data_if_empty(db: Session):
         is_ccp_or_oprp=False,
     )
     step3 = ProcessStep(
+        plan_id=plan1.plan_id,
         step_number=3,
         step_name="Gia nhiệt / Hấp chín tiệt trùng sơ bộ",
         product_line="Chế biến Cá ngừ đại dương xuất khẩu",
@@ -230,6 +279,7 @@ def seed_haccp_data_if_empty(db: Session):
         is_ccp_or_oprp=True,
     )
     step4 = ProcessStep(
+        plan_id=plan1.plan_id,
         step_number=4,
         step_name="Fillet tách xương & Dò kim loại",
         product_line="Chế biến Cá ngừ đại dương xuất khẩu",
@@ -237,6 +287,7 @@ def seed_haccp_data_if_empty(db: Session):
         is_ccp_or_oprp=True,
     )
     step5 = ProcessStep(
+        plan_id=plan1.plan_id,
         step_number=5,
         step_name="Cấp đông nhanh IQF & Đóng gói hút chân không",
         product_line="Chế biến Cá ngừ đại dương xuất khẩu",
@@ -244,6 +295,7 @@ def seed_haccp_data_if_empty(db: Session):
         is_ccp_or_oprp=True,
     )
     step6 = ProcessStep(
+        plan_id=plan1.plan_id,
         step_number=6,
         step_name="Bảo quản kho lạnh & Xuất hàng",
         product_line="Chế biến Cá ngừ đại dương xuất khẩu",
@@ -680,10 +732,111 @@ def get_haccp_stats(db: Session = Depends(get_db)):
     )
 
 
+# ==================== 1.5. HACCP PLANS CRUD ====================
+@router.get("/plans", response_model=List[HACCPPlanResponse])
+def get_haccp_plans(
+    q: Optional[str] = None,
+    product_line: Optional[str] = None,
+    status_filter: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
+    seed_haccp_data_if_empty(db)
+    stmt = select(HACCPPlan).order_by(HACCPPlan.created_at.desc())
+    if q:
+        stmt = stmt.where(or_(
+            HACCPPlan.plan_code.ilike(f"%{q.strip()}%"),
+            HACCPPlan.plan_name.ilike(f"%{q.strip()}%")
+        ))
+    if product_line and product_line != "ALL":
+        stmt = stmt.where(HACCPPlan.product_line == product_line)
+    if status_filter and status_filter != "ALL":
+        stmt = stmt.where(HACCPPlan.status == status_filter)
+
+    plans = db.scalars(stmt).unique().all()
+    return [format_plan_out(p) for p in plans]
+
+
+@router.get("/plans/{plan_id}", response_model=HACCPPlanResponse)
+def get_haccp_plan_detail(plan_id: UUID, db: Session = Depends(get_db)):
+    plan = db.get(HACCPPlan, plan_id)
+    if not plan:
+        raise HTTPException(status_code=404, detail="Không tìm thấy kế hoạch HACCP")
+    return format_plan_out(plan)
+
+
+@router.post("/plans", response_model=HACCPPlanResponse, status_code=status.HTTP_201_CREATED)
+def create_haccp_plan(payload: HACCPPlanCreate, db: Session = Depends(get_db)):
+    existing = db.scalar(select(HACCPPlan).where(HACCPPlan.plan_code == payload.plan_code.strip()))
+    if existing:
+        raise HTTPException(status_code=400, detail=f"Mã kế hoạch HACCP '{payload.plan_code}' đã tồn tại")
+
+    plan = HACCPPlan(
+        plan_code=payload.plan_code.strip(),
+        plan_name=payload.plan_name.strip(),
+        product_line=payload.product_line.strip(),
+        version=payload.version.strip(),
+        team_leader=payload.team_leader.strip(),
+        approved_by=payload.approved_by.strip() if payload.approved_by else "Giám đốc Nhà máy",
+        effective_date=payload.effective_date or date.today(),
+        scope_description=payload.scope_description.strip() if payload.scope_description else None,
+        status=payload.status,
+    )
+    db.add(plan)
+    db.commit()
+    db.refresh(plan)
+    return format_plan_out(plan)
+
+
+@router.put("/plans/{plan_id}", response_model=HACCPPlanResponse)
+def update_haccp_plan(plan_id: UUID, payload: HACCPPlanUpdate, db: Session = Depends(get_db)):
+    plan = db.get(HACCPPlan, plan_id)
+    if not plan:
+        raise HTTPException(status_code=404, detail="Không tìm thấy kế hoạch HACCP cần cập nhật")
+
+    if payload.plan_code and payload.plan_code.strip() != plan.plan_code:
+        dup = db.scalar(select(HACCPPlan).where(and_(HACCPPlan.plan_code == payload.plan_code.strip(), HACCPPlan.plan_id != plan_id)))
+        if dup:
+            raise HTTPException(status_code=400, detail=f"Mã kế hoạch '{payload.plan_code}' đã bị trùng")
+        plan.plan_code = payload.plan_code.strip()
+
+    if payload.plan_name is not None:
+        plan.plan_name = payload.plan_name.strip()
+    if payload.product_line is not None:
+        plan.product_line = payload.product_line.strip()
+    if payload.version is not None:
+        plan.version = payload.version.strip()
+    if payload.team_leader is not None:
+        plan.team_leader = payload.team_leader.strip()
+    if payload.approved_by is not None:
+        plan.approved_by = payload.approved_by.strip()
+    if payload.effective_date is not None:
+        plan.effective_date = payload.effective_date
+    if payload.scope_description is not None:
+        plan.scope_description = payload.scope_description.strip()
+    if payload.status is not None:
+        plan.status = payload.status
+
+    db.commit()
+    db.refresh(plan)
+    return format_plan_out(plan)
+
+
+@router.delete("/plans/{plan_id}")
+def delete_haccp_plan(plan_id: UUID, db: Session = Depends(get_db)):
+    plan = db.get(HACCPPlan, plan_id)
+    if not plan:
+        raise HTTPException(status_code=404, detail="Không tìm thấy kế hoạch HACCP cần xóa")
+    name = plan.plan_name
+    db.delete(plan)
+    db.commit()
+    return {"message": f"Đã xóa kế hoạch HACCP '{name}' thành công"}
+
+
 # ==================== 2. PROCESS STEPS CRUD ====================
 @router.get("/process-steps", response_model=List[ProcessStepResponse])
 def get_process_steps(
     q: Optional[str] = None,
+    plan_id: Optional[UUID] = None,
     product_line: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
@@ -691,6 +844,8 @@ def get_process_steps(
     stmt = select(ProcessStep).order_by(ProcessStep.step_number.asc())
     if q:
         stmt = stmt.where(ProcessStep.step_name.ilike(f"%{q.strip()}%"))
+    if plan_id:
+        stmt = stmt.where(ProcessStep.plan_id == plan_id)
     if product_line:
         stmt = stmt.where(ProcessStep.product_line == product_line)
     
@@ -701,6 +856,7 @@ def get_process_steps(
 @router.post("/process-steps", response_model=ProcessStepResponse, status_code=status.HTTP_201_CREATED)
 def create_process_step(payload: ProcessStepCreate, db: Session = Depends(get_db)):
     step = ProcessStep(
+        plan_id=payload.plan_id,
         step_number=payload.step_number,
         step_name=payload.step_name,
         product_line=payload.product_line,

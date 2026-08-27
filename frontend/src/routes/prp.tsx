@@ -39,10 +39,13 @@ import {
   Droplets,
   Bug,
   Sparkle,
+  Sliders,
 } from "lucide-react";
 import api from "@/lib/api";
 import { toast } from "sonner";
 import logoImg from "@/assets/logo.png";
+import { DynamicFormRenderer } from "@/components/builder/DynamicFormRenderer";
+import type { FormTemplateData } from "@/components/builder/types";
 
 export const Route = createFileRoute("/prp")({
   head: () => ({
@@ -166,6 +169,11 @@ function PRPModule() {
   });
 
   const [showPrintModal, setShowPrintModal] = useState(false);
+
+  // Dynamic Form States
+  const [showDynamicGmpModal, setShowDynamicGmpModal] = useState(false);
+  const [gmpFormTemplate, setGmpFormTemplate] = useState<FormTemplateData | null>(null);
+  const [selectedProgramForForm, setSelectedProgramForForm] = useState<PRPProgram | null>(null);
 
   // Fetch all data
   const fetchData = async () => {
@@ -349,6 +357,88 @@ function PRPModule() {
     }
   };
 
+  // ==================== DYNAMIC GMP FORM HANDLERS ====================
+  const handleOpenGmpDynamicForm = async (program?: PRPProgram) => {
+    setSelectedProgramForForm(program || null);
+    try {
+      const res = await api.get("/builders/forms");
+      const found = res.data.find((f: any) => f.code === "FORM-GMP-01");
+      if (found) {
+        setGmpFormTemplate(found);
+      } else {
+        setGmpFormTemplate({
+          module: "PRP",
+          code: "FORM-GMP-01",
+          title: "Phiếu Kiểm Tra Vệ Sinh Nhà Xưởng & Thiết Bị (GMP-01)",
+          description: "Giám sát tình trạng vệ sinh bề mặt tiếp xúc thực phẩm, bảo hộ lao động và hệ thống thoát sàn trước ca sản xuất.",
+          version: "1.0",
+          fields: [
+            { id: "g_shift", name: "shift_name", label: "Ca Sản Xuất", type: "SELECT", options: ["Ca 1 (06:00 - 14:00)", "Ca 2 (14:00 - 22:00)", "Ca 3 (22:00 - 06:00)"], required: true, default_value: "Ca 1 (06:00 - 14:00)" },
+            { id: "g_area", name: "area_checked", label: "Khu Vực / Dây Chuyền Giám Sát", type: "TEXT", required: true, default_value: program ? program.program_name : "Khu vực sơ chế & chế biến chính" },
+            { id: "g_surface", name: "surface_clean", label: "Bề mặt bàn chế biến, dao, thớt đã khử trùng bằng Chlorine 200ppm?", type: "YESNO", required: true, default_value: true },
+            { id: "g_ppe", name: "ppe_compliance", label: "100% công nhân mang đầy đủ mũ trùm, khẩu trang, găng tay và ủng?", type: "YESNO", required: true, default_value: true },
+            { id: "g_drain", name: "drain_clean", label: "Hệ thống thoát sàn và rãnh thu gom phế thải thông thoáng, không ứ đọng?", type: "YESNO", required: true, default_value: true },
+            { id: "g_pest", name: "no_pest_activity", label: "Bẫy côn trùng, đèn diệt ruồi hoạt động tốt, không có dấu vết dịch hại?", type: "YESNO", required: true, default_value: true },
+            { id: "g_score", name: "compliance_score", label: "Đánh giá mức độ tuân thủ (Thang điểm 1-5 sao)", type: "RATING", required: true, default_value: 5 },
+            { id: "g_notes", name: "finding_notes", label: "Ghi chú bất thường (nếu có)", type: "TEXT", required: false, default_value: "Mọi tiêu chuẩn vệ sinh đều đạt yêu cầu trước khi bắt đầu ca." },
+          ],
+          status: "ACTIVE",
+        });
+      }
+      setShowDynamicGmpModal(true);
+    } catch (err) {
+      toast.error("Không thể tải biểu mẫu GMP");
+    }
+  };
+
+  const handleSaveGmpDynamicForm = async (vals: Record<string, any>) => {
+    try {
+      await api.post("/builders/submissions", {
+        template_id: gmpFormTemplate?.template_id || "FORM-GMP-01",
+        reference_id: selectedProgramForForm ? selectedProgramForForm.program_id : "PRP-GLOBAL",
+        reference_type: "PRP_PROGRAM",
+        submitted_by_name: "Giám Sát Viên GMP / SSOP",
+        form_data: vals,
+        status: "COMPLETED",
+      });
+
+      // Tạo bản ghi log checklist
+      const progId = selectedProgramForForm ? selectedProgramForForm.program_id : (programs[0]?.program_id || "PRP-01");
+      const shift = vals["shift_name"] || "Ca 1";
+      const surfacePass = vals["surface_clean"] !== false && vals["surface_clean"] !== "false";
+      const ppePass = vals["ppe_compliance"] !== false && vals["ppe_compliance"] !== "false";
+      const drainPass = vals["drain_clean"] !== false && vals["drain_clean"] !== "false";
+      const pestPass = vals["no_pest_activity"] !== false && vals["no_pest_activity"] !== "false";
+
+      const totalItems = 4;
+      const passedItems = [surfacePass, ppePass, drainPass, pestPass].filter(Boolean).length;
+      const compRate = Math.round((passedItems / totalItems) * 100);
+
+      await api.post("/haccp/prp-checklists", {
+        program_id: progId,
+        shift_name: shift,
+        check_date: new Date().toISOString().split("T")[0],
+        check_time: new Date().toTimeString().slice(0, 5),
+        items_checked: [
+          { item: "Vệ sinh bề mặt bàn chế biến & dụng cụ", result: surfacePass ? "Đạt" : "Không đạt" },
+          { item: "Trang phục bảo hộ công nhân", result: ppePass ? "Đạt" : "Không đạt" },
+          { item: "Thoát sàn & rãnh thu gom", result: drainPass ? "Đạt" : "Không đạt" },
+          { item: "Kiểm soát dịch hại & bẫy côn trùng", result: pestPass ? "Đạt" : "Không đạt" },
+        ],
+        compliance_rate: compRate,
+        status: compRate === 100 ? "COMPLIANT" : compRate >= 75 ? "ACTION_REQUIRED" : "NON_COMPLIANT",
+        finding_notes: vals["finding_notes"] || "Kiểm tra theo biểu mẫu GMP-01",
+        corrective_action: compRate < 100 ? "Khắc phục ngay trước khi vận hành" : undefined,
+      });
+
+      toast.success("Đã ghi nhận nhật ký checklist GMP bằng Form Động thành công!");
+      setShowDynamicGmpModal(false);
+      fetchData();
+    } catch (err: any) {
+      toast.error("Lỗi khi lưu kết quả: " + (err.response?.data?.detail || err.message));
+    }
+  };
+
   // Helper styles
   const getGroupBadge = (group: string) => {
     if (group === "GMP") return <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-500/10 text-blue-700 border border-blue-200">GMP</span>;
@@ -388,6 +478,16 @@ function PRPModule() {
           description="Thư viện quy chuẩn thực hành sản xuất tốt (GMP), quy trình vệ sinh chuẩn (SSOP), 5S và giám sát checklist theo ca sản xuất theo ISO 22000:2018 Điều khoản 8.2."
         />
         <div className="flex flex-wrap items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handleOpenGmpDynamicForm()}
+            className="border-emerald-300 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 flex items-center gap-1.5 font-semibold text-xs"
+          >
+            <Sliders className="h-4 w-4 text-emerald-600" />
+            <span>Ghi Nhật Ký Bằng Form Động (GMP-01)</span>
+          </Button>
+
           <Button variant="outline" size="sm" onClick={fetchData} disabled={loading}>
             <RefreshCw className={`h-4 w-4 mr-1.5 ${loading ? "animate-spin" : ""}`} />
             Làm mới
@@ -548,11 +648,16 @@ function PRPModule() {
                   <p><span className="text-muted-foreground">Phụ trách:</span> <span className="font-medium text-foreground">{p.responsible_dept}</span></p>
                 </div>
 
-                <div className="pt-2 border-t flex items-center justify-between text-xs">
-                  <span className="text-muted-foreground">{p.checklist_count} lượt kiểm tra</span>
-                  <Button size="sm" variant="outline" onClick={() => handleOpenCreateChecklist(p)} className="text-xs h-7 border-emerald-300 text-emerald-700 hover:bg-emerald-50">
-                    <Plus className="h-3 w-3 mr-1" /> Tạo Checklist Ca
-                  </Button>
+                <div className="pt-2 border-t flex items-center justify-between text-xs gap-1.5">
+                  <span className="text-muted-foreground">{p.checklist_count} lượt kiểm</span>
+                  <div className="flex items-center gap-1">
+                    <Button size="sm" variant="outline" onClick={() => handleOpenGmpDynamicForm(p)} className="text-xs h-7 border-sky-300 text-sky-700 hover:bg-sky-50">
+                      <Sliders className="h-3 w-3 mr-1" /> Form Động
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => handleOpenCreateChecklist(p)} className="text-xs h-7 border-emerald-300 text-emerald-700 hover:bg-emerald-50">
+                      <Plus className="h-3 w-3 mr-1" /> Checklist
+                    </Button>
+                  </div>
                 </div>
               </div>
             ))}
@@ -950,6 +1055,19 @@ function PRPModule() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* ==================== MODAL: DYNAMIC GMP / PRP FORM ==================== */}
+      {showDynamicGmpModal && gmpFormTemplate && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-3xl">
+            <DynamicFormRenderer
+              template={gmpFormTemplate}
+              onSubmit={handleSaveGmpDynamicForm}
+              onCancel={() => setShowDynamicGmpModal(false)}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

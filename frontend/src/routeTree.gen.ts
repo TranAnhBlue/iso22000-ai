@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuditsRouteImport } from './routes/audits'
+import { Route as BuilderRouteImport } from './routes/builder'
 import { Route as CapaRouteImport } from './routes/capa'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as DocumentsRouteImport } from './routes/documents'
@@ -30,6 +31,11 @@ const IndexRoute = IndexRouteImport.update({
 const AuditsRoute = AuditsRouteImport.update({
   id: '/audits',
   path: '/audits',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BuilderRoute = BuilderRouteImport.update({
+  id: '/builder',
+  path: '/builder',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CapaRoute = CapaRouteImport.update({
@@ -86,6 +92,7 @@ const TraceabilityRoute = TraceabilityRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/audits': typeof AuditsRoute
+  '/builder': typeof BuilderRoute
   '/capa': typeof CapaRoute
   '/dashboard': typeof DashboardRoute
   '/documents': typeof DocumentsRoute
@@ -100,6 +107,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/audits': typeof AuditsRoute
+  '/builder': typeof BuilderRoute
   '/capa': typeof CapaRoute
   '/dashboard': typeof DashboardRoute
   '/documents': typeof DocumentsRoute
@@ -115,6 +123,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/audits': typeof AuditsRoute
+  '/builder': typeof BuilderRoute
   '/capa': typeof CapaRoute
   '/dashboard': typeof DashboardRoute
   '/documents': typeof DocumentsRoute
@@ -131,6 +140,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/audits'
+    | '/builder'
     | '/capa'
     | '/dashboard'
     | '/documents'
@@ -145,6 +155,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/audits'
+    | '/builder'
     | '/capa'
     | '/dashboard'
     | '/documents'
@@ -159,6 +170,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/audits'
+    | '/builder'
     | '/capa'
     | '/dashboard'
     | '/documents'
@@ -174,6 +186,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuditsRoute: typeof AuditsRoute
+  BuilderRoute: typeof BuilderRoute
   CapaRoute: typeof CapaRoute
   DashboardRoute: typeof DashboardRoute
   DocumentsRoute: typeof DocumentsRoute
@@ -200,6 +213,13 @@ declare module '@tanstack/react-router' {
       path: '/audits'
       fullPath: '/audits'
       preLoaderRoute: typeof AuditsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/builder': {
+      id: '/builder'
+      path: '/builder'
+      fullPath: '/builder'
+      preLoaderRoute: typeof BuilderRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/capa': {
@@ -278,6 +298,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuditsRoute: AuditsRoute,
+  BuilderRoute: BuilderRoute,
   CapaRoute: CapaRoute,
   DashboardRoute: DashboardRoute,
   DocumentsRoute: DocumentsRoute,

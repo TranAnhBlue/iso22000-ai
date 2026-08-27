@@ -53,10 +53,22 @@ Cơ sở dữ liệu được chuẩn hóa cho toàn bộ 10 luồng nghiệp v�
    - `ccp_monitoring_logs`: `log_id` (UUID PK), `ccp_id` (FK `ccp_definitions`), `batch_number`, `checked_by` (FK `users`), `test_time`, `measured_value`, `unit`, `measured_details` (JSONB), `is_critical_limit_exceeded`, `status` (NORMAL, WARNING, CRITICAL), `deviation_action`, `verification_status`, `verified_by` (FK `users`), `notes`, `created_at`.
    - `prp_programs`: `program_id` (UUID PK), `program_code` (Unique), `program_name`, `group` (GMP, SSOP, 5S, PEST_CONTROL, WATER_SAFETY), `scope`, `frequency`, `responsible_dept`, `status`, `description`, `created_at`.
    - `prp_checklist_logs`: `check_id` (UUID PK), `program_id` (FK `prp_programs`), `shift_name`, `check_date`, `check_time`, `checked_by` (FK `users`), `items_checked` (JSONB), `compliance_rate`, `status` (COMPLIANT, ACTION_REQUIRED, NON_COMPLIANT), `finding_notes`, `corrective_action`, `created_at`.
-6. **Kho & Quản lý Lô FEFO, Truy xuất Nguồn gốc (Luồng 3 & 4):** `materials`, `batches`, `finished_products`, `traceability_logs`.
-7. **Thiết bị, Bảo trì & Hiệu chuẩn (Luồng 2):** `equipments`, `maintenance_logs`, `calibration_logs`.
-8. **Sự không phù hợp & CAPA (Luồng 5):** `non_conformances`, `capa_actions`.
-9. **Đánh giá nội bộ & Đào tạo nhân sự (Luồng 6):** `internal_audits`, `audit_findings`, `training_programs`, `training_records`.
+6. **Kho FEFO, Lưu Mẫu & Truy Xuất Nguồn Gốc (Luồng 3 & 4 - Phase 6):**
+   - `materials`, `batches`, `finished_products`, `traceability_logs`.
+   - Sơ đồ phả hệ cây truy vết ngược/xuôi (Backward/Forward Traceability 4 tầng), mã QR ma trận RFC thực tế, kho biệt trữ an toàn.
+7. **Thiết Bị, Bảo Trì & Hiệu Chuẩn (Luồng 2 - Phase 5):**
+   - `equipments`: `equipment_id` (UUID PK), `equipment_code`, `equipment_name`, `category`, `location`, `status`, `specs` (JSONB).
+   - `equipment_maintenance_logs`: `log_id` (UUID PK), `equipment_id` (FK), `maintenance_type`, `food_grade_lube_used` (NSF H1), `sanitation_post_maintenance`, `performed_by`.
+   - `equipment_calibration_logs`: `log_id` (UUID PK), `equipment_id` (FK), `calibration_agency` (QUATEST/VILAS), `certificate_number`, `calibration_result`, `valid_until`.
+8. **Sự Không Phù Hợp & Hành Động Khắc Phục CAPA (Luồng 5 - Phase 7):**
+   - `non_conformances`: `nc_id` (UUID PK), `nc_number` (Unique), `title`, `source` (AUDIT, CCP_DEVIATION, CUSTOMER_COMPLAINT, IQC, STORAGE, QC_INSPECTION), `severity` (CRITICAL, MAJOR, MINOR), `occurred_date`, `occurred_location`, `description`, `immediate_action` (ISO 8.9.2), `affected_lot_number`, `affected_quantity`, `reported_by_name`, `status` (OPEN, INVESTIGATING, CAPA_CREATED, CLOSED).
+   - `capa_records`: `capa_id` (UUID PK), `nc_id` (FK `non_conformances.nc_id`), `capa_number` (Unique), `title`, `root_cause_method` (5_WHYS, FISHBONE_5M), `root_cause_analysis` (JSONB), `root_cause_summary`, `corrective_action` (ISO 8.9.3), `preventive_action` (ISO 10.1), `assigned_to_name`, `assigned_dept`, `target_date`, `completed_date`, `verified_by_name`, `verification_date`, `verification_result`, `verification_status` (PENDING_VERIFY, EFFECTIVE, INEFFECTIVE), `status` (IN_PROGRESS, IMPLEMENTED, VERIFIED, CLOSED).
+9. **Studio Biểu Mẫu Động & Lưu Đồ Quy Trình Phê Duyệt (`/builder`):**
+   - `form_templates`: `template_id` (UUID PK), `template_code` (Unique), `title`, `module`, `fields` (JSONB), `version`, `is_active`.
+   - `form_submissions`: `submission_id` (UUID PK), `template_id` (FK), `submitted_by_name`, `form_data` (JSONB), `status`.
+   - `workflows`: `workflow_id` (UUID PK), `workflow_code` (Unique), `name`, `module`, `nodes` (JSONB), `edges` (JSONB), `version`, `status`.
+10. **Đánh Giá Nội Bộ & Đào Tạo Nhân Sự (Luồng 6 - Phase 8):**
+    - `internal_audits`, `audit_findings`, `audit_checklists`, `training_courses`, `training_records`, `health_declarations`.
 
 ---
 
@@ -197,7 +209,7 @@ Cơ sở dữ liệu được chuẩn hóa cho toàn bộ 10 luồng nghiệp v�
 - Xây dựng AppShell, Sidebar điều hướng động theo RBAC và giao diện khung cho 10 phân hệ.
 - Tích hợp bộ nhận diện thương hiệu WCERT (Logo, Favicon, Meta).
 
-### 🗓️ Hôm nay (Giai đoạn DMS, Purchasing, HACCP & PRP)
+### 🗓️ Hôm nay (Giai đoạn DMS, Purchasing, HACCP, PRP, Equipment, Inventory, Traceability & CAPA)
 - **Hoàn thiện Phân hệ Kiểm soát Tài liệu & SOP (Luồng 7 DMS - Phase 2):**
   - Xây dựng Model `Document`, API CRUD `/api/v1/documents`, Checklist Điều khoản 7.5 và Trợ lý AI Soạn thảo SOP.
 - **Hoàn thiện Phân hệ Mua hàng, Nhà cung cấp & IQC Tiếp nhận (Luồng 1 - Phase 3):**
@@ -209,10 +221,20 @@ Cơ sở dữ liệu được chuẩn hóa cho toàn bộ 10 luồng nghiệp v�
   - Tự động nạp dữ liệu mẫu 6 máy móc công nghiệp (Nồi tiệt trùng cao áp Retort, Máy dò kim loại, Cân phân tích KCS, Cấp đông IQF, Khúc xạ kế Brix, Máy hút chân không Multivac).
   - Kiểm soát bắt buộc tiêu chuẩn an toàn thực phẩm: **Dầu mỡ bôi trơn NSF H1** và **Vệ sinh khử trùng hiện trường sau bảo trì**.
   - Tái cấu trúc toàn diện `frontend/src/routes/equipment.tsx` với 4 thẻ KPI, 4 Tabs nghiệp vụ, 2 Biểu mẫu In chuẩn **BM-TB-01** (Phiếu lý lịch thiết bị) & **BM-HC-02** (Biên bản hiệu chuẩn).
-  - **Tối ưu hóa Trải nghiệm In Ấn & Xuất PDF chuẩn ISO 22000:**
-    - Thay thế toàn bộ việc mở popup tab trắng `about:blank` bằng **Modal Xem Trước Trực Quan In-App** đẹp mắt với Header có **Logo chính thức WCERT (`/logo.png`)**, thông tin tổ chức, mã biểu mẫu ISO, bảng thông số định dạng chuẩn A4 và khối chữ ký 2 bên/3 bên.
-    - Xây dựng helper `printHtml` in ngầm qua hidden iframe mượt mà, người dùng không bị chuyển trang full-screen khi nhấn nút in hoặc lưu PDF.
-  - Kiểm thử toàn bộ 15/15 API Endpoints đạt `200 OK`, TypeScript `npx tsc --noEmit` đạt **0 lỗi (Zero Errors)**.
+- **Hoàn thiện Phân hệ Kho FEFO, Lưu Mẫu & Truy Xuất Nguồn Gốc 1 Chạm (Luồng 3 & 4 - Phase 6):**
+  - Quản lý xuất nhập tồn tự động sắp xếp theo thứ tự ưu tiên FEFO, bản đồ ma trận ô/kệ kho lạnh, quản lý mẫu lưu nghiệm thức và mẻ sản xuất.
+  - Sơ đồ Cây Phả Hệ Truy Vết 4 Tầng (Backward & Forward Traceability), sinh mã QR ma trận chuẩn RFC bằng thư viện `qrcode`, lệnh khóa biệt trữ tồn kho khẩn cấp và in Biểu mẫu ISO BM-TX-01.
+- **Hoàn thiện Phân hệ Sự Không Phù Hợp & Hành Động Khắc Phục CAPA (Luồng 5 - Phase 7):**
+  - Xây dựng 2 ORM Models `NonConformance` và `CAPARecord` trong `backend/app/models/capa.py`.
+  - Cung cấp 12+ API RESTful tại `/api/v1/capa` cho CRUD NC, CRUD CAPA, thẩm tra sau 30 ngày, thống kê KPI và 3 Trợ lý AI (AI 5-Why, AI Fishbone 5M+1E, AI Suggest Actions).
+  - Giao diện `frontend/src/routes/capa.tsx` trực quan: Bảng sự cố NC không cắt chữ thông tin quan trọng, thẻ kế hoạch CAPA, Studio AI phân tích nguyên nhân gốc rễ, tab thẩm tra 30 ngày và in ấn BM-CAPA-01.
+- **Tối ưu hóa Trực quan & Độ Tin Cậy Biểu Mẫu Động (Dynamic Form & Workflow Studio):**
+  - Chuẩn hóa `DynamicFormRenderer.tsx`: Header ghim đỉnh (Sticky Top) luôn hiển thị đầy đủ mã hiệu, phiên bản, điểm tuân thủ và nút Đóng `[X]`; Thân form cuộn mượt mà; Footer ghim đáy (Sticky Bottom).
+  - Sửa lớp bọc Modal trong `prp.tsx`, `purchasing.tsx`, `haccp.tsx` để không bị đẩy lệch Header trên mọi màn hình.
+- **Tối ưu hóa Trải nghiệm In Ấn & Xuất PDF chuẩn ISO 22000:**
+  - Thay thế toàn bộ việc mở popup tab trắng `about:blank` bằng **Modal Xem Trước Trực Quan In-App** đẹp mắt với Header có **Logo chính thức WCERT (`/logo.png`)**, thông tin tổ chức, mã biểu mẫu ISO, bảng thông số định dạng chuẩn A4 và khối chữ ký 2 bên/3 bên.
+  - Xây dựng helper `printHtml` in ngầm qua hidden iframe mượt mà, người dùng không bị chuyển trang full-screen khi nhấn nút in hoặc lưu PDF.
+- Toàn bộ kiểm thử Backend API đạt `200 OK`, TypeScript `npx tsc --noEmit` đạt **0 lỗi (Zero Errors)**.
 
 ---
 
@@ -221,14 +243,25 @@ Cơ sở dữ liệu được chuẩn hóa cho toàn bộ 10 luồng nghiệp v�
 - [x] **Phase 1: Phân quyền RBAC & Quản lý Tổ chức** (`/organization`) — *Đã hoàn thành*
 - [x] **Phase 2: Luồng 7 — Kiểm soát Tài liệu & SOP** (`/documents`) — *Đã hoàn thành*
 - [x] **Phase 3: Luồng 1 — Mua hàng & IQC Nhà cung ứng** (`/purchasing`) — *Đã hoàn thành*
-- [x] **Phase 4: Luồng 2 — Kế hoạch HACCP, Giám sát CCP & Vệ sinh PRP** (`/haccp`, `/prp`) — *Đã hoàn thành*
+- [x] **Phase 4: Luồng 2 — Kế hoạch HACCP, Giám sát CCP & Vệ sinh PRP** (`/haccp`, `/prp`) — *Đã nâng cấp chuẩn ISO 22000:2018*
+  - **Kế hoạch HACCP Tổng thể (`HACCPPlan`):** Quản lý hồ sơ kế hoạch HACCP theo nhóm sản phẩm/dây chuyền, phiên bản, trưởng ban HACCP, người phê duyệt và phạm vi áp dụng.
+  - **Lưu đồ Công đoạn Tuần tự (`ProcessStep` Flow Diagram - ISO 8.5.1):** Sơ đồ các bước sản xuất trực quan từ tiếp nhận đến thành phẩm, tích hợp gắn điểm kiểm soát tới hạn CCP/oPRP và các cờ cảnh báo.
+  - **Ma trận Phân tích Mối nguy Codex Q1-Q4 (ISO 8.5.2):** Đánh giá 4 loại mối nguy (Sinh học, Hóa học, Vật lý, Dị nguyên), tính điểm ma trận rủi ro Khả năng × Mức độ nghiêm trọng, phân loại theo Cây quyết định Codex.
+  - **Kế hoạch Kiểm soát CCP & oPRP (ISO 8.5.4):** Thiết lập giới hạn tới hạn (Critical Limits), tần suất/phương pháp giám sát và biện pháp khắc phục khi có độ lệch.
+  - **Nhật ký Giám sát Đo đạc Realtime:** Đo đạc nhiệt độ/thời gian theo ca/mẻ, tự động cảnh báo Đạt / Sát ngưỡng / Vi phạm giới hạn tới hạn (CRITICAL).
+  - **Trợ lý AI HACCP:** Gợi ý mối nguy theo công đoạn và lập kế hoạch xử lý sự cố độ lệch CCP khẩn cấp.
+- [x] **Dynamic Form & Workflow Studio (`/builder`):**
+  - **Form Builder & DynamicFormRenderer:** Thiết kế biểu mẫu tùy biến động (Text, Number với min/max/unit, Select dropdown, Yes/No, Rating 1-5 sao, Date, Time, Signature, Photo), tự động tính điểm tuân thủ, lưu lịch sử nộp dữ liệu (`/api/v1/builders/forms`, `/api/v1/builders/submissions`). Đã nạp sẵn 4 biểu mẫu chuẩn ISO: `FORM-GMP-01`, `FORM-CCP-MONITOR`, `FORM-IQC-01`, `FORM-VENDOR-01`.
+  - **Workflow Builder & Interactive Pipeline:** Thiết kế sơ đồ lưu đồ công đoạn và quy trình phê duyệt đa cấp trực quan với các nút Process, CCP Check, Approval, Decision, End và các đường chuyển tiếp có điều kiện. Đã nạp sẵn 3 quy trình chuẩn: `WF-HACCP-CHACA`, `WF-SOP-APPROVAL`, `WF-CAPA-5STEPS`.
 - [x] **Phase 5: Luồng 2 — Thiết bị, Hiệu chuẩn & Bảo trì** (`/equipment`) — *Đã hoàn thành*
 - [x] **Phase 6: Luồng 3 & 4 — Quản lý Kho, Lưu mẫu & Truy xuất nguồn gốc 1 chạm** (`/inventory`, `/traceability`) — *Đã hoàn thành*
-  - **Kho FEFO & Lưu Mẫu (`/inventory`):** Quản lý xuất nhập tồn tự động tính toán thứ tự ưu tiên FEFO (`EXPIRED`, `CRITICAL_NEAR_EXPIRY`, `NEAR_EXPIRY`, `GOOD`), bản đồ ma trận vị trí kệ/ô kho lạnh (Kho đông $\le -18^\circ\text{C}$, Kho mát $0-4^\circ\text{C}$, Kho khô $\le 25^\circ\text{C}$), quản lý mẫu lưu nghiệm thức (HSD + 30 ngày) và mẻ sản xuất/phiếu xuất kho.
-  - **Truy xuất Nguồn gốc 1 Chạm (`/traceability`):**
-    - *Truy xuất ngược (Backward):* Sơ đồ Cây phả hệ 4 tầng: `NCC/Nguyên liệu IQC` $\rightarrow$ `Mẻ SX & CCP` $\rightarrow$ `Tồn kho & Mẫu lưu` $\rightarrow$ `Đơn xuất & Khách hàng`.
-    - *Truy xuất xuôi (Forward & Mock Recall):* Quét toàn bộ mẻ đã dùng nguyên liệu sự cố, kích hoạt nút khóa biệt trữ tồn kho và danh sách khách hàng cần thu hồi khẩn trong 2 giờ.
-    - *In Biểu mẫu ISO BM-TX-01:* Biên bản Truy xuất nguồn gốc có Logo WCERT chuẩn đẹp, in trực tiếp trong trang.
-- [ ] **Phase 7 [BƯỚC KẾ TIẾP]: Luồng 5 — Sự không phù hợp & Hành động khắc phục CAPA** (`/capa`)
-- [ ] **Phase 8: Luồng 6 — Đào tạo nhân sự, Đánh giá nội bộ & Khai báo sức khỏe** (`/audits`)
+  - **Kho FEFO & Lưu Mẫu (`/inventory`):** Quản lý xuất nhập tồn tự động tính toán thứ tự ưu tiên FEFO, bản đồ ma trận vị trí kệ/ô kho lạnh, quản lý mẫu lưu nghiệm thức và mẻ sản xuất/phiếu xuất kho.
+  - **Truy xuất Nguồn gốc 1 Chạm (`/traceability`):** Sơ đồ Cây phả hệ 4 tầng (Backward & Forward Recall), sinh mã QR thật ma trận chuẩn RFC bằng thư viện `qrcode`, cô lập in ấn tem nhãn dán sticker không bị dính giao diện website, lệnh khóa biệt trữ tồn kho khẩn cấp và in Biểu mẫu ISO BM-TX-01.
+- [x] **Phase 7: Luồng 5 — Sự không phù hợp & Hành động khắc phục CAPA** (`/capa`) — *Đã hoàn thành*
+  - **Quản lý Sự Không Phù Hợp (NC):** Báo cáo sự cố theo chuẩn ISO 22000:2018 Điều khoản 8.9, phân loại mức độ nghiêm trọng (Critical/Major/Minor), cô lập tức thì theo 8.9.2, truy vết lô hàng ảnh hưởng.
+  - **Quản lý Kế Hoạch CAPA:** Lập kế hoạch khắc phục & phòng ngừa tái diễn (10.1), phân công phụ trách, theo dõi tiến độ và hạn chót.
+  - **AI 5-Why & Fishbone Studio:** Trợ lý AI phân tích nguyên nhân gốc rễ chuyên sâu với 5 cấp độ hỏi-đáp liên hoàn hoặc Sơ đồ xương cá Ishikawa 5M+1E (Man, Machine, Material, Method, Measurement, Environment).
+  - **Thẩm Tra Hiệu Lực Sau 30 Ngày & Đóng Hồ Sơ:** Theo dõi và xác nhận kết quả thẩm tra hiện trường sau 15-30 ngày trước khi chính thức đóng NC.
+  - **In Ấn Biểu Mẫu Chuẩn ISO BM-CAPA-01:** Mẫu phiếu A4 chuyên nghiệp kèm Logo WCERT, mã biểu mẫu và 3 chữ ký trách nhiệm.
+- [ ] **Phase 8 [BƯỚC KẾ TIẾP]: Luồng 6 — Đào tạo nhân sự, Đánh giá nội bộ & Khai báo sức khỏe** (`/audits`)
 - [ ] **Phase 9: Luồng 8 — Dashboard điều hành, Báo cáo & Trợ lý AI tích hợp** (`/dashboard`)
