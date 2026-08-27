@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.database import engine, Base
 import app.models  # ensure models are loaded
-from app.api.v1.endpoints import auth, organization, documents, purchasing, haccp
+from app.api.v1.endpoints import auth, organization, documents, purchasing, haccp, equipment
 
 from sqlalchemy import text
 
@@ -61,6 +61,11 @@ try:
         conn.execute(text("ALTER TABLE prp_programs ADD COLUMN IF NOT EXISTS responsible_dept VARCHAR(100) DEFAULT 'Phòng Sản xuất';"))
         conn.execute(text("ALTER TABLE prp_programs ADD COLUMN IF NOT EXISTS status VARCHAR(30) DEFAULT 'ACTIVE';"))
 
+        # Equipment & Maintenance Migrations
+        conn.execute(text("ALTER TABLE equipments ADD COLUMN IF NOT EXISTS calibration_frequency_months INTEGER DEFAULT 12;"))
+        conn.execute(text("ALTER TABLE equipments ADD COLUMN IF NOT EXISTS maintenance_frequency_days INTEGER DEFAULT 30;"))
+        conn.execute(text("ALTER TABLE equipments ADD COLUMN IF NOT EXISTS specifications JSONB;"))
+
         conn.commit()
 except Exception as e:
     print(f"Database tables create_all note: {e}")
@@ -91,6 +96,7 @@ app.include_router(organization.router, prefix="/api/v1")
 app.include_router(documents.router, prefix="/api/v1")
 app.include_router(purchasing.router, prefix="/api/v1")
 app.include_router(haccp.router, prefix="/api/v1")
+app.include_router(equipment.router, prefix="/api/v1/equipment", tags=["Equipment & Maintenance"])
 
 @app.get("/")
 def root():

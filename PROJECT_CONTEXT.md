@@ -203,13 +203,16 @@ Cơ sở dữ liệu được chuẩn hóa cho toàn bộ 10 luồng nghiệp v�
 - **Hoàn thiện Phân hệ Mua hàng, Nhà cung cấp & IQC Tiếp nhận (Luồng 1 - Phase 3):**
   - Xây dựng ORM Models `Supplier`, `MaterialLot`, `IQCInspection` trong `purchasing.py`.
   - Xây dựng hệ thống 18 Endpoints RESTful tại `/api/v1/purchasing` cho Supplier, Lot, IQC, KPI Stats, AI COA Analyzer và AI Supplier Evaluation.
-- **Hoàn thiện Phân hệ Kế hoạch HACCP, Giám sát CCP Realtime & Vệ sinh PRP (Luồng 2 - Phase 4):**
-  - Xây dựng 6 ORM Models: `ProcessStep`, `HazardAnalysis`, `CCPDefinition`, `CCPMonitoringLog`, `PRPProgram`, `PRPChecklistLog` trong `haccp.py`.
-  - Xây dựng hệ thống 22 Endpoints RESTful tại `/api/v1/haccp` hỗ trợ toàn bộ CRUD, tự động phát hiện vi phạm Critical Limits, tính điểm rủi ro $L \times S$, và 2 Trợ lý AI (Gợi ý mối nguy & Xử lý sai lệch CCP).
-  - Tự động nạp sẵn dữ liệu mẫu thực tế chuẩn nhà máy chế biến thực phẩm ISO 22000 (Dây chuyền cá ngừ xuất khẩu & Bánh mì/nước ép).
-  - Tái cấu trúc toàn diện `frontend/src/routes/haccp.tsx` (4 Tabs nghiệp vụ, Form đo đạc Realtime, 2 Biểu mẫu In BM-HACCP-01 & BM-CCP-02).
-  - Tái cấu trúc toàn diện `frontend/src/routes/prp.tsx` (Thư viện GMP/SSOP/5S, Checklist ca, Biểu mẫu In BM-PRP-01).
-  - Kiểm thử toàn bộ 22/22 API Endpoints đạt `200 OK`, TypeScript `npx tsc --noEmit` đạt **0 lỗi (Zero Errors)**.
+- **Hoàn thiện Phân hệ Thiết bị, Hiệu chuẩn & Bảo trì máy móc (Luồng 2 - Phase 5):**
+  - Xây dựng 3 ORM Models: `Equipment`, `EquipmentMaintenanceLog`, `EquipmentCalibrationLog` trong `equipment.py`.
+  - Xây dựng hệ thống 15 Endpoints RESTful tại `/api/v1/equipment` hỗ trợ CRUD thiết bị, nhật ký bảo trì phòng ngừa (PM), biên bản kiểm định đo lường (QUATEST/VILAS) và 2 Trợ lý AI (Dự báo hỏng hóc & Thẩm định sai số lệch chuẩn ISO 7.1.5.2).
+  - Tự động nạp dữ liệu mẫu 6 máy móc công nghiệp (Nồi tiệt trùng cao áp Retort, Máy dò kim loại, Cân phân tích KCS, Cấp đông IQF, Khúc xạ kế Brix, Máy hút chân không Multivac).
+  - Kiểm soát bắt buộc tiêu chuẩn an toàn thực phẩm: **Dầu mỡ bôi trơn NSF H1** và **Vệ sinh khử trùng hiện trường sau bảo trì**.
+  - Tái cấu trúc toàn diện `frontend/src/routes/equipment.tsx` với 4 thẻ KPI, 4 Tabs nghiệp vụ, 2 Biểu mẫu In chuẩn **BM-TB-01** (Phiếu lý lịch thiết bị) & **BM-HC-02** (Biên bản hiệu chuẩn).
+  - **Tối ưu hóa Trải nghiệm In Ấn & Xuất PDF chuẩn ISO 22000:**
+    - Thay thế toàn bộ việc mở popup tab trắng `about:blank` bằng **Modal Xem Trước Trực Quan In-App** đẹp mắt với Header có **Logo chính thức WCERT (`/logo.png`)**, thông tin tổ chức, mã biểu mẫu ISO, bảng thông số định dạng chuẩn A4 và khối chữ ký 2 bên/3 bên.
+    - Xây dựng helper `printHtml` in ngầm qua hidden iframe mượt mà, người dùng không bị chuyển trang full-screen khi nhấn nút in hoặc lưu PDF.
+  - Kiểm thử toàn bộ 15/15 API Endpoints đạt `200 OK`, TypeScript `npx tsc --noEmit` đạt **0 lỗi (Zero Errors)**.
 
 ---
 
@@ -219,11 +222,11 @@ Cơ sở dữ liệu được chuẩn hóa cho toàn bộ 10 luồng nghiệp v�
 - [x] **Phase 2: Luồng 7 — Kiểm soát Tài liệu & SOP** (`/documents`) — *Đã hoàn thành*
 - [x] **Phase 3: Luồng 1 — Mua hàng & IQC Nhà cung ứng** (`/purchasing`) — *Đã hoàn thành*
 - [x] **Phase 4: Luồng 2 — Kế hoạch HACCP, Giám sát CCP & Vệ sinh PRP** (`/haccp`, `/prp`) — *Đã hoàn thành*
-- [ ] **Phase 5 [BƯỚC KẾ TIẾP]: Luồng 2 — Thiết bị, Hiệu chuẩn & Bảo trì** (`/equipment`)
-  - **Mục đích:** Quản lý vòng đời thiết bị sản xuất & đo lường theo ISO 22000:2018 Clause 7.1.5 & Clause 8.2; lịch bảo trì định kỳ (Preventive Maintenance), quản lý tem hiệu chuẩn (Calibration Due Date), cảnh báo thiết bị hết hạn hiệu chuẩn.
-  - **Dự kiến Backend:** Models `Equipment`, `MaintenanceLog`, `CalibrationLog`; các API CRUD, cảnh báo quá hạn hiệu chuẩn và thống kê KPI bảo trì.
-  - **Dự kiến Frontend:** Quản lý danh mục thiết bị, lịch hiệu chuẩn, form tạo phiếu bảo trì máy và in Phiếu lý lịch thiết bị (BM-TB-01).
-- [ ] **Phase 6: Luồng 3 & 4 — Quản lý Kho FEFO & Truy xuất nguồn gốc 1 chạm** (`/inventory`)
+- [x] **Phase 5: Luồng 2 — Thiết bị, Hiệu chuẩn & Bảo trì** (`/equipment`) — *Đã hoàn thành*
+- [ ] **Phase 6 [BƯỚC KẾ TIẾP]: Luồng 3 & 4 — Quản lý Kho, Lưu mẫu & Truy xuất nguồn gốc 1 chạm** (`/inventory`, `/traceability`)
+  - **Mục đích:** Quản lý xuất nhập tồn theo nguyên tắc FEFO (Hạn dùng trước - Xuất trước), quản lý vị trí bin/kệ kho lạnh, quản lý mẫu lưu nghiệm thức (Retained Samples) và công cụ Truy xuất nguồn gốc 1 chạm (One-touch Backward/Forward Traceability) theo ISO 22000 Điều khoản 8.5.2 & Điều khoản 8.3.
+  - **Dự kiến Backend:** Models `WarehouseInventory`, `RetainedSample`, `OrderDispatch`, `ProductionBatch`; API CRUD, tính toán cảnh báo hạn sử dụng kho, API phân tích cây phả hệ truy xuất nguồn gốc ngược (Backward) & xuôi (Forward).
+  - **Dự kiến Frontend:** Quản lý kho dạng ma trận trực quan, quét mã QR/Barcode lô hàng, form lưu mẫu định kỳ, giao diện sơ đồ cây phả hệ truy xuất nguồn gốc một chạm và in Biên bản Truy xuất Nguồn gốc (BM-TX-01).
 - [ ] **Phase 7: Luồng 5 — Sự không phù hợp & Hành động khắc phục CAPA** (`/capa`)
 - [ ] **Phase 8: Luồng 6 — Đào tạo nhân sự, Đánh giá nội bộ & Khai báo sức khỏe** (`/audits`)
 - [ ] **Phase 9: Luồng 8 — Dashboard điều hành, Báo cáo & Trợ lý AI tích hợp** (`/dashboard`)

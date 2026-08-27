@@ -21,6 +21,13 @@ from .haccp import (
     HACCPStatsResponse, AIHazardSuggestRequest, AIHazardSuggestResponse,
     AICCPDeviationRequest, AICCPDeviationResponse
 )
+from .equipment import (
+    EquipmentBase, EquipmentCreate, EquipmentUpdate, EquipmentResponse,
+    EquipmentMaintenanceLogBase, EquipmentMaintenanceLogCreate, EquipmentMaintenanceLogUpdate, EquipmentMaintenanceLogResponse,
+    EquipmentCalibrationLogBase, EquipmentCalibrationLogCreate, EquipmentCalibrationLogUpdate, EquipmentCalibrationLogResponse,
+    EquipmentStatsResponse, AIPredictMaintenanceRequest, AIPredictMaintenanceResponse,
+    AIEvaluateCalibrationRequest, AIEvaluateCalibrationResponse
+)
 
 __all__ = [
     "UserRegisterRequest",
@@ -83,4 +90,21 @@ __all__ = [
     "AIHazardSuggestResponse",
     "AICCPDeviationRequest",
     "AICCPDeviationResponse",
+    "EquipmentBase",
+    "EquipmentCreate",
+    "EquipmentUpdate",
+    "EquipmentResponse",
+    "EquipmentMaintenanceLogBase",
+    "EquipmentMaintenanceLogCreate",
+    "EquipmentMaintenanceLogUpdate",
+    "EquipmentMaintenanceLogResponse",
+    "EquipmentCalibrationLogBase",
+    "EquipmentCalibrationLogCreate",
+    "EquipmentCalibrationLogUpdate",
+    "EquipmentCalibrationLogResponse",
+    "EquipmentStatsResponse",
+    "AIPredictMaintenanceRequest",
+    "AIPredictMaintenanceResponse",
+    "AIEvaluateCalibrationRequest",
+    "AIEvaluateCalibrationResponse",
 ]

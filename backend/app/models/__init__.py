@@ -9,6 +9,7 @@ from .haccp import (
     PRPProgram,
     PRPChecklistLog,
 )
+from .equipment import Equipment, EquipmentMaintenanceLog, EquipmentCalibrationLog
 
 __all__ = [
     "User",
@@ -24,4 +25,7 @@ __all__ = [
     "CCPMonitoringLog",
     "PRPProgram",
     "PRPChecklistLog",
+    "Equipment",
+    "EquipmentMaintenanceLog",
+    "EquipmentCalibrationLog",
 ]
