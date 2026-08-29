@@ -24,4 +24,5 @@ class TokenResponse(BaseModel):
     username: str
     full_name: str
     role: str
-    department: Optional[str]
+    department: Optional[str] = None
+    phone: Optional[str] = None

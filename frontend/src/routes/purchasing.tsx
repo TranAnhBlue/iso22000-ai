@@ -54,6 +54,7 @@ import { toast } from "sonner";
 import logoImg from "@/assets/logo.png";
 import { DynamicFormRenderer } from "@/components/builder/DynamicFormRenderer";
 import { WorkflowBuilder, type WorkflowTemplateData } from "@/components/builder/WorkflowBuilder";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import type { FormTemplateData } from "@/components/builder/types";
 
 export const Route = createFileRoute("/purchasing")({
@@ -340,6 +341,11 @@ function PurchasingPage() {
   const [coaAiResult, setCoaAiResult] = useState<any | null>(null);
   const [isCoaAnalyzing, setIsCoaAnalyzing] = useState(false);
 
+  // Deleting Confirmation States
+  const [deletingSupplierItem, setDeletingSupplierItem] = useState<{ id: string; name: string } | null>(null);
+  const [deletingLotItem, setDeletingLotItem] = useState<{ id: string; code: string } | null>(null);
+  const [deletingInspectionItem, setDeletingInspectionItem] = useState<{ id: string; code: string } | null>(null);
+
   // Form States
   const [supplierForm, setSupplierForm] = useState({
     supplier_code: "",
@@ -553,8 +559,7 @@ function PurchasingPage() {
     }
   };
 
-  const handleDeleteSupplier = async (id: string, name: string) => {
-    if (!confirm(`Bạn có chắc chắn muốn xóa Nhà cung cấp "${name}"?`)) return;
+  const executeDeleteSupplier = async (id: string, name: string) => {
     try {
       await api.delete(`/purchasing/suppliers/${id}`);
       toast.success(`Đã xóa nhà cung cấp "${name}".`);
@@ -802,8 +807,7 @@ function PurchasingPage() {
     }
   };
 
-  const handleDeleteLot = async (id: string, code: string) => {
-    if (!confirm(`Bạn có chắc muốn xóa lô nguyên liệu "${code}"?`)) return;
+  const executeDeleteLot = async (id: string, code: string) => {
     try {
       await api.delete(`/purchasing/lots/${id}`);
       toast.success(`Đã xóa lô nguyên liệu "${code}".`);
@@ -891,8 +895,7 @@ function PurchasingPage() {
     }
   };
 
-  const handleDeleteInspection = async (id: string, code: string) => {
-    if (!confirm(`Bạn có chắc muốn xóa biên bản IQC "${code}"?`)) return;
+  const executeDeleteInspection = async (id: string, code: string) => {
     try {
       await api.delete(`/purchasing/inspections/${id}`);
       toast.success(`Đã xóa biên bản IQC "${code}".`);
@@ -1437,7 +1440,7 @@ function PurchasingPage() {
                               size="sm"
                               title="Xóa"
                               onClick={() =>
-                                handleDeleteSupplier(s.supplier_id, s.supplier_name)
+                                setDeletingSupplierItem({ id: s.supplier_id, name: s.supplier_name })
                               }
                               className="h-8 w-8 p-0 text-rose-600 hover:bg-rose-50 hover:text-rose-700 dark:hover:bg-rose-950/30"
                             >
@@ -1601,7 +1604,10 @@ function PurchasingPage() {
                               size="sm"
                               title="Xóa lô"
                               onClick={() =>
-                                handleDeleteLot(lot.material_lot_id, lot.lot_number)
+                                setDeletingLotItem({
+                                  id: lot.material_lot_id,
+                                  code: lot.lot_number,
+                                })
                               }
                               className="h-8 w-8 p-0 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30"
                             >
@@ -1770,10 +1776,10 @@ function PurchasingPage() {
                               size="sm"
                               title="Xóa biên bản"
                               onClick={() =>
-                                handleDeleteInspection(
-                                  insp.inspection_id,
-                                  insp.inspection_code
-                                )
+                                setDeletingInspectionItem({
+                                  id: insp.inspection_id,
+                                  code: insp.inspection_code,
+                                })
                               }
                               className="h-8 w-8 p-0 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30"
                             >
@@ -3217,6 +3223,53 @@ function PurchasingPage() {
           </div>
         </div>
       )}
+      {/* Modal Xác Nhận Xóa Nhà Cung Cấp */}
+      <ConfirmDialog
+        isOpen={!!deletingSupplierItem}
+        onClose={() => setDeletingSupplierItem(null)}
+        onConfirm={() => {
+          if (deletingSupplierItem) {
+            executeDeleteSupplier(deletingSupplierItem.id, deletingSupplierItem.name);
+            setDeletingSupplierItem(null);
+          }
+        }}
+        title="Xác nhận xóa Nhà cung cấp"
+        description={`Bạn có chắc chắn muốn xóa Nhà cung cấp "${deletingSupplierItem?.name}" khỏi Danh bạ ASL không? Dữ liệu lịch sử đánh giá liên quan sẽ bị ảnh hưởng.`}
+        confirmLabel="Xóa Nhà cung cấp"
+        variant="destructive"
+      />
+
+      {/* Modal Xác Nhận Xóa Lô Nguyên Liệu */}
+      <ConfirmDialog
+        isOpen={!!deletingLotItem}
+        onClose={() => setDeletingLotItem(null)}
+        onConfirm={() => {
+          if (deletingLotItem) {
+            executeDeleteLot(deletingLotItem.id, deletingLotItem.code);
+            setDeletingLotItem(null);
+          }
+        }}
+        title="Xác nhận xóa Lô nguyên vật liệu"
+        description={`Bạn có chắc chắn muốn xóa Lô nguyên liệu "${deletingLotItem?.code}" khỏi hệ thống tiếp nhận?`}
+        confirmLabel="Xóa Lô"
+        variant="destructive"
+      />
+
+      {/* Modal Xác Nhận Xóa Biên Bản IQC */}
+      <ConfirmDialog
+        isOpen={!!deletingInspectionItem}
+        onClose={() => setDeletingInspectionItem(null)}
+        onConfirm={() => {
+          if (deletingInspectionItem) {
+            executeDeleteInspection(deletingInspectionItem.id, deletingInspectionItem.code);
+            setDeletingInspectionItem(null);
+          }
+        }}
+        title="Xác nhận xóa Biên bản kiểm định IQC"
+        description={`Bạn có chắc chắn muốn xóa Biên bản IQC "${deletingInspectionItem?.code}" không?`}
+        confirmLabel="Xóa Biên bản"
+        variant="destructive"
+      />
     </div>
   );
 }

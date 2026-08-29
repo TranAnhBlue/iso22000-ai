@@ -25,6 +25,14 @@ from .builder import (
     WorkflowInstance,
 )
 from .capa import NonConformance, CAPARecord
+from .audit import (
+    InternalAudit,
+    AuditFinding,
+    TrainingCourse,
+    TrainingParticipantRecord,
+    HealthDeclarationRecord,
+)
+from .dashboard import QualityObjective, ManagementReview
 
 __all__ = [
     "User",
@@ -55,4 +63,11 @@ __all__ = [
     "WorkflowInstance",
     "NonConformance",
     "CAPARecord",
+    "InternalAudit",
+    "AuditFinding",
+    "TrainingCourse",
+    "TrainingParticipantRecord",
+    "HealthDeclarationRecord",
+    "QualityObjective",
+    "ManagementReview",
 ]

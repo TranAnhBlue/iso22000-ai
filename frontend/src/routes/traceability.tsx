@@ -32,8 +32,11 @@ import {
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import api from "@/lib/api";
-
+import { toast } from "sonner";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { QRCodeModal } from "@/components/QRCodeModal";
+
+import { useModuleAccess } from "@/lib/rbac";
 
 export const Route = createFileRoute("/traceability")({
   head: () => ({
@@ -45,13 +48,14 @@ export const Route = createFileRoute("/traceability")({
     ],
   }),
   component: () => (
-    <AppShell module="inventory">
+    <AppShell module="traceability">
       <TraceabilityPage />
     </AppShell>
   ),
 });
 
 export function TraceabilityPage() {
+  const { canEdit, isManagement, isAdmin, isQA } = useModuleAccess();
   const [mode, setMode] = useState<"backward" | "forward">("backward");
   const [queryCode, setQueryCode] = useState("LOT-202608-B01");
   const [forwardCode, setForwardCode] = useState("NL-2026-CA01");
@@ -79,6 +83,8 @@ export function TraceabilityPage() {
   const [backwardTree, setBackwardTree] = useState<any>(null);
   const [forwardRecall, setForwardRecall] = useState<any>(null);
 
+  const [quarantineTarget, setQuarantineTarget] = useState<string | null>(null);
+
   // Backward Trace Handler
   const handleBackwardSearch = async (targetCode?: string) => {
     const code = (targetCode || queryCode).trim();
@@ -89,7 +95,7 @@ export function TraceabilityPage() {
       setBackwardTree(res.data);
     } catch (err: any) {
       console.error("Lỗi truy xuất ngược:", err);
-      alert("Không thể kết nối API truy xuất ngược: " + (err.response?.data?.detail || err.message));
+      toast.error("Không thể kết nối API truy xuất ngược: " + (err.response?.data?.detail || err.message));
     } finally {
       setLoading(false);
     }
@@ -105,7 +111,7 @@ export function TraceabilityPage() {
       setForwardRecall(res.data);
     } catch (err: any) {
       console.error("Lỗi truy xuất xuôi:", err);
-      alert("Không thể kết nối API truy xuất xuôi: " + (err.response?.data?.detail || err.message));
+      toast.error("Không thể kết nối API truy xuất xuôi: " + (err.response?.data?.detail || err.message));
     } finally {
       setLoading(false);
     }
@@ -122,29 +128,33 @@ export function TraceabilityPage() {
       } else {
         await handleForwardSearch("NL-2026-CA01");
       }
+      toast.success("Đã nạp dữ liệu thực hành mẫu và thực hiện truy xuất thành công!");
     } catch (err) {
       console.error("Lỗi seed demo:", err);
+      toast.error("Không thể nạp dữ liệu mẫu.");
     } finally {
       setLoading(false);
     }
   };
 
   // Quarantine Batch Stock Action
-  const handleQuarantine = async (batchNumber: string) => {
-    if (!confirm(`XÁC NHẬN KHÓA XUẤT KHO:\nBạn có chắc muốn chuyển toàn bộ tồn kho của mẻ ${batchNumber} sang trạng thái BIỆT TRỮ CÁCH LY (QUARANTINE)?`)) {
-      return;
-    }
+  const executeQuarantine = async (batchNumber: string) => {
     setQuarantining(true);
     try {
-      const res = await api.post(`/traceability/quarantine-batch/${batchNumber}?reason=Phat%20hien%20su%20co%20nguyen%20lieu`);
+      await api.post(`/traceability/quarantine-batch/${batchNumber}?reason=Phat%20hien%20su%20co%20nguyen%20lieu`);
       setIsQuarantinedSuccess(true);
+      toast.success(`Đã chuyển toàn bộ tồn kho của mẻ [${batchNumber}] sang trạng thái BIỆT TRỮ CÁCH LY thành công!`);
       if (mode === "backward") handleBackwardSearch();
       else handleForwardSearch();
     } catch (err: any) {
-      alert("Lỗi khi khóa tồn kho: " + (err.response?.data?.detail || err.message));
+      toast.error("Lỗi khi khóa tồn kho: " + (err.response?.data?.detail || err.message));
     } finally {
       setQuarantining(false);
     }
+  };
+
+  const handleQuarantine = (batchNumber: string) => {
+    setQuarantineTarget(batchNumber);
   };
 
   // Auto query initial demo on mount
@@ -940,6 +950,22 @@ export function TraceabilityPage() {
           </div>
         </div>
       )}
+
+      {/* MODAL XÁC NHẬN BIỆT TRỮ KHO */}
+      <ConfirmDialog
+        isOpen={!!quarantineTarget}
+        onClose={() => setQuarantineTarget(null)}
+        onConfirm={() => {
+          if (quarantineTarget) {
+            executeQuarantine(quarantineTarget);
+            setQuarantineTarget(null);
+          }
+        }}
+        title="Xác nhận khóa & biệt trữ tồn kho mẻ sản phẩm"
+        description={`Bạn có chắc chắn muốn chuyển toàn bộ tồn kho của mẻ sản xuất [${quarantineTarget}] sang trạng thái BIỆT TRỮ CÁCH LY (QUARANTINE)? Hệ thống sẽ lập tức chặn xuất kho tự động theo tiêu chuẩn Điều khoản 8.9 ISO 22000.`}
+        confirmLabel="Khóa & Biệt Trữ Cách Ly"
+        variant="destructive"
+      />
 
       {/* QR CODE MODAL COMPONENT */}
       <QRCodeModal

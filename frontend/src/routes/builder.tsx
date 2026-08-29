@@ -31,13 +31,16 @@ import api from "@/lib/api";
 import { FormBuilder } from "@/components/builder/FormBuilder";
 import { DynamicFormRenderer } from "@/components/builder/DynamicFormRenderer";
 import { WorkflowBuilder } from "@/components/builder/WorkflowBuilder";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import type { FormTemplateData, WorkflowTemplateData } from "@/components/builder/types";
+import { useModuleAccess } from "@/lib/rbac";
 
 export const Route = createFileRoute("/builder")({
   component: BuilderManagementPage,
 });
 
 function BuilderManagementPage() {
+  const { canEdit, isAdmin } = useModuleAccess();
   const [activeTab, setActiveTab] = useState<"FORMS" | "WORKFLOWS" | "SUBMISSIONS">("FORMS");
   const [loading, setLoading] = useState(false);
 
@@ -59,6 +62,10 @@ function BuilderManagementPage() {
   // Submissions state
   const [submissions, setSubmissions] = useState<any[]>([]);
   const [viewingSubmission, setViewingSubmission] = useState<any | null>(null);
+
+  // Deleting confirmation states
+  const [deletingFormItem, setDeletingFormItem] = useState<{ id: string; title: string } | null>(null);
+  const [deletingWfItem, setDeletingWfItem] = useState<{ id: string; title: string } | null>(null);
 
   // Fetch Forms
   const fetchForms = async () => {
@@ -95,7 +102,8 @@ function BuilderManagementPage() {
       const res = await api.get("/builders/submissions");
       setSubmissions(res.data);
     } catch (err: any) {
-      console.error("Lỗi tải lịch sử nộp:", err);
+      console.error("Lỗi tải lịch sử điền:", err);
+      toast.error("Không thể tải lịch sử nộp dữ liệu!");
     } finally {
       setLoading(false);
     }
@@ -123,13 +131,13 @@ function BuilderManagementPage() {
   };
 
   // Save Form Template
-  const handleSaveForm = async (templateData: FormTemplateData) => {
+  const handleSaveForm = async (formData: FormTemplateData) => {
     try {
-      if (templateData.template_id) {
-        await api.put(`/builders/forms/${templateData.template_id}`, templateData);
+      if (formData.template_id) {
+        await api.put(`/builders/forms/${formData.template_id}`, formData);
         toast.success("Cập nhật biểu mẫu thành công!");
       } else {
-        await api.post("/builders/forms", templateData);
+        await api.post("/builders/forms", formData);
         toast.success("Tạo biểu mẫu mới thành công!");
       }
       setEditingForm(null);
@@ -141,11 +149,10 @@ function BuilderManagementPage() {
   };
 
   // Delete Form
-  const handleDeleteForm = async (templateId: string, title: string) => {
-    if (!confirm(`Bạn có chắc chắn muốn xóa biểu mẫu '${title}'?`)) return;
+  const executeDeleteForm = async (templateId: string, title?: string) => {
     try {
       await api.delete(`/builders/forms/${templateId}`);
-      toast.success("Đã xóa biểu mẫu thành công!");
+      toast.success(`Đã xóa biểu mẫu "${title || ""}" thành công!`);
       await fetchForms();
     } catch (err: any) {
       toast.error("Lỗi khi xóa biểu mẫu: " + (err.response?.data?.detail || err.message));
@@ -171,11 +178,10 @@ function BuilderManagementPage() {
   };
 
   // Delete Workflow
-  const handleDeleteWorkflow = async (wfId: string, title: string) => {
-    if (!confirm(`Bạn có chắc chắn muốn xóa quy trình '${title}'?`)) return;
+  const executeDeleteWorkflow = async (wfId: string, title?: string) => {
     try {
       await api.delete(`/builders/workflows/${wfId}`);
-      toast.success("Đã xóa quy trình thành công!");
+      toast.success(`Đã xóa quy trình "${title || ""}" thành công!`);
       await fetchWorkflows();
     } catch (err: any) {
       toast.error("Lỗi khi xóa quy trình: " + (err.response?.data?.detail || err.message));
@@ -229,17 +235,19 @@ function BuilderManagementPage() {
           title="Trung Tâm Quản Lý Biểu Mẫu & Quy Trình Động"
           description="Tùy biến linh hoạt mọi biểu mẫu checklist kiểm tra, phiếu nghiệm thu IQC, nhật ký đo đạc CCP và thiết kế lưu đồ công đoạn tuần tự theo chuẩn ISO 22000:2018."
           actions={
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                onClick={handleSeedDefaults}
-                disabled={loading}
-                className="border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 text-xs font-semibold flex items-center gap-2"
-              >
-                <Sparkles className="w-4 h-4 text-emerald-600" />
-                Nạp Mẫu Biểu Mẫu Chuẩn ISO
-              </Button>
-            </div>
+            canEdit ? (
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  onClick={handleSeedDefaults}
+                  disabled={loading}
+                  className="border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 text-xs font-semibold flex items-center gap-2"
+                >
+                  <Sparkles className="w-4 h-4 text-emerald-600" />
+                  Nạp Mẫu Biểu Mẫu Chuẩn ISO
+                </Button>
+              </div>
+            ) : undefined
           }
         />
 
@@ -324,16 +332,18 @@ function BuilderManagementPage() {
                 </select>
               </div>
 
-              <Button
-                onClick={() => {
-                  setEditingForm(null);
-                  setIsCreatingForm(true);
-                }}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-4 py-2 flex items-center gap-2 shadow-sm w-full sm:w-auto justify-center"
-              >
-                <Plus className="w-4 h-4" />
-                Tạo Biểu Mẫu Mới
-              </Button>
+              {canEdit && (
+                <Button
+                  onClick={() => {
+                    setEditingForm(null);
+                    setIsCreatingForm(true);
+                  }}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-4 py-2 flex items-center gap-2 shadow-sm w-full sm:w-auto justify-center"
+                >
+                  <Plus className="w-4 h-4" />
+                  Tạo Biểu Mẫu Mới
+                </Button>
+              )}
             </div>
 
             {/* Forms Grid List */}
@@ -342,7 +352,7 @@ function BuilderManagementPage() {
                 <FileText className="w-10 h-10 mx-auto text-slate-400" />
                 <div className="text-sm font-bold text-slate-700">Chưa có biểu mẫu nào phù hợp</div>
                 <p className="text-xs max-w-sm mx-auto text-slate-500">
-                  Bạn có thể bấm "Nạp Mẫu Biểu Mẫu Chuẩn ISO" ở góc trên hoặc "Tạo Biểu Mẫu Mới".
+                  {canEdit ? "Bạn có thể bấm \"Nạp Mẫu Biểu Mẫu Chuẩn ISO\" ở góc trên hoặc \"Tạo Biểu Mẫu Mới\"." : "Hiện tại chưa có biểu mẫu nào được xuất bản."}
                 </p>
               </div>
             ) : (
@@ -354,37 +364,28 @@ function BuilderManagementPage() {
                   >
                     <div>
                       <div className="flex items-center justify-between gap-2">
-                        <span className="text-xs font-mono font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-mono">
                           {f.code}
                         </span>
-                        <span className="text-[11px] px-2.5 py-0.5 rounded-md bg-slate-100 text-slate-700 font-semibold border border-slate-200">
+                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
                           {f.module}
                         </span>
                       </div>
 
-                      <h3 className="text-sm font-bold text-slate-900 mt-3 group-hover:text-emerald-700 transition-colors line-clamp-2">
+                      <h3 className="font-bold text-slate-900 text-sm mt-3 group-hover:text-emerald-700 transition-colors">
                         {f.title}
                       </h3>
+                      <p className="text-xs text-slate-500 mt-1 line-clamp-2 leading-relaxed">
+                        {f.description || "Chưa có mô tả cho biểu mẫu này."}
+                      </p>
 
-                      {f.description && (
-                        <p className="text-xs text-slate-600 mt-2 line-clamp-2 leading-relaxed">
-                          {f.description}
-                        </p>
-                      )}
-
-                      <div className="flex items-center gap-3 mt-4 pt-3 border-t border-slate-100 text-xs text-slate-500">
-                        <div className="flex items-center gap-1 font-semibold text-slate-700">
-                          <Sliders className="w-3.5 h-3.5 text-emerald-600" />
-                          <span>{f.fields.length} trường</span>
-                        </div>
-                        <div>•</div>
-                        <div>Ver {f.version}</div>
-                        <div>•</div>
-                        <div className="text-emerald-700 font-bold">{f.status}</div>
+                      <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+                        <span>{f.fields?.length || 0} trường dữ liệu</span>
+                        <span className="font-mono text-[11px]">v{f.version || "1.0"}</span>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 mt-5 pt-3 border-t border-slate-100">
+                    <div className="mt-5 pt-3 border-t border-slate-100 flex items-center gap-2">
                       <Button
                         size="sm"
                         onClick={() => setTestingForm(f)}
@@ -394,20 +395,22 @@ function BuilderManagementPage() {
                         Điền Thử Phiếu
                       </Button>
 
-                      <button
-                        onClick={() => {
-                          setEditingForm(f);
-                          setIsCreatingForm(false);
-                        }}
-                        className="p-2 rounded-lg bg-slate-100 text-slate-700 hover:text-slate-900 hover:bg-slate-200 transition-colors"
-                        title="Chỉnh sửa cấu trúc"
-                      >
-                        <Edit2 className="w-3.5 h-3.5" />
-                      </button>
-
-                      {f.template_id && (
+                      {canEdit && (
                         <button
-                          onClick={() => handleDeleteForm(f.template_id!, f.title)}
+                          onClick={() => {
+                            setEditingForm(f);
+                            setIsCreatingForm(false);
+                          }}
+                          className="p-2 rounded-lg bg-slate-100 text-slate-700 hover:text-slate-900 hover:bg-slate-200 transition-colors"
+                          title="Chỉnh sửa cấu trúc"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+
+                      {canEdit && f.template_id && (
+                        <button
+                          onClick={() => setDeletingFormItem({ id: f.template_id!, title: f.title })}
                           className="p-2 rounded-lg bg-rose-50 text-rose-600 hover:text-rose-800 hover:bg-rose-100 transition-colors"
                           title="Xóa biểu mẫu"
                         >
@@ -453,16 +456,18 @@ function BuilderManagementPage() {
                 </select>
               </div>
 
-              <Button
-                onClick={() => {
-                  setEditingWf(null);
-                  setIsCreatingWf(true);
-                }}
-                className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-4 py-2 flex items-center gap-2 shadow-sm w-full sm:w-auto justify-center"
-              >
-                <Plus className="w-4 h-4" />
-                Tạo Lưu Đồ Quy Trình Mới
-              </Button>
+              {canEdit && (
+                <Button
+                  onClick={() => {
+                    setEditingWf(null);
+                    setIsCreatingWf(true);
+                  }}
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-4 py-2 flex items-center gap-2 shadow-sm w-full sm:w-auto justify-center"
+                >
+                  <Plus className="w-4 h-4" />
+                  Tạo Lưu Đồ Quy Trình Mới
+                </Button>
+              )}
             </div>
 
             {/* Workflows Grid List */}
@@ -529,12 +534,12 @@ function BuilderManagementPage() {
                           className="flex-1 bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-300 text-xs font-bold flex items-center justify-center gap-1.5 shadow-none"
                         >
                           <Eye className="w-3.5 h-3.5 text-blue-700" />
-                          Xem & Sửa Sơ Đồ
+                          {canEdit ? "Xem & Sửa Sơ Đồ" : "Xem Sơ Đồ Quy Trình"}
                         </Button>
 
-                        {w.workflow_id && (
+                        {canEdit && w.workflow_id && (
                           <button
-                            onClick={() => handleDeleteWorkflow(w.workflow_id!, w.title)}
+                            onClick={() => setDeletingWfItem({ id: w.workflow_id!, title: w.title })}
                             className="p-2 rounded-lg bg-rose-50 text-rose-600 hover:text-rose-800 hover:bg-rose-100 transition-colors"
                             title="Xóa quy trình"
                           >
@@ -787,6 +792,38 @@ function BuilderManagementPage() {
             </div>
           );
         })()}
+
+        {/* Modal Xác Nhận Xóa Biểu Mẫu */}
+        <ConfirmDialog
+          isOpen={!!deletingFormItem}
+          onClose={() => setDeletingFormItem(null)}
+          onConfirm={() => {
+            if (deletingFormItem) {
+              executeDeleteForm(deletingFormItem.id, deletingFormItem.title);
+              setDeletingFormItem(null);
+            }
+          }}
+          title="Xác nhận xóa biểu mẫu"
+          description={`Bạn có chắc chắn muốn xóa biểu mẫu "${deletingFormItem?.title}" khỏi hệ thống không? Dữ liệu cấu hình biểu mẫu sẽ bị xóa vĩnh viễn.`}
+          confirmLabel="Xóa biểu mẫu"
+          variant="destructive"
+        />
+
+        {/* Modal Xác Nhận Xóa Quy Trình */}
+        <ConfirmDialog
+          isOpen={!!deletingWfItem}
+          onClose={() => setDeletingWfItem(null)}
+          onConfirm={() => {
+            if (deletingWfItem) {
+              executeDeleteWorkflow(deletingWfItem.id, deletingWfItem.title);
+              setDeletingWfItem(null);
+            }
+          }}
+          title="Xác nhận xóa quy trình phê duyệt"
+          description={`Bạn có chắc chắn muốn xóa quy trình "${deletingWfItem?.title}" khỏi hệ thống lưu đồ không?`}
+          confirmLabel="Xóa quy trình"
+          variant="destructive"
+        />
       </div>
     </AppShell>
   );

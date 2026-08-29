@@ -8,6 +8,7 @@ import api from "@/lib/api";
 import { useNavigate } from "@tanstack/react-router";
 import { Lock, User, Mail, Building, Phone } from "lucide-react";
 import logoImg from "@/assets/logo.png";
+import { useDepartments } from "@/lib/departments";
 
 interface AuthModalProps {
   role: RoleInfo | null;
@@ -16,6 +17,7 @@ interface AuthModalProps {
 }
 
 export function AuthModal({ role, isOpen, onClose }: AuthModalProps) {
+  const { departments } = useDepartments();
   const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
@@ -134,16 +136,18 @@ export function AuthModal({ role, isOpen, onClose }: AuthModalProps) {
               <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-1.5">
                   <Label htmlFor="department">Phòng ban</Label>
-                  <div className="relative">
-                    <Building className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="department"
-                      placeholder={role.department}
-                      className="pl-9"
-                      value={department}
-                      onChange={(e) => setDepartment(e.target.value)}
-                    />
-                  </div>
+                  <select
+                    id="department"
+                    value={department || role.department || departments[0]}
+                    onChange={(e) => setDepartment(e.target.value)}
+                    className="w-full h-9 rounded-md border border-input bg-background px-3 text-xs font-medium shadow-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                  >
+                    {departments.map((d) => (
+                      <option key={d} value={d}>
+                        {d}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="phone">Số điện thoại</Label>

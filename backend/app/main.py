@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.database import engine, Base
 import app.models  # ensure models are loaded
-from app.api.v1.endpoints import auth, organization, documents, purchasing, haccp, equipment, inventory, traceability, capa, builder
+from app.api.v1.endpoints import auth, organization, documents, purchasing, haccp, equipment, inventory, traceability, capa, builder, audits, dashboard
 
 from sqlalchemy import text
 
@@ -165,6 +165,37 @@ try:
         except Exception:
             pass
 
+        # Phase 8: Internal Audits & Training Migrations
+        conn.execute(text("ALTER TABLE internal_audits ADD COLUMN IF NOT EXISTS audit_code VARCHAR(50);"))
+        conn.execute(text("ALTER TABLE internal_audits ADD COLUMN IF NOT EXISTS title VARCHAR(255) DEFAULT 'Đợt đánh giá nội bộ định kỳ';"))
+        conn.execute(text("ALTER TABLE internal_audits ADD COLUMN IF NOT EXISTS audit_type VARCHAR(50) DEFAULT 'PERIODIC';"))
+        conn.execute(text("ALTER TABLE internal_audits ADD COLUMN IF NOT EXISTS start_date DATE DEFAULT CURRENT_DATE;"))
+        conn.execute(text("ALTER TABLE internal_audits ADD COLUMN IF NOT EXISTS end_date DATE DEFAULT CURRENT_DATE;"))
+        conn.execute(text("ALTER TABLE internal_audits ADD COLUMN IF NOT EXISTS lead_auditor_name VARCHAR(100) DEFAULT 'Trưởng đoàn ĐGNB';"))
+        conn.execute(text("ALTER TABLE internal_audits ADD COLUMN IF NOT EXISTS auditor_team JSONB DEFAULT '[]'::jsonb;"))
+        conn.execute(text("ALTER TABLE internal_audits ADD COLUMN IF NOT EXISTS audited_dept VARCHAR(100) DEFAULT 'Phòng Sản Xuất';"))
+        conn.execute(text("ALTER TABLE internal_audits ADD COLUMN IF NOT EXISTS audited_lead_name VARCHAR(100);"))
+        conn.execute(text("ALTER TABLE internal_audits ADD COLUMN IF NOT EXISTS standard_clauses JSONB DEFAULT '[]'::jsonb;"))
+        conn.execute(text("ALTER TABLE internal_audits ADD COLUMN IF NOT EXISTS conclusion TEXT;"))
+        # Phase 9: Management Reviews & Quality Objectives Migrations
+        conn.execute(text("ALTER TABLE quality_objectives ADD COLUMN IF NOT EXISTS objective_code VARCHAR(50);"))
+        conn.execute(text("ALTER TABLE quality_objectives ADD COLUMN IF NOT EXISTS clause_reference VARCHAR(50) DEFAULT '6.2';"))
+        conn.execute(text("ALTER TABLE quality_objectives ADD COLUMN IF NOT EXISTS department VARCHAR(100) DEFAULT 'Toàn nhà máy';"))
+        conn.execute(text("ALTER TABLE quality_objectives ADD COLUMN IF NOT EXISTS unit VARCHAR(30) DEFAULT '%';"))
+        conn.execute(text("ALTER TABLE quality_objectives ADD COLUMN IF NOT EXISTS action_plan TEXT;"))
+        conn.execute(text("ALTER TABLE quality_objectives ADD COLUMN IF NOT EXISTS responsible_person VARCHAR(100) DEFAULT 'Trưởng Ban ISO';"))
+        conn.execute(text("ALTER TABLE quality_objectives ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP;"))
+        conn.execute(text("ALTER TABLE quality_objectives ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP;"))
+
+        conn.execute(text("ALTER TABLE management_reviews ADD COLUMN IF NOT EXISTS review_code VARCHAR(50);"))
+        conn.execute(text("ALTER TABLE management_reviews ADD COLUMN IF NOT EXISTS title VARCHAR(255) DEFAULT 'Cuộc họp xem xét lãnh đạo FSMS';"))
+        conn.execute(text("ALTER TABLE management_reviews ADD COLUMN IF NOT EXISTS chairperson_name VARCHAR(100) DEFAULT 'Tổng Giám Đốc Trần Văn Hùng';"))
+        conn.execute(text("ALTER TABLE management_reviews ADD COLUMN IF NOT EXISTS secretary_name VARCHAR(100) DEFAULT 'Trưởng Ban ISO Nguyễn Văn An';"))
+        conn.execute(text("ALTER TABLE management_reviews ADD COLUMN IF NOT EXISTS participants JSONB DEFAULT '[]'::jsonb;"))
+        conn.execute(text("ALTER TABLE management_reviews ADD COLUMN IF NOT EXISTS scope_and_inputs JSONB DEFAULT '{}'::jsonb;"))
+        conn.execute(text("ALTER TABLE management_reviews ADD COLUMN IF NOT EXISTS status VARCHAR(30) DEFAULT 'DRAFT';"))
+        conn.execute(text("ALTER TABLE management_reviews ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP;"))
+
         conn.commit()
 except Exception as e:
     print(f"Database tables create_all note: {e}")
@@ -200,6 +231,8 @@ app.include_router(equipment.router, prefix="/api/v1/equipment", tags=["Equipmen
 app.include_router(inventory.router, prefix="/api/v1/inventory", tags=["Warehouse & Inventory FEFO"])
 app.include_router(traceability.router, prefix="/api/v1/traceability", tags=["Traceability & Mock Recall"])
 app.include_router(capa.router, prefix="/api/v1/capa", tags=["CAPA & Non-Conformance"])
+app.include_router(audits.router, prefix="/api/v1/audits", tags=["Internal Audit, Training & Health"])
+app.include_router(dashboard.router, prefix="/api/v1/dashboard", tags=["Executive Dashboard & Management Review"])
 app.include_router(builder.router, prefix="/api/v1")
 
 @app.get("/")

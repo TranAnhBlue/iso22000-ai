@@ -58,6 +58,7 @@ import { toast } from "sonner";
 import logoImg from "@/assets/logo.png";
 import { WorkflowBuilder, type WorkflowTemplateData } from "@/components/builder/WorkflowBuilder";
 import { DynamicFormRenderer } from "@/components/builder/DynamicFormRenderer";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import type { FormTemplateData } from "@/components/builder/FormBuilder";
 
 export const Route = createFileRoute("/haccp")({
@@ -378,6 +379,11 @@ function HACCPModule() {
   const [showPrintPlanModal, setShowPrintPlanModal] = useState(false);
   const [showPrintLogModal, setShowPrintLogModal] = useState(false);
 
+  // Deleting Confirmation States
+  const [deletingStep, setDeletingStep] = useState<ProcessStep | null>(null);
+  const [deletingCCP, setDeletingCCP] = useState<CCPDefinition | null>(null);
+  const [deletingHazard, setDeletingHazard] = useState<HazardAnalysis | null>(null);
+
   // AI states
   const [aiStepName, setAiStepName] = useState(AI_STEP_PRESETS[0].step_name);
   const [aiProductLine, setAiProductLine] = useState(AI_STEP_PRESETS[0].product_line);
@@ -565,8 +571,7 @@ function HACCPModule() {
     }
   };
 
-  const handleDeleteStep = async (step: ProcessStep) => {
-    if (!confirm(`Bạn có chắc muốn xóa công đoạn '${step.step_number}. ${step.step_name}' khỏi lưu đồ?`)) return;
+  const executeDeleteStep = async (step: ProcessStep) => {
     try {
       await api.delete(`/haccp/process-steps/${step.step_id}`);
       toast.success("Đã xóa công đoạn thành công!");
@@ -703,8 +708,7 @@ function HACCPModule() {
     }
   };
 
-  const handleDeleteCCP = async (ccp: CCPDefinition) => {
-    if (!confirm(`Bạn có chắc chắn muốn xóa điểm kiểm soát '${ccp.ccp_code} - ${ccp.name}'?`)) return;
+  const executeDeleteCCP = async (ccp: CCPDefinition) => {
     try {
       await api.delete(`/haccp/ccp-definitions/${ccp.ccp_id}`);
       toast.success("Đã xóa điểm kiểm soát thành công");
@@ -877,8 +881,7 @@ function HACCPModule() {
     }
   };
 
-  const handleDeleteHazard = async (h: HazardAnalysis) => {
-    if (!confirm(`Bạn có chắc muốn xóa mối nguy '${h.hazard_name}'?`)) return;
+  const executeDeleteHazard = async (h: HazardAnalysis) => {
     try {
       await api.delete(`/haccp/hazards/${h.hazard_id}`);
       toast.success("Đã xóa mối nguy thành công");
@@ -1158,7 +1161,7 @@ function HACCPModule() {
             }`}
           >
             <Clock className="h-4 w-4 shrink-0" />
-            Nhật Ký Giám Sát Realtime ({logs.length})
+            Nhật Ký Giám Sát Thời Gian Thực ({logs.length})
           </button>
 
           <button
@@ -1333,7 +1336,7 @@ function HACCPModule() {
                         <Pencil className="w-3.5 h-3.5" />
                       </button>
                       <button
-                        onClick={() => handleDeleteStep(step)}
+                        onClick={() => setDeletingStep(step)}
                         className="p-1.5 rounded-lg bg-rose-50 text-rose-600 hover:text-rose-800 hover:bg-rose-100 transition-colors"
                         title="Xóa công đoạn"
                       >
@@ -1406,10 +1409,10 @@ function HACCPModule() {
                       </div>
                     </div>
                     <div className="flex items-center gap-1">
-                      <Button variant="ghost" size="icon" onClick={() => handleOpenEditCCP(ccp)} className="h-8 w-8 text-slate-500 hover:text-slate-900">
+                      <Button variant="ghost" size="icon" onClick={() => handleOpenEditCCP(ccp)} className="h-8 w-8 text-slate-500 hover:text-slate-900" title="Chỉnh sửa điểm CCP">
                         <Pencil className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="icon" onClick={() => handleDeleteCCP(ccp)} className="h-8 w-8 text-slate-500 hover:text-rose-600">
+                      <Button variant="ghost" size="icon" onClick={() => setDeletingCCP(ccp)} className="h-8 w-8 text-slate-500 hover:text-rose-600" title="Xóa điểm CCP">
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
@@ -1538,10 +1541,10 @@ function HACCPModule() {
                       <td className="p-3.5 text-center">{getClassBadge(h.classification)}</td>
                       <td className="p-3.5 text-right">
                         <div className="flex items-center justify-end gap-1">
-                          <button onClick={() => handleOpenEditHazard(h)} className="p-1 text-slate-500 hover:text-slate-900">
+                          <button onClick={() => handleOpenEditHazard(h)} className="p-1 text-slate-500 hover:text-slate-900" title="Chỉnh sửa mối nguy">
                             <Pencil className="h-3.5 w-3.5" />
                           </button>
-                          <button onClick={() => handleDeleteHazard(h)} className="p-1 text-slate-500 hover:text-rose-600">
+                          <button onClick={() => setDeletingHazard(h)} className="p-1 text-slate-500 hover:text-rose-600" title="Xóa mối nguy">
                             <Trash2 className="h-3.5 w-3.5" />
                           </button>
                         </div>
@@ -2496,6 +2499,53 @@ function HACCPModule() {
           </div>
         </div>
       )}
+      {/* Modal Xác Nhận Xóa Công Đoạn Lưu Đồ */}
+      <ConfirmDialog
+        isOpen={!!deletingStep}
+        onClose={() => setDeletingStep(null)}
+        onConfirm={() => {
+          if (deletingStep) {
+            executeDeleteStep(deletingStep);
+            setDeletingStep(null);
+          }
+        }}
+        title="Xác nhận xóa công đoạn lưu đồ"
+        description={`Bạn có chắc chắn muốn xóa công đoạn '${deletingStep?.step_number}. ${deletingStep?.step_name}' khỏi lưu đồ HACCP không?`}
+        confirmLabel="Xóa công đoạn"
+        variant="destructive"
+      />
+
+      {/* Modal Xác Nhận Xóa Điểm CCP / oPRP */}
+      <ConfirmDialog
+        isOpen={!!deletingCCP}
+        onClose={() => setDeletingCCP(null)}
+        onConfirm={() => {
+          if (deletingCCP) {
+            executeDeleteCCP(deletingCCP);
+            setDeletingCCP(null);
+          }
+        }}
+        title="Xác nhận xóa điểm kiểm soát tới hạn"
+        description={`Bạn có chắc chắn muốn xóa điểm kiểm soát [${deletingCCP?.ccp_code}] - "${deletingCCP?.name}" khỏi kế hoạch HACCP không?`}
+        confirmLabel="Xóa điểm CCP"
+        variant="destructive"
+      />
+
+      {/* Modal Xác Nhận Xóa Mối Nguy */}
+      <ConfirmDialog
+        isOpen={!!deletingHazard}
+        onClose={() => setDeletingHazard(null)}
+        onConfirm={() => {
+          if (deletingHazard) {
+            executeDeleteHazard(deletingHazard);
+            setDeletingHazard(null);
+          }
+        }}
+        title="Xác nhận xóa phân tích mối nguy"
+        description={`Bạn có chắc chắn muốn xóa mối nguy "${deletingHazard?.hazard_name}" khỏi ma trận đánh giá không?`}
+        confirmLabel="Xóa mối nguy"
+        variant="destructive"
+      />
     </div>
   );
 }

@@ -13,6 +13,8 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { toast } from "sonner";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   FileText,
   Plus,
@@ -45,9 +47,9 @@ import {
   GitFork,
 } from "lucide-react";
 import api from "@/lib/api";
-import { toast } from "sonner";
 import logoImg from "@/assets/logo.png";
 import { WorkflowBuilder, type WorkflowTemplateData } from "@/components/builder/WorkflowBuilder";
+import { useModuleAccess } from "@/lib/rbac";
 
 export const Route = createFileRoute("/documents")({
   head: () => ({
@@ -85,18 +87,10 @@ export interface DocumentItem {
   created_at?: string | null;
 }
 
-// Danh sách phòng ban chuẩn hóa
-export const DEPARTMENTS = [
-  "Ban Giám đốc",
-  "Ban QLCL & ATTP",
-  "Phòng Sản xuất",
-  "Phòng QC",
-  "Phòng Mua hàng",
-  "Phòng Kỹ thuật & Thiết bị",
-  "Phòng Kho & Vận chuyển",
-  "Phòng Hành chính - Kế toán",
-  "Phòng Kinh doanh",
-];
+import { useDepartments, DEFAULT_DEPARTMENTS } from "@/lib/departments";
+
+// Danh sách phòng ban chuẩn hóa từ CSDL
+export const DEPARTMENTS = DEFAULT_DEPARTMENTS;
 
 // Danh sách tiêu chuẩn ATTP
 export const STANDARDS = [
@@ -293,6 +287,8 @@ Bao gồm 8 chuyên đề vệ sinh chuẩn hóa theo Codex và ISO 22000:2018.
 ];
 
 function DocumentsPage() {
+  const { canEdit, isManagement, isAdmin } = useModuleAccess();
+  const { departments } = useDepartments();
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -317,6 +313,7 @@ function DocumentsPage() {
   // Workflow Builder State
   const [showSopWorkflowModal, setShowSopWorkflowModal] = useState(false);
   const [sopWorkflowTemplate, setSopWorkflowTemplate] = useState<WorkflowTemplateData | null>(null);
+  const [deletingDocItem, setDeletingDocItem] = useState<{ id: string; code: string; title: string } | null>(null);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -479,22 +476,23 @@ function DocumentsPage() {
         });
         const created = { ...res.data, id: res.data.document_id };
         setDocuments((prev) => [created, ...prev]);
+        toast.success(`Đã tạo tài liệu mới "${formData.doc_code}" thành công!`);
       }
       setIsCreateOpen(false);
       setEditingDoc(null);
     } catch (err: any) {
-      alert(err.response?.data?.detail || "Không thể lưu thông tin tài liệu");
+      toast.error(err.response?.data?.detail || "Không thể lưu thông tin tài liệu");
     }
   };
 
-  // Xoá tài liệu
-  const handleDeleteDocument = async (id: string, code: string) => {
-    if (!confirm(`Bạn có chắc chắn muốn xoá tài liệu [${code}] không?`)) return;
+  // Xoá tài liệu thực tế
+  const executeDeleteDocument = async (id: string, code: string) => {
     try {
       await api.delete(`/documents/${id}`);
       setDocuments((prev) => prev.filter((d) => d.document_id !== id));
+      toast.success(`Đã xoá tài liệu [${code}] thành công!`);
     } catch (err: any) {
-      alert(err.response?.data?.detail || "Không thể xoá tài liệu");
+      toast.error(err.response?.data?.detail || "Không thể xoá tài liệu");
     }
   };
 
@@ -509,8 +507,9 @@ function DocumentsPage() {
       setDocuments((prev) =>
         prev.map((d) => (d.document_id === doc.document_id ? updated : d))
       );
+      toast.success(`Đã phê duyệt hiệu lực cho tài liệu [${doc.doc_code}]!`);
     } catch (err: any) {
-      alert(err.response?.data?.detail || "Không thể phê duyệt tài liệu");
+      toast.error(err.response?.data?.detail || "Không thể phê duyệt tài liệu");
     }
   };
 
@@ -1010,20 +1009,24 @@ KÝ DUYỆT VĂN BẢN (ĐIỀU KHOẢN 7.5 ISO 22000:2018):
             Làm mới
           </Button>
 
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setIsAIAssistantOpen(true)}
-            className="gap-1.5 border-primary/30 bg-primary/5 text-xs text-primary hover:bg-primary/10"
-          >
-            <Sparkles className="h-3.5 w-3.5 text-primary" />
-            Trợ lý AI soạn thảo SOP
-          </Button>
+          {canEdit && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsAIAssistantOpen(true)}
+              className="gap-1.5 border-primary/30 bg-primary/5 text-xs text-primary hover:bg-primary/10"
+            >
+              <Sparkles className="h-3.5 w-3.5 text-primary" />
+              Trợ lý AI soạn thảo SOP
+            </Button>
+          )}
 
-          <Button onClick={handleOpenCreate} size="sm" className="gap-1.5 text-xs">
-            <Plus className="h-4 w-4" />
-            Tạo tài liệu mới
-          </Button>
+          {canEdit && (
+            <Button onClick={handleOpenCreate} size="sm" className="gap-1.5 text-xs">
+              <Plus className="h-4 w-4" />
+              Tạo tài liệu mới
+            </Button>
+          )}
         </div>
       </div>
 
@@ -1145,7 +1148,7 @@ KÝ DUYỆT VĂN BẢN (ĐIỀU KHOẢN 7.5 ISO 22000:2018):
                 className="h-8 rounded-lg border border-input bg-background px-2.5 text-xs font-medium shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
               >
                 <option value="ALL">Tất cả Phòng ban</option>
-                {DEPARTMENTS.map((d) => (
+                {departments.map((d) => (
                   <option key={d} value={d}>
                     {d}
                   </option>
@@ -1320,11 +1323,11 @@ KÝ DUYỆT VĂN BẢN (ĐIỀU KHOẢN 7.5 ISO 22000:2018):
                             <Eye className="h-3.5 w-3.5" />
                           </button>
 
-                          {/* Nút Duyệt nhanh nếu chưa duyệt */}
-                          {doc.status !== "APPROVED" && (
+                          {/* Nút Duyệt nhanh nếu chưa duyệt (Chỉ BGĐ hoặc Admin) */}
+                          {doc.status !== "APPROVED" && (isManagement || isAdmin) && (
                             <button
                               onClick={() => handleQuickApprove(doc)}
-                              title="Phê duyệt nhanh tài liệu"
+                              title="Phê duyệt nhanh tài liệu (Ban Giám Đốc)"
                               className="rounded p-1.5 text-emerald-600 hover:bg-emerald-500/10 dark:text-emerald-400 transition"
                             >
                               <Check className="h-3.5 w-3.5" />
@@ -1332,22 +1335,26 @@ KÝ DUYỆT VĂN BẢN (ĐIỀU KHOẢN 7.5 ISO 22000:2018):
                           )}
 
                           {/* Nút Chỉnh sửa */}
-                          <button
-                            onClick={() => handleOpenEdit(doc)}
-                            title="Chỉnh sửa tài liệu"
-                            className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition"
-                          >
-                            <Pencil className="h-3.5 w-3.5" />
-                          </button>
+                          {canEdit && (
+                            <button
+                              onClick={() => handleOpenEdit(doc)}
+                              title="Chỉnh sửa tài liệu"
+                              className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition"
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                            </button>
+                          )}
 
                           {/* Nút Xóa */}
-                          <button
-                            onClick={() => handleDeleteDocument(doc.document_id, doc.doc_code)}
-                            title="Xóa tài liệu"
-                            className="rounded p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
+                          {canEdit && (
+                            <button
+                              onClick={() => setDeletingDocItem({ id: doc.document_id, code: doc.doc_code, title: doc.doc_title })}
+                              title="Xóa tài liệu"
+                              className="rounded p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -1460,7 +1467,7 @@ KÝ DUYỆT VĂN BẢN (ĐIỀU KHOẢN 7.5 ISO 22000:2018):
                   onChange={(e) => setFormData({ ...formData, department: e.target.value })}
                   className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-xs shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
                 >
-                  {DEPARTMENTS.map((dept) => (
+                  {departments.map((dept) => (
                     <option key={dept} value={dept}>
                       {dept}
                     </option>
@@ -2164,6 +2171,21 @@ KÝ DUYỆT VĂN BẢN (ĐIỀU KHOẢN 7.5 ISO 22000:2018):
           </div>
         </div>
       )}
+      {/* Modal Xác Nhận Xóa Tài Liệu */}
+      <ConfirmDialog
+        isOpen={!!deletingDocItem}
+        onClose={() => setDeletingDocItem(null)}
+        onConfirm={() => {
+          if (deletingDocItem) {
+            executeDeleteDocument(deletingDocItem.id, deletingDocItem.code);
+            setDeletingDocItem(null);
+          }
+        }}
+        title="Xác nhận xóa tài liệu"
+        description={`Bạn có chắc chắn muốn xoá tài liệu [${deletingDocItem?.code}] - "${deletingDocItem?.title}" không? Hành động này sẽ loại bỏ tài liệu khỏi hệ thống FSMS và không thể hoàn tác.`}
+        confirmLabel="Xóa tài liệu"
+        variant="destructive"
+      />
     </div>
   );
 }
