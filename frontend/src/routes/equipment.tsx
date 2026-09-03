@@ -42,6 +42,8 @@ import {
 import api from "@/lib/api";
 import { printHtml } from "@/lib/print";
 import logoImg from "@/assets/logo.png";
+import { toast } from "sonner";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 export const Route = createFileRoute("/equipment")({
   head: () => ({
@@ -260,6 +262,7 @@ function EquipmentModule() {
   const [editingEq, setEditingEq] = useState<EquipmentItem | null>(null);
   const [isMaintModalOpen, setIsMaintModalOpen] = useState(false);
   const [isCalModalOpen, setIsCalModalOpen] = useState(false);
+  const [deletingEqItem, setDeletingEqItem] = useState<{ id: string; name: string } | null>(null);
 
   // Modals In Ấn & Xem Trước Chuẩn ISO
   const [showPrintProfileModal, setShowPrintProfileModal] = useState(false);
@@ -460,44 +463,44 @@ function EquipmentModule() {
     // ================= VALIDATE NGHIỆP VỤ ISO 22000 =================
     const code = eqForm.equipment_code?.trim();
     if (!code || code.length < 2) {
-      alert("❌ Lỗi nghiệp vụ: Mã thiết bị là bắt buộc (tối thiểu 2 ký tự, ví dụ: EQ-STER-01)");
+      toast.error("Lỗi nghiệp vụ: Mã thiết bị là bắt buộc (tối thiểu 2 ký tự, ví dụ: EQ-STER-01)");
       return;
     }
 
     const name = eqForm.equipment_name?.trim();
     if (!name || name.length < 3) {
-      alert("❌ Lỗi nghiệp vụ: Tên thiết bị là bắt buộc (tối thiểu 3 ký tự, ví dụ: Nồi tiệt trùng cao áp)");
+      toast.error("Lỗi nghiệp vụ: Tên thiết bị là bắt buộc (tối thiểu 3 ký tự, ví dụ: Nồi tiệt trùng cao áp)");
       return;
     }
 
     const location = eqForm.installation_location?.trim();
     if (!location || location.length < 2) {
-      alert("❌ Lỗi nghiệp vụ ISO 22000 (Điều khoản 7.1.5): Vị trí lắp đặt là bắt buộc để quản lý phân vùng ATTP và chống nhiễm chéo.");
+      toast.error("Lỗi nghiệp vụ ISO 22000 (Điều khoản 7.1.5): Vị trí lắp đặt là bắt buộc để quản lý phân vùng ATTP và chống nhiễm chéo.");
       return;
     }
 
     const calFreq = Number(eqForm.calibration_frequency_months);
     if (!calFreq || calFreq < 1) {
-      alert("❌ Lỗi nghiệp vụ: Chu kỳ hiệu chuẩn quy định phải là số nguyên dương >= 1 tháng.");
+      toast.error("Lỗi nghiệp vụ: Chu kỳ hiệu chuẩn quy định phải là số nguyên dương >= 1 tháng.");
       return;
     }
 
     const maintFreq = Number(eqForm.maintenance_frequency_days);
     if (!maintFreq || maintFreq < 1) {
-      alert("❌ Lỗi nghiệp vụ: Chu kỳ bảo trì PM quy định phải là số nguyên dương >= 1 ngày.");
+      toast.error("Lỗi nghiệp vụ: Chu kỳ bảo trì PM quy định phải là số nguyên dương >= 1 ngày.");
       return;
     }
 
     if (eqForm.last_calibration_date && eqForm.next_calibration_due) {
       if (eqForm.next_calibration_due < eqForm.last_calibration_date) {
-        alert("❌ Lỗi logic ngày tháng: Hạn hiệu chuẩn kế tiếp không thể diễn ra trước Ngày hiệu chuẩn gần nhất.");
+        toast.error("Lỗi logic ngày tháng: Hạn hiệu chuẩn kế tiếp không thể diễn ra trước Ngày hiệu chuẩn gần nhất.");
         return;
       }
     }
 
     if (eqForm.last_maintenance_date && eqForm.next_maintenance_due) {
       if (eqForm.next_maintenance_due < eqForm.last_maintenance_date) {
-        alert("❌ Lỗi logic ngày tháng: Hạn bảo trì kế tiếp không thể diễn ra trước Ngày bảo dưỡng gần nhất.");
+        toast.error("Lỗi logic ngày tháng: Hạn bảo trì kế tiếp không thể diễn ra trước Ngày bảo dưỡng gần nhất.");
         return;
       }
     }
@@ -526,24 +529,25 @@ function EquipmentModule() {
 
       if (editingEq) {
         await api.put(`/equipment/equipments/${editingEq.equipment_id}`, payload);
+        toast.success(`Đã cập nhật thông tin thiết bị [${code}] thành công!`);
       } else {
         await api.post("/equipment/equipments", payload);
+        toast.success(`Đã thêm thiết bị mới [${code}] vào hồ sơ máy móc thành công!`);
       }
       setIsEqModalOpen(false);
       await fetchData();
     } catch (err: any) {
-      alert(formatError(err));
+      toast.error(formatError(err));
     }
   };
 
-  const handleDeleteEquipment = async (id: string) => {
-    if (confirm("Bạn có chắc chắn muốn xoá thiết bị này khỏi hệ thống?")) {
-      try {
-        await api.delete(`/equipment/equipments/${id}`);
-        await fetchData();
-      } catch (err: any) {
-        alert(formatError(err));
-      }
+  const executeDeleteEquipment = async (id: string, name?: string) => {
+    try {
+      await api.delete(`/equipment/equipments/${id}`);
+      toast.success(`Đã xoá thiết bị ${name ? `"${name}"` : ""} khỏi hệ thống thành công!`);
+      await fetchData();
+    } catch (err: any) {
+      toast.error(formatError(err));
     }
   };
 
@@ -555,14 +559,14 @@ function EquipmentModule() {
       maintenance_code: `MAINT-2026-${codeNum}`,
       maintenance_type: "PREVENTIVE",
       maintenance_date: new Date().toISOString().split("T")[0],
-      performer_name: "Tổ Kỹ thuật Bảo trì",
-      task_desc: "Bảo dưỡng định kỳ, kiểm tra vòng bi, siết ốc, tra mỡ thực phẩm NSF H1",
-      parts_desc: "Gioăng đệm chịu nhiệt, phớt làm kín",
+      performer_name: "Tổ Cơ Điện - Phòng Kỹ Thuật",
+      task_desc: "Bảo dưỡng định kỳ, tra dầu mỡ bôi trơn an toàn thực phẩm NSF H1 và hiệu chỉnh căn chỉnh trục quay.",
+      parts_desc: "",
       food_grade_lubricant_used: true,
       hygiene_sanitation_after_maint: true,
-      cost: 450000,
-      result_status: "SUCCESS",
-      notes: "Thiết bị vận hành êm sau bảo dưỡng.",
+      cost: 500000,
+      result_status: "COMPLETED",
+      notes: "Thiết bị vận hành êm, đạt tiêu chuẩn vệ sinh an toàn thực phẩm.",
     });
     setIsMaintModalOpen(true);
   };
@@ -573,25 +577,25 @@ function EquipmentModule() {
     // ================= VALIDATE NGHIỆP VỤ BẢO TRÌ =================
     const code = maintForm.maintenance_code?.trim();
     if (!code || code.length < 2) {
-      alert("❌ Lỗi nghiệp vụ: Mã phiếu bảo trì là bắt buộc (ví dụ: MAINT-2026-001).");
+      toast.error("Lỗi nghiệp vụ: Mã phiếu bảo trì là bắt buộc (ví dụ: MAINT-2026-001).");
       return;
     }
     if (!maintForm.equipment_id) {
-      alert("❌ Lỗi nghiệp vụ: Vui lòng chọn thiết bị thực hiện bảo dưỡng.");
+      toast.error("Lỗi nghiệp vụ: Vui lòng chọn thiết bị thực hiện bảo dưỡng.");
       return;
     }
     if (!maintForm.maintenance_date) {
-      alert("❌ Lỗi nghiệp vụ: Ngày thực hiện bảo trì là bắt buộc.");
+      toast.error("Lỗi nghiệp vụ: Ngày thực hiện bảo trì là bắt buộc.");
       return;
     }
     const taskDesc = maintForm.task_desc?.trim();
     if (!taskDesc || taskDesc.length < 5) {
-      alert("❌ Lỗi nghiệp vụ ISO 22000 (Điều khoản 8.2): Nội dung công việc bảo trì phải mô tả chi tiết tối thiểu 5 ký tự.");
+      toast.error("Lỗi nghiệp vụ ISO 22000 (Điều khoản 8.2): Nội dung công việc bảo trì phải mô tả chi tiết tối thiểu 5 ký tự.");
       return;
     }
     const performer = maintForm.performer_name?.trim();
     if (!performer || performer.length < 2) {
-      alert("❌ Lỗi nghiệp vụ: Người/Đơn vị thực hiện bảo trì là bắt buộc để truy cứu trách nhiệm.");
+      toast.error("Lỗi nghiệp vụ: Người/Đơn vị thực hiện bảo trì là bắt buộc để truy cứu trách nhiệm.");
       return;
     }
 
@@ -612,9 +616,10 @@ function EquipmentModule() {
       };
       await api.post("/equipment/maintenance-logs", payload);
       setIsMaintModalOpen(false);
+      toast.success(`Đã lưu phiếu bảo dưỡng [${code}] thành công!`);
       await fetchData();
     } catch (err: any) {
-      alert(formatError(err));
+      toast.error(formatError(err));
     }
   };
 
@@ -651,47 +656,47 @@ function EquipmentModule() {
     // ================= VALIDATE NGHIỆP VỤ HIỆU CHUẨN ĐO LƯỜNG =================
     const code = calForm.calibration_code?.trim();
     if (!code || code.length < 2) {
-      alert("❌ Lỗi nghiệp vụ: Mã biên bản hiệu chuẩn là bắt buộc.");
+      toast.error("Lỗi nghiệp vụ: Mã biên bản hiệu chuẩn là bắt buộc.");
       return;
     }
     if (!calForm.equipment_id) {
-      alert("❌ Lỗi nghiệp vụ: Vui lòng chọn thiết bị đo lường cần kiểm định.");
+      toast.error("Lỗi nghiệp vụ: Vui lòng chọn thiết bị đo lường cần kiểm định.");
       return;
     }
     if (!calForm.calibration_date) {
-      alert("❌ Lỗi nghiệp vụ: Ngày hiệu chuẩn là bắt buộc.");
+      toast.error("Lỗi nghiệp vụ: Ngày hiệu chuẩn là bắt buộc.");
       return;
     }
     if (!calForm.expiry_date) {
-      alert("❌ Lỗi nghiệp vụ: Ngày hết hạn kiểm định (hạn tem) là bắt buộc.");
+      toast.error("Lỗi nghiệp vụ: Ngày hết hạn kiểm định (hạn tem) là bắt buộc.");
       return;
     }
     if (calForm.expiry_date < calForm.calibration_date) {
-      alert("❌ Lỗi logic: Ngày hết hạn kiểm định phải lớn hơn hoặc bằng Ngày hiệu chuẩn.");
+      toast.error("Lỗi logic: Ngày hết hạn kiểm định phải lớn hơn hoặc bằng Ngày hiệu chuẩn.");
       return;
     }
 
     const certNum = calForm.certificate_number?.trim();
     if (!certNum) {
-      alert("❌ Lỗi nghiệp vụ ISO 22000 (Điều khoản 7.1.5.2): Số tem kiểm định / Số giấy chứng nhận là bắt buộc để truy xuất nguồn gốc đo lường.");
+      toast.error("Lỗi nghiệp vụ ISO 22000 (Điều khoản 7.1.5.2): Số tem kiểm định / Số giấy chứng nhận là bắt buộc để truy xuất nguồn gốc đo lường.");
       return;
     }
 
     const agency = calForm.agency_name?.trim();
     if (!agency) {
-      alert("❌ Lỗi nghiệp vụ: Đơn vị / Phòng thí nghiệm kiểm định là bắt buộc.");
+      toast.error("Lỗi nghiệp vụ: Đơn vị / Phòng thí nghiệm kiểm định là bắt buộc.");
       return;
     }
 
     const dev = Number(calForm.measured_deviation);
     if (isNaN(dev)) {
-      alert("❌ Lỗi dữ liệu: Sai số thực tế đo được phải là một số hợp lệ.");
+      toast.error("Lỗi dữ liệu: Sai số thực tế đo được phải là một số hợp lệ.");
       return;
     }
 
     const tol = Number(calForm.allowable_tolerance);
     if (isNaN(tol) || tol <= 0) {
-      alert("❌ Lỗi dữ liệu: Dung sai cho phép (+/-) phải là số dương lớn hơn 0.");
+      toast.error("Lỗi dữ liệu: Dung sai cho phép (+/-) phải là số dương lớn hơn 0.");
       return;
     }
 
@@ -716,9 +721,10 @@ function EquipmentModule() {
       };
       await api.post("/equipment/calibration-logs", payload);
       setIsCalModalOpen(false);
+      toast.success(`Đã lưu biên bản kiểm định/hiệu chuẩn [${code}] thành công!`);
       await fetchData();
     } catch (err: any) {
-      alert(formatError(err));
+      toast.error(formatError(err));
     }
   };
 
@@ -728,8 +734,9 @@ function EquipmentModule() {
     try {
       const res = await api.post("/equipment/ai/predict-maintenance", aiMaintReq);
       setAiMaintResult(res.data);
+      toast.success("Trợ lý AI đã phân tích xong lịch bảo dưỡng dự đoán!");
     } catch (err: any) {
-      alert(formatError(err));
+      toast.error(formatError(err));
     } finally {
       setAiMaintLoading(false);
     }
@@ -741,8 +748,9 @@ function EquipmentModule() {
     try {
       const res = await api.post("/equipment/ai/evaluate-calibration", aiCalReq);
       setAiCalResult(res.data);
+      toast.success("Trợ lý AI đã đánh giá xong dung sai đo lường!");
     } catch (err: any) {
-      alert(formatError(err));
+      toast.error(formatError(err));
     } finally {
       setAiCalLoading(false);
     }
@@ -1416,7 +1424,7 @@ function EquipmentModule() {
                         <Pencil className="h-3.5 w-3.5" />
                       </button>
                       <button
-                        onClick={() => handleDeleteEquipment(eq.equipment_id)}
+                        onClick={() => setDeletingEqItem({ id: eq.equipment_id, name: eq.equipment_name })}
                         className="rounded p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition"
                         title="Xoá thiết bị"
                       >
@@ -2725,6 +2733,22 @@ function EquipmentModule() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Modal Xác Nhận Xóa Thiết Bị */}
+      <ConfirmDialog
+        isOpen={!!deletingEqItem}
+        onClose={() => setDeletingEqItem(null)}
+        onConfirm={() => {
+          if (deletingEqItem) {
+            executeDeleteEquipment(deletingEqItem.id, deletingEqItem.name);
+            setDeletingEqItem(null);
+          }
+        }}
+        title="Xác nhận xóa hồ sơ thiết bị"
+        description={`Bạn có chắc chắn muốn xoá thiết bị "${deletingEqItem?.name}" khỏi hệ thống hồ sơ máy móc không? Dữ liệu lịch sử bảo dưỡng và hiệu chuẩn liên quan sẽ bị ảnh hưởng.`}
+        confirmLabel="Xóa thiết bị"
+        variant="destructive"
+      />
     </div>
   );
 }

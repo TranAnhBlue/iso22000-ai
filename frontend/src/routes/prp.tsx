@@ -43,6 +43,8 @@ import {
 } from "lucide-react";
 import api from "@/lib/api";
 import { toast } from "sonner";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { useDepartments } from "@/lib/departments";
 import logoImg from "@/assets/logo.png";
 import { DynamicFormRenderer } from "@/components/builder/DynamicFormRenderer";
 import type { FormTemplateData } from "@/components/builder/types";
@@ -124,6 +126,7 @@ const DEFAULT_CHECKLIST_QUESTIONS: Record<string, string[]> = {
 };
 
 function PRPModule() {
+  const { departments } = useDepartments();
   const [activeTab, setActiveTab] = useState<"programs" | "checklists">("programs");
 
   // Data states
@@ -174,6 +177,10 @@ function PRPModule() {
   const [showDynamicGmpModal, setShowDynamicGmpModal] = useState(false);
   const [gmpFormTemplate, setGmpFormTemplate] = useState<FormTemplateData | null>(null);
   const [selectedProgramForForm, setSelectedProgramForForm] = useState<PRPProgram | null>(null);
+
+  // Deleting Confirmation States
+  const [deletingProg, setDeletingProg] = useState<PRPProgram | null>(null);
+  const [deletingChecklist, setDeletingChecklist] = useState<PRPChecklistLog | null>(null);
 
   // Fetch all data
   const fetchData = async () => {
@@ -290,8 +297,7 @@ function PRPModule() {
     }
   };
 
-  const handleDeleteProg = async (p: PRPProgram) => {
-    if (!confirm(`Bạn có chắc muốn xóa chương trình '${p.program_code} - ${p.program_name}'?`)) return;
+  const executeDeleteProg = async (p: PRPProgram) => {
     try {
       await api.delete(`/haccp/prp-programs/${p.program_id}`);
       toast.success("Đã xóa chương trình thành công");
@@ -346,8 +352,7 @@ function PRPModule() {
     }
   };
 
-  const handleDeleteChecklist = async (c: PRPChecklistLog) => {
-    if (!confirm("Bạn có chắc muốn xóa bản ghi checklist này?")) return;
+  const executeDeleteChecklist = async (c: PRPChecklistLog) => {
     try {
       await api.delete(`/haccp/prp-checklists/${c.check_id}`);
       toast.success("Đã xóa bản ghi checklist thành công");
@@ -631,7 +636,7 @@ function PRPModule() {
                     <Button variant="ghost" size="icon" onClick={() => handleOpenEditProg(p)} className="h-7 w-7 text-muted-foreground hover:text-primary">
                       <Pencil className="h-3.5 w-3.5" />
                     </Button>
-                    <Button variant="ghost" size="icon" onClick={() => handleDeleteProg(p)} className="h-7 w-7 text-muted-foreground hover:text-rose-600">
+                    <Button variant="ghost" size="icon" onClick={() => setDeletingProg(p)} className="h-7 w-7 text-muted-foreground hover:text-rose-600" title="Xóa chương trình">
                       <Trash2 className="h-3.5 w-3.5" />
                     </Button>
                   </div>
@@ -721,7 +726,7 @@ function PRPModule() {
                       Tuân thủ: {c.compliance_rate}%
                     </span>
                     {getStatusBadge(c.status)}
-                    <Button variant="ghost" size="icon" onClick={() => handleDeleteChecklist(c)} className="h-7 w-7 text-muted-foreground hover:text-rose-600">
+                    <Button variant="ghost" size="icon" onClick={() => setDeletingChecklist(c)} className="h-7 w-7 text-muted-foreground hover:text-rose-600" title="Xóa bản ghi checklist">
                       <Trash2 className="h-3.5 w-3.5" />
                     </Button>
                   </div>
@@ -822,11 +827,17 @@ function PRPModule() {
 
             <div className="space-y-1">
               <Label className="text-xs">Bộ phận phụ trách</Label>
-              <Input
-                placeholder="Phòng Sản xuất, QA/QC, Bảo trì"
+              <select
+                className="w-full border rounded-md px-3 py-2 text-xs bg-background font-semibold"
                 value={progForm.responsible_dept}
                 onChange={(e) => setProgForm({ ...progForm, responsible_dept: e.target.value })}
-              />
+              >
+                {departments.map((d) => (
+                  <option key={d} value={d}>
+                    {d}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div className="space-y-1">
@@ -995,7 +1006,7 @@ function PRPModule() {
               </div>
               <div className="text-right text-[11px] text-slate-600">
                 <p className="font-bold text-slate-900 text-sm">BIỂU MẪU: BM-PRP-01</p>
-                <p>Tiêu chuẩn: ISO 22000:2018 Clause 8.2</p>
+                <p>Tiêu chuẩn: ISO 22000:2018 Điều khoản 8.2</p>
                 <p>Ngày in: {new Date().toLocaleDateString("vi-VN")}</p>
               </div>
             </div>
@@ -1068,6 +1079,38 @@ function PRPModule() {
           </div>
         </div>
       )}
+
+      {/* Modal Xác Nhận Xóa Chương Trình PRP */}
+      <ConfirmDialog
+        isOpen={!!deletingProg}
+        onClose={() => setDeletingProg(null)}
+        onConfirm={() => {
+          if (deletingProg) {
+            executeDeleteProg(deletingProg);
+            setDeletingProg(null);
+          }
+        }}
+        title="Xác nhận xóa chương trình tiên quyết"
+        description={`Bạn có chắc chắn muốn xóa chương trình '${deletingProg?.program_code} - ${deletingProg?.program_name}' khỏi hệ thống PRP/GMP không?`}
+        confirmLabel="Xóa chương trình"
+        variant="destructive"
+      />
+
+      {/* Modal Xác Nhận Xóa Checklist */}
+      <ConfirmDialog
+        isOpen={!!deletingChecklist}
+        onClose={() => setDeletingChecklist(null)}
+        onConfirm={() => {
+          if (deletingChecklist) {
+            executeDeleteChecklist(deletingChecklist);
+            setDeletingChecklist(null);
+          }
+        }}
+        title="Xác nhận xóa bản ghi checklist"
+        description={`Bạn có chắc chắn muốn xóa bản ghi checklist của chương trình [${deletingChecklist?.program_code}] ngày ${deletingChecklist?.check_date} (${deletingChecklist?.shift_name}) không?`}
+        confirmLabel="Xóa bản ghi"
+        variant="destructive"
+      />
     </div>
   );
 }

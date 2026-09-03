@@ -41,6 +41,8 @@ import {
 import { useEffect, useState, useMemo } from "react";
 import api from "@/lib/api";
 import { QRCodeModal } from "@/components/QRCodeModal";
+import { toast } from "sonner";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 export const Route = createFileRoute("/inventory")({
   head: () => ({
@@ -294,6 +296,9 @@ export function InventoryPage() {
     productName: "Bột lòng trắng trứng nhập khẩu",
   });
 
+  const [deletingStockItem, setDeletingStockItem] = useState<{ id: string; name: string; lot: string } | null>(null);
+  const [deletingSampleItem, setDeletingSampleItem] = useState<{ id: string; code: string } | null>(null);
+
   // Fetch all data
   const fetchData = async () => {
     setLoading(true);
@@ -338,8 +343,10 @@ export function InventoryPage() {
     try {
       await api.post("/traceability/seed-demo");
       await fetchData();
+      toast.success("Đã nạp dữ liệu mẫu kho FEFO và mẫu lưu đối chứng thành công!");
     } catch (err) {
       console.error("Lỗi khi nạp dữ liệu mẫu:", err);
+      toast.error("Không thể nạp dữ liệu mẫu.");
     } finally {
       setLoading(false);
     }
@@ -351,13 +358,15 @@ export function InventoryPage() {
     try {
       if (selectedStock) {
         await api.put(`/inventory/stock/${selectedStock.inventory_id}`, stockForm);
+        toast.success(`Đã cập nhật tồn kho lô [${stockForm.lot_number}] thành công!`);
       } else {
         await api.post("/inventory/stock", stockForm);
+        toast.success(`Đã nhập kho lô hàng mới [${stockForm.lot_number}] thành công!`);
       }
       setStockModalOpen(false);
       fetchData();
     } catch (err: any) {
-      alert("Lỗi khi lưu tồn kho: " + (err.response?.data?.detail || err.message));
+      toast.error("Lỗi khi lưu tồn kho: " + (err.response?.data?.detail || err.message));
     }
   };
 
@@ -367,13 +376,15 @@ export function InventoryPage() {
     try {
       if (selectedSample) {
         await api.put(`/inventory/samples/${selectedSample.sample_id}`, sampleForm);
+        toast.success(`Đã cập nhật hồ sơ mẫu lưu [${sampleForm.sample_code}] thành công!`);
       } else {
         await api.post("/inventory/samples", sampleForm);
+        toast.success(`Đã lưu mẫu nghiệm thức đối chứng [${sampleForm.sample_code}] thành công!`);
       }
       setSampleModalOpen(false);
       fetchData();
     } catch (err: any) {
-      alert("Lỗi khi lưu mẫu lưu: " + (err.response?.data?.detail || err.message));
+      toast.error("Lỗi khi lưu mẫu lưu: " + (err.response?.data?.detail || err.message));
     }
   };
 
@@ -791,13 +802,9 @@ export function InventoryPage() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={async () => {
-                                if (confirm(`Bạn có chắc muốn xóa tồn kho ${item.item_name} (${item.lot_number})?`)) {
-                                  await api.delete(`/inventory/stock/${item.inventory_id}`);
-                                  fetchData();
-                                }
-                              }}
+                              onClick={() => setDeletingStockItem({ id: item.inventory_id, name: item.item_name, lot: item.lot_number })}
                               className="h-8 w-8 p-0 text-rose-600 hover:text-rose-700 hover:bg-rose-50"
+                              title="Xóa tồn kho"
                             >
                               <Trash2 className="h-3.5 w-3.5" />
                             </Button>
@@ -1038,13 +1045,9 @@ export function InventoryPage() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={async () => {
-                        if (confirm(`Bạn có chắc muốn xóa mẫu lưu ${sample.sample_code}?`)) {
-                          await api.delete(`/inventory/samples/${sample.sample_id}`);
-                          fetchData();
-                        }
-                      }}
-                      className="h-7 w-7 p-0 text-rose-600"
+                      onClick={() => setDeletingSampleItem({ id: sample.sample_id, code: sample.sample_code })}
+                      className="h-7 w-7 p-0 text-rose-600 hover:text-rose-700 hover:bg-rose-50"
+                      title="Xóa mẫu lưu"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </Button>
@@ -1518,6 +1521,50 @@ export function InventoryPage() {
         expDate={qrModalData.expDate}
         quantity={qrModalData.quantity}
         unit={qrModalData.unit}
+      />
+
+      {/* Modal Xóa Tồn Kho */}
+      <ConfirmDialog
+        isOpen={!!deletingStockItem}
+        onClose={() => setDeletingStockItem(null)}
+        onConfirm={async () => {
+          if (deletingStockItem) {
+            try {
+              await api.delete(`/inventory/stock/${deletingStockItem.id}`);
+              toast.success(`Đã xoá tồn kho [${deletingStockItem.name}] thành công!`);
+              fetchData();
+            } catch (err: any) {
+              toast.error("Lỗi khi xóa tồn kho: " + (err.response?.data?.detail || err.message));
+            }
+            setDeletingStockItem(null);
+          }
+        }}
+        title="Xác nhận xóa tồn kho"
+        description={`Bạn có chắc chắn muốn xóa bản ghi tồn kho [${deletingStockItem?.name}] (Lô: ${deletingStockItem?.lot}) khỏi hệ thống không? Dữ liệu đã xóa không thể khôi phục.`}
+        confirmLabel="Xóa tồn kho"
+        variant="destructive"
+      />
+
+      {/* Modal Xóa Mẫu Lưu */}
+      <ConfirmDialog
+        isOpen={!!deletingSampleItem}
+        onClose={() => setDeletingSampleItem(null)}
+        onConfirm={async () => {
+          if (deletingSampleItem) {
+            try {
+              await api.delete(`/inventory/samples/${deletingSampleItem.id}`);
+              toast.success(`Đã xoá mẫu lưu [${deletingSampleItem.code}] thành công!`);
+              fetchData();
+            } catch (err: any) {
+              toast.error("Lỗi khi xóa mẫu lưu: " + (err.response?.data?.detail || err.message));
+            }
+            setDeletingSampleItem(null);
+          }
+        }}
+        title="Xác nhận hủy / xóa mẫu lưu nghiệm thức"
+        description={`Bạn có chắc chắn muốn xóa mẫu lưu đối chứng [${deletingSampleItem?.code}] khỏi hệ thống tủ bảo quản?`}
+        confirmLabel="Xóa mẫu lưu"
+        variant="destructive"
       />
     </div>
   );

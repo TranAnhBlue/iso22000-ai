@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { useDepartments } from "@/lib/departments";
 import type { WorkflowNodeData, WorkflowEdgeData, WorkflowTemplateData } from "./types";
 
 export type { WorkflowNodeData, WorkflowEdgeData, WorkflowTemplateData };
@@ -86,6 +87,7 @@ export const WorkflowBuilder: React.FC<WorkflowBuilderProps> = ({
   onSave,
   onCancel,
 }) => {
+  const { departments } = useDepartments();
   const [template, setTemplate] = useState<WorkflowTemplateData>(
     initialData || {
       module: "HACCP_FLOW",
@@ -622,13 +624,22 @@ export const WorkflowBuilder: React.FC<WorkflowBuilderProps> = ({
                           />
                         </div>
                         <div>
-                          <label className="text-[11px] font-semibold text-slate-500">Vai trò phụ trách</label>
-                          <input
-                            type="text"
+                          <label className="text-[11px] font-semibold text-slate-500">Phòng ban / Vai trò phụ trách</label>
+                          <select
                             value={node.role || ""}
                             onChange={(e) => handleUpdateNode(node.id, { role: e.target.value })}
-                            className="w-full mt-0.5 bg-white border border-slate-300 rounded px-2 py-1 text-xs text-slate-900"
-                          />
+                            className="w-full mt-0.5 bg-white border border-slate-300 rounded px-2 py-1 text-xs text-slate-900 font-semibold"
+                          >
+                            <option value="">-- Chọn phòng ban / vai trò --</option>
+                            {departments.map((d) => (
+                              <option key={d} value={d}>
+                                {d}
+                              </option>
+                            ))}
+                            {node.role && !departments.includes(node.role) && (
+                              <option value={node.role}>{node.role}</option>
+                            )}
+                          </select>
                         </div>
                       </div>
 
@@ -684,14 +695,22 @@ export const WorkflowBuilder: React.FC<WorkflowBuilderProps> = ({
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-slate-700">Vai trò / Bộ phận phụ trách</label>
-                <input
-                  type="text"
+                <label className="text-xs font-semibold text-slate-700">Phòng ban / Vai trò phụ trách</label>
+                <select
                   value={selectedNode.role || ""}
                   onChange={(e) => handleUpdateNode(selectedNode.id, { role: e.target.value })}
-                  placeholder="VD: QC Tiếp nhận, Tổ Chế biến..."
-                  className="w-full mt-1 bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-xs text-slate-800 focus:border-blue-600 focus:outline-none"
-                />
+                  className="w-full mt-1 bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-xs text-slate-800 font-semibold focus:border-blue-600 focus:outline-none"
+                >
+                  <option value="">-- Chọn phòng ban / vai trò --</option>
+                  {departments.map((d) => (
+                    <option key={d} value={d}>
+                      {d}
+                    </option>
+                  ))}
+                  {selectedNode.role && !departments.includes(selectedNode.role) && (
+                    <option value={selectedNode.role}>{selectedNode.role}</option>
+                  )}
+                </select>
               </div>
 
               {/* CCP Toggle */}

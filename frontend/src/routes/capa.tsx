@@ -32,6 +32,7 @@ import {
 import api from "@/lib/api";
 import { toast } from "sonner";
 import { WorkflowBuilder, type WorkflowTemplateData } from "@/components/builder/WorkflowBuilder";
+import { useDepartments } from "@/lib/departments";
 
 export const Route = createFileRoute("/capa")({
   head: () => ({
@@ -54,28 +55,38 @@ interface NonConformance {
   nc_id: string;
   nc_number: string;
   title: string;
-  source: string;
-  severity: "CRITICAL" | "MAJOR" | "MINOR";
-  occurred_date: string;
-  occurred_location?: string;
+  source: "HACCP_CCP" | "PRP_GMP" | "IQC_INCOMING" | "INTERNAL_AUDIT" | "CUSTOMER_COMPLAINT" | "EQUIPMENT_FAIL";
+  severity: "CRITICAL" | "MAJOR" | "MINOR" | "OFI";
+  detected_date: string;
+  detected_by_name: string;
   description: string;
+  lot_number?: string;
   immediate_action?: string;
-  affected_lot_number?: string;
-  affected_quantity?: string;
-  reported_by_name?: string;
-  status: "NEW" | "INVESTIGATING" | "ACTION_REQUIRED" | "UNDER_REVIEW" | "CLOSED" | "REJECTED";
+  status: "OPEN" | "INVESTIGATING" | "CAPA_REQUIRED" | "CLOSED";
+  capa_id?: string;
   created_at?: string;
-  capa_count?: number;
 }
 
-interface CAPARecord {
+interface CAPAPlan {
   capa_id: string;
   capa_number: string;
   nc_id: string;
-  title: string;
-  root_cause_method: "5_WHYS" | "FISHBONE_5M" | "OTHER";
-  root_cause_analysis?: any;
-  root_cause_summary?: string;
+  root_cause_summary: string;
+  five_why_analysis?: {
+    why1: string;
+    why2: string;
+    why3: string;
+    why4: string;
+    why5: string;
+  };
+  fishbone_analysis?: {
+    man?: string[];
+    machine?: string[];
+    material?: string[];
+    method?: string[];
+    measurement?: string[];
+    environment?: string[];
+  };
   corrective_action: string;
   preventive_action?: string;
   assigned_to_name?: string;
@@ -109,6 +120,7 @@ interface CAPAStats {
 
 // ==================== MAIN COMPONENT ====================
 function CAPAManagementPage() {
+  const { departments } = useDepartments();
   const [activeTab, setActiveTab] = useState<"ncs" | "capas" | "ai_studio" | "verification">("ncs");
   const [stats, setStats] = useState<CAPAStats>({
     total_ncs: 0,
@@ -608,7 +620,7 @@ function CAPAManagementPage() {
           }`}
         >
           <BrainCircuit className="h-4 w-4 text-purple-600" />
-          <span>3. AI 5-Why & Fishbone Studio</span>
+          <span>3. Trợ Lý AI Phân Tích Nguyên Nhân Gốc (5-Why & Fishbone)</span>
           <span className="px-2 py-0.5 text-[10px] font-extrabold bg-purple-200 text-purple-800 rounded-full">AI</span>
         </button>
 
@@ -798,7 +810,7 @@ function CAPAManagementPage() {
                             title="Phân tích AI 5-Why"
                           >
                             <BrainCircuit className="h-3.5 w-3.5" />
-                            <span>AI Studio</span>
+                            <span>Phân Tích AI</span>
                           </Button>
 
                           <Button
@@ -1600,11 +1612,17 @@ function CAPAManagementPage() {
 
                 <div>
                   <label className="block font-semibold text-slate-700 mb-1">Phòng Ban Phụ Trách</label>
-                  <Input
+                  <select
                     name="assigned_dept"
-                    defaultValue={editingCAPA?.assigned_dept || "Phòng Cơ Điện & Thiết Bị"}
-                    className="text-xs h-9"
-                  />
+                    defaultValue={editingCAPA?.assigned_dept || departments[0] || "Phòng Cơ điện & Thiết bị"}
+                    className="w-full text-xs h-9 bg-white border border-slate-200 rounded-lg px-2.5 font-semibold focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                  >
+                    {departments.map((d) => (
+                      <option key={d} value={d}>
+                        {d}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div>

@@ -228,6 +228,11 @@ Cơ sở dữ liệu được chuẩn hóa cho toàn bộ 10 luồng nghiệp v�
   - Xây dựng 2 ORM Models `NonConformance` và `CAPARecord` trong `backend/app/models/capa.py`.
   - Cung cấp 12+ API RESTful tại `/api/v1/capa` cho CRUD NC, CRUD CAPA, thẩm tra sau 30 ngày, thống kê KPI và 3 Trợ lý AI (AI 5-Why, AI Fishbone 5M+1E, AI Suggest Actions).
   - Giao diện `frontend/src/routes/capa.tsx` trực quan: Bảng sự cố NC không cắt chữ thông tin quan trọng, thẻ kế hoạch CAPA, Studio AI phân tích nguyên nhân gốc rễ, tab thẩm tra 30 ngày và in ấn BM-CAPA-01.
+- **Hoàn thiện Phân hệ Đào Tạo Nhân Sự, Đánh Giá Nội Bộ & Khai Báo Sức Khỏe (Luồng 6 - Phase 8):**
+  - Xây dựng 5 ORM Models: `InternalAudit`, `AuditFinding`, `TrainingCourse`, `TrainingParticipantRecord`, `HealthDeclarationRecord` trong `backend/app/models/audit.py`.
+  - Xây dựng 17+ Endpoints RESTful tại `/api/v1/audits` hỗ trợ ĐGNB (Clause 9.2), Đào tạo năng lực (Clause 7.2), Khai báo sức khỏe ca (Clause 8.2 PRP) và 4 Trợ lý AI.
+  - Tích hợp tính năng **Chuyển đổi 1 chạm phát hiện NC sang Phiếu CAPA** (`non_conformances`).
+  - Giao diện `frontend/src/routes/audits.tsx` hiện đại: 4 Thẻ KPI, 4 Tabs nghiệp vụ, 3 Biểu mẫu In Chuẩn ISO A4 (**BM-AUDIT-01**, **BM-TRAIN-02**, **BM-HEALTH-03**) và Lưu đồ Quy trình ĐGNB 4 bước (`WF-AUDIT-4STEPS`).
 - **Tối ưu hóa Trực quan & Độ Tin Cậy Biểu Mẫu Động (Dynamic Form & Workflow Studio):**
   - Chuẩn hóa `DynamicFormRenderer.tsx`: Header ghim đỉnh (Sticky Top) luôn hiển thị đầy đủ mã hiệu, phiên bản, điểm tuân thủ và nút Đóng `[X]`; Thân form cuộn mượt mà; Footer ghim đáy (Sticky Bottom).
   - Sửa lớp bọc Modal trong `prp.tsx`, `purchasing.tsx`, `haccp.tsx` để không bị đẩy lệch Header trên mọi màn hình.
@@ -244,24 +249,24 @@ Cơ sở dữ liệu được chuẩn hóa cho toàn bộ 10 luồng nghiệp v�
 - [x] **Phase 2: Luồng 7 — Kiểm soát Tài liệu & SOP** (`/documents`) — *Đã hoàn thành*
 - [x] **Phase 3: Luồng 1 — Mua hàng & IQC Nhà cung ứng** (`/purchasing`) — *Đã hoàn thành*
 - [x] **Phase 4: Luồng 2 — Kế hoạch HACCP, Giám sát CCP & Vệ sinh PRP** (`/haccp`, `/prp`) — *Đã nâng cấp chuẩn ISO 22000:2018*
-  - **Kế hoạch HACCP Tổng thể (`HACCPPlan`):** Quản lý hồ sơ kế hoạch HACCP theo nhóm sản phẩm/dây chuyền, phiên bản, trưởng ban HACCP, người phê duyệt và phạm vi áp dụng.
-  - **Lưu đồ Công đoạn Tuần tự (`ProcessStep` Flow Diagram - ISO 8.5.1):** Sơ đồ các bước sản xuất trực quan từ tiếp nhận đến thành phẩm, tích hợp gắn điểm kiểm soát tới hạn CCP/oPRP và các cờ cảnh báo.
-  - **Ma trận Phân tích Mối nguy Codex Q1-Q4 (ISO 8.5.2):** Đánh giá 4 loại mối nguy (Sinh học, Hóa học, Vật lý, Dị nguyên), tính điểm ma trận rủi ro Khả năng × Mức độ nghiêm trọng, phân loại theo Cây quyết định Codex.
-  - **Kế hoạch Kiểm soát CCP & oPRP (ISO 8.5.4):** Thiết lập giới hạn tới hạn (Critical Limits), tần suất/phương pháp giám sát và biện pháp khắc phục khi có độ lệch.
-  - **Nhật ký Giám sát Đo đạc Realtime:** Đo đạc nhiệt độ/thời gian theo ca/mẻ, tự động cảnh báo Đạt / Sát ngưỡng / Vi phạm giới hạn tới hạn (CRITICAL).
-  - **Trợ lý AI HACCP:** Gợi ý mối nguy theo công đoạn và lập kế hoạch xử lý sự cố độ lệch CCP khẩn cấp.
 - [x] **Dynamic Form & Workflow Studio (`/builder`):**
-  - **Form Builder & DynamicFormRenderer:** Thiết kế biểu mẫu tùy biến động (Text, Number với min/max/unit, Select dropdown, Yes/No, Rating 1-5 sao, Date, Time, Signature, Photo), tự động tính điểm tuân thủ, lưu lịch sử nộp dữ liệu (`/api/v1/builders/forms`, `/api/v1/builders/submissions`). Đã nạp sẵn 4 biểu mẫu chuẩn ISO: `FORM-GMP-01`, `FORM-CCP-MONITOR`, `FORM-IQC-01`, `FORM-VENDOR-01`.
-  - **Workflow Builder & Interactive Pipeline:** Thiết kế sơ đồ lưu đồ công đoạn và quy trình phê duyệt đa cấp trực quan với các nút Process, CCP Check, Approval, Decision, End và các đường chuyển tiếp có điều kiện. Đã nạp sẵn 3 quy trình chuẩn: `WF-HACCP-CHACA`, `WF-SOP-APPROVAL`, `WF-CAPA-5STEPS`.
+  - Form Builder & DynamicFormRenderer với 4 biểu mẫu chuẩn ISO (`FORM-GMP-01`, `FORM-CCP-MONITOR`, `FORM-IQC-01`, `FORM-VENDOR-01`).
+  - Workflow Builder & Interactive Pipeline với 4 quy trình chuẩn (`WF-HACCP-CHACA`, `WF-SOP-APPROVAL`, `WF-CAPA-5STEPS`, `WF-AUDIT-4STEPS`).
 - [x] **Phase 5: Luồng 2 — Thiết bị, Hiệu chuẩn & Bảo trì** (`/equipment`) — *Đã hoàn thành*
 - [x] **Phase 6: Luồng 3 & 4 — Quản lý Kho, Lưu mẫu & Truy xuất nguồn gốc 1 chạm** (`/inventory`, `/traceability`) — *Đã hoàn thành*
-  - **Kho FEFO & Lưu Mẫu (`/inventory`):** Quản lý xuất nhập tồn tự động tính toán thứ tự ưu tiên FEFO, bản đồ ma trận vị trí kệ/ô kho lạnh, quản lý mẫu lưu nghiệm thức và mẻ sản xuất/phiếu xuất kho.
-  - **Truy xuất Nguồn gốc 1 Chạm (`/traceability`):** Sơ đồ Cây phả hệ 4 tầng (Backward & Forward Recall), sinh mã QR thật ma trận chuẩn RFC bằng thư viện `qrcode`, cô lập in ấn tem nhãn dán sticker không bị dính giao diện website, lệnh khóa biệt trữ tồn kho khẩn cấp và in Biểu mẫu ISO BM-TX-01.
 - [x] **Phase 7: Luồng 5 — Sự không phù hợp & Hành động khắc phục CAPA** (`/capa`) — *Đã hoàn thành*
-  - **Quản lý Sự Không Phù Hợp (NC):** Báo cáo sự cố theo chuẩn ISO 22000:2018 Điều khoản 8.9, phân loại mức độ nghiêm trọng (Critical/Major/Minor), cô lập tức thì theo 8.9.2, truy vết lô hàng ảnh hưởng.
-  - **Quản lý Kế Hoạch CAPA:** Lập kế hoạch khắc phục & phòng ngừa tái diễn (10.1), phân công phụ trách, theo dõi tiến độ và hạn chót.
-  - **AI 5-Why & Fishbone Studio:** Trợ lý AI phân tích nguyên nhân gốc rễ chuyên sâu với 5 cấp độ hỏi-đáp liên hoàn hoặc Sơ đồ xương cá Ishikawa 5M+1E (Man, Machine, Material, Method, Measurement, Environment).
-  - **Thẩm Tra Hiệu Lực Sau 30 Ngày & Đóng Hồ Sơ:** Theo dõi và xác nhận kết quả thẩm tra hiện trường sau 15-30 ngày trước khi chính thức đóng NC.
-  - **In Ấn Biểu Mẫu Chuẩn ISO BM-CAPA-01:** Mẫu phiếu A4 chuyên nghiệp kèm Logo WCERT, mã biểu mẫu và 3 chữ ký trách nhiệm.
-- [ ] **Phase 8 [BƯỚC KẾ TIẾP]: Luồng 6 — Đào tạo nhân sự, Đánh giá nội bộ & Khai báo sức khỏe** (`/audits`)
-- [ ] **Phase 9: Luồng 8 — Dashboard điều hành, Báo cáo & Trợ lý AI tích hợp** (`/dashboard`)
+- [x] **Phase 8: Luồng 6 — Đào tạo nhân sự, Đánh giá nội bộ & Khai báo sức khỏe** (`/audits`) — *Đã hoàn thành*
+  - **Đánh Giá Nội Bộ ISO 22000 (Clause 9.2):** Lập kế hoạch đợt đánh giá, bảng kiểm câu hỏi theo 10 điều khoản ISO, ghi nhận phát hiện (Conformity / Major NC / Minor NC / OFI), nút "Chuyển thành Phiếu NC (CAPA)" 1 chạm, in báo cáo tổng kết **BM-AUDIT-01**.
+  - **Đào Tạo & Đánh Giá Năng Lực (Clause 7.2 & 7.3):** Quản lý khóa học, danh sách học viên, bảng điểm Pre/Post test, cấp chứng chỉ và in biên bản đào tạo **BM-TRAIN-02**.
+  - **Sổ Khai Báo Sức Khỏe & Vệ Sinh Trước Ca (Clause 8.2 PRP):** Đo thân nhiệt, kiểm soát triệu chứng sốt/vết thương hở/tiêu chảy, tự động đình chỉ ca vào xưởng khi có nguy cơ vi sinh và in sổ nhật ký **BM-HEALTH-03**.
+  - **AI Audit & Training Studio:** 4 Trợ lý AI (Checklist Generator, Finding Evaluator, Quiz Generator, Health Risk Scanner).
+  - **Workflow Studio:** Lưu đồ 4 bước quy trình ĐGNB chuẩn (`WF-AUDIT-4STEPS`).
+- [x] **Phase 9: Luồng 8 — Dashboard điều hành, Báo cáo Tổng thể & Trợ lý AI tích hợp** (`/dashboard`) — *Đã hoàn thành*
+  - **Chỉ Số Sức Khỏe FSMS Health Score Index:** Tích hợp dữ liệu thời gian thực từ 8 phân hệ, tính điểm % tuân thủ toàn diện và phân hạng (Xuất sắc / Tốt / Cần lưu ý).
+  - **Ma Trận Tuân Thủ 7 Trụ Cột ISO 22000:2018 (Radar Matrix):** Bối cảnh & Lãnh đạo (Clause 4 & 5), Kế hoạch & HACCP CCP (Clause 6 & 8.5), Hỗ trợ & Đào tạo (Clause 7), Vận hành & PRP (Clause 8), Đánh giá kết quả (Clause 9), Cải tiến & CAPA (Clause 10), Chuỗi cung ứng & Kho FEFO.
+  - **Trung Tâm Cảnh Báo Khẩn Cấp Realtime (Executive Alert Hub):** Tự động phát hiện các điểm nghẽn, sự cố NC, độ lệch CCP, nhà cung ứng rủi ro, lô hàng biệt trữ và nhân sự đình chỉ ca.
+  - **Mục Tiêu Chất Lượng & ATTP (Clause 6.2 Objectives Tracker):** Quản lý chỉ tiêu định lượng hàng năm theo từng phòng ban, đo lường kế hoạch vs thực tế, thanh tiến độ trực quan.
+  - **Biên Bản Họp Xem Xét Của Lãnh Đạo (Clause 9.3 Management Review):** Quản lý kỳ họp, 6 nhóm đầu vào (9.3.2 Inputs), nghị quyết đầu ra (9.3.3 Outputs) và in Biểu mẫu ISO chuẩn A4 **BM-MR-01** qua `printHtml`.
+  - **Studio Cố Vấn Trí Tuệ Nhân Tạo (Executive AI Studio):** 4 Trợ lý AI cao cấp (Dự báo độ sẵn sàng tái đánh giá chứng nhận, Tự động sinh báo cáo lãnh đạo BM-MR-01, Chat hỏi đáp CSDL FSMS đa chiều, Gợi ý mục tiêu SMART).
+  - **Workflow Studio:** Lưu đồ 4 bước quy trình Xem xét của Lãnh đạo chuẩn (`WF-MR-4STEPS`).
+- [ ] **Phase 10: Nghiệm thu toàn diện, Tối ưu hóa hiệu năng, Export & Chuyển giao hệ thống FSMS WCERT**

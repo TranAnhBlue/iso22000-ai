@@ -65,7 +65,8 @@ def register(payload: UserRegisterRequest, db: Session = Depends(get_db)):
             username=new_user.username,
             full_name=new_user.full_name,
             role="user",
-            department=new_user.department
+            department=new_user.department,
+            phone=new_user.phone
         )
     except HTTPException:
         raise
@@ -91,6 +92,7 @@ def login(payload: UserLoginRequest, db: Session = Depends(get_db)):
                 password_hash=get_password_hash("123456"),
                 full_name="Quản trị viên hệ thống",
                 department="Phòng CNTT & Hệ thống",
+                phone="0912.888.999",
                 is_active=True
             )
             user.roles.append(role_admin)
@@ -115,7 +117,8 @@ def login(payload: UserLoginRequest, db: Session = Depends(get_db)):
             username=user.username,
             full_name=user.full_name,
             role=current_role,
-            department=user.department
+            department=user.department,
+            phone=user.phone
         )
     except HTTPException:
         raise
@@ -140,5 +143,6 @@ def get_me(user_id: str, db: Session = Depends(get_db)):
         username=user.username,
         full_name=user.full_name,
         role=current_role,
-        department=user.department
+        department=user.department,
+        phone=user.phone
     )

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 export interface CrudField {
   key: string;
@@ -52,6 +53,7 @@ export function CrudTable({
   const [searchTerm, setSearchTerm] = useState("");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingRow, setEditingRow] = useState<any | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [formData, setFormData] = useState<Record<string, any>>({});
 
   // Lọc tìm kiếm
@@ -159,12 +161,9 @@ export function CrudTable({
                           <Pencil className="h-3.5 w-3.5" />
                         </button>
                         <button
-                          onClick={() => {
-                            if (confirm("Bạn có chắc chắn muốn xoá bản ghi này?")) {
-                              onDelete(r.id);
-                            }
-                          }}
+                          onClick={() => setDeletingId(r.id)}
                           className="rounded p-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                          title="Xóa bản ghi"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
                         </button>
@@ -177,6 +176,22 @@ export function CrudTable({
           </tbody>
         </table>
       </div>
+
+      {/* Modal Xóa Bản ghi */}
+      <ConfirmDialog
+        isOpen={!!deletingId}
+        onClose={() => setDeletingId(null)}
+        onConfirm={() => {
+          if (deletingId) {
+            onDelete(deletingId);
+            setDeletingId(null);
+          }
+        }}
+        title="Xác nhận xóa bản ghi"
+        description="Bạn có chắc chắn muốn xoá bản ghi này khỏi hệ thống không? Dữ liệu đã xóa không thể khôi phục."
+        confirmLabel="Xóa bản ghi"
+        variant="destructive"
+      />
 
       {/* Modal Thêm/Sửa Bản ghi */}
       <Dialog open={isCreateOpen || !!editingRow} onOpenChange={() => { setIsCreateOpen(false); setEditingRow(null); }}>

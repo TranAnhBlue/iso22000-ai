@@ -5,6 +5,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { CrudTable, Pill, type CrudField } from "@/components/CrudTable";
 import { Users, Shield, RefreshCw, ChevronLeft, ChevronRight, Building2, UserCheck } from "lucide-react";
 import api from "@/lib/api";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/organization")({
   head: () => ({
@@ -32,7 +33,10 @@ const STANDARD_ROLES = [
   "Người dùng chưa phân quyền",
 ];
 
+import { useModuleAccess } from "@/lib/rbac";
+
 function Org() {
+  const { canEdit } = useModuleAccess();
   const [activeTab, setActiveTab] = useState<"users" | "depts">("users");
   const [depts, setDepts] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
@@ -117,8 +121,9 @@ function Org() {
         name: row.name,
       });
       setDepts((prev) => [res.data, ...prev]);
+      toast.success(`Đã thêm phòng ban "${row.name}" thành công!`);
     } catch (err: any) {
-      alert(err.response?.data?.detail || "Không thể tạo phòng ban");
+      toast.error(err.response?.data?.detail || "Không thể tạo phòng ban");
     }
   };
 
@@ -126,8 +131,9 @@ function Org() {
     try {
       const res = await api.put(`/organization/departments/${id}`, patch);
       setDepts((prev) => prev.map((d) => (d.id === id ? res.data : d)));
+      toast.success("Đã cập nhật thông tin phòng ban thành công!");
     } catch (err: any) {
-      alert(err.response?.data?.detail || "Không thể cập nhật phòng ban");
+      toast.error(err.response?.data?.detail || "Không thể cập nhật phòng ban");
     }
   };
 
@@ -135,8 +141,9 @@ function Org() {
     try {
       await api.delete(`/organization/departments/${id}`);
       setDepts((prev) => prev.filter((d) => d.id !== id));
+      toast.success("Đã xóa phòng ban thành công!");
     } catch (err: any) {
-      alert(err.response?.data?.detail || "Không thể xoá phòng ban");
+      toast.error(err.response?.data?.detail || "Không thể xoá phòng ban");
     }
   };
 
@@ -155,8 +162,9 @@ function Org() {
       });
       setUsers((prev) => [res.data, ...prev]);
       fetchData();
+      toast.success(`Đã thêm người dùng "${row.name}" thành công!`);
     } catch (err: any) {
-      alert(err.response?.data?.detail || "Không thể tạo người dùng");
+      toast.error(err.response?.data?.detail || "Không thể tạo người dùng");
     }
   };
 
@@ -172,8 +180,9 @@ function Org() {
       });
       setUsers((prev) => prev.map((u) => (u.id === id ? res.data : u)));
       fetchData();
+      toast.success("Đã cập nhật thông tin người dùng thành công!");
     } catch (err: any) {
-      alert(err.response?.data?.detail || "Không thể cập nhật người dùng");
+      toast.error(err.response?.data?.detail || "Không thể cập nhật người dùng");
     }
   };
 
@@ -182,8 +191,9 @@ function Org() {
       await api.delete(`/organization/users/${id}`);
       setUsers((prev) => prev.filter((u) => u.id !== id));
       fetchData();
+      toast.success("Đã xóa người dùng thành công!");
     } catch (err: any) {
-      alert(err.response?.data?.detail || "Không thể xoá người dùng");
+      toast.error(err.response?.data?.detail || "Không thể xoá người dùng");
     }
   };
 
@@ -249,6 +259,7 @@ function Org() {
             onUpdate={handleUpdateUser}
             onDelete={handleDeleteUser}
             addLabel="Thêm người dùng"
+            canEdit={canEdit}
           />
 
           {/* Phân trang */}
@@ -303,6 +314,7 @@ function Org() {
             onUpdate={handleUpdateDept}
             onDelete={handleDeleteDept}
             addLabel="Thêm phòng ban"
+            canEdit={canEdit}
           />
         </div>
       )}
