@@ -1,9 +1,9 @@
 {
-  "venvPath": ".",
-  "venv": "backend/venv",
+  "venvPath": "backend",
+  "venv": "venv",
   "extraPaths": [
     "backend",
-    "backend/venv/Lib/site-packages"
+    "backend/venv/lib/python3.12/site-packages"
   ],
   "include": [
     "backend"
@@ -13,7 +13,7 @@
       "root": "backend",
       "extraPaths": [
         "backend",
-        "backend/venv/Lib/site-packages"
+        "backend/venv/lib/python3.12/site-packages"
       ]
     }
   ]

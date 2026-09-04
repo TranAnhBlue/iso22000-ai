@@ -50,6 +50,7 @@ try:
         conn.execute(text("ALTER TABLE ccp_monitoring_logs ADD COLUMN IF NOT EXISTS status VARCHAR(30) DEFAULT 'NORMAL';"))
         conn.execute(text("ALTER TABLE ccp_monitoring_logs ADD COLUMN IF NOT EXISTS unit VARCHAR(20) DEFAULT '°C';"))
         conn.execute(text("ALTER TABLE ccp_monitoring_logs ADD COLUMN IF NOT EXISTS measured_value NUMERIC(8,2);"))
+        conn.execute(text("ALTER TABLE ccp_monitoring_logs ADD COLUMN IF NOT EXISTS measured_details JSONB;"))
         conn.execute(text("ALTER TABLE ccp_monitoring_logs ADD COLUMN IF NOT EXISTS verification_status VARCHAR(30) DEFAULT 'VERIFIED';"))
         conn.execute(text("ALTER TABLE ccp_monitoring_logs ADD COLUMN IF NOT EXISTS verified_by UUID REFERENCES users(user_id);"))
         conn.execute(text("ALTER TABLE ccp_monitoring_logs ADD COLUMN IF NOT EXISTS notes TEXT;"))
@@ -166,6 +167,12 @@ try:
             pass
 
         # Phase 8: Internal Audits & Training Migrations
+        try:
+            conn.execute(text("ALTER TABLE internal_audits ALTER COLUMN audit_plan_code DROP NOT NULL;"))
+            conn.execute(text("ALTER TABLE internal_audits ALTER COLUMN audit_date DROP NOT NULL;"))
+            conn.execute(text("ALTER TABLE internal_audits ALTER COLUMN scope DROP NOT NULL;"))
+        except Exception:
+            pass
         conn.execute(text("ALTER TABLE internal_audits ADD COLUMN IF NOT EXISTS audit_code VARCHAR(50);"))
         conn.execute(text("ALTER TABLE internal_audits ADD COLUMN IF NOT EXISTS title VARCHAR(255) DEFAULT 'Đợt đánh giá nội bộ định kỳ';"))
         conn.execute(text("ALTER TABLE internal_audits ADD COLUMN IF NOT EXISTS audit_type VARCHAR(50) DEFAULT 'PERIODIC';"))
@@ -177,6 +184,7 @@ try:
         conn.execute(text("ALTER TABLE internal_audits ADD COLUMN IF NOT EXISTS audited_lead_name VARCHAR(100);"))
         conn.execute(text("ALTER TABLE internal_audits ADD COLUMN IF NOT EXISTS standard_clauses JSONB DEFAULT '[]'::jsonb;"))
         conn.execute(text("ALTER TABLE internal_audits ADD COLUMN IF NOT EXISTS conclusion TEXT;"))
+        conn.execute(text("ALTER TABLE internal_audits ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP;"))
         # Phase 9: Management Reviews & Quality Objectives Migrations
         conn.execute(text("ALTER TABLE quality_objectives ADD COLUMN IF NOT EXISTS objective_code VARCHAR(50);"))
         conn.execute(text("ALTER TABLE quality_objectives ADD COLUMN IF NOT EXISTS clause_reference VARCHAR(50) DEFAULT '6.2';"))
@@ -195,6 +203,28 @@ try:
         conn.execute(text("ALTER TABLE management_reviews ADD COLUMN IF NOT EXISTS scope_and_inputs JSONB DEFAULT '{}'::jsonb;"))
         conn.execute(text("ALTER TABLE management_reviews ADD COLUMN IF NOT EXISTS status VARCHAR(30) DEFAULT 'DRAFT';"))
         conn.execute(text("ALTER TABLE management_reviews ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP;"))
+
+        # Khởi tạo bảng departments chuẩn hóa
+        conn.execute(text("""
+        CREATE TABLE IF NOT EXISTS departments (
+            dept_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+            dept_code VARCHAR(50) UNIQUE NOT NULL,
+            dept_name VARCHAR(100) UNIQUE NOT NULL,
+            description TEXT,
+            created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+        );
+        """))
+        conn.execute(text("""
+        INSERT INTO departments (dept_code, dept_name, description) VALUES
+        ('DEPT-BGD', 'Ban Giám đốc', 'Ban Giám đốc & Ban Lãnh đạo điều hành nhà máy'),
+        ('DEPT-QLCL', 'Ban QLCL & ATTP', 'Ban Quản lý Chất lượng, Đội HACCP & An toàn thực phẩm'),
+        ('DEPT-SX', 'Phòng Sản xuất', 'Bộ phận chế biến, điều hành các dây chuyền sản xuất & GMP'),
+        ('DEPT-KDK', 'Phòng Kinh doanh & Kho', 'Bộ phận kinh doanh, kho lạnh FEFO & logistics chuỗi cung ứng'),
+        ('DEPT-TB', 'Phòng Thiết bị', 'Bộ phận cơ điện, bảo trì bảo dưỡng máy móc & hiệu chuẩn'),
+        ('DEPT-HCKT', 'Phòng Hành chính - Kế toán', 'Bộ phận nhân sự, tiền lương, đào tạo ATTP & y tế sức khỏe'),
+        ('DEPT-IT', 'Quản trị hệ thống', 'Bộ phận CNTT, bảo mật hệ thống dữ liệu số & quản trị phần mềm')
+        ON CONFLICT (dept_name) DO NOTHING;
+        """))
 
         conn.commit()
 except Exception as e:

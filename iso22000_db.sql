@@ -385,27 +385,37 @@ CREATE TABLE IF NOT EXISTS workflow_instances (
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
+-- 10. Bảng Danh Mục Phòng Ban Chuẩn Hóa (Departments)
+CREATE TABLE IF NOT EXISTS departments (
+    dept_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    dept_code VARCHAR(50) UNIQUE NOT NULL,
+    dept_name VARCHAR(100) UNIQUE NOT NULL,
+    description TEXT,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Nạp sẵn 7 Phòng ban Chuẩn hóa của Nhà máy chế biến thực phẩm ISO 22000:2018
+INSERT INTO departments (dept_code, dept_name, description) VALUES
+('DEPT-BGD', 'Ban Giám đốc', 'Ban Giám đốc & Ban Lãnh đạo điều hành nhà máy'),
+('DEPT-QLCL', 'Ban QLCL & ATTP', 'Ban Quản lý Chất lượng, Đội HACCP & An toàn thực phẩm'),
+('DEPT-SX', 'Phòng Sản xuất', 'Bộ phận chế biến, điều hành các dây chuyền sản xuất & GMP'),
+('DEPT-KDK', 'Phòng Kinh doanh & Kho', 'Bộ phận kinh doanh, kho lạnh FEFO & logistics chuỗi cung ứng'),
+('DEPT-TB', 'Phòng Thiết bị', 'Bộ phận cơ điện, bảo trì bảo dưỡng máy móc & hiệu chuẩn'),
+('DEPT-HCKT', 'Phòng Hành chính - Kế toán', 'Bộ phận nhân sự, tiền lương, đào tạo ATTP & y tế sức khỏe'),
+('DEPT-IT', 'Quản trị hệ thống', 'Bộ phận CNTT, bảo mật hệ thống dữ liệu số & quản trị phần mềm')
+ON CONFLICT (dept_name) DO NOTHING;
+
 -- Nạp sẵn 8 Vai trò (Roles) chuẩn vào hệ thống
 INSERT INTO roles (role_code, role_name, description) VALUES
-('ADMIN', 'Quản trị hệ thống', 'Toàn quyền cấu hình, RBAC, audit log'),
-('MANAGEMENT', 'Ban Giám đốc', 'Phê duyệt tài liệu, xem xét lãnh đạo, duyệt thu hồi'),
-('QA_QC_MANAGER', 'Ban QLCL & ATTP', 'Quản lý HACCP, PRP, CAPA, đánh giá nội bộ'),
-('PRODUCTION', 'Phòng Sản xuất', 'Thực hiện GMP, ghi nhận CCP, tạo mẻ sản xuất'),
-('HR_ACCOUNTING', 'Phòng Hành chính - Kế toán', 'Quản lý nhân sự, đào tạo, hồ sơ sức khỏe'),
-('SALES_LOGISTICS', 'Phòng Kinh doanh & Kho', 'Quản lý kho FEFO, giao hàng, truy xuất nguồn gốc'),
-('MAINTENANCE', 'Phòng Thiết bị', 'Bảo trì máy móc, hiệu chuẩn thiết bị đo'),
-('STAFF', 'Cán bộ nhân viên', 'Tra cứu quy trình, xem lịch đào tạo, báo cáo NC');
-
--- Thêm role 'user' (Tài khoản người dùng cơ bản/chờ phân quyền)
-INSERT INTO roles (role_code, role_name, description)
-VALUES ('user', 'Người dùng chưa phân quyền', 'Tài khoản mới đăng ký, chờ quản trị viên cấp quyền')
-ON CONFLICT (role_code) DO NOTHING;
-
--- Đảm bảo đã có role admin và user
-INSERT INTO roles (role_code, role_name, description)
-VALUES 
 ('admin', 'Quản trị hệ thống', 'Toàn quyền cấu hình, RBAC, audit log'),
-('user', 'Người dùng chưa phân quyền', 'Tài khoản mới, chờ quản trị viên cấp quyền')
+('management', 'Ban Giám đốc', 'Phê duyệt tài liệu, xem xét lãnh đạo, duyệt thu hồi'),
+('qa_qc_manager', 'Ban QLCL & ATTP', 'Quản lý HACCP, PRP, CAPA, đánh giá nội bộ'),
+('production', 'Phòng Sản xuất', 'Thực hiện GMP, ghi nhận CCP, tạo mẻ sản xuất'),
+('hr_accounting', 'Phòng Hành chính - Kế toán', 'Quản lý nhân sự, đào tạo, hồ sơ sức khỏe'),
+('sales_logistics', 'Phòng Kinh doanh & Kho', 'Quản lý kho FEFO, giao hàng, truy xuất nguồn gốc'),
+('maintenance', 'Phòng Thiết bị', 'Bảo trì máy móc, hiệu chuẩn thiết bị đo'),
+('staff', 'Cán bộ nhân viên', 'Tra cứu quy trình, xem lịch đào tạo, báo cáo NC'),
+('user', 'Người dùng chưa phân quyền', 'Tài khoản mới đăng ký, chờ quản trị viên cấp quyền')
 ON CONFLICT (role_code) DO NOTHING;
 
 -- Tạo tài khoản admin mặc định (password: 123456)
@@ -415,7 +425,7 @@ VALUES (
     'admin',
     '$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQmG6FeE6.gJ2I5v.cE8.',
     'Quản trị viên hệ thống',
-    'Phòng CNTT & Hệ thống',
+    'Quản trị hệ thống',
     'admin@wcert.vn',
     TRUE
 )

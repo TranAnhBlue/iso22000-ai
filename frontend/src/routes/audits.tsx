@@ -444,10 +444,10 @@ function AuditManagementPage() {
       description: "Quy trình chuẩn mực đánh giá độc lập: Lập kế hoạch & Chuẩn bị Checklist -> Đánh giá tại hiện trường -> Lập báo cáo phát hiện -> Thẩm tra khắc phục CAPA.",
       version: "1.0",
       nodes: [
-        { id: "a_1", type: "process", label: "1. Lập Kế Hoạch & Soạn Checklist", role: "Trưởng đoàn ĐGNB", description: "Xác định phạm vi, chuẩn mực áp dụng và phân công đánh giá chéo.", is_ccp: false, step_number: 1 },
-        { id: "a_2", type: "process", label: "2. Thực Hiện Đánh Giá Tại Chỗ", role: "Đoàn ĐGNB & Đại diện Phòng ban", description: "Phỏng vấn nhân sự, kiểm tra hồ sơ ghi chép và quan sát hiện trường sản xuất.", is_ccp: false, step_number: 2 },
-        { id: "a_3", type: "approval", label: "3. Họp Tổng Kết & Báo Cáo Phát Hiện", role: "Trưởng ban ISO & Ban Giám Đốc", description: "Thống nhất phân loại lỗi (Conformity / Major NC / Minor NC / OFI) và ký biên bản.", is_ccp: false, step_number: 3 },
-        { id: "a_4", type: "process", label: "4. Theo Dõi & Thẩm Tra Khắc Phục CAPA", role: "QA Lead / Auditor", description: "Giám sát các hành động khắc phục phòng ngừa 10.1 và đóng hồ sơ sau 30 ngày.", is_ccp: false, step_number: 4 },
+        { id: "a_1", type: "process", label: "1. Lập Kế Hoạch & Soạn Checklist", role: "Ban QLCL & ATTP", description: "Xác định phạm vi, chuẩn mực áp dụng và phân công đánh giá chéo.", is_ccp: false, step_number: 1 },
+        { id: "a_2", type: "process", label: "2. Thực Hiện Đánh Giá Tại Chỗ", role: "Ban QLCL & ATTP", description: "Phỏng vấn nhân sự, kiểm tra hồ sơ ghi chép và quan sát hiện trường sản xuất.", is_ccp: false, step_number: 2 },
+        { id: "a_3", type: "approval", label: "3. Họp Tổng Kết & Báo Cáo Phát Hiện", role: "Ban Giám đốc", description: "Thống nhất phân loại lỗi (Conformity / Major NC / Minor NC / OFI) và ký biên bản.", is_ccp: false, step_number: 3 },
+        { id: "a_4", type: "process", label: "4. Theo Dõi & Thẩm Tra Khắc Phục CAPA", role: "Ban QLCL & ATTP", description: "Giám sát các hành động khắc phục phòng ngừa 10.1 và đóng hồ sơ sau 30 ngày.", is_ccp: false, step_number: 4 },
       ],
       edges: [
         { id: "ea1_2", source: "a_1", target: "a_2", label: "Triển khai đánh giá" },

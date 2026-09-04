@@ -21,14 +21,16 @@ export const Route = createFileRoute("/organization")({
   ),
 });
 
+import { DEFAULT_DEPARTMENTS } from "@/lib/departments";
+
 const STANDARD_ROLES = [
   "Quản trị hệ thống",
   "Ban Giám đốc",
   "Ban QLCL & ATTP",
   "Phòng Sản xuất",
-  "Phòng Hành chính - Kế toán",
   "Phòng Kinh doanh & Kho",
   "Phòng Thiết bị",
+  "Phòng Hành chính - Kế toán",
   "Cán bộ nhân viên",
   "Người dùng chưa phân quyền",
 ];
@@ -69,7 +71,7 @@ function Org() {
   const totalUsers = users.length;
   const deptNames = useMemo(() => {
     const list = depts.map((d) => d.name);
-    return list.length > 0 ? list : STANDARD_ROLES.slice(0, 7);
+    return list.length > 0 ? list : DEFAULT_DEPARTMENTS;
   }, [depts]);
 
   // Cấu hình Fields cho Phòng ban (Bỏ Trưởng đơn vị, Số CBCNV lấy tự động từ DB)

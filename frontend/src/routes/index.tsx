@@ -166,7 +166,7 @@ function LoginPage() {
               <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" /> ISO 22000:2018
             </span>
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-100/80 text-blue-800 border border-blue-200">
-              <ShieldCheck className="h-3.5 w-3.5 text-blue-600" /> HACCP Codex 2020
+              <ShieldCheck className="h-3.5 w-3.5 text-blue-600" /> Tiêu Chuẩn HACCP
             </span>
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-100/80 text-amber-800 border border-amber-200">
               <Sparkles className="h-3.5 w-3.5 text-amber-600" /> Trí Tuệ Nhân Tạo AI
@@ -217,7 +217,7 @@ function LoginPage() {
                 </div>
                 <div className="text-xs font-bold text-slate-900">Truy Xuất 1-Chạm</div>
                 <div className="text-[11px] text-slate-500 leading-relaxed">
-                  Liên kết chuỗi cung ứng từ NCC $\rightarrow$ Sản xuất $\rightarrow$ Kho FEFO.
+                  Liên kết chuỗi cung ứng từ Nhà cung cấp → Sản xuất → Kho FEFO.
                 </div>
               </div>
 

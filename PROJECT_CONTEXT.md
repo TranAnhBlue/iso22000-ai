@@ -30,8 +30,9 @@ Hệ thống chuyển đổi số toàn diện quy trình Quản lý An toàn Th
 ## 🗄️ Chi tiết Cơ sở Dữ liệu & Bảng Schema (`iso22000_db.sql`)
 
 Cơ sở dữ liệu được chuẩn hóa cho toàn bộ 10 luồng nghiệp vụ ISO 22000:
-1. **Phân quyền động (Dynamic RBAC) & Người dùng:**
-   - `roles`: `role_id` (UUID PK), `role_code` (Unique), `role_name`, `description`.
+1. **Phân quyền động (Dynamic RBAC), Phòng Ban & Người dùng:**
+   - `departments`: `dept_id` (UUID PK), `dept_code` (Unique), `dept_name` (Unique), `description`, `created_at`. Gồm 7 phòng ban chuẩn: *Ban Giám đốc, Ban QLCL & ATTP, Phòng Sản xuất, Phòng Kinh doanh & Kho, Phòng Thiết bị, Phòng Hành chính - Kế toán, Quản trị hệ thống*.
+   - `roles`: `role_id` (UUID PK), `role_code` (Unique), `role_name`, `description`. Gồm 8 vai trò nghiệp vụ: *admin, management, qa_qc_manager, production, sales_logistics, maintenance, hr_accounting, staff* (+ user).
    - `permissions`: `permission_id` (UUID PK), `permission_code` (Unique), `module`, `description`.
    - `role_permissions`: Bảng liên kết nhiều - nhiều giữa `roles` và `permissions`.
    - `users`: `user_id` (UUID PK), `username`, `password_hash`, `full_name`, `department`, `email`, `phone`, `is_active`, `created_at`.
@@ -80,18 +81,18 @@ Cơ sở dữ liệu được chuẩn hóa cho toàn bộ 10 luồng nghiệp v�
 | `POST` | `/api/v1/auth/login` | `OAuth2PasswordRequestForm` (`username`, `password`) | Xác thực tài khoản, kiểm tra mật khẩu bcrypt, kiểm tra trạng thái hoạt động (`is_active`). Trả về JWT Access Token kèm thông tin user và danh sách vai trò (`roles`). |
 | `POST` | `/api/v1/auth/register` | `UserRegister` (`username`, `password`, `full_name`, `department`, `email`, `phone`) | Tạo tài khoản mới, mã hóa mật khẩu, tự động liên kết phòng ban/role đăng ký. |
 | `GET` | `/api/v1/auth/me` | Header `Authorization: Bearer <token>` | Lấy thông tin tài khoản hiện tại từ Token, cập nhật quyền hạn realtime cho Frontend. |
-| `GET` | `/api/v1/auth/departments` | Không có | Lấy danh sách các phòng ban/vai trò có sẵn từ bảng `roles` để hiển thị trong form đăng ký. |
+| `GET` | `/api/v1/auth/departments` | Không có | Lấy danh sách 7 phòng ban chuẩn mực trực tiếp từ bảng cơ sở dữ liệu `departments` để hiển thị trong form đăng ký và các dropdown phân công trách nhiệm. |
 
 ---
 
-### 2. Phân hệ Tổ chức & Phân quyền (`/api/v1/organization`) — [organization.py](file:///c:/Users/admin/Documents/GitHub/iso22000-ai/backend/app/api/v1/endpoints/organization.py)
+### 2. Phân hệ Tổ chức & Phân quyền (`/api/v1/organization`) — [organization.py](file:///Users/na/Documents/GitHub/iso22000-ai/backend/app/api/v1/endpoints/organization.py)
 | Phương thức | Endpoint | Tham số / Payload | Mô tả & Xử lý Nghiệp vụ |
 | :--- | :--- | :--- | :--- |
 | `GET` | `/api/v1/organization/users` | Không có | Lấy danh sách người dùng kèm vai trò, phòng ban. |
 | `POST` | `/api/v1/organization/users` | `UserCreate` | Tạo mới người dùng, mã hóa mật khẩu, gán vai trò tương ứng. |
 | `PUT` | `/api/v1/organization/users/{user_id}` | `user_id`, `UserUpdate` | Cập nhật thông tin họ tên, phòng ban, trạng thái hoạt động. |
 | `DELETE` | `/api/v1/organization/users/{user_id}` | `user_id` | Xóa tài khoản người dùng khỏi hệ thống. |
-| `GET` | `/api/v1/organization/departments` | Không có | Lấy danh sách phòng ban kèm đếm số lượng thành viên thực tế. |
+| `GET` | `/api/v1/organization/departments` | Không có | Lấy danh sách phòng ban từ bảng `departments` kèm đếm số lượng nhân sự thực tế theo từng phòng ban (`SELECT count(*) FROM users`). |
 | `POST` | `/api/v1/organization/departments` | `DepartmentCreate` | Thêm mới phòng ban. |
 | `PUT` | `/api/v1/organization/departments/{dept_id}` | `dept_id`, `DepartmentUpdate` | Cập nhật tên phòng ban và mô tả. |
 | `DELETE` | `/api/v1/organization/departments/{dept_id}` | `dept_id` | Xóa phòng ban khỏi hệ thống. |
@@ -143,8 +144,8 @@ Cơ sở dữ liệu được chuẩn hóa cho toàn bộ 10 luồng nghiệp v�
 | `GET` | `/api/v1/haccp/process-steps/{id}` | `step_id` (UUID) | Lấy chi tiết công đoạn sản xuất. |
 | `PUT` | `/api/v1/haccp/process-steps/{id}` | `step_id`, `ProcessStepUpdate` | Cập nhật thông tin công đoạn sản xuất. |
 | `DELETE`| `/api/v1/haccp/process-steps/{id}` | `step_id` (UUID) | Xóa công đoạn khỏi lưu đồ (cascade xóa các mối nguy liên quan). |
-| `GET` | `/api/v1/haccp/hazards` | Query: `step_id`, `hazard_type`, `classification`, `q` | Lấy danh sách phân tích mối nguy (Sinh học, Hóa học, Vật lý, Dị nguyên) kèm điểm rủi ro $L \times S$ và Cây quyết định Codex Q1-Q4. |
-| `POST` | `/api/v1/haccp/hazards` | `HazardAnalysisCreate` | Thêm mới mối nguy; tự động tính toán $Risk = Likelihood \times Severity$ và cập nhật cờ `is_ccp_or_oprp` cho công đoạn liên kết. |
+| `GET` | `/api/v1/haccp/hazards` | Query: `step_id`, `hazard_type`, `classification`, `q` | Lấy danh sách phân tích mối nguy (Sinh học, Hóa học, Vật lý, Dị nguyên) kèm điểm rủi ro L × S và Cây quyết định Codex Q1-Q4. |
+| `POST` | `/api/v1/haccp/hazards` | `HazardAnalysisCreate` | Thêm mới mối nguy; tự động tính toán Risk = Likelihood × Severity và cập nhật cờ `is_ccp_or_oprp` cho công đoạn liên kết. |
 | `GET` | `/api/v1/haccp/hazards/{id}` | `hazard_id` (UUID) | Lấy chi tiết mối nguy phân tích. |
 | `PUT` | `/api/v1/haccp/hazards/{id}` | `hazard_id`, `HazardAnalysisUpdate` | Cập nhật mối nguy và tự động tính lại điểm rủi ro. |
 | `DELETE`| `/api/v1/haccp/hazards/{id}` | `hazard_id` (UUID) | Xóa mối nguy khỏi bảng phân tích. |
@@ -186,7 +187,7 @@ Cơ sở dữ liệu được chuẩn hóa cho toàn bộ 10 luồng nghiệp v�
   - Số lượng Vi phạm Tới hạn trong 24h & Số lô cách ly.
 - **Hệ thống 4 Tabs Nghiệp vụ Chuyên sâu:**
   - **Tab 1: Kế hoạch CCP & oPRP:** Danh sách điểm CCP với Critical Limits, tần suất, người phụ trách, giá trị đo gần nhất kèm status badge (NORMAL/WARNING/CRITICAL).
-  - **Tab 2: Bảng Phân Tích Mối Nguy (Hazard Analysis Matrix):** Phân tích 4 nhóm mối nguy, ma trận rủi ro $Risk = Likelihood \times Severity$, Cây quyết định Codex Q1-Q4 và phân loại kết luận.
+  - **Tab 2: Bảng Phân Tích Mối Nguy (Hazard Analysis Matrix):** Phân tích 4 nhóm mối nguy, ma trận rủi ro Risk = Likelihood × Severity, Cây quyết định Codex Q1-Q4 và phân loại kết luận.
   - **Tab 3: Nhật Ký Giám Sát CCP Realtime:** Form ghi nhận đo đạc theo ca/mẻ sản xuất, tự động cảnh báo đỏ khi vi phạm ngưỡng tới hạn.
   - **Tab 4: Trợ Lý AI HACCP & Khắc Phục Sai Lệch:** AI Hazard Matrix Generator (4 công đoạn mẫu) & AI CCP Deviation Advisor (tư vấn cô lập mẻ sản xuất theo ISO 22000 Điều khoản 8.9.2).
 - **In ấn & Xuất Biểu mẫu Chuẩn ISO 22000:2018:**
@@ -239,7 +240,64 @@ Cơ sở dữ liệu được chuẩn hóa cho toàn bộ 10 luồng nghiệp v�
 - **Tối ưu hóa Trải nghiệm In Ấn & Xuất PDF chuẩn ISO 22000:**
   - Thay thế toàn bộ việc mở popup tab trắng `about:blank` bằng **Modal Xem Trước Trực Quan In-App** đẹp mắt với Header có **Logo chính thức WCERT (`/logo.png`)**, thông tin tổ chức, mã biểu mẫu ISO, bảng thông số định dạng chuẩn A4 và khối chữ ký 2 bên/3 bên.
   - Xây dựng helper `printHtml` in ngầm qua hidden iframe mượt mà, người dùng không bị chuyển trang full-screen khi nhấn nút in hoặc lưu PDF.
+- **Chuẩn Hóa & Đồng Bộ Toàn Diện Danh Mục Phòng Ban Từ Cơ Sở Dữ Liệu (ISO 22000 Standardized Departments):**
+  - **Xóa bỏ triệt để phân mảnh và trùng lặp danh sách phòng ban:** Trước đây danh sách phòng ban trong hệ thống bị trộn lẫn giữa các vai trò (`roles`), danh sách tĩnh hardcode cũ (16+ mục không đồng nhất như "Ban Giám Đốc" vs "Ban Giám đốc", "Phòng Cơ điện & Thiết bị" vs "Phòng Thiết bị", "Tổ Sản xuất / QC",...).
+  - **Tạo Bảng CSDL Chuyên Biệt `departments`:**
+    - Cấu trúc: `dept_id` (UUID PK), `dept_code` (Unique), `dept_name` (Unique), `description`, `created_at`.
+    - Định nghĩa ORM model `Department` tại [backend/app/models/user.py](file:///Users/na/Documents/GitHub/iso22000-ai/backend/app/models/user.py).
+    - Cập nhật file cơ sở dữ liệu [iso22000_db.sql](file:///Users/na/Documents/GitHub/iso22000-ai/iso22000_db.sql).
+    - Cấu hình startup migration trong [backend/app/main.py](file:///Users/na/Documents/GitHub/iso22000-ai/backend/app/main.py) tự động kiểm tra, tạo bảng và nạp seed data chuẩn nếu chưa tồn tại.
+  - **Chuẩn Hóa 7 Phòng Ban Chính Thức Khớp 100% Hồ Sơ Tiêu Chuẩn ISO 22000:**
+    1. `Ban Giám đốc` (`DEPT-BGD`): Lãnh đạo cao nhất, phê duyệt chính sách và xem xét quản lý.
+    2. `Ban QLCL & ATTP` (`DEPT-QLCL`): Đội trưởng HACCP, QA/QC, thẩm định kiểm soát an toàn thực phẩm.
+    3. `Phòng Sản xuất` (`DEPT-SX`): Vận hành dây chuyền chế biến, giám sát CCP/oPRP theo ca.
+    4. `Phòng Kinh doanh & Kho` (`DEPT-KDK`): Tiếp nhận đơn hàng, quản lý kho FEFO, xuất nhập nguyên phụ liệu và thành phẩm.
+    5. `Phòng Thiết bị` (`DEPT-TB`): Bảo trì máy móc, hiệu chuẩn thiết bị đo lường kiểm soát mối nguy.
+    6. `Phòng Hành chính - Kế toán` (`DEPT-HCKT`): Nhân sự, quản lý hồ sơ đào tạo và sức khỏe công nhân viên.
+    7. `Quản trị hệ thống` (`DEPT-IT`): Quản trị hạ tầng, phân quyền truy cập và bảo mật số hóa.
+  - **Làm Sạch Bảng `roles` & Tài Khoản `admin`:**
+    - Loại bỏ role trùng lặp `ADMIN`, chuẩn hóa các mã vai trò `role_code` về chữ thường (`admin`, `management`, `qa_qc_manager`, `production`, `sales_logistics`, `maintenance`, `hr_accounting`, `staff`, `user`).
+    - Cập nhật tài khoản `admin` thuộc phòng ban chuẩn: `"Quản trị hệ thống"`.
+  - **Backend API Đồng Bộ Hoàn Toàn Từ Bảng `departments`:**
+    - `/api/v1/organization/departments`: Trả về danh sách 7 phòng ban từ bảng `Department` kèm đếm số lượng người dùng thực tế (`count`).
+    - `/api/v1/auth/departments`: Trả về danh sách 7 phòng ban chuẩn phục vụ form Đăng ký tài khoản và các dropdown hệ thống.
+  - **Frontend Tinh Gọn & Tự Động Hóa Truy Vấn (`lib/departments.ts` & UI Components):**
+    - Loại bỏ hoàn toàn cơ chế merge mảng tĩnh cũ `[...names, ...DEFAULT_DEPARTMENTS]` gây nhân bản.
+    - Hook `useDepartments()` gọi trực tiếp API `/organization/departments` hoặc `/auth/departments` và nhận đúng 7 phòng ban từ CSDL.
+    - Cập nhật toàn bộ các component:
+      - `WorkflowBuilder.tsx`: Nhãn "Phòng ban phụ trách", role mặc định "Phòng Sản xuất", node bước quy trình gán đúng các phòng ban chuẩn.
+      - `organization.tsx`: Quản lý danh mục phòng ban và phân bổ người dùng.
+      - `audits.tsx`: Dropdown chọn phòng ban được đánh giá, phòng ban phụ trách quy trình ĐGNB 4 bước.
+      - `capa.tsx`: Dropdown phòng ban chịu trách nhiệm khắc phục sự cố NC.
 - Toàn bộ kiểm thử Backend API đạt `200 OK`, TypeScript `npx tsc --noEmit` đạt **0 lỗi (Zero Errors)**.
+
+### 🔍 Kết Quả Kiểm Tra Chuyên Sâu Các Phân Hệ Cốt Lõi:
+1. **Luồng Phân Quyền (Dynamic RBAC Matrix & Router Guards):**
+   - **Định nghĩa 8 Vai trò chuẩn nghiệp vụ ISO:** `admin` (Toàn quyền), `management`/`executive` (Ban Giám đốc), `qa_qc_manager`/`iso_manager` (Ban QLCL & Đội trưởng HACCP), `production` (Sản xuất), `sales_logistics`/`sales`/`warehouse` (Kinh doanh & Kho), `maintenance`/`equipment` (Cơ điện & Thiết bị), `hr_accounting`/`admin_acct` (Hành chính - Kế toán), `staff`/`user` (Nhân viên / Người dùng mới).
+   - **Ma trận 3 mức truy cập (`edit` / `view` / `none`):** Cấu hình chặt chẽ tại `frontend/src/lib/auth.ts` trên 12 phân hệ (`dashboard`, `organization`, `documents`, `audits`, `haccp`, `prp`, `capa`, `equipment`, `inventory`, `traceability`, `purchasing`, `builder`).
+   - **Cơ chế Chặn & Điều hướng (Guards):**
+     - Màn hình khóa `AppShell.tsx`: Tự động ẩn menu trái (Sidebar Desktop/Mobile) và hiển thị màn hình khóa với biểu tượng Lock khi tài khoản không có quyền (`denied = !canView(session.role, module)`).
+     - Tài khoản mới đăng ký (`role: user`): Bị chặn tại màn hình chờ phân bổ phòng ban, có nút "Kiểm tra lại quyền (F5)" tự động đồng bộ từ API `/auth/me`.
+     - Phân quyền nút hành động: Component `ModuleAccessProvider` cung cấp `canEdit`, `isAdmin`, `isQA`, `isProduction`... để vô hiệu hóa (disabled) hoặc ẩn các nút Thêm, Sửa, Xóa, Phê duyệt.
+2. **Hệ Thống Kiểm Tra Tính Hợp Lệ Dữ Liệu (Data Validations):**
+   - **Backend (Pydantic v2 Schema Constraints):**
+     - Ràng buộc độ dài & bắt buộc: `max_length`, `strip_whitespace`, chuỗi định danh duy nhất (`Unique` code cho Lô, Thiết bị, NC, Biểu mẫu, Quy trình).
+     - Ràng buộc số học & thang đo: `ge=1, le=3` cho Likelihood/Severity ma trận rủi ro HACCP, `min_val/max_val` cho ngưỡng tới hạn CCP (nhiệt độ, thời gian, áp suất), `rating_score` (1-100).
+     - Ràng buộc cấu trúc phức tạp: Kiểm tra JSONB cho `critical_limit` (min, max, unit, condition), `measured_details`, `root_cause_analysis` (5-Whys, Fishbone 5M+1E).
+   - **Frontend (Form Validations & Feedback):**
+     - Bắt buộc điền các trường trọng yếu (Required fields, HTML5 constraint validation).
+     - Đối chiếu thời gian thực: Cảnh báo đỏ tức thì khi thông số đo đạc vượt Critical Limit tại form CCP hoặc nhiệt độ xe đông lạnh > -18°C tại form IQC.
+     - Xác nhận 2 bước: Sử dụng `ConfirmDialog` cho toàn bộ hành động xóa, hủy hoặc khóa biệt trữ tồn kho.
+3. **Studio Biểu Mẫu Động (Form Builder & DynamicFormRenderer):**
+   - **Kiến trúc dữ liệu:** Lưu trữ tại bảng `dynamic_form_templates` và `dynamic_form_submissions` với trường `fields: JSONB`.
+   - **Thư viện trường dữ liệu đa dạng:** Hỗ trợ 9 loại trường: `TEXT`, `NUMBER`, `SELECT`, `YESNO` (Boolean 1 chạm), `DATE`, `TIME`, `RATING` (Đánh giá sao), `SIGNATURE` (Ký điện tử), `TEXTAREA`.
+   - **4 Biểu mẫu Chuẩn ISO 22000 nạp sẵn:** `FORM-GMP-01` (Vệ sinh nhà xưởng), `FORM-CCP-MONITOR` (Giám sát CCP thanh trùng), `FORM-IQC-01` (Nghiệm thu cá tra fillet), `FORM-VENDOR-01` (Đánh giá năng lực NCC).
+   - **Trải nghiệm Renderer:** Thiết kế dạng Drawer/Modal trượt, Header Sticky ghim thông tin mã hiệu & điểm tuân thủ, hỗ trợ tính điểm % tự động và xuất báo cáo.
+4. **Studio Lưu Đồ Quy Trình (Workflow Builder & Interactive Pipeline):**
+   - **Kiến trúc dữ liệu:** Lưu trữ cấu trúc đồ thị luồng (DAG) tại bảng `dynamic_workflow_templates` với `nodes: JSONB` và `edges: JSONB`.
+   - **3 Loại Node chuẩn quy trình:** `process` (Bước thực thi thao tác), `ccp_check` (Điểm kiểm soát tới hạn bắt buộc xác thực), `approval` (Cổng phê duyệt quản lý/lãnh đạo).
+   - **4 Quy trình Mẫu chuẩn ISO 22000:** `WF-HACCP-CHACA` (7 bước chế biến chả cá Ba Sa đông lạnh), `WF-SOP-APPROVAL` (4 bước phê duyệt tài liệu SOP), `WF-CAPA-5STEPS` (5 bước khắc phục sự cố NC), `WF-AUDIT-4STEPS` (4 bước đánh giá nội bộ).
+   - **Visual Pipeline:** Trực quan hóa tiến trình bằng màu sắc, phân công trách nhiệm theo phòng ban (`role`), cho phép kiểm thử chuyển trạng thái bước quy trình (Next step) mượt mà.
 
 ---
 
@@ -268,5 +326,27 @@ Cơ sở dữ liệu được chuẩn hóa cho toàn bộ 10 luồng nghiệp v�
   - **Mục Tiêu Chất Lượng & ATTP (Clause 6.2 Objectives Tracker):** Quản lý chỉ tiêu định lượng hàng năm theo từng phòng ban, đo lường kế hoạch vs thực tế, thanh tiến độ trực quan.
   - **Biên Bản Họp Xem Xét Của Lãnh Đạo (Clause 9.3 Management Review):** Quản lý kỳ họp, 6 nhóm đầu vào (9.3.2 Inputs), nghị quyết đầu ra (9.3.3 Outputs) và in Biểu mẫu ISO chuẩn A4 **BM-MR-01** qua `printHtml`.
   - **Studio Cố Vấn Trí Tuệ Nhân Tạo (Executive AI Studio):** 4 Trợ lý AI cao cấp (Dự báo độ sẵn sàng tái đánh giá chứng nhận, Tự động sinh báo cáo lãnh đạo BM-MR-01, Chat hỏi đáp CSDL FSMS đa chiều, Gợi ý mục tiêu SMART).
-  - **Workflow Studio:** Lưu đồ 4 bước quy trình Xem xét của Lãnh đạo chuẩn (`WF-MR-4STEPS`).
-- [ ] **Phase 10: Nghiệm thu toàn diện, Tối ưu hóa hiệu năng, Export & Chuyển giao hệ thống FSMS WCERT**
+- [ ] **Phase 10: Tác Nghiệp Di Động (PWA/Mobile Adaptation), Kiểm Thử Nghiệm Thu Toàn Diện & Chuẩn Bị Triển Khai** *(CURRENT TARGET)*
+  - **1. Module Tác Nghiệp Di Động / Hiện Trường (Mobile & Tablet Adaptation):**
+    - [ ] **PWA Configuration (Progressive Web App):**
+      - Tạo file `manifest.json` và đăng ký Service Worker trong Vite để cho phép cài đặt / thêm ứng dụng vào màn hình chính điện thoại (Add to Home Screen).
+      - Đảm bảo icons ứng dụng (192x192, 512x512) và theme color chuẩn nhận diện WCERT (`#059669`).
+    - [ ] **Tối ưu hóa UI Mobile cho các màn hình tác nghiệp hiện trường:**
+      - **Khai báo sức khỏe & Thân nhiệt đầu ca (`/audits` - Tab Sức khỏe):** Giao diện thẻ lớn, nút chọn 1 chạm (Có/Không triệu chứng), thân thiện khi thao tác một tay trên điện thoại.
+      - **Ghi nhật ký CCP Realtime (`/haccp` - Tab Giám sát ca):** Tối ưu hóa bàn phím số (number keypad), cảnh báo rung/chuông khi nhập giá trị vượt ngưỡng tới hạn.
+      - **Quét mã QR Kho & Thiết bị (`/inventory`, `/equipment`):** Tích hợp camera web HTML5 / thư viện quét QR trên mobile để quét trực tiếp mã Lot và tem máy móc.
+      - **Quick Report Sự cố NC (`/capa`):** Nút nổi (FAB button) báo cáo nhanh sự cố kèm tính năng chụp ảnh hiện trường từ camera điện thoại.
+  - **2. Kiểm Thử Nghiệm Thu & Tối Ưu Hệ Thống (End-to-End Verification):**
+    - [ ] **Kiểm tra luồng liên thông dữ liệu tự động (Cross-Module Workflow Test):**
+      - *Test 1:* Tạo kiểm tra IQC thất bại tại `/purchasing` → Kiểm tra bảng `/capa` đã tự động mở phiếu NC tương ứng chưa.
+      - *Test 2:* Ghi nhận giá trị CCP vi phạm tại `/haccp` → Xác nhận lô sản phẩm đã bị khóa (`LockLotFlag = True`) trong kho `/inventory` chưa.
+      - *Test 3:* Chuyển phát hiện đánh giá nội bộ sang CAPA tại `/audits` → Xác nhận liên kết mã NC.
+    - [ ] **Audit RBAC Permissions trên toàn bộ 8 vai trò:**
+      - Đăng nhập kiểm thử lần lượt với các tài khoản: `admin`, `management`, `qa_qc_manager`, `production`, `sales_logistics`, `maintenance`, `hr_accounting`, `staff`, `user`.
+      - Đảm bảo ma trận phân quyền (Edit / View / None) hoạt động chính xác trên cả Sidebar, Router Guards và các nút hành động (Thêm, Sửa, Xóa, Duyệt).
+    - [ ] **Type-Check & Clean Code:**
+      - Chạy `npx tsc --noEmit` phía Frontend đảm bảo 0 lỗi TypeScript.
+      - Kiểm tra log Backend đảm bảo không có warning hoặc unhandled exceptions trong các serialization helpers.
+  - **3. Chuẩn Bị Bàn Giao & Triển Khai:**
+    - [ ] Rà soát file `iso22000_db.sql` đảm bảo chứa đầy đủ dữ liệu mẫu (Seed Data) chuẩn cho 4 doanh nghiệp chế biến thực phẩm tại An Giang (thủy sản đông lạnh, trà túi lọc thảo mộc, yến sào chưng, bánh mì ngũ cốc).
+    - [ ] Hoàn thiện tài liệu tóm tắt hướng dẫn cài đặt và vận hành nhanh (Quickstart Guide).

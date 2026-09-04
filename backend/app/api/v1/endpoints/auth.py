@@ -10,6 +10,8 @@ import traceback
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
+from app.models.user import User, Role, Department
+
 class DepartmentOption(BaseModel):
     role_code: str
     role_name: str
@@ -17,17 +19,26 @@ class DepartmentOption(BaseModel):
 
 @router.get("/departments", response_model=List[DepartmentOption])
 def get_departments_from_roles(db: Session = Depends(get_db)):
-    """Lấy danh sách các phòng ban/vai trò có trong bảng roles (bỏ qua role 'user')"""
-    roles = db.query(Role).filter(
-        Role.role_code.notin_(["user", "USER"])
-    ).order_by(Role.role_name.asc()).all()
+    """Lấy danh sách các phòng ban chuẩn hóa từ bảng departments trong CSDL"""
+    depts = db.query(Department).order_by(Department.dept_name.asc()).all()
+    if not depts:
+        roles = db.query(Role).filter(
+            Role.role_code.notin_(["user", "USER", "staff", "STAFF"])
+        ).order_by(Role.role_name.asc()).all()
+        return [
+            DepartmentOption(
+                role_code=r.role_code,
+                role_name=r.role_name,
+                description=r.description
+            ) for r in roles
+        ]
     
     return [
         DepartmentOption(
-            role_code=r.role_code,
-            role_name=r.role_name,
-            description=r.description
-        ) for r in roles
+            role_code=d.dept_code,
+            role_name=d.dept_name,
+            description=d.description
+        ) for d in depts
     ]
 
 @router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
