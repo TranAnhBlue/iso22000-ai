@@ -646,7 +646,7 @@ def ai_audit_readiness_forecast(payload: AuditReadinessForecastRequest, db: Sess
     ]
 
     strengths = [
-        "Hệ thống số hóa 100% quy trình trên WCERT FSMS AI Hub với mã QR truy xuất nguồn gốc 4 tầng.",
+        "Hệ thống số hóa 100% quy trình trên WCERT AI Hub với mã QR truy xuất nguồn gốc 4 tầng.",
         "Toàn bộ hồ sơ HACCP 7 nguyên tắc & 12 bước đã được phê duyệt và thẩm tra hiệu lực.",
         "Quy trình CAPA có phân tích nguyên nhân gốc rễ 5-Why và thẩm tra hiệu quả sau 30 ngày.",
         "Nhật ký kiểm tra sức khỏe và vệ sinh công nhân ca (PRP) được ghi nhận realtime mỗi ca sản xuất.",
