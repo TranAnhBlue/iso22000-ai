@@ -412,3 +412,100 @@ class MockRecallResponse(BaseModel):
     total_units_in_market: float = 0.0
     recall_risk_level: str = "HIGH"  # CRITICAL, HIGH, MEDIUM, LOW
     iso_recall_time_est_minutes: int = 15  # Thời gian hoàn thành truy xuất thu hồi (chuẩn ISO < 120 phút)
+
+
+# ==================== 7. VEHICLE INSPECTION SCHEMAS (BM01-PTVC) ====================
+class VehicleInspectionBase(BaseModel):
+    inspection_code: str = Field(..., description="Mã phiếu kiểm tra: PTVC-2026-001")
+    inspection_date: Optional[datetime] = None
+    order_dispatch_id: Optional[uuid.UUID] = None
+    vehicle_plate: str = Field(..., description="Biển số xe: 67C-123.45")
+    driver_name: str = Field(..., description="Tên tài xế")
+    driver_phone: Optional[str] = None
+    transport_company: Optional[str] = "Đội xe Công ty"
+    
+    # 5 TIÊU CHÍ NGUYÊN BẢN THEO BIỂU MẪU BM01-PTVC (Pass/Fail)
+    valid_registration_check: bool = Field(True, description="1. Xe còn niên hạn sử dụng / được đăng kiểm cho phép lưu hành")
+    cargo_integrity_check: bool = Field(True, description="2. Kết cấu thùng chứa bền, kín, không thủng rách, không vật sắc nhọn")
+    clean_dry_check: bool = Field(True, description="3. Sạch sẽ, khô ráo, không han gỉ, phù hợp loại hàng hóa")
+    no_odor_check: bool = Field(True, description="4. Không mùi lạ (hóa chất, xăng dầu, phân bón...)")
+    pest_free_check: bool = Field(True, description="5. Không mốc, không côn trùng/động vật gây hại")
+    
+    inspection_result: str = Field("PASS", description="PASS, FAIL")
+    inspector_name: str = Field("Thủ kho xuất hàng", description="Người kiểm tra")
+    notes: Optional[str] = None
+
+class VehicleInspectionCreate(VehicleInspectionBase):
+    pass
+
+class VehicleInspectionUpdate(BaseModel):
+    vehicle_plate: Optional[str] = None
+    driver_name: Optional[str] = None
+    driver_phone: Optional[str] = None
+    transport_company: Optional[str] = None
+    valid_registration_check: Optional[bool] = None
+    cargo_integrity_check: Optional[bool] = None
+    clean_dry_check: Optional[bool] = None
+    no_odor_check: Optional[bool] = None
+    pest_free_check: Optional[bool] = None
+    inspection_result: Optional[str] = None
+    inspector_name: Optional[str] = None
+    notes: Optional[str] = None
+
+class VehicleInspectionResponse(VehicleInspectionBase):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    created_at: Optional[datetime] = None
+
+
+# ==================== 8. DISPOSAL RECORD SCHEMAS (BM02-HỦY HÀNG) ====================
+class DisposalRecordBase(BaseModel):
+    record_code: str = Field(..., description="Mã biên bản: BBHH-2026-001")
+    disposal_date: date = Field(..., description="Ngày tiêu hủy")
+    batch_id: Optional[uuid.UUID] = None
+    batch_number: str = Field(..., description="Số lô hàng tiêu hủy")
+    product_name: str = Field(..., description="Tên sản phẩm")
+    quantity: float = Field(..., gt=0, description="Số lượng tiêu hủy")
+    unit: str = Field("kg", description="Đơn vị tính")
+    # Mở rộng quản trị FSMS (gốc nằm trong cột Ghi chú)
+    reason: str = Field(..., description="Lý do tiêu hủy")
+    disposal_method: str = Field("Tiêu hủy nhiệt và chôn lấp hợp vệ sinh", description="Phương pháp tiêu hủy")
+    disposal_location: Optional[str] = "Khu xử lý chất thải Nhà máy"
+    witness_council: Optional[str] = "Hội đồng 3 bên: Đơn vị thực hiện hủy hàng, Phòng Quản lý Chất lượng (P.QLCL), Phòng ban đề xuất hủy hàng"
+    status: str = Field("DISPOSED", description="PENDING_APPROVAL, APPROVED, DISPOSED")
+    approved_by: Optional[str] = "Phòng Quản lý Chất lượng (P.QLCL)"
+    notes: Optional[str] = None
+
+class DisposalRecordCreate(DisposalRecordBase):
+    pass
+
+class DisposalRecordUpdate(BaseModel):
+    record_code: Optional[str] = None
+    disposal_date: Optional[date] = None
+    batch_number: Optional[str] = None
+    product_name: Optional[str] = None
+    quantity: Optional[float] = None
+    unit: Optional[str] = None
+    reason: Optional[str] = None
+    disposal_method: Optional[str] = None
+    disposal_location: Optional[str] = None
+    witness_council: Optional[str] = None
+    status: Optional[str] = None
+    approved_by: Optional[str] = None
+    notes: Optional[str] = None
+
+class DisposalRecordResponse(DisposalRecordBase):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    created_at: Optional[datetime] = None
+
+
+class LogisticsStatsResponse(BaseModel):
+    total_vehicle_inspections: int
+    passed_inspections: int
+    failed_inspections: int
+    total_disposal_records: int
+    total_disposed_qty_kg: float
+

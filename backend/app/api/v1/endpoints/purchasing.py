@@ -7,7 +7,7 @@ from datetime import date, datetime, timedelta
 import random
 
 from app.core.database import get_db
-from app.models.purchasing import Supplier, MaterialLot, IQCInspection
+from app.models.purchasing import Supplier, MaterialLot, IQCInspection, SupplierEvaluationPlan, SupplierEvaluation
 from app.models.user import User
 from app.schemas.purchasing import (
     SupplierCreate, SupplierUpdate, SupplierResponse,
@@ -15,7 +15,9 @@ from app.schemas.purchasing import (
     IQCInspectionCreate, IQCInspectionUpdate, IQCInspectionResponse,
     PurchasingStatsResponse,
     AICoAAnalysisRequest, AICoAAnalysisResponse, AICoAParameter,
-    AISupplierEvaluationRequest, AISupplierEvaluationResponse
+    AISupplierEvaluationRequest, AISupplierEvaluationResponse,
+    SupplierEvaluationPlanCreate, SupplierEvaluationPlanUpdate, SupplierEvaluationPlanResponse,
+    SupplierEvaluationCreate, SupplierEvaluationUpdate, SupplierEvaluationResponse
 )
 
 router = APIRouter(prefix="/purchasing", tags=["Purchasing & IQC"])
@@ -150,6 +152,12 @@ def format_inspection_out(insp: Any) -> IQCInspectionResponse:
         mycotoxin_check=bool(getattr(insp, "mycotoxin_check", True)),
         allergen_check=bool(getattr(insp, "allergen_check", False)),
         coa_compliance=bool(getattr(insp, "coa_compliance", True)),
+        defect_rate_percent=float(getattr(insp, "defect_rate_percent", 0.0)) if getattr(insp, "defect_rate_percent", None) is not None else 0.0,
+        impurity_percent=float(getattr(insp, "impurity_percent", 0.0)) if getattr(insp, "impurity_percent", None) is not None else 0.0,
+        size_uniformity_check=bool(getattr(insp, "size_uniformity_check", True)),
+        vehicle_cleanliness_check=bool(getattr(insp, "vehicle_cleanliness_check", True)),
+        delivery_vehicle_plate=str(getattr(insp, "delivery_vehicle_plate", "")) if getattr(insp, "delivery_vehicle_plate", None) else None,
+        driver_name=str(getattr(insp, "driver_name", "")) if getattr(insp, "driver_name", None) else None,
         inspection_details=details,
         status=str(getattr(insp, "status", "PASSED")),
         notes=str(insp.notes) if getattr(insp, "notes", None) is not None else None,
@@ -853,6 +861,12 @@ def create_iqc_inspection(insp_in: IQCInspectionCreate, db: Session = Depends(ge
         mycotoxin_check=insp_in.mycotoxin_check,
         allergen_check=insp_in.allergen_check,
         coa_compliance=insp_in.coa_compliance,
+        defect_rate_percent=insp_in.defect_rate_percent if insp_in.defect_rate_percent is not None else 0.0,
+        impurity_percent=insp_in.impurity_percent if insp_in.impurity_percent is not None else 0.0,
+        size_uniformity_check=insp_in.size_uniformity_check,
+        vehicle_cleanliness_check=insp_in.vehicle_cleanliness_check,
+        delivery_vehicle_plate=insp_in.delivery_vehicle_plate,
+        driver_name=insp_in.driver_name,
         inspection_details=insp_in.inspection_details,
         status=insp_in.status or "PASSED",
         notes=insp_in.notes
@@ -917,6 +931,18 @@ def update_iqc_inspection(inspection_id: UUID, insp_in: IQCInspectionUpdate, db:
         insp.allergen_check = insp_in.allergen_check
     if insp_in.coa_compliance is not None:
         insp.coa_compliance = insp_in.coa_compliance
+    if insp_in.defect_rate_percent is not None:
+        insp.defect_rate_percent = insp_in.defect_rate_percent
+    if insp_in.impurity_percent is not None:
+        insp.impurity_percent = insp_in.impurity_percent
+    if insp_in.size_uniformity_check is not None:
+        insp.size_uniformity_check = insp_in.size_uniformity_check
+    if insp_in.vehicle_cleanliness_check is not None:
+        insp.vehicle_cleanliness_check = insp_in.vehicle_cleanliness_check
+    if insp_in.delivery_vehicle_plate is not None:
+        insp.delivery_vehicle_plate = insp_in.delivery_vehicle_plate.strip()
+    if insp_in.driver_name is not None:
+        insp.driver_name = insp_in.driver_name.strip()
     if insp_in.inspection_details is not None:
         insp.inspection_details = insp_in.inspection_details
     if insp_in.status is not None:
@@ -1118,3 +1144,468 @@ def evaluate_supplier_with_ai(req: AISupplierEvaluationRequest, db: Session = De
         risks=risks,
         recommendations=recommendations
     )
+
+
+# ==============================================================================
+# GIAI ĐOẠN 5: ĐÁNH GIÁ NHÀ CUNG CẤP NÂNG CAO (BM02, BM03, BM03-TS, BM04)
+# ==============================================================================
+
+DEFAULT_CRITERIA_TEMPLATES = {
+    "AGRI_FRESH": {
+        "title": "Biểu mẫu BM03 — Đánh giá Nhà cung ứng Nông sản tươi",
+        "form_code": "BM03",
+        "description": "Kiểm soát nguồn gốc đất trồng, nước tưới, thuốc BVTV, thu hoạch và chứng nhận VietGAP/GlobalGAP",
+        "criteria": [
+            {
+                "id": "af_1",
+                "name": "Nguồn nước tưới & Đất canh tác",
+                "max_score": 25,
+                "description": "Vùng trồng không bị ô nhiễm kim loại nặng, nguồn nước tưới có kết quả xét nghiệm vi sinh (E.coli, Coliforms) đạt chuẩn.",
+                "score": 25,
+                "pass_fail": "PASS",
+                "notes": "Có kết quả xét nghiệm nước tưới định kỳ 6 tháng/lần đạt chuẩn."
+            },
+            {
+                "id": "af_2",
+                "name": "Quản lý Phân bón & Thuốc BVTV",
+                "max_score": 30,
+                "description": "Sử dụng phân bón và thuốc BVTV trong danh mục cho phép, tuân thủ nghiêm ngặt thời gian cách ly (PHI) trước khi thu hoạch.",
+                "score": 28,
+                "pass_fail": "PASS",
+                "notes": "Có nhật ký phun xịt và tuân thủ thời gian cách ly tối thiểu 14 ngày."
+            },
+            {
+                "id": "af_3",
+                "name": "Thu hoạch, Đóng gói & Vận chuyển",
+                "max_score": 25,
+                "description": "Dụng cụ thu hoạch sạch sẽ, đóng sọt/hộp che chắn tránh dập nát, xe vận chuyển có bạt che kín, không lẫn hóa chất.",
+                "score": 22,
+                "pass_fail": "PASS",
+                "notes": "Sọt nhựa sạch, có phủ màng bảo vệ tránh bụi bẩn dọc đường."
+            },
+            {
+                "id": "af_4",
+                "name": "Hồ sơ Pháp lý & Chứng nhận ATTP",
+                "max_score": 20,
+                "description": "Có Giấy chứng nhận đủ điều kiện ATTP hoặc chứng chỉ VietGAP/GlobalGAP còn hiệu lực.",
+                "score": 20,
+                "pass_fail": "PASS",
+                "notes": "Có chứng nhận VietGAP còn hiệu lực đến năm 2027."
+            }
+        ]
+    },
+    "AQUA_ANIMAL_FRESH": {
+        "title": "Bộ tiêu chí bổ sung — Đánh giá Nhà cung ứng Thủy hải sản / Tươi sống (Do dự án tự xây dựng)",
+        "form_code": "TC-BS-TS",
+        "description": "Bộ tiêu chí bổ sung do dự án tự xây dựng để đáp ứng đặc thù nhà máy thủy sản (kiểm soát mã vùng nuôi, kháng sinh cấm, vận chuyển lạnh 0-4°C, chứng nhận ASC/BAP/VietGAP) — không thuộc bộ biểu mẫu gốc.",
+        "criteria": [
+            {
+                "id": "ts_1",
+                "name": "Mã số Vùng nuôi & Nhật ký ao",
+                "max_score": 25,
+                "description": "Có mã số nhận diện cơ sở nuôi thủy sản theo Luật Thủy sản, có nhật ký ghi chép thức ăn và con giống rõ ràng.",
+                "score": 25,
+                "pass_fail": "PASS",
+                "notes": "Vùng nuôi cá tra An Giang có mã số cơ sở nuôi hợp lệ, truy xuất được từng ao."
+            },
+            {
+                "id": "ts_2",
+                "name": "Kiểm soát Kháng sinh cấm & Hóa chất",
+                "max_score": 30,
+                "description": "Cam kết và kiểm nghiệm không tồn dư kháng sinh cấm (Chloramphenicol, Ciprofloxacin, Enrofloxacin, Malachite Green).",
+                "score": 28,
+                "pass_fail": "PASS",
+                "notes": "Test nhanh âm tính kháng sinh cấm, phiếu xét nghiệm nguyên liệu đạt chuẩn."
+            },
+            {
+                "id": "ts_3",
+                "name": "Bảo quản Lạnh & Vận chuyển xe bồn/ướp đá",
+                "max_score": 25,
+                "description": "Sử dụng đá lạnh làm từ nguồn nước sạch VSATTP, tỉ lệ ướp đá đảm bảo nhiệt độ cá/tôm duy trì 0 - 4°C trong suốt hành trình.",
+                "score": 24,
+                "pass_fail": "PASS",
+                "notes": "Xe tải bồn sục khí oxy / ướp đá nhiệt độ đo tại cửa kho đạt 1.5°C."
+            },
+            {
+                "id": "ts_4",
+                "name": "Chứng nhận Chuẩn Nuôi & ATTP",
+                "max_score": 20,
+                "description": "Đạt chứng nhận VietGAP thủy sản / ASC / BAP / Giấy chứng nhận cơ sở đủ điều kiện an toàn thực phẩm.",
+                "score": 20,
+                "pass_fail": "PASS",
+                "notes": "Đạt chứng nhận ASC và VietGAP thủy sản nước ngọt."
+            }
+        ]
+    },
+    "PROCESSED_DRY_PACKAGING": {
+        "title": "Biểu mẫu BM04 — Đánh giá Nhà cung cấp Khô, Phụ gia & Bao bì",
+        "form_code": "BM04",
+        "description": "Kiểm soát bản tự công bố, phiếu kiểm nghiệm COA vi sinh/kim loại nặng, điều kiện kho bãi và tem nhãn dị nguyên",
+        "criteria": [
+            {
+                "id": "dp_1",
+                "name": "Hồ sơ Công bố Hợp quy & Tự công bố",
+                "max_score": 25,
+                "description": "Có Bản tự công bố sản phẩm hoặc Giấy tiếp nhận đăng ký bản công bố hợp quy theo Nghị định 15/2018/NĐ-CP.",
+                "score": 25,
+                "pass_fail": "PASS",
+                "notes": "Đầy đủ bản tự công bố sản phẩm và tiêu chuẩn cơ sở TCCS còn hiệu lực."
+            },
+            {
+                "id": "dp_2",
+                "name": "Phiếu Thử nghiệm Định kỳ (COA)",
+                "max_score": 30,
+                "description": "Cung cấp phiếu kết quả thử nghiệm định kỳ (vi sinh, kim loại nặng, thôi nhiễm thôi độc bao bì tiếp xúc thực phẩm) từ phòng kiểm nghiệm đạt ISO 17025.",
+                "score": 27,
+                "pass_fail": "PASS",
+                "notes": "COA định kỳ 6 tháng đầy đủ, không phát hiện vi sinh vật gây hại và thôi nhiễm chì/cadmium."
+            },
+            {
+                "id": "dp_3",
+                "name": "Điều kiện Kho tàng & Chống Côn trùng",
+                "max_score": 25,
+                "description": "Kho bảo quản nguyên liệu/bao bì khô ráo, hàng hóa kê trên pallet cách tường cách sàn 20cm, có hệ thống bẫy đèn diệt côn trùng.",
+                "score": 23,
+                "pass_fail": "PASS",
+                "notes": "Hệ thống kho sạch sẽ, lưới chắn chuột bọ tốt, pallet nhựa chuẩn."
+            },
+            {
+                "id": "dp_4",
+                "name": "Tem nhãn & Cảnh báo Dị nguyên (Allergen)",
+                "max_score": 20,
+                "description": "Ghi nhãn hàng hóa đúng Nghị định 43/2017/NĐ-CP & 111/2021/NĐ-CP, có thông tin cảnh báo dị nguyên, hướng dẫn bảo quản rõ ràng.",
+                "score": 19,
+                "pass_fail": "PASS",
+                "notes": "Tem phụ tiếng Việt đầy đủ, ghi rõ thành phần có chứa gluten/trứng."
+            }
+        ]
+    }
+}
+
+
+@router.get("/evaluation-criteria-templates", response_model=Dict[str, Any])
+def get_evaluation_criteria_templates():
+    """Lấy danh mục các bộ tiêu chí đánh giá nhà cung cấp chuẩn ISO (BM03, BM03-TS, BM04)"""
+    return DEFAULT_CRITERIA_TEMPLATES
+
+
+# ----------------- KẾ HOẠCH ĐÁNH GIÁ NCC (BM02) -----------------
+@router.get("/evaluation-plans", response_model=List[SupplierEvaluationPlanResponse])
+def get_supplier_evaluation_plans(
+    year: Optional[int] = None,
+    db: Session = Depends(get_db)
+):
+    query = db.query(SupplierEvaluationPlan)
+    if year:
+        query = query.filter(SupplierEvaluationPlan.year == year)
+    plans = query.order_by(desc(SupplierEvaluationPlan.year), SupplierEvaluationPlan.plan_code).all()
+
+    result = []
+    for p in plans:
+        count = db.query(SupplierEvaluation).filter(SupplierEvaluation.plan_id == p.id).count()
+        result.append(
+            SupplierEvaluationPlanResponse(
+                id=p.id,
+                plan_code=p.plan_code,
+                year=p.year,
+                title=p.title,
+                department=p.department,
+                scope=p.scope,
+                approved_by=p.approved_by,
+                approval_status=p.approval_status,
+                created_at=p.created_at,
+                evaluations_count=count
+            )
+        )
+    return result
+
+
+@router.post("/evaluation-plans", response_model=SupplierEvaluationPlanResponse)
+def create_supplier_evaluation_plan(
+    payload: SupplierEvaluationPlanCreate,
+    db: Session = Depends(get_db)
+):
+    existing = db.query(SupplierEvaluationPlan).filter(SupplierEvaluationPlan.plan_code == payload.plan_code).first()
+    if existing:
+        raise HTTPException(status_code=400, detail=f"Mã kế hoạch [{payload.plan_code}] đã tồn tại.")
+
+    plan = SupplierEvaluationPlan(
+        plan_code=payload.plan_code,
+        year=payload.year,
+        title=payload.title,
+        department=payload.department,
+        scope=payload.scope,
+        approved_by=payload.approved_by,
+        approval_status=payload.approval_status,
+    )
+    db.add(plan)
+    db.commit()
+    db.refresh(plan)
+    return SupplierEvaluationPlanResponse(
+        id=plan.id,
+        plan_code=plan.plan_code,
+        year=plan.year,
+        title=plan.title,
+        department=plan.department,
+        scope=plan.scope,
+        approved_by=plan.approved_by,
+        approval_status=plan.approval_status,
+        created_at=plan.created_at,
+        evaluations_count=0
+    )
+
+
+@router.put("/evaluation-plans/{plan_id}", response_model=SupplierEvaluationPlanResponse)
+def update_supplier_evaluation_plan(
+    plan_id: int,
+    payload: SupplierEvaluationPlanUpdate,
+    db: Session = Depends(get_db)
+):
+    plan = db.query(SupplierEvaluationPlan).filter(SupplierEvaluationPlan.id == plan_id).first()
+    if not plan:
+        raise HTTPException(status_code=404, detail="Không tìm thấy kế hoạch đánh giá NCC.")
+
+    data = payload.model_dump(exclude_unset=True)
+    for k, v in data.items():
+        setattr(plan, k, v)
+    db.commit()
+    db.refresh(plan)
+
+    count = db.query(SupplierEvaluation).filter(SupplierEvaluation.plan_id == plan.id).count()
+    return SupplierEvaluationPlanResponse(
+        id=plan.id,
+        plan_code=plan.plan_code,
+        year=plan.year,
+        title=plan.title,
+        department=plan.department,
+        scope=plan.scope,
+        approved_by=plan.approved_by,
+        approval_status=plan.approval_status,
+        created_at=plan.created_at,
+        evaluations_count=count
+    )
+
+
+@router.delete("/evaluation-plans/{plan_id}")
+def delete_supplier_evaluation_plan(
+    plan_id: int,
+    db: Session = Depends(get_db)
+):
+    plan = db.query(SupplierEvaluationPlan).filter(SupplierEvaluationPlan.id == plan_id).first()
+    if not plan:
+        raise HTTPException(status_code=404, detail="Không tìm thấy kế hoạch đánh giá NCC.")
+    db.delete(plan)
+    db.commit()
+    return {"message": "Đã xóa kế hoạch đánh giá NCC thành công."}
+
+
+# ----------------- KẾT QUẢ ĐÁNH GIÁ NCC (BM03, BM03-TS, BM04) -----------------
+@router.get("/evaluations", response_model=List[SupplierEvaluationResponse])
+def get_supplier_evaluations(
+    plan_id: Optional[int] = None,
+    supplier_id: Optional[UUID] = None,
+    criteria_type: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
+    query = db.query(SupplierEvaluation)
+    if plan_id:
+        query = query.filter(SupplierEvaluation.plan_id == plan_id)
+    if supplier_id:
+        query = query.filter(SupplierEvaluation.supplier_id == supplier_id)
+    if criteria_type:
+        query = query.filter(SupplierEvaluation.criteria_type == criteria_type)
+
+    evals = query.order_by(desc(SupplierEvaluation.evaluation_date), SupplierEvaluation.evaluation_code).all()
+
+    result = []
+    for e in evals:
+        result.append(
+            SupplierEvaluationResponse(
+                id=e.id,
+                evaluation_code=e.evaluation_code,
+                plan_id=e.plan_id,
+                supplier_id=e.supplier_id,
+                criteria_type=e.criteria_type,
+                evaluation_date=e.evaluation_date,
+                evaluator_name=e.evaluator_name,
+                audit_type=e.audit_type,
+                criteria_scores=e.criteria_scores if isinstance(e.criteria_scores, list) else [],
+                total_score=float(e.total_score),
+                grade=e.grade,
+                conclusion=e.conclusion,
+                corrective_actions=e.corrective_actions,
+                approved_by=e.approved_by,
+                created_at=e.created_at,
+                supplier_name=e.supplier_name,
+                supplier_code=e.supplier_code,
+                plan_code=e.plan_code
+            )
+        )
+    return result
+
+
+@router.post("/evaluations", response_model=SupplierEvaluationResponse)
+def create_supplier_evaluation(
+    payload: SupplierEvaluationCreate,
+    db: Session = Depends(get_db)
+):
+    existing = db.query(SupplierEvaluation).filter(SupplierEvaluation.evaluation_code == payload.evaluation_code).first()
+    if existing:
+        raise HTTPException(status_code=400, detail=f"Mã phiếu đánh giá [{payload.evaluation_code}] đã tồn tại.")
+
+    supp = db.query(Supplier).filter(Supplier.supplier_id == payload.supplier_id).first()
+    if not supp:
+        raise HTTPException(status_code=404, detail="Nhà cung cấp không tồn tại.")
+
+    eval_record = SupplierEvaluation(
+        evaluation_code=payload.evaluation_code,
+        plan_id=payload.plan_id,
+        supplier_id=payload.supplier_id,
+        criteria_type=payload.criteria_type,
+        evaluation_date=payload.evaluation_date,
+        evaluator_name=payload.evaluator_name,
+        audit_type=payload.audit_type,
+        criteria_scores=payload.criteria_scores,
+        total_score=payload.total_score,
+        grade=payload.grade,
+        conclusion=payload.conclusion,
+        corrective_actions=payload.corrective_actions,
+        approved_by=payload.approved_by
+    )
+    db.add(eval_record)
+
+    # Sync rating_score and evaluation_date back to supplier record
+    supp.rating_score = payload.total_score
+    supp.evaluation_date = payload.evaluation_date
+    if payload.conclusion == "APPROVED":
+        supp.status = "APPROVED"
+        supp.risk_level = "LOW"
+    elif payload.conclusion == "CONDITIONAL":
+        supp.status = "WARNING"
+        supp.risk_level = "MEDIUM"
+    elif payload.conclusion == "DISQUALIFIED":
+        supp.status = "SUSPENDED"
+        supp.risk_level = "HIGH"
+
+    db.commit()
+    db.refresh(eval_record)
+
+    return SupplierEvaluationResponse(
+        id=eval_record.id,
+        evaluation_code=eval_record.evaluation_code,
+        plan_id=eval_record.plan_id,
+        supplier_id=eval_record.supplier_id,
+        criteria_type=eval_record.criteria_type,
+        evaluation_date=eval_record.evaluation_date,
+        evaluator_name=eval_record.evaluator_name,
+        audit_type=eval_record.audit_type,
+        criteria_scores=eval_record.criteria_scores if isinstance(eval_record.criteria_scores, list) else [],
+        total_score=float(eval_record.total_score),
+        grade=eval_record.grade,
+        conclusion=eval_record.conclusion,
+        corrective_actions=eval_record.corrective_actions,
+        approved_by=eval_record.approved_by,
+        created_at=eval_record.created_at,
+        supplier_name=eval_record.supplier_name,
+        supplier_code=eval_record.supplier_code,
+        plan_code=eval_record.plan_code
+    )
+
+
+@router.get("/evaluations/{eval_id}", response_model=SupplierEvaluationResponse)
+def get_supplier_evaluation_detail(
+    eval_id: int,
+    db: Session = Depends(get_db)
+):
+    e = db.query(SupplierEvaluation).filter(SupplierEvaluation.id == eval_id).first()
+    if not e:
+        raise HTTPException(status_code=404, detail="Không tìm thấy phiếu đánh giá NCC.")
+
+    return SupplierEvaluationResponse(
+        id=e.id,
+        evaluation_code=e.evaluation_code,
+        plan_id=e.plan_id,
+        supplier_id=e.supplier_id,
+        criteria_type=e.criteria_type,
+        evaluation_date=e.evaluation_date,
+        evaluator_name=e.evaluator_name,
+        audit_type=e.audit_type,
+        criteria_scores=e.criteria_scores if isinstance(e.criteria_scores, list) else [],
+        total_score=float(e.total_score),
+        grade=e.grade,
+        conclusion=e.conclusion,
+        corrective_actions=e.corrective_actions,
+        approved_by=e.approved_by,
+        created_at=e.created_at,
+        supplier_name=e.supplier_name,
+        supplier_code=e.supplier_code,
+        plan_code=e.plan_code
+    )
+
+
+@router.put("/evaluations/{eval_id}", response_model=SupplierEvaluationResponse)
+def update_supplier_evaluation(
+    eval_id: int,
+    payload: SupplierEvaluationUpdate,
+    db: Session = Depends(get_db)
+):
+    e = db.query(SupplierEvaluation).filter(SupplierEvaluation.id == eval_id).first()
+    if not e:
+        raise HTTPException(status_code=404, detail="Không tìm thấy phiếu đánh giá NCC.")
+
+    data = payload.model_dump(exclude_unset=True)
+    for k, v in data.items():
+        setattr(e, k, v)
+
+    # Sync to supplier
+    supp = db.query(Supplier).filter(Supplier.supplier_id == e.supplier_id).first()
+    if supp:
+        supp.rating_score = float(e.total_score)
+        supp.evaluation_date = e.evaluation_date
+        if e.conclusion == "APPROVED":
+            supp.status = "APPROVED"
+            supp.risk_level = "LOW"
+        elif e.conclusion == "CONDITIONAL":
+            supp.status = "WARNING"
+            supp.risk_level = "MEDIUM"
+        elif e.conclusion == "DISQUALIFIED":
+            supp.status = "SUSPENDED"
+            supp.risk_level = "HIGH"
+
+    db.commit()
+    db.refresh(e)
+
+    return SupplierEvaluationResponse(
+        id=e.id,
+        evaluation_code=e.evaluation_code,
+        plan_id=e.plan_id,
+        supplier_id=e.supplier_id,
+        criteria_type=e.criteria_type,
+        evaluation_date=e.evaluation_date,
+        evaluator_name=e.evaluator_name,
+        audit_type=e.audit_type,
+        criteria_scores=e.criteria_scores if isinstance(e.criteria_scores, list) else [],
+        total_score=float(e.total_score),
+        grade=e.grade,
+        conclusion=e.conclusion,
+        corrective_actions=e.corrective_actions,
+        approved_by=e.approved_by,
+        created_at=e.created_at,
+        supplier_name=e.supplier_name,
+        supplier_code=e.supplier_code,
+        plan_code=e.plan_code
+    )
+
+
+@router.delete("/evaluations/{eval_id}")
+def delete_supplier_evaluation(
+    eval_id: int,
+    db: Session = Depends(get_db)
+):
+    e = db.query(SupplierEvaluation).filter(SupplierEvaluation.id == eval_id).first()
+    if not e:
+        raise HTTPException(status_code=404, detail="Không tìm thấy phiếu đánh giá NCC.")
+    db.delete(e)
+    db.commit()
+    return {"message": "Đã xóa phiếu đánh giá NCC thành công."}
+

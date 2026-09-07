@@ -56,6 +56,7 @@ import { DynamicFormRenderer } from "@/components/builder/DynamicFormRenderer";
 import { WorkflowBuilder, type WorkflowTemplateData } from "@/components/builder/WorkflowBuilder";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import type { FormTemplateData } from "@/components/builder/types";
+import { printHtml } from "@/lib/print";
 
 export const Route = createFileRoute("/purchasing")({
   head: () => ({
@@ -134,6 +135,12 @@ export interface IQCInspectionItem {
   mycotoxin_check: boolean;
   allergen_check: boolean;
   coa_compliance: boolean;
+  defect_rate_percent?: number | null;
+  impurity_percent?: number | null;
+  size_uniformity_check: boolean;
+  vehicle_cleanliness_check: boolean;
+  delivery_vehicle_plate?: string | null;
+  driver_name?: string | null;
   inspection_details?: any;
   status: "PASSED" | "REJECTED" | "CONDITIONAL" | "PENDING" | string;
   notes?: string | null;
@@ -154,6 +161,50 @@ export interface PurchasingStats {
   iqc_pass_rate_percentage: number;
   total_inspections: number;
   rejected_inspections: number;
+}
+
+export interface SupplierEvaluationPlanItem {
+  id: number;
+  plan_code: string;
+  year: number;
+  title: string;
+  department: string;
+  scope?: string | null;
+  approved_by?: string | null;
+  approval_status: string;
+  created_at?: string | null;
+  evaluations_count?: number;
+}
+
+export interface SupplierEvaluationCriterion {
+  id: string;
+  name: string;
+  max_score: number;
+  description: string;
+  score: number;
+  pass_fail: "PASS" | "FAIL" | string;
+  notes?: string;
+}
+
+export interface SupplierEvaluationItem {
+  id: number;
+  evaluation_code: string;
+  plan_id?: number | null;
+  supplier_id: string;
+  criteria_type: "AGRI_FRESH" | "AQUA_ANIMAL_FRESH" | "PROCESSED_DRY_PACKAGING" | string;
+  evaluation_date: string;
+  evaluator_name: string;
+  audit_type: string;
+  criteria_scores: SupplierEvaluationCriterion[];
+  total_score: number;
+  grade: "A" | "B" | "C" | "D" | string;
+  conclusion: "APPROVED" | "CONDITIONAL" | "DISQUALIFIED" | string;
+  corrective_actions?: string | null;
+  approved_by?: string | null;
+  created_at?: string | null;
+  supplier_name?: string | null;
+  supplier_code?: string | null;
+  plan_code?: string | null;
 }
 
 // ==================== CONSTANTS & OPTIONS ====================
@@ -304,7 +355,7 @@ const AI_COA_TEMPLATES = [
 
 function PurchasingPage() {
   const [activeTab, setActiveTab] = useState<
-    "suppliers" | "lots" | "inspections" | "ai_coa"
+    "suppliers" | "lots" | "inspections" | "eval_plans" | "evaluations" | "ai_coa"
   >("suppliers");
 
   // Data States
@@ -312,12 +363,21 @@ function PurchasingPage() {
   const [suppliers, setSuppliers] = useState<SupplierItem[]>([]);
   const [lots, setLots] = useState<MaterialLotItem[]>([]);
   const [inspections, setInspections] = useState<IQCInspectionItem[]>([]);
+  const [evaluationPlans, setEvaluationPlans] = useState<SupplierEvaluationPlanItem[]>([]);
+  const [evaluations, setEvaluations] = useState<SupplierEvaluationItem[]>([]);
+  const [criteriaTemplates, setCriteriaTemplates] = useState<any>(null);
   const [loading, setLoading] = useState(false);
 
   // Filters
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("ALL");
   const [selectedStatus, setSelectedStatus] = useState<string>("ALL");
+
+  // Filters for Plans and Evaluations
+  const [planSearch, setPlanSearch] = useState("");
+  const [evalSearch, setEvalSearch] = useState("");
+  const [evalTypeFilter, setEvalTypeFilter] = useState("ALL");
+  const [evalConclusionFilter, setEvalConclusionFilter] = useState("ALL");
 
   // Modals States
   const [isCreateSupplierOpen, setIsCreateSupplierOpen] = useState(false);
@@ -332,6 +392,37 @@ function PurchasingPage() {
   const [editingInspection, setEditingInspection] = useState<IQCInspectionItem | null>(null);
   const [viewingInspection, setViewingInspection] = useState<IQCInspectionItem | null>(null);
 
+  // Modals for Plans and Evaluations
+  const [isCreatePlanOpen, setIsCreatePlanOpen] = useState(false);
+  const [editingPlan, setEditingPlan] = useState<SupplierEvaluationPlanItem | null>(null);
+  const [planForm, setPlanForm] = useState({
+    plan_code: "",
+    year: new Date().getFullYear(),
+    title: `Kế hoạch Đánh giá Năng lực Nhà cung ứng Năm ${new Date().getFullYear()}`,
+    department: "Phòng Đảm Bảo Chất Lượng (QA/QC)",
+    scope: "Toàn bộ nhà cung cấp nguyên liệu tươi sống, phụ gia thực phẩm và bao bì tiếp xúc trực tiếp",
+    approved_by: "Giám Đốc Nhà Máy",
+    approval_status: "APPROVED",
+  });
+
+  const [isCreateEvalOpen, setIsCreateEvalOpen] = useState(false);
+  const [editingEval, setEditingEval] = useState<SupplierEvaluationItem | null>(null);
+  const [evalForm, setEvalForm] = useState<any>({
+    evaluation_code: "",
+    plan_id: null,
+    supplier_id: "",
+    criteria_type: "AGRI_FRESH",
+    evaluation_date: new Date().toISOString().split("T")[0],
+    evaluator_name: "Chuyên viên QA/QC",
+    audit_type: "ON_SITE",
+    criteria_scores: [] as SupplierEvaluationCriterion[],
+    total_score: 100,
+    grade: "A",
+    conclusion: "APPROVED",
+    corrective_actions: "",
+    approved_by: "Giám Đốc Nhà Máy",
+  });
+
   const [isPrintIqcOpen, setIsPrintIqcOpen] = useState(false);
   const [isPrintAslOpen, setIsPrintAslOpen] = useState(false);
   const [aiEvalSupplier, setAiEvalSupplier] = useState<any | null>(null);
@@ -345,6 +436,8 @@ function PurchasingPage() {
   const [deletingSupplierItem, setDeletingSupplierItem] = useState<{ id: string; name: string } | null>(null);
   const [deletingLotItem, setDeletingLotItem] = useState<{ id: string; code: string } | null>(null);
   const [deletingInspectionItem, setDeletingInspectionItem] = useState<{ id: string; code: string } | null>(null);
+  const [deletingPlanItem, setDeletingPlanItem] = useState<{ id: number; code: string } | null>(null);
+  const [deletingEvalItem, setDeletingEvalItem] = useState<{ id: number; code: string } | null>(null);
 
   // Form States
   const [supplierForm, setSupplierForm] = useState({
@@ -388,6 +481,12 @@ function PurchasingPage() {
     mycotoxin_check: true,
     allergen_check: false,
     coa_compliance: true,
+    defect_rate_percent: 0.0,
+    impurity_percent: 0.0,
+    size_uniformity_check: true,
+    vehicle_cleanliness_check: true,
+    delivery_vehicle_plate: "",
+    driver_name: "",
     status: "PASSED",
     notes: "",
   });
@@ -408,16 +507,22 @@ function PurchasingPage() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [statsRes, supRes, lotsRes, inspRes] = await Promise.all([
+      const [statsRes, supRes, lotsRes, inspRes, plansRes, evalsRes, tmplRes] = await Promise.allSettled([
         api.get("/purchasing/stats"),
         api.get("/purchasing/suppliers"),
         api.get("/purchasing/lots"),
         api.get("/purchasing/inspections"),
+        api.get("/purchasing/evaluation-plans"),
+        api.get("/purchasing/evaluations"),
+        api.get("/purchasing/evaluation-criteria-templates"),
       ]);
-      setStats(statsRes.data);
-      setSuppliers(supRes.data);
-      setLots(lotsRes.data);
-      setInspections(inspRes.data);
+      if (statsRes.status === "fulfilled") setStats(statsRes.value.data);
+      if (supRes.status === "fulfilled") setSuppliers(supRes.value.data);
+      if (lotsRes.status === "fulfilled") setLots(lotsRes.value.data);
+      if (inspRes.status === "fulfilled") setInspections(inspRes.value.data);
+      if (plansRes.status === "fulfilled") setEvaluationPlans(plansRes.value.data);
+      if (evalsRes.status === "fulfilled") setEvaluations(evalsRes.value.data);
+      if (tmplRes.status === "fulfilled") setCriteriaTemplates(tmplRes.value.data);
     } catch (err: any) {
       toast.error("Không thể kết nối đến cơ sở dữ liệu Mua hàng & IQC.");
     } finally {
@@ -476,6 +581,33 @@ function PurchasingPage() {
       return matchQuery && matchStatus;
     });
   }, [inspections, searchQuery, selectedStatus]);
+
+  // Filtered Evaluation Plans
+  const filteredPlans = useMemo(() => {
+    return evaluationPlans.filter((p) => {
+      const matchQuery =
+        planSearch === "" ||
+        p.plan_code.toLowerCase().includes(planSearch.toLowerCase()) ||
+        p.title.toLowerCase().includes(planSearch.toLowerCase()) ||
+        p.department.toLowerCase().includes(planSearch.toLowerCase());
+      return matchQuery;
+    });
+  }, [evaluationPlans, planSearch]);
+
+  // Filtered Supplier Evaluations
+  const filteredEvaluations = useMemo(() => {
+    return evaluations.filter((e) => {
+      const matchQuery =
+        evalSearch === "" ||
+        e.evaluation_code.toLowerCase().includes(evalSearch.toLowerCase()) ||
+        (e.supplier_name && e.supplier_name.toLowerCase().includes(evalSearch.toLowerCase())) ||
+        (e.supplier_code && e.supplier_code.toLowerCase().includes(evalSearch.toLowerCase())) ||
+        e.evaluator_name.toLowerCase().includes(evalSearch.toLowerCase());
+      const matchType = evalTypeFilter === "ALL" || e.criteria_type === evalTypeFilter;
+      const matchConclusion = evalConclusionFilter === "ALL" || e.conclusion === evalConclusionFilter;
+      return matchQuery && matchType && matchConclusion;
+    });
+  }, [evaluations, evalSearch, evalTypeFilter, evalConclusionFilter]);
 
   // ==================== SUPPLIER HANDLERS ====================
   const handleOpenCreateSupplier = () => {
@@ -835,6 +967,12 @@ function PurchasingPage() {
       mycotoxin_check: true,
       allergen_check: false,
       coa_compliance: true,
+      defect_rate_percent: 0.0,
+      impurity_percent: 0.0,
+      size_uniformity_check: true,
+      vehicle_cleanliness_check: true,
+      delivery_vehicle_plate: "67C-182.45",
+      driver_name: "Nguyễn Văn Tuấn",
       status: "PASSED",
       notes: "Ngoại quan nguyên vẹn, màu sắc tự nhiên, phiếu COA hợp lệ theo chuẩn ISO 22000.",
     });
@@ -854,6 +992,12 @@ function PurchasingPage() {
       mycotoxin_check: insp.mycotoxin_check,
       allergen_check: insp.allergen_check,
       coa_compliance: insp.coa_compliance,
+      defect_rate_percent: insp.defect_rate_percent ?? 0.0,
+      impurity_percent: insp.impurity_percent ?? 0.0,
+      size_uniformity_check: insp.size_uniformity_check ?? true,
+      vehicle_cleanliness_check: insp.vehicle_cleanliness_check ?? true,
+      delivery_vehicle_plate: insp.delivery_vehicle_plate || "",
+      driver_name: insp.driver_name || "",
       status: insp.status,
       notes: insp.notes || "",
     });
@@ -876,6 +1020,12 @@ function PurchasingPage() {
       mycotoxin_check: inspectionForm.mycotoxin_check,
       allergen_check: inspectionForm.allergen_check,
       coa_compliance: inspectionForm.coa_compliance,
+      defect_rate_percent: Number(inspectionForm.defect_rate_percent) || 0.0,
+      impurity_percent: Number(inspectionForm.impurity_percent) || 0.0,
+      size_uniformity_check: inspectionForm.size_uniformity_check,
+      vehicle_cleanliness_check: inspectionForm.vehicle_cleanliness_check,
+      delivery_vehicle_plate: inspectionForm.delivery_vehicle_plate,
+      driver_name: inspectionForm.driver_name,
       status: inspectionForm.status,
       notes: inspectionForm.notes,
     };
@@ -940,6 +1090,452 @@ function PurchasingPage() {
     }));
     setActiveTab("inspections");
     toast.success("Đã tự động điền dữ liệu thẩm định AI vào Biên bản IQC!");
+  };
+
+  // ==================== EVALUATION PLAN & EVALUATION HANDLERS ====================
+  const openNewPlan = () => {
+    setEditingPlan(null);
+    setPlanForm({
+      plan_code: `KHĐG-2026-${String(evaluationPlans.length + 1).padStart(2, "0")}`,
+      year: new Date().getFullYear(),
+      title: `Kế hoạch Đánh giá Năng lực Nhà cung ứng Năm ${new Date().getFullYear()}`,
+      department: "Phòng Đảm Bảo Chất Lượng (QA/QC)",
+      scope: "Toàn bộ nhà cung cấp nguyên liệu tươi sống, phụ gia thực phẩm và bao bì tiếp xúc trực tiếp",
+      approved_by: "Giám Đốc Nhà Máy",
+      approval_status: "APPROVED",
+    });
+    setIsCreatePlanOpen(true);
+  };
+
+  const openEditPlan = (plan: SupplierEvaluationPlanItem) => {
+    setEditingPlan(plan);
+    setPlanForm({
+      plan_code: plan.plan_code,
+      year: plan.year,
+      title: plan.title,
+      department: plan.department,
+      scope: plan.scope || "",
+      approved_by: plan.approved_by || "",
+      approval_status: plan.approval_status,
+    });
+    setIsCreatePlanOpen(true);
+  };
+
+  const handleSavePlan = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      if (editingPlan) {
+        await api.put(`/purchasing/evaluation-plans/${editingPlan.id}`, planForm);
+        toast.success(`Đã cập nhật kế hoạch đánh giá [${planForm.plan_code}]`);
+      } else {
+        await api.post("/purchasing/evaluation-plans", planForm);
+        toast.success(`Đã tạo kế hoạch đánh giá mới [${planForm.plan_code}]`);
+      }
+      setIsCreatePlanOpen(false);
+      fetchData();
+    } catch (err: any) {
+      toast.error("Lỗi khi lưu kế hoạch: " + (err.response?.data?.detail || err.message));
+    }
+  };
+
+  const handleDeletePlan = async (id: number) => {
+    try {
+      await api.delete(`/purchasing/evaluation-plans/${id}`);
+      toast.success("Đã xóa kế hoạch đánh giá thành công.");
+      fetchData();
+    } catch (err: any) {
+      toast.error("Không thể xóa kế hoạch: " + (err.response?.data?.detail || err.message));
+    }
+  };
+
+  const openNewEval = () => {
+    setEditingEval(null);
+    const defaultType = "AGRI_FRESH";
+    const tmplCriteria = criteriaTemplates?.[defaultType]?.criteria || [];
+    const scores = tmplCriteria.map((c: any) => ({
+      id: c.id,
+      name: c.name,
+      max_score: c.max_score,
+      description: c.description,
+      score: c.max_score,
+      pass_fail: "PASS",
+      notes: c.notes || "",
+    }));
+    const total = scores.reduce((sum: number, c: any) => sum + Number(c.score), 0);
+
+    setEvalForm({
+      evaluation_code: `ĐGNCC-2026-${String(evaluations.length + 1).padStart(3, "0")}`,
+      plan_id: evaluationPlans.length > 0 ? evaluationPlans[0].id : null,
+      supplier_id: suppliers.length > 0 ? suppliers[0].supplier_id : "",
+      criteria_type: defaultType,
+      evaluation_date: new Date().toISOString().split("T")[0],
+      evaluator_name: "Chuyên viên QA/QC",
+      audit_type: "ON_SITE",
+      criteria_scores: scores,
+      total_score: total,
+      grade: total >= 85 ? "A" : total >= 70 ? "B" : total >= 50 ? "C" : "D",
+      conclusion: total >= 70 ? "APPROVED" : total >= 50 ? "CONDITIONAL" : "DISQUALIFIED",
+      corrective_actions: "",
+      approved_by: "Giám Đốc Nhà Máy",
+    });
+    setIsCreateEvalOpen(true);
+  };
+
+  const openEditEval = (ev: SupplierEvaluationItem) => {
+    setEditingEval(ev);
+    setEvalForm({
+      evaluation_code: ev.evaluation_code,
+      plan_id: ev.plan_id ?? null,
+      supplier_id: ev.supplier_id,
+      criteria_type: ev.criteria_type,
+      evaluation_date: ev.evaluation_date,
+      evaluator_name: ev.evaluator_name,
+      audit_type: ev.audit_type,
+      criteria_scores: ev.criteria_scores || [],
+      total_score: ev.total_score,
+      grade: ev.grade,
+      conclusion: ev.conclusion,
+      corrective_actions: ev.corrective_actions || "",
+      approved_by: ev.approved_by || "",
+    });
+    setIsCreateEvalOpen(true);
+  };
+
+  const handleCriteriaTypeChange = (newType: string) => {
+    const tmplCriteria = criteriaTemplates?.[newType]?.criteria || [];
+    const scores = tmplCriteria.map((c: any) => ({
+      id: c.id,
+      name: c.name,
+      max_score: c.max_score,
+      description: c.description,
+      score: c.max_score,
+      pass_fail: "PASS",
+      notes: c.notes || "",
+    }));
+    const total = scores.reduce((sum: number, c: any) => sum + Number(c.score), 0);
+    setEvalForm({
+      ...evalForm,
+      criteria_type: newType,
+      criteria_scores: scores,
+      total_score: total,
+      grade: total >= 85 ? "A" : total >= 70 ? "B" : total >= 50 ? "C" : "D",
+      conclusion: total >= 70 ? "APPROVED" : total >= 50 ? "CONDITIONAL" : "DISQUALIFIED",
+    });
+  };
+
+  const handleCriteriaScoreChange = (index: number, newScore: number, notes?: string) => {
+    const updated = [...evalForm.criteria_scores];
+    const item = updated[index];
+    const scoreVal = Math.min(Math.max(0, newScore), item.max_score);
+    updated[index] = {
+      ...item,
+      score: scoreVal,
+      pass_fail: scoreVal >= item.max_score * 0.7 ? "PASS" : "FAIL",
+      notes: notes !== undefined ? notes : item.notes,
+    };
+    const total = updated.reduce((sum: number, c: any) => sum + Number(c.score), 0);
+    const grade = total >= 85 ? "A" : total >= 70 ? "B" : total >= 50 ? "C" : "D";
+    const conclusion = total >= 70 ? "APPROVED" : total >= 50 ? "CONDITIONAL" : "DISQUALIFIED";
+    setEvalForm({
+      ...evalForm,
+      criteria_scores: updated,
+      total_score: total,
+      grade,
+      conclusion,
+    });
+  };
+
+  const handleSaveEval = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const payload = {
+        ...evalForm,
+        plan_id: evalForm.plan_id ? Number(evalForm.plan_id) : null,
+        total_score: Number(evalForm.total_score),
+      };
+      if (editingEval) {
+        await api.put(`/purchasing/evaluations/${editingEval.id}`, payload);
+        toast.success(`Đã cập nhật phiếu đánh giá [${payload.evaluation_code}]`);
+      } else {
+        await api.post("/purchasing/evaluations", payload);
+        toast.success(`Đã lập phiếu đánh giá nhà cung cấp [${payload.evaluation_code}]`);
+      }
+      setIsCreateEvalOpen(false);
+      fetchData();
+    } catch (err: any) {
+      toast.error("Lỗi khi lưu phiếu đánh giá: " + (err.response?.data?.detail || err.message));
+    }
+  };
+
+  const handleDeleteEval = async (id: number) => {
+    try {
+      await api.delete(`/purchasing/evaluations/${id}`);
+      toast.success("Đã xóa phiếu đánh giá thành công.");
+      fetchData();
+    } catch (err: any) {
+      toast.error("Không thể xóa phiếu đánh giá: " + (err.response?.data?.detail || err.message));
+    }
+  };
+
+  // ==================== ISO PRINT TEMPLATES (BM02, BM03, BM03-TS, BM04) ====================
+  const handlePrintEvaluationPlan = (plan: SupplierEvaluationPlanItem) => {
+    const planEvals = evaluations.filter((e) => e.plan_id === plan.id);
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <title>Kế Hoạch Đánh Giá Nhà Cung Cấp Năm ${plan.year} - ${plan.plan_code}</title>
+        <style>
+          @page { size: A4 portrait; margin: 15mm 20mm; }
+          body { font-family: 'Times New Roman', serif; color: #111; line-height: 1.4; font-size: 13px; }
+          .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #000; padding-bottom: 8px; margin-bottom: 15px; }
+          .logo { font-size: 18px; font-weight: bold; text-transform: uppercase; color: #047857; }
+          .sub-logo { font-size: 10px; color: #555; }
+          .form-meta { text-align: right; font-size: 11px; }
+          .title { text-align: center; font-size: 17px; font-weight: bold; text-transform: uppercase; margin: 15px 0 5px 0; }
+          .sub-title { text-align: center; font-size: 12px; font-style: italic; margin-bottom: 15px; }
+          .info-box { margin-bottom: 15px; border: 1px solid #ccc; padding: 10px; background: #fafafa; border-radius: 4px; }
+          .info-row { display: flex; margin-bottom: 6px; }
+          .info-label { font-weight: bold; width: 180px; }
+          .info-val { flex: 1; }
+          table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+          th, td { border: 1px solid #333; padding: 6px 8px; font-size: 12px; text-align: left; }
+          th { background: #e5e7eb; font-weight: bold; text-align: center; }
+          .text-center { text-align: center; }
+          .text-right { text-align: right; }
+          .signature-section { margin-top: 35px; display: flex; justify-content: space-between; }
+          .sign-box { width: 45%; text-align: center; }
+          .sign-title { font-weight: bold; text-transform: uppercase; font-size: 12px; margin-bottom: 50px; }
+          .sign-name { font-weight: bold; text-decoration: underline; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div>
+            <div class="logo">NHÀ MÁY CHẾ BIẾN THỰC PHẨM MEKONG FOODS</div>
+            <div class="sub-logo">Hệ Thống Quản Lý An Toàn Thực Phẩm ISO 22000:2018</div>
+          </div>
+          <div class="form-meta">
+            <div><strong>Mã biểu mẫu:</strong> BM02-KHĐGNCC</div>
+            <div><strong>Mã số tài liệu:</strong> BM-NCC-02</div>
+            <div><strong>Lần ban hành:</strong> 03 | <strong>Ngày:</strong> 01/01/2026</div>
+          </div>
+        </div>
+
+        <div class="title">KẾ HOẠCH ĐÁNH GIÁ NĂNG LỰC NHÀ CUNG CẤP HÀNG NĂM</div>
+        <div class="sub-title">(Theo quy định Điều khoản 7.1.6 ISO 22000:2018 — Đánh giá & Phê duyệt nhà cung ứng)</div>
+
+        <div class="info-box">
+          <div class="info-row"><span class="info-label">Mã số kế hoạch:</span><span class="info-val"><strong>${plan.plan_code}</strong></span></div>
+          <div class="info-row"><span class="info-label">Năm thực hiện:</span><span class="info-val">${plan.year}</span></div>
+          <div class="info-row"><span class="info-label">Đơn vị chủ trì:</span><span class="info-val">${plan.department}</span></div>
+          <div class="info-row"><span class="info-label">Phạm vi đánh giá:</span><span class="info-val">${plan.scope || "Toàn bộ nhà cung cấp nguyên liệu tươi sống, phụ gia và bao bì tiếp xúc trực tiếp"}</span></div>
+          <div class="info-row"><span class="info-label">Tình trạng phê duyệt:</span><span class="info-val"><strong>${plan.approval_status === "APPROVED" ? "ĐÃ PHÊ DUYỆT BỞI BAN GIÁM ĐỐC" : plan.approval_status}</strong></span></div>
+        </div>
+
+        <div style="font-weight: bold; margin-top: 15px; margin-bottom: 5px; text-transform: uppercase; font-size: 12px;">
+          DANH SÁCH NHÀ CUNG CẤP ĐƯỢC LÊN LỊCH ĐÁNH GIÁ TRONG NĂM (${planEvals.length} ĐƠN VỊ):
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 35px;">STT</th>
+              <th style="width: 90px;">Mã NCC</th>
+              <th>Tên Nhà Cung Cấp</th>
+              <th style="width: 130px;">Bộ Tiêu Chí Áp Dụng</th>
+              <th style="width: 85px;">Hình Thức</th>
+              <th style="width: 80px;">Thời Gian</th>
+              <th style="width: 70px;">Điểm Số</th>
+              <th style="width: 90px;">Kết Luận</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${
+              planEvals.length === 0
+                ? `<tr><td colspan="8" class="text-center" style="padding: 15px; color: #777;">Chưa có phiếu đánh giá nào được gán vào kế hoạch này.</td></tr>`
+                : planEvals
+                    .map(
+                      (e, idx) => `
+              <tr>
+                <td class="text-center">${idx + 1}</td>
+                <td class="text-center"><strong>${e.supplier_code || "NCC"}</strong></td>
+                <td><strong>${e.supplier_name || "Nhà cung cấp"}</strong></td>
+                <td class="text-center">
+                  ${
+                    e.criteria_type === "AGRI_FRESH"
+                      ? "BM03 (Nông sản tươi)"
+                      : e.criteria_type === "AQUA_ANIMAL_FRESH"
+                      ? "TC Bổ sung (Thủy sản tươi)"
+                      : "BM04 (Khô, phụ gia, bao bì)"
+                  }
+                </td>
+                <td class="text-center">${e.audit_type === "ON_SITE" ? "Tại cơ sở" : e.audit_type === "PERIODIC" ? "Định kỳ" : e.audit_type}</td>
+                <td class="text-center">${e.evaluation_date}</td>
+                <td class="text-center"><strong>${e.total_score}</strong>/100</td>
+                <td class="text-center" style="font-weight: bold; color: ${e.conclusion === "APPROVED" ? "#047857" : e.conclusion === "CONDITIONAL" ? "#b45309" : "#b91c1c"};">
+                  ${e.conclusion === "APPROVED" ? "DUY TRÌ (ĐẠT)" : e.conclusion === "CONDITIONAL" ? "CẦN CAPA" : "LOẠI BỎ"}
+                </td>
+              </tr>
+            `
+                    )
+                    .join("")
+            }
+          </tbody>
+        </table>
+
+        <div class="signature-section">
+          <div class="sign-box">
+            <div class="sign-title">NGƯỜI LẬP KẾ HOẠCH (QA/QC)</div>
+            <div class="sign-name">Trưởng Phòng Đảm Bảo Chất Lượng</div>
+          </div>
+          <div class="sign-box">
+            <div class="sign-title">PHÊ DUYỆT BAN GIÁM ĐỐC</div>
+            <div class="sign-name">${plan.approved_by || "Giám Đốc Nhà Máy"}</div>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+    printHtml(html);
+  };
+
+  const handlePrintEvaluation = (ev: SupplierEvaluationItem) => {
+    const isAgri = ev.criteria_type === "AGRI_FRESH";
+    const isAqua = ev.criteria_type === "AQUA_ANIMAL_FRESH";
+    const formCode = isAgri ? "BM03" : isAqua ? "TC-BS-TS (Bộ tiêu chí bổ sung)" : "BM04";
+    const formTitle = isAgri
+      ? "PHIẾU ĐÁNH GIÁ NHÀ CUNG CẤP NÔNG SẢN TƯƠI SỐNG (BM03)"
+      : isAqua
+      ? "PHIẾU ĐÁNH GIÁ NHÀ CUNG CẤP THỦY HẢI SẢN TƯƠI SỐNG (BỘ TIÊU CHÍ BỔ SUNG)"
+      : "PHIẾU ĐÁNH GIÁ NHÀ CUNG CẤP NGUYÊN LIỆU KHÔ, PHỤ GIA & BAO BÌ (BM04)";
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <title>Phiếu Đánh Giá Nhà Cung Cấp - ${ev.evaluation_code}</title>
+        <style>
+          @page { size: A4 portrait; margin: 15mm 20mm; }
+          body { font-family: 'Times New Roman', serif; color: #111; line-height: 1.4; font-size: 13px; }
+          .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #000; padding-bottom: 8px; margin-bottom: 15px; }
+          .logo { font-size: 18px; font-weight: bold; text-transform: uppercase; color: #047857; }
+          .sub-logo { font-size: 10px; color: #555; }
+          .form-meta { text-align: right; font-size: 11px; }
+          .title { text-align: center; font-size: 16px; font-weight: bold; text-transform: uppercase; margin: 12px 0 4px 0; }
+          .sub-title { text-align: center; font-size: 12px; font-style: italic; margin-bottom: 15px; }
+          .info-box { margin-bottom: 15px; border: 1px solid #ccc; padding: 10px; background: #fafafa; border-radius: 4px; }
+          .info-row { display: flex; margin-bottom: 5px; }
+          .info-label { font-weight: bold; width: 190px; }
+          .info-val { flex: 1; }
+          table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+          th, td { border: 1px solid #333; padding: 6px 8px; font-size: 12px; }
+          th { background: #e5e7eb; font-weight: bold; text-align: center; }
+          .text-center { text-align: center; }
+          .text-right { text-align: right; }
+          .result-summary { margin-top: 15px; border: 1px solid #047857; background: #ecfdf5; padding: 10px; border-radius: 4px; }
+          .signature-section { margin-top: 30px; display: flex; justify-content: space-between; }
+          .sign-box { width: 30%; text-align: center; }
+          .sign-title { font-weight: bold; text-transform: uppercase; font-size: 11px; margin-bottom: 45px; }
+          .sign-name { font-weight: bold; text-decoration: underline; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div>
+            <div class="logo">NHÀ MÁY CHẾ BIẾN THỰC PHẨM MEKONG FOODS</div>
+            <div class="sub-logo">Hệ Thống Quản Lý An Toàn Thực Phẩm ISO 22000:2018</div>
+          </div>
+          <div class="form-meta">
+            <div><strong>Mã biểu mẫu:</strong> ${formCode}</div>
+            <div><strong>Số phiếu:</strong> ${ev.evaluation_code}</div>
+            <div><strong>Lần soát xét:</strong> 02 | <strong>ISO Clause:</strong> 7.1.6</div>
+          </div>
+        </div>
+
+        <div class="title">${formTitle}</div>
+        <div class="sub-title">(Ban hành kèm theo Quy trình Thẩm định & Đánh giá Nhà cung cấp ISO 22000)</div>
+
+        <div class="info-box">
+          <div class="info-row"><span class="info-label">Tên Nhà cung cấp:</span><span class="info-val"><strong>${ev.supplier_name || "Nhà cung cấp"} (${ev.supplier_code || "NCC"})</strong></span></div>
+          <div class="info-row"><span class="info-label">Mã kế hoạch liên kết:</span><span class="info-val">${ev.plan_code || "Đánh giá định kỳ"}</span></div>
+          <div class="info-row"><span class="info-label">Ngày đánh giá thực tế:</span><span class="info-val">${ev.evaluation_date}</span></div>
+          <div class="info-row"><span class="info-label">Hình thức đánh giá:</span><span class="info-val">${ev.audit_type === "ON_SITE" ? "Đánh giá trực tiếp tại cơ sở sản xuất / vùng nuôi" : ev.audit_type === "PERIODIC" ? "Định kỳ xem xét hồ sơ năng lực & COA" : ev.audit_type}</span></div>
+          <div class="info-row"><span class="info-label">Trưởng đoàn đánh giá:</span><span class="info-val">${ev.evaluator_name}</span></div>
+        </div>
+
+        <div style="font-weight: bold; text-transform: uppercase; font-size: 12px; margin-bottom: 5px;">
+          BẢNG ĐIỂM CHI TIẾT CÁC HẠNG MỤC TIÊU CHUẨN AN TOÀN THỰC PHẨM:
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 30px;">STT</th>
+              <th style="width: 170px;">Hạng Mục Tiêu Chí</th>
+              <th>Nội Dung Yêu Cầu & Phương Pháp Thẩm Tra</th>
+              <th style="width: 60px;">Điểm Tối Đa</th>
+              <th style="width: 60px;">Điểm Đạt</th>
+              <th style="width: 65px;">Kết Quả</th>
+              <th style="width: 160px;">Ghi Nhận Tại Hiện Trường</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${
+              (ev.criteria_scores || []).map((c, i) => `
+                <tr>
+                  <td class="text-center">${i + 1}</td>
+                  <td><strong>${c.name}</strong></td>
+                  <td style="font-size: 11px;">${c.description}</td>
+                  <td class="text-center">${c.max_score}</td>
+                  <td class="text-center"><strong>${c.score}</strong></td>
+                  <td class="text-center" style="font-weight: bold; color: ${c.pass_fail === "PASS" ? "#047857" : "#b91c1c"};">${c.pass_fail}</td>
+                  <td style="font-size: 11px; font-style: italic;">${c.notes || "Đạt yêu cầu."}</td>
+                </tr>
+              `).join("")
+            }
+          </tbody>
+          <tfoot>
+            <tr style="background: #f3f4f6; font-weight: bold;">
+              <td colspan="3" class="text-right">TỔNG ĐIỂM ĐÁNH GIÁ:</td>
+              <td class="text-center">100</td>
+              <td class="text-center" style="font-size: 14px; color: #047857;">${ev.total_score}</td>
+              <td class="text-center">Hạng ${ev.grade}</td>
+              <td>${ev.conclusion === "APPROVED" ? "Phê duyệt duy trì" : ev.conclusion === "CONDITIONAL" ? "Cần khắc phục" : "Đình chỉ"}</td>
+            </tr>
+          </tfoot>
+        </table>
+
+        <div class="result-summary">
+          <div><strong>Xếp hạng:</strong> Hạng ${ev.grade} (Thang điểm: A ≥ 85 | B: 70-84 | C: 50-69 | D < 50)</div>
+          <div><strong>Kết luận của Đoàn đánh giá:</strong> 
+            <span style="font-weight: bold; text-transform: uppercase; color: ${ev.conclusion === "APPROVED" ? "#047857" : ev.conclusion === "CONDITIONAL" ? "#b45309" : "#b91c1c"};">
+              ${ev.conclusion === "APPROVED" ? "ĐẠT — ĐƯỢC PHÊ DUYỆT DUY TRÌ TRONG DANH BẠ NHÀ CUNG CẤP (ASL)" : ev.conclusion === "CONDITIONAL" ? "CẦN KHẮC PHỤC (CAPA) TRONG VÒNG 30 NGÀY" : "KHÔNG ĐẠT — ĐÌNH CHỈ GIAO DỊCH VÀ LOẠI KHỎI ASL"}
+            </span>
+          </div>
+          ${ev.corrective_actions ? `<div style="margin-top: 4px;"><strong>Kiến nghị & Hành động khắc phục:</strong> ${ev.corrective_actions}</div>` : ""}
+        </div>
+
+        <div class="signature-section">
+          <div class="sign-box">
+            <div class="sign-title">ĐẠI DIỆN NHÀ CUNG CẤP</div>
+            <div class="sign-name">Ký, ghi rõ họ tên</div>
+          </div>
+          <div class="sign-box">
+            <div class="sign-title">TRƯỞNG ĐOÀN ĐÁNH GIÁ</div>
+            <div class="sign-name">${ev.evaluator_name}</div>
+          </div>
+          <div class="sign-box">
+            <div class="sign-title">GIÁM ĐỐC PHÊ DUYỆT</div>
+            <div class="sign-name">${ev.approved_by || "Giám Đốc Nhà Máy"}</div>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+    printHtml(html);
   };
 
   return (
@@ -1181,6 +1777,54 @@ function PurchasingPage() {
 
           <button
             onClick={() => {
+              setActiveTab("eval_plans");
+              setPlanSearch("");
+            }}
+            className={`flex items-center gap-2 rounded-lg px-3.5 py-2 text-xs sm:text-sm font-medium transition-all ${
+              activeTab === "eval_plans"
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+            }`}
+          >
+            <Calendar className="h-4 w-4 shrink-0" />
+            <span>Kế Hoạch ĐG Hàng Năm (BM02)</span>
+            <span
+              className={`ml-1 rounded-full px-1.5 py-0.5 text-[11px] ${
+                activeTab === "eval_plans"
+                  ? "bg-white/20 text-white"
+                  : "bg-muted text-muted-foreground"
+              }`}
+            >
+              {evaluationPlans.length}
+            </span>
+          </button>
+
+          <button
+            onClick={() => {
+              setActiveTab("evaluations");
+              setEvalSearch("");
+            }}
+            className={`flex items-center gap-2 rounded-lg px-3.5 py-2 text-xs sm:text-sm font-medium transition-all ${
+              activeTab === "evaluations"
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+            }`}
+          >
+            <Award className="h-4 w-4 shrink-0" />
+            <span>Phiếu Đánh Giá NCC (BM03/04)</span>
+            <span
+              className={`ml-1 rounded-full px-1.5 py-0.5 text-[11px] ${
+                activeTab === "evaluations"
+                  ? "bg-white/20 text-white"
+                  : "bg-muted text-muted-foreground"
+              }`}
+            >
+              {evaluations.length}
+            </span>
+          </button>
+
+          <button
+            onClick={() => {
               setActiveTab("ai_coa");
               if (!coaAiResult) handleAnalyzeCoa("SEAFOOD");
             }}
@@ -1199,70 +1843,136 @@ function PurchasingPage() {
         </div>
       </div>
 
-      {/* SEARCH & FILTER BAR (FOR TAB 1, 2, 3) */}
+      {/* SEARCH & FILTER BAR */}
       {activeTab !== "ai_coa" && (
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={
-                activeTab === "suppliers"
-                  ? "Tìm kiếm mã NCC, tên nhà cung cấp, ngành hàng..."
-                  : activeTab === "lots"
-                  ? "Tìm kiếm số lô, tên nguyên liệu, nhà cung cấp..."
-                  : "Tìm kiếm mã phiếu IQC, số lô, người kiểm..."
-              }
-              className="pl-9"
-            />
+            {activeTab === "eval_plans" ? (
+              <Input
+                value={planSearch}
+                onChange={(e) => setPlanSearch(e.target.value)}
+                placeholder="Tìm kiếm mã kế hoạch, tiêu đề, phòng ban chủ trì..."
+                className="pl-9"
+              />
+            ) : activeTab === "evaluations" ? (
+              <Input
+                value={evalSearch}
+                onChange={(e) => setEvalSearch(e.target.value)}
+                placeholder="Tìm kiếm mã phiếu ĐG, tên nhà cung cấp, chuyên viên..."
+                className="pl-9"
+              />
+            ) : (
+              <Input
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={
+                  activeTab === "suppliers"
+                    ? "Tìm kiếm mã NCC, tên nhà cung cấp, ngành hàng..."
+                    : activeTab === "lots"
+                    ? "Tìm kiếm số lô, tên nguyên liệu, nhà cung cấp..."
+                    : "Tìm kiếm mã phiếu IQC, số lô, người kiểm..."
+                }
+                className="pl-9"
+              />
+            )}
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            {activeTab !== "inspections" && (
-              <select
-                value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-                className="h-9 rounded-md border border-input bg-background px-3 text-xs shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+            {activeTab === "eval_plans" && (
+              <Button
+                onClick={openNewPlan}
+                size="sm"
+                className="h-9 gap-1.5 bg-primary text-primary-foreground shadow-sm"
               >
-                <option value="ALL">Tất cả ngành hàng</option>
-                {SUPPLIER_CATEGORIES.map((cat) => (
-                  <option key={cat} value={cat}>
-                    {cat}
-                  </option>
-                ))}
-              </select>
+                <Plus className="h-4 w-4" />
+                <span>Tạo Kế Hoạch BM02</span>
+              </Button>
             )}
 
-            <select
-              value={selectedStatus}
-              onChange={(e) => setSelectedStatus(e.target.value)}
-              className="h-9 rounded-md border border-input bg-background px-3 text-xs shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
-            >
-              <option value="ALL">Tất cả trạng thái</option>
-              {activeTab === "suppliers" && (
-                <>
-                  <option value="APPROVED">Đạt chuẩn (ASL)</option>
-                  <option value="WARNING">Cảnh báo</option>
-                  <option value="SUSPENDED">Ngừng hợp tác</option>
-                </>
-              )}
-              {activeTab === "lots" && (
-                <>
-                  <option value="APPROVED">Đã duyệt nhập kho</option>
-                  <option value="PENDING_IQC">Chờ kiểm định IQC</option>
-                  <option value="QUARANTINE">Cách ly theo dõi</option>
-                  <option value="REJECTED">Từ chối / Trả hàng</option>
-                </>
-              )}
-              {activeTab === "inspections" && (
-                <>
-                  <option value="PASSED">Đạt chuẩn tiếp nhận</option>
-                  <option value="CONDITIONAL">Nhập có điều kiện / Cách ly</option>
-                  <option value="REJECTED">Không đạt / Trả hàng</option>
-                </>
-              )}
-            </select>
+            {activeTab === "evaluations" && (
+              <>
+                <select
+                  value={evalTypeFilter}
+                  onChange={(e) => setEvalTypeFilter(e.target.value)}
+                  className="h-9 rounded-md border border-input bg-background px-3 text-xs shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                >
+                  <option value="ALL">Tất cả bộ tiêu chí</option>
+                  <option value="AGRI_FRESH">BM03 - Nông sản tươi (Biểu mẫu gốc)</option>
+                  <option value="AQUA_ANIMAL_FRESH">Bộ tiêu chí bổ sung — Thủy hải sản tươi (Tự xây dựng)</option>
+                  <option value="PROCESSED_DRY_PACKAGING">BM04 - Khô, phụ gia, bao bì (Biểu mẫu gốc)</option>
+                </select>
+
+                <select
+                  value={evalConclusionFilter}
+                  onChange={(e) => setEvalConclusionFilter(e.target.value)}
+                  className="h-9 rounded-md border border-input bg-background px-3 text-xs shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                >
+                  <option value="ALL">Tất cả kết luận</option>
+                  <option value="APPROVED">Đạt chuẩn (Phê duyệt ASL)</option>
+                  <option value="CONDITIONAL">Có điều kiện (Cần khắc phục)</option>
+                  <option value="DISQUALIFIED">Không đạt chuẩn (Loại bỏ)</option>
+                </select>
+
+                <Button
+                  onClick={openNewEval}
+                  size="sm"
+                  className="h-9 gap-1.5 bg-primary text-primary-foreground shadow-sm"
+                >
+                  <Plus className="h-4 w-4" />
+                  <span>Lập Phiếu Đánh Giá Mới</span>
+                </Button>
+              </>
+            )}
+
+            {activeTab !== "eval_plans" && activeTab !== "evaluations" && (
+              <>
+                {activeTab !== "inspections" && (
+                  <select
+                    value={selectedCategory}
+                    onChange={(e) => setSelectedCategory(e.target.value)}
+                    className="h-9 rounded-md border border-input bg-background px-3 text-xs shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                  >
+                    <option value="ALL">Tất cả ngành hàng</option>
+                    {SUPPLIER_CATEGORIES.map((cat) => (
+                      <option key={cat} value={cat}>
+                        {cat}
+                      </option>
+                    ))}
+                  </select>
+                )}
+
+                <select
+                  value={selectedStatus}
+                  onChange={(e) => setSelectedStatus(e.target.value)}
+                  className="h-9 rounded-md border border-input bg-background px-3 text-xs shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                >
+                  <option value="ALL">Tất cả trạng thái</option>
+                  {activeTab === "suppliers" && (
+                    <>
+                      <option value="APPROVED">Đạt chuẩn (ASL)</option>
+                      <option value="WARNING">Cảnh báo</option>
+                      <option value="SUSPENDED">Ngừng hợp tác</option>
+                    </>
+                  )}
+                  {activeTab === "lots" && (
+                    <>
+                      <option value="APPROVED">Đã duyệt nhập kho</option>
+                      <option value="PENDING_IQC">Chờ kiểm định IQC</option>
+                      <option value="QUARANTINE">Cách ly theo dõi</option>
+                      <option value="REJECTED">Từ chối / Trả hàng</option>
+                    </>
+                  )}
+                  {activeTab === "inspections" && (
+                    <>
+                      <option value="PASSED">Đạt chuẩn tiếp nhận</option>
+                      <option value="CONDITIONAL">Nhập có điều kiện / Cách ly</option>
+                      <option value="REJECTED">Không đạt / Trả hàng</option>
+                    </>
+                  )}
+                </select>
+              </>
+            )}
 
             <Button
               variant="outline"
@@ -1985,7 +2695,320 @@ function PurchasingPage() {
         </div>
       )}
 
-      {/* ==================== DIALOG: CREATE/EDIT SUPPLIER ==================== */}
+      {/* ==================== TAB 4: EVALUATION PLANS (BM02-KHĐGNCC) ==================== */}
+      {activeTab === "eval_plans" && (
+        <div className="space-y-4">
+          <div className="rounded-xl border border-border bg-card shadow-sm">
+            <div className="flex items-center justify-between border-b border-border/80 px-4 py-3 bg-muted/20">
+              <div>
+                <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-primary" />
+                  Kế Hoạch Đánh Giá Năng Lực Nhà Cung Cấp Hàng Năm (BM02-KHĐGNCC)
+                </h3>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Quy định lập lịch định kỳ và đột xuất đánh giá nhà cung ứng theo ISO 22000:2018 Điều khoản 7.1.6
+                </p>
+              </div>
+              <Button
+                onClick={openNewPlan}
+                size="sm"
+                className="gap-1.5 bg-primary text-primary-foreground text-xs shadow-sm"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                <span>Thêm Kế Hoạch Năm</span>
+              </Button>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead className="border-b border-border bg-muted/40 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  <tr>
+                    <th className="px-4 py-3">Mã Kế Hoạch</th>
+                    <th className="px-4 py-3">Năm & Tiêu Đề</th>
+                    <th className="px-4 py-3">Phòng Ban Chủ Trì</th>
+                    <th className="px-4 py-3">Phạm Vi Đánh Giá</th>
+                    <th className="px-4 py-3">Số NCC Đã ĐG</th>
+                    <th className="px-4 py-3">Trạng Thái Phê Duyệt</th>
+                    <th className="px-4 py-3 text-right">Thao Tác</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/60">
+                  {filteredPlans.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="py-12 text-center text-muted-foreground">
+                        <div className="flex flex-col items-center justify-center gap-2">
+                          <Calendar className="h-8 w-8 text-muted-foreground/50" />
+                          <p className="text-sm">Không tìm thấy kế hoạch đánh giá nào phù hợp.</p>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={openNewPlan}
+                            className="mt-2 text-xs"
+                          >
+                            <Plus className="h-3.5 w-3.5 mr-1" />
+                            Lập Kế Hoạch BM02 Đầu Tiên
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredPlans.map((plan) => {
+                      const countEvals = evaluations.filter((e) => e.plan_id === plan.id).length;
+                      return (
+                        <tr key={plan.id} className="transition-colors hover:bg-muted/30">
+                          <td className="whitespace-nowrap px-4 py-3 font-mono font-medium text-primary">
+                            {plan.plan_code}
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="font-medium text-foreground">{plan.title}</div>
+                            <div className="text-xs text-muted-foreground mt-0.5">
+                              Năm thực hiện: <span className="font-semibold">{plan.year}</span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 text-xs text-muted-foreground">
+                            {plan.department}
+                          </td>
+                          <td className="px-4 py-3 text-xs text-muted-foreground max-w-xs truncate">
+                            {plan.scope || "Toàn bộ nhà cung cấp trong danh bạ ASL"}
+                          </td>
+                          <td className="whitespace-nowrap px-4 py-3">
+                            <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
+                              {countEvals} đánh giá
+                            </span>
+                          </td>
+                          <td className="whitespace-nowrap px-4 py-3">
+                            {plan.approval_status === "APPROVED" ? (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-medium text-emerald-700 dark:text-emerald-300">
+                                <CheckCircle2 className="h-3 w-3" />
+                                Đã phê duyệt ({plan.approved_by || "BGĐ"})
+                              </span>
+                            ) : plan.approval_status === "PENDING" ? (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2.5 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-300">
+                                <Clock className="h-3 w-3" />
+                                Chờ duyệt
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-rose-500/10 px-2.5 py-0.5 text-xs font-medium text-rose-700 dark:text-rose-300">
+                                <XCircle className="h-3 w-3" />
+                                Từ chối
+                              </span>
+                            )}
+                          </td>
+                          <td className="whitespace-nowrap px-4 py-3 text-right">
+                            <div className="flex items-center justify-end gap-1.5">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handlePrintEvaluationPlan(plan)}
+                                title="In Kế Hoạch ĐG (BM02-KHĐGNCC)"
+                                className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+                              >
+                                <Printer className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => openEditPlan(plan)}
+                                title="Chỉnh sửa Kế Hoạch"
+                                className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setDeletingPlanItem({ id: plan.id, code: plan.plan_code })}
+                                title="Xóa Kế Hoạch"
+                                className="h-8 w-8 p-0 text-rose-500 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/30"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ==================== TAB 5: SUPPLIER EVALUATIONS (BM03 / BM03-TS / BM04) ==================== */}
+      {activeTab === "evaluations" && (
+        <div className="space-y-4">
+          <div className="rounded-xl border border-border bg-card shadow-sm">
+            <div className="flex items-center justify-between border-b border-border/80 px-4 py-3 bg-muted/20">
+              <div>
+                <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                  <Award className="h-4 w-4 text-emerald-600" />
+                  Hồ Sơ Đánh Giá Năng Lực Nhà Cung Ứng (BM03, TC Bổ Sung TS, BM04)
+                </h3>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Thang điểm 100 điểm: Nông sản tươi (BM03 gốc), Thủy hải sản tươi (Bộ tiêu chí bổ sung do dự án tự xây dựng), Khô/Bao bì (BM04 gốc)
+                </p>
+              </div>
+              <Button
+                onClick={openNewEval}
+                size="sm"
+                className="gap-1.5 bg-primary text-primary-foreground text-xs shadow-sm"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                <span>Lập Phiếu Đánh Giá Mới</span>
+              </Button>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead className="border-b border-border bg-muted/40 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  <tr>
+                    <th className="px-4 py-3">Mã Phiếu & Ngày</th>
+                    <th className="px-4 py-3">Nhà Cung Cấp</th>
+                    <th className="px-4 py-3">Bộ Tiêu Chí (Biểu Mẫu)</th>
+                    <th className="px-4 py-3">Hình Thức ĐG</th>
+                    <th className="px-4 py-3">Điểm / Hạng</th>
+                    <th className="px-4 py-3">Kết Luận Phê Duyệt</th>
+                    <th className="px-4 py-3">Chuyên Viên ĐG</th>
+                    <th className="px-4 py-3 text-right">Thao Tác</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/60">
+                  {filteredEvaluations.length === 0 ? (
+                    <tr>
+                      <td colSpan={8} className="py-12 text-center text-muted-foreground">
+                        <div className="flex flex-col items-center justify-center gap-2">
+                          <Award className="h-8 w-8 text-muted-foreground/50" />
+                          <p className="text-sm">Không tìm thấy biên bản đánh giá nhà cung cấp nào.</p>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={openNewEval}
+                            className="mt-2 text-xs"
+                          >
+                            <Plus className="h-3.5 w-3.5 mr-1" />
+                            Lập Phiếu Đánh Giá Đầu Tiên
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredEvaluations.map((ev) => {
+                      const criteriaBadge =
+                        ev.criteria_type === "AGRI_FRESH"
+                          ? { label: "BM03: Nông sản tươi", color: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20" }
+                          : ev.criteria_type === "AQUA_ANIMAL_FRESH"
+                          ? { label: "TC Bổ sung: Thủy sản tươi", color: "bg-sky-500/10 text-sky-700 dark:text-sky-300 border-sky-500/20" }
+                          : { label: "BM04: Khô, phụ gia, bao bì", color: "bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20" };
+
+                      const conclusionBadge =
+                        ev.conclusion === "APPROVED"
+                          ? { label: "ĐẠT CHUẨN (ASL)", color: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300" }
+                          : ev.conclusion === "CONDITIONAL"
+                          ? { label: "CÓ ĐIỀU KIỆN", color: "bg-amber-500/10 text-amber-700 dark:text-amber-300" }
+                          : { label: "KHÔNG ĐẠT (LOẠI)", color: "bg-rose-500/10 text-rose-700 dark:text-rose-300" };
+
+                      return (
+                        <tr key={ev.id} className="transition-colors hover:bg-muted/30">
+                          <td className="whitespace-nowrap px-4 py-3">
+                            <div className="font-mono font-medium text-primary">{ev.evaluation_code}</div>
+                            <div className="text-xs text-muted-foreground mt-0.5">{ev.evaluation_date}</div>
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="font-medium text-foreground">{ev.supplier_name}</div>
+                            <div className="font-mono text-xs text-muted-foreground">{ev.supplier_code}</div>
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className={`inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium ${criteriaBadge.color}`}>
+                              {criteriaBadge.label}
+                            </span>
+                          </td>
+                          <td className="whitespace-nowrap px-4 py-3 text-xs text-muted-foreground">
+                            {ev.audit_type === "ON_SITE"
+                              ? "Hiện trường (On-site)"
+                              : ev.audit_type === "DESK_AUDIT"
+                              ? "Hồ sơ (Desk)"
+                              : "Bên thứ ba"}
+                          </td>
+                          <td className="whitespace-nowrap px-4 py-3">
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-sm font-bold text-foreground">{ev.total_score}</span>
+                              <span className="text-xs text-muted-foreground">/ 100</span>
+                              <span
+                                className={`ml-1 rounded px-1.5 py-0.5 text-xs font-bold ${
+                                  ev.grade === "A"
+                                    ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
+                                    : ev.grade === "B"
+                                    ? "bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300"
+                                    : ev.grade === "C"
+                                    ? "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300"
+                                    : "bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300"
+                                }`}
+                              >
+                                Hạng {ev.grade}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="whitespace-nowrap px-4 py-3">
+                            <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${conclusionBadge.color}`}>
+                              {ev.conclusion === "APPROVED" ? (
+                                <CheckCircle2 className="h-3 w-3" />
+                              ) : ev.conclusion === "CONDITIONAL" ? (
+                                <AlertTriangle className="h-3 w-3" />
+                              ) : (
+                                <XCircle className="h-3 w-3" />
+                              )}
+                              {conclusionBadge.label}
+                            </span>
+                          </td>
+                          <td className="whitespace-nowrap px-4 py-3 text-xs text-muted-foreground">
+                            <div>{ev.evaluator_name}</div>
+                            {ev.approved_by && (
+                              <div className="text-[11px] text-muted-foreground/80">Duyệt: {ev.approved_by}</div>
+                            )}
+                          </td>
+                          <td className="whitespace-nowrap px-4 py-3 text-right">
+                            <div className="flex items-center justify-end gap-1.5">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handlePrintEvaluation(ev)}
+                                title="In Phiếu ĐG (BM03/04)"
+                                className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+                              >
+                                <Printer className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => openEditEval(ev)}
+                                title="Chỉnh sửa Phiếu ĐG"
+                                className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setDeletingEvalItem({ id: ev.id, code: ev.evaluation_code })}
+                                title="Xóa Phiếu ĐG"
+                                className="h-8 w-8 p-0 text-rose-500 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/30"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
       <Dialog open={isCreateSupplierOpen} onOpenChange={setIsCreateSupplierOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
@@ -2527,12 +3550,43 @@ function PurchasingPage() {
                   />
                   <span>5. Dán nhãn Cảnh báo Dị nguyên (Allergen)</span>
                 </label>
+
+                <label className="flex items-center gap-2 text-sm font-medium">
+                  <input
+                    type="checkbox"
+                    checked={inspectionForm.size_uniformity_check}
+                    onChange={(e) =>
+                      setInspectionForm({
+                        ...inspectionForm,
+                        size_uniformity_check: e.target.checked,
+                      })
+                    }
+                    className="h-4 w-4 rounded"
+                  />
+                  <span>6. Quy cách cỡ / kích thước / trọng lượng chuẩn</span>
+                </label>
+
+                <label className="flex items-center gap-2 text-sm font-medium sm:col-span-2">
+                  <input
+                    type="checkbox"
+                    checked={inspectionForm.vehicle_cleanliness_check}
+                    onChange={(e) =>
+                      setInspectionForm({
+                        ...inspectionForm,
+                        vehicle_cleanliness_check: e.target.checked,
+                      })
+                    }
+                    className="h-4 w-4 rounded"
+                  />
+                  <span>7. Vệ sinh thùng xe giao hàng (Sạch sẽ, không mùi lạ, bạt che kín)</span>
+                </label>
               </div>
             </div>
 
+            {/* Chỉ tiêu Định lượng & Phương tiện giao hàng */}
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <div className="space-y-1.5">
-                <Label>Nhiệt độ giao nhận (°C)</Label>
+                <Label>Nhiệt độ xe nhận (°C)</Label>
                 <Input
                   type="number"
                   step={0.1}
@@ -2564,6 +3618,70 @@ function PurchasingPage() {
               </div>
 
               <div className="space-y-1.5">
+                <Label>Tỷ lệ hư hỏng / dập nát / úa (%)</Label>
+                <Input
+                  type="number"
+                  step={0.1}
+                  min={0}
+                  max={100}
+                  value={inspectionForm.defect_rate_percent}
+                  onChange={(e) =>
+                    setInspectionForm({
+                      ...inspectionForm,
+                      defect_rate_percent: Number(e.target.value),
+                    })
+                  }
+                  placeholder="Chuẩn ≤ 2.0%"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label>Tạp chất vật lý lạ (%)</Label>
+                <Input
+                  type="number"
+                  step={0.01}
+                  min={0}
+                  max={100}
+                  value={inspectionForm.impurity_percent}
+                  onChange={(e) =>
+                    setInspectionForm({
+                      ...inspectionForm,
+                      impurity_percent: Number(e.target.value),
+                    })
+                  }
+                  placeholder="Chuẩn ≤ 0.1%"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label>Biển số xe giao hàng</Label>
+                <Input
+                  value={inspectionForm.delivery_vehicle_plate}
+                  onChange={(e) =>
+                    setInspectionForm({
+                      ...inspectionForm,
+                      delivery_vehicle_plate: e.target.value,
+                    })
+                  }
+                  placeholder="VD: 67C-128.45"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label>Tên tài xế giao nhận</Label>
+                <Input
+                  value={inspectionForm.driver_name}
+                  onChange={(e) =>
+                    setInspectionForm({
+                      ...inspectionForm,
+                      driver_name: e.target.value,
+                    })
+                  }
+                  placeholder="VD: Nguyễn Văn Tuấn"
+                />
+              </div>
+
+              <div className="space-y-1.5 sm:col-span-3">
                 <Label>Kết luận Kiểm định IQC *</Label>
                 <select
                   value={inspectionForm.status}
@@ -2572,9 +3690,9 @@ function PurchasingPage() {
                   }
                   className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm font-semibold"
                 >
-                  <option value="PASSED">ĐẠT CHUẨN (PASSED)</option>
-                  <option value="CONDITIONAL">CÁCH LY / CÓ ĐIỀU KIỆN</option>
-                  <option value="REJECTED">TỪ CHỐI / TRẢ HÀNG (REJECTED)</option>
+                  <option value="PASSED">ĐẠT CHUẨN (PASSED) — Chấp nhận nhập kho</option>
+                  <option value="CONDITIONAL">CÁCH LY / CÓ ĐIỀU KIỆN — Tạm giữ chờ thẩm định thêm</option>
+                  <option value="REJECTED">TỪ CHỐI / TRẢ HÀNG (REJECTED) — Vi phạm tiêu chuẩn ATTP</option>
                 </select>
               </div>
             </div>
@@ -2844,8 +3962,8 @@ function PurchasingPage() {
                 </p>
               </div>
 
-              {/* Thông tin Lô hàng */}
-              <div className="grid grid-cols-2 gap-3 rounded-lg border border-border p-3 text-xs">
+              {/* Thông tin Lô hàng & Phương tiện giao nhận */}
+              <div className="grid grid-cols-2 gap-3 rounded-lg border border-border p-3 text-xs sm:grid-cols-3">
                 <div>
                   <span className="text-muted-foreground">Tên nguyên vật liệu:</span>{" "}
                   <b className="text-foreground">{viewingInspection.material_name}</b>
@@ -2859,6 +3977,14 @@ function PurchasingPage() {
                   <b className="text-foreground">{viewingInspection.supplier_name}</b>
                 </div>
                 <div>
+                  <span className="text-muted-foreground">Biển số xe giao:</span>{" "}
+                  <b className="font-mono text-foreground">{viewingInspection.delivery_vehicle_plate || "Xe giao tại xưởng"}</b>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Tài xế giao nhận:</span>{" "}
+                  <b className="text-foreground">{viewingInspection.driver_name || "N/A"}</b>
+                </div>
+                <div>
                   <span className="text-muted-foreground">Thời gian kiểm tra:</span>{" "}
                   <b className="text-foreground">
                     {viewingInspection.inspected_at
@@ -2868,7 +3994,7 @@ function PurchasingPage() {
                 </div>
               </div>
 
-              {/* Bảng Chỉ tiêu */}
+              {/* Bảng Chỉ tiêu Nghiệm thu BM01-KTNL Thực Tế */}
               <div className="rounded border border-border overflow-hidden text-xs">
                 <table className="w-full text-left">
                   <thead className="bg-muted/60 font-semibold uppercase">
@@ -2882,27 +4008,57 @@ function PurchasingPage() {
                   <tbody className="divide-y divide-border">
                     <tr>
                       <td className="p-2 font-medium">1. Cảm quan & Ngoại quan</td>
-                      <td className="p-2">Màu sắc, mùi vị đặc trưng, không dị vật</td>
+                      <td className="p-2">Màu sắc, mùi vị đặc trưng tự nhiên, không ươn thối/mốc</td>
                       <td className="p-2 font-semibold">
-                        {viewingInspection.sensory_check ? "Đạt chuẩn" : "Không đạt"}
+                        {viewingInspection.sensory_check ? "Đạt cảm quan chuẩn" : "Không đạt cảm quan"}
                       </td>
-                      <td className="p-2 text-emerald-600 font-bold">
+                      <td className={`p-2 font-bold ${viewingInspection.sensory_check ? "text-emerald-600" : "text-rose-600"}`}>
                         {viewingInspection.sensory_check ? "ĐẠT" : "K.ĐẠT"}
                       </td>
                     </tr>
                     <tr>
                       <td className="p-2 font-medium">2. Quy cách bao bì & Tem nhãn</td>
-                      <td className="p-2">Nguyên vẹn, không rách vỡ, có hạn dùng</td>
+                      <td className="p-2">Nguyên vẹn, không rách vỡ, có nhãn mác, NSX & HSD rõ ràng</td>
                       <td className="p-2 font-semibold">
-                        {viewingInspection.packaging_check ? "Nguyên vẹn" : "Hư hại"}
+                        {viewingInspection.packaging_check ? "Bao bì nguyên vẹn" : "Rách hỏng / Mất nhãn"}
                       </td>
-                      <td className="p-2 text-emerald-600 font-bold">
+                      <td className={`p-2 font-bold ${viewingInspection.packaging_check ? "text-emerald-600" : "text-rose-600"}`}>
                         {viewingInspection.packaging_check ? "ĐẠT" : "K.ĐẠT"}
                       </td>
                     </tr>
                     <tr>
-                      <td className="p-2 font-medium">3. Nhiệt độ giao hàng xe lạnh</td>
-                      <td className="p-2">Kho đông ≤ -18°C / Kho mát 0-4°C</td>
+                      <td className="p-2 font-medium">3. Quy cách cỡ & Kích thước đồng đều</td>
+                      <td className="p-2">Đạt chuẩn size/khối lượng theo hợp đồng mua hàng</td>
+                      <td className="p-2 font-semibold">
+                        {viewingInspection.size_uniformity_check ? "Đồng đều đạt chuẩn" : "Lệch quy cách size"}
+                      </td>
+                      <td className={`p-2 font-bold ${viewingInspection.size_uniformity_check ? "text-emerald-600" : "text-rose-600"}`}>
+                        {viewingInspection.size_uniformity_check ? "ĐẠT" : "K.ĐẠT"}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="p-2 font-medium">4. Tỷ lệ dập nát, ươn hỏng, úa lá (%)</td>
+                      <td className="p-2">Mức tối đa cho phép ≤ 2.0% tổng khối lượng</td>
+                      <td className="p-2 font-mono font-semibold">
+                        {viewingInspection.defect_rate_percent !== null ? `${viewingInspection.defect_rate_percent}%` : "0.0%"}
+                      </td>
+                      <td className={`p-2 font-bold ${(viewingInspection.defect_rate_percent || 0) <= 2.0 ? "text-emerald-600" : "text-rose-600"}`}>
+                        {(viewingInspection.defect_rate_percent || 0) <= 2.0 ? "ĐẠT" : "K.ĐẠT"}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="p-2 font-medium">5. Tạp chất vật lý lạ (cát sạn, que cọng)</td>
+                      <td className="p-2">Không có dị vật nguy hiểm, tạp chất ≤ 0.1%</td>
+                      <td className="p-2 font-mono font-semibold">
+                        {viewingInspection.impurity_percent !== null ? `${viewingInspection.impurity_percent}%` : "0.0%"}
+                      </td>
+                      <td className={`p-2 font-bold ${(viewingInspection.impurity_percent || 0) <= 0.1 ? "text-emerald-600" : "text-rose-600"}`}>
+                        {(viewingInspection.impurity_percent || 0) <= 0.1 ? "ĐẠT" : "K.ĐẠT"}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="p-2 font-medium">6. Nhiệt độ giao hàng xe lạnh</td>
+                      <td className="p-2">Kho đông ≤ -18°C / Kho mát 0-4°C / Thường ≤ 25°C</td>
                       <td className="p-2 font-mono font-bold">
                         {viewingInspection.temperature_c !== null
                           ? `${viewingInspection.temperature_c} °C`
@@ -2911,22 +4067,32 @@ function PurchasingPage() {
                       <td className="p-2 text-emerald-600 font-bold">ĐẠT</td>
                     </tr>
                     <tr>
-                      <td className="p-2 font-medium">4. Độ ẩm & Độc tố vi nấm</td>
-                      <td className="p-2">Aflatoxin âm tính, độ ẩm đúng quy chuẩn</td>
+                      <td className="p-2 font-medium">7. Vệ sinh thùng xe giao hàng</td>
+                      <td className="p-2">Thùng xe sạch sẽ, không mùi lạ, bạt che kín, không côn trùng</td>
+                      <td className="p-2 font-semibold">
+                        {viewingInspection.vehicle_cleanliness_check ? "Sạch sẽ, đạt vệ sinh" : "Thùng xe ô nhiễm/mùi"}
+                      </td>
+                      <td className={`p-2 font-bold ${viewingInspection.vehicle_cleanliness_check ? "text-emerald-600" : "text-rose-600"}`}>
+                        {viewingInspection.vehicle_cleanliness_check ? "ĐẠT" : "K.ĐẠT"}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="p-2 font-medium">8. Độ ẩm & Độc tố vi nấm (Aflatoxin)</td>
+                      <td className="p-2">Aflatoxin âm tính, độ ẩm đúng quy chuẩn tiêu chuẩn</td>
                       <td className="p-2">
                         {viewingInspection.moisture_content
-                          ? `${viewingInspection.moisture_content}%`
-                          : "Đạt chuẩn"}
+                          ? `Độ ẩm ${viewingInspection.moisture_content}% • Vi nấm Âm tính`
+                          : "Đạt chuẩn an toàn"}
                       </td>
                       <td className="p-2 text-emerald-600 font-bold">ĐẠT</td>
                     </tr>
                     <tr>
-                      <td className="p-2 font-medium">5. Đối chiếu Phiếu kiểm nghiệm COA</td>
-                      <td className="p-2">100% chỉ tiêu vi sinh & kim loại nặng đạt</td>
-                      <td className="p-2">
-                        {viewingInspection.coa_compliance ? "Trùng khớp COA" : "Không khớp"}
+                      <td className="p-2 font-medium">9. Đối chiếu Phiếu kiểm nghiệm COA</td>
+                      <td className="p-2">100% chỉ tiêu vi sinh & kim loại nặng trùng khớp quy chuẩn</td>
+                      <td className="p-2 font-semibold">
+                        {viewingInspection.coa_compliance ? "Trùng khớp COA đạt chuẩn" : "Không khớp COA"}
                       </td>
-                      <td className="p-2 text-emerald-600 font-bold">
+                      <td className={`p-2 font-bold ${viewingInspection.coa_compliance ? "text-emerald-600" : "text-rose-600"}`}>
                         {viewingInspection.coa_compliance ? "ĐẠT" : "K.ĐẠT"}
                       </td>
                     </tr>
@@ -3255,19 +4421,409 @@ function PurchasingPage() {
         variant="destructive"
       />
 
-      {/* Modal Xác Nhận Xóa Biên Bản IQC */}
+      {/* ==================== DIALOG: CREATE/EDIT EVALUATION PLAN (BM02-KHĐGNCC) ==================== */}
+      <Dialog open={isCreatePlanOpen} onOpenChange={setIsCreatePlanOpen}>
+        <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {editingPlan
+                ? `Chỉnh sửa Kế hoạch đánh giá: ${editingPlan.plan_code}`
+                : "Tạo Kế hoạch đánh giá NCC hàng năm (BM02-KHĐGNCC)"}
+            </DialogTitle>
+          </DialogHeader>
+
+          <form onSubmit={handleSavePlan} className="space-y-4 py-2">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label>Mã số kế hoạch *</Label>
+                <Input
+                  value={planForm.plan_code}
+                  onChange={(e) => setPlanForm({ ...planForm, plan_code: e.target.value })}
+                  placeholder="KHĐG-2026-01"
+                  required
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label>Năm áp dụng *</Label>
+                <Input
+                  type="number"
+                  value={planForm.year}
+                  onChange={(e) => setPlanForm({ ...planForm, year: parseInt(e.target.value) || new Date().getFullYear() })}
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>Tiêu đề kế hoạch *</Label>
+              <Input
+                value={planForm.title}
+                onChange={(e) => setPlanForm({ ...planForm, title: e.target.value })}
+                placeholder="VD: Kế hoạch Đánh giá Năng lực Nhà cung ứng Năm 2026"
+                required
+              />
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label>Phòng ban chủ trì *</Label>
+                <Input
+                  value={planForm.department}
+                  onChange={(e) => setPlanForm({ ...planForm, department: e.target.value })}
+                  placeholder="Phòng Đảm Bảo Chất Lượng (QA/QC)"
+                  required
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label>Người phê duyệt (BGĐ)</Label>
+                <Input
+                  value={planForm.approved_by}
+                  onChange={(e) => setPlanForm({ ...planForm, approved_by: e.target.value })}
+                  placeholder="Giám Đốc Nhà Máy"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>Phạm vi đánh giá</Label>
+              <textarea
+                value={planForm.scope}
+                onChange={(e) => setPlanForm({ ...planForm, scope: e.target.value })}
+                rows={2}
+                placeholder="Phạm vi đối tượng nhà cung ứng áp dụng..."
+                className="w-full rounded-md border border-input bg-background p-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>Trạng thái phê duyệt</Label>
+              <select
+                value={planForm.approval_status}
+                onChange={(e) => setPlanForm({ ...planForm, approval_status: e.target.value })}
+                className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
+              >
+                <option value="APPROVED">Đã phê duyệt (Hiệu lực thi hành)</option>
+                <option value="PENDING">Chờ Ban Giám Đốc phê duyệt</option>
+                <option value="REJECTED">Từ chối / Cần chỉnh sửa lại</option>
+              </select>
+            </div>
+
+            <DialogFooter className="pt-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsCreatePlanOpen(false)}
+              >
+                Hủy bỏ
+              </Button>
+              <Button type="submit" className="bg-primary text-primary-foreground">
+                {editingPlan ? "Lưu thay đổi" : "Tạo kế hoạch BM02"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* ==================== DIALOG: CREATE/EDIT SUPPLIER EVALUATION (BM03 / BM03-TS / BM04) ==================== */}
+      <Dialog open={isCreateEvalOpen} onOpenChange={setIsCreateEvalOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {editingEval
+                ? `Chỉnh sửa Phiếu đánh giá NCC: ${editingEval.evaluation_code}`
+                : "Lập Phiếu Đánh Giá Năng Lực Nhà Cung Cấp Mới"}
+            </DialogTitle>
+          </DialogHeader>
+
+          <form onSubmit={handleSaveEval} className="space-y-4 py-2">
+            {/* Row 1: Code, Plan, Supplier */}
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <div className="space-y-1.5">
+                <Label>Mã số phiếu ĐG *</Label>
+                <Input
+                  value={evalForm.evaluation_code}
+                  onChange={(e) => setEvalForm({ ...evalForm, evaluation_code: e.target.value })}
+                  placeholder="ĐGNCC-2026-001"
+                  required
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label>Thuộc Kế hoạch (BM02)</Label>
+                <select
+                  value={evalForm.plan_id || ""}
+                  onChange={(e) =>
+                    setEvalForm({
+                      ...evalForm,
+                      plan_id: e.target.value ? Number(e.target.value) : null,
+                    })
+                  }
+                  className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
+                >
+                  <option value="">-- Không thuộc kế hoạch nào --</option>
+                  {evaluationPlans.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.plan_code} - Năm {p.year}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label>Nhà cung cấp đánh giá *</Label>
+                <select
+                  value={evalForm.supplier_id}
+                  onChange={(e) => setEvalForm({ ...evalForm, supplier_id: e.target.value })}
+                  className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
+                  required
+                >
+                  <option value="">-- Chọn nhà cung cấp --</option>
+                  {suppliers.map((s) => (
+                    <option key={s.supplier_id} value={s.supplier_id}>
+                      {s.supplier_code} - {s.supplier_name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Row 2: Criteria Type, Date, Audit Type, Evaluator */}
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
+              <div className="space-y-1.5">
+                <Label>Bộ Tiêu Chí Áp Dụng *</Label>
+                <select
+                  value={evalForm.criteria_type}
+                  onChange={(e) => handleCriteriaTypeChange(e.target.value)}
+                  className="w-full h-9 rounded-md border border-input bg-background px-3 text-xs font-medium"
+                >
+                  <option value="AGRI_FRESH">BM03: Nông sản tươi sống (Biểu mẫu gốc)</option>
+                  <option value="AQUA_ANIMAL_FRESH">Bộ TC Bổ sung: Thủy hải sản tươi sống (Do dự án tự xây dựng)</option>
+                  <option value="PROCESSED_DRY_PACKAGING">BM04: Khô, phụ gia, bao bì (Biểu mẫu gốc)</option>
+                </select>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label>Ngày đánh giá *</Label>
+                <Input
+                  type="date"
+                  value={evalForm.evaluation_date}
+                  onChange={(e) => setEvalForm({ ...evalForm, evaluation_date: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label>Hình thức đánh giá *</Label>
+                <select
+                  value={evalForm.audit_type}
+                  onChange={(e) => setEvalForm({ ...evalForm, audit_type: e.target.value })}
+                  className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
+                >
+                  <option value="ON_SITE">Tại chỗ hiện trường (On-site)</option>
+                  <option value="DESK_AUDIT">Hồ sơ năng lực & COA (Desk)</option>
+                  <option value="THIRD_PARTY">Đánh giá bên thứ ba</option>
+                </select>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label>Chuyên viên đánh giá *</Label>
+                <Input
+                  value={evalForm.evaluator_name}
+                  onChange={(e) => setEvalForm({ ...evalForm, evaluator_name: e.target.value })}
+                  placeholder="Họ tên chuyên viên QA/QC"
+                  required
+                />
+              </div>
+            </div>
+
+            {/* Dynamic Criteria Scoring Matrix */}
+            <div className="space-y-2 rounded-lg border border-border/80 bg-muted/20 p-3">
+              <div className="flex items-center justify-between pb-1 border-b border-border/60">
+                <div className="text-xs font-bold uppercase tracking-wider text-foreground">
+                  Chi tiết bảng chấm điểm tiêu chí ({evalForm.criteria_scores?.length || 0} tiêu chí - Thang điểm 100)
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  Chuẩn ISO 22000 Điều khoản 7.1.6
+                </div>
+              </div>
+
+              <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+                {evalForm.criteria_scores?.map((crit: any, idx: number) => (
+                  <div
+                    key={crit.id || idx}
+                    className="flex flex-col gap-2 rounded-md border border-border/60 bg-background p-2.5 text-xs sm:flex-row sm:items-center sm:justify-between"
+                  >
+                    <div className="flex-1">
+                      <div className="font-semibold text-foreground">
+                        {idx + 1}. {crit.name}
+                      </div>
+                      <div className="text-muted-foreground mt-0.5 text-[11px]">
+                        {crit.description}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-1.5">
+                        <Label className="text-[11px] text-muted-foreground whitespace-nowrap">
+                          Điểm (Max {crit.max_score}):
+                        </Label>
+                        <Input
+                          type="number"
+                          min={0}
+                          max={crit.max_score}
+                          step={0.5}
+                          value={crit.score}
+                          onChange={(e) =>
+                            handleCriteriaScoreChange(idx, parseFloat(e.target.value) || 0)
+                          }
+                          className="h-8 w-16 text-center font-bold"
+                        />
+                      </div>
+
+                      <span
+                        className={`inline-flex items-center rounded px-2 py-0.5 text-[11px] font-bold ${
+                          crit.score >= crit.max_score * 0.7
+                            ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
+                            : "bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300"
+                        }`}
+                      >
+                        {crit.score >= crit.max_score * 0.7 ? "ĐẠT" : "K.ĐẠT"}
+                      </span>
+
+                      <Input
+                        value={crit.notes || ""}
+                        onChange={(e) =>
+                          handleCriteriaScoreChange(idx, crit.score, e.target.value)
+                        }
+                        placeholder="Ghi chú thực tế..."
+                        className="h-8 w-44 text-xs"
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Total Score & Rating Banner */}
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 rounded-lg border border-primary/30 bg-primary/5 p-3">
+              <div className="space-y-1">
+                <span className="text-xs font-semibold uppercase text-muted-foreground">Tổng điểm đánh giá</span>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-2xl font-black text-primary">{evalForm.total_score}</span>
+                  <span className="text-xs text-muted-foreground">/ 100 điểm</span>
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <span className="text-xs font-semibold uppercase text-muted-foreground">Xếp hạng năng lực</span>
+                <div>
+                  <span
+                    className={`inline-block rounded px-2.5 py-0.5 text-sm font-bold ${
+                      evalForm.grade === "A"
+                        ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
+                        : evalForm.grade === "B"
+                        ? "bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300"
+                        : evalForm.grade === "C"
+                        ? "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300"
+                        : "bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300"
+                    }`}
+                  >
+                    Hạng {evalForm.grade} ({evalForm.grade === "A" ? "Xuất sắc" : evalForm.grade === "B" ? "Khá" : evalForm.grade === "C" ? "Trung bình" : "Không đạt"})
+                  </span>
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <span className="text-xs font-semibold uppercase text-muted-foreground">Kết luận phê duyệt ASL</span>
+                <div>
+                  <span
+                    className={`inline-block rounded px-2.5 py-0.5 text-sm font-bold ${
+                      evalForm.conclusion === "APPROVED"
+                        ? "bg-emerald-600 text-white"
+                        : evalForm.conclusion === "CONDITIONAL"
+                        ? "bg-amber-500 text-white"
+                        : "bg-rose-600 text-white"
+                    }`}
+                  >
+                    {evalForm.conclusion === "APPROVED"
+                      ? "ĐẠT CHUẨN (DUYỆT ASL)"
+                      : evalForm.conclusion === "CONDITIONAL"
+                      ? "CÓ ĐIỀU KIỆN (KHẮC PHỤC)"
+                      : "KHÔNG ĐẠT (LOẠI BỎ)"}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label>Hành động khắc phục / Yêu cầu đối với NCC</Label>
+                <textarea
+                  value={evalForm.corrective_actions || ""}
+                  onChange={(e) => setEvalForm({ ...evalForm, corrective_actions: e.target.value })}
+                  rows={2}
+                  placeholder="Ghi chú các điểm không phù hợp cần nhà cung cấp gửi báo cáo CAPA..."
+                  className="w-full rounded-md border border-input bg-background p-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label>Đại diện Ban Giám Đốc phê duyệt</Label>
+                <Input
+                  value={evalForm.approved_by || ""}
+                  onChange={(e) => setEvalForm({ ...evalForm, approved_by: e.target.value })}
+                  placeholder="Giám Đốc Nhà Máy"
+                />
+              </div>
+            </div>
+
+            <DialogFooter className="pt-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsCreateEvalOpen(false)}
+              >
+                Hủy bỏ
+              </Button>
+              <Button type="submit" className="bg-primary text-primary-foreground">
+                {editingEval ? "Lưu thay đổi phiếu ĐG" : "Hoàn tất & Cập nhật NCC"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal Xác Nhận Xóa Kế Hoạch Đánh Giá */}
       <ConfirmDialog
-        isOpen={!!deletingInspectionItem}
-        onClose={() => setDeletingInspectionItem(null)}
+        isOpen={!!deletingPlanItem}
+        onClose={() => setDeletingPlanItem(null)}
         onConfirm={() => {
-          if (deletingInspectionItem) {
-            executeDeleteInspection(deletingInspectionItem.id, deletingInspectionItem.code);
-            setDeletingInspectionItem(null);
+          if (deletingPlanItem) {
+            handleDeletePlan(deletingPlanItem.id);
+            setDeletingPlanItem(null);
           }
         }}
-        title="Xác nhận xóa Biên bản kiểm định IQC"
-        description={`Bạn có chắc chắn muốn xóa Biên bản IQC "${deletingInspectionItem?.code}" không?`}
-        confirmLabel="Xóa Biên bản"
+        title="Xác nhận xóa Kế hoạch đánh giá NCC"
+        description={`Bạn có chắc chắn muốn xóa Kế hoạch "${deletingPlanItem?.code}" không?`}
+        confirmLabel="Xóa Kế hoạch"
+        variant="destructive"
+      />
+
+      {/* Modal Xác Nhận Xóa Phiếu Đánh Giá NCC */}
+      <ConfirmDialog
+        isOpen={!!deletingEvalItem}
+        onClose={() => setDeletingEvalItem(null)}
+        onConfirm={() => {
+          if (deletingEvalItem) {
+            handleDeleteEval(deletingEvalItem.id);
+            setDeletingEvalItem(null);
+          }
+        }}
+        title="Xác nhận xóa Phiếu đánh giá NCC"
+        description={`Bạn có chắc chắn muốn xóa Phiếu đánh giá "${deletingEvalItem?.code}" không?`}
+        confirmLabel="Xóa Phiếu"
         variant="destructive"
       />
     </div>

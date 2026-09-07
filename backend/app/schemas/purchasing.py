@@ -99,6 +99,15 @@ class IQCInspectionBase(BaseModel):
     mycotoxin_check: bool = True
     allergen_check: bool = False
     coa_compliance: bool = True
+
+    # Chỉ tiêu hiện trường thực tế (BM01-KTNL)
+    defect_rate_percent: Optional[float] = 0.0
+    impurity_percent: Optional[float] = 0.0
+    size_uniformity_check: bool = True
+    vehicle_cleanliness_check: bool = True
+    delivery_vehicle_plate: Optional[str] = None
+    driver_name: Optional[str] = None
+
     inspection_details: Optional[Dict[str, Any]] = None  # {micro_biology, heavy_metals, physical, sensory}
     status: str = "PASSED"  # PASSED, REJECTED, CONDITIONAL, PENDING
     notes: Optional[str] = None
@@ -117,6 +126,12 @@ class IQCInspectionUpdate(BaseModel):
     mycotoxin_check: Optional[bool] = None
     allergen_check: Optional[bool] = None
     coa_compliance: Optional[bool] = None
+    defect_rate_percent: Optional[float] = None
+    impurity_percent: Optional[float] = None
+    size_uniformity_check: Optional[bool] = None
+    vehicle_cleanliness_check: Optional[bool] = None
+    delivery_vehicle_plate: Optional[str] = None
+    driver_name: Optional[str] = None
     inspection_details: Optional[Dict[str, Any]] = None
     status: Optional[str] = None
     notes: Optional[str] = None
@@ -183,3 +198,78 @@ class AISupplierEvaluationResponse(BaseModel):
     strengths: List[str]
     risks: List[str]
     recommendations: List[str]
+
+
+# ==================== SUPPLIER EVALUATION PLAN SCHEMAS (BM02) ====================
+class SupplierEvaluationPlanBase(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    plan_code: str
+    year: int
+    title: str
+    department: str = "Phòng Đảm Bảo Chất Lượng (QA)"
+    scope: Optional[str] = None
+    approved_by: Optional[str] = None
+    approval_status: str = "APPROVED"
+
+class SupplierEvaluationPlanCreate(SupplierEvaluationPlanBase):
+    pass
+
+class SupplierEvaluationPlanUpdate(BaseModel):
+    plan_code: Optional[str] = None
+    year: Optional[int] = None
+    title: Optional[str] = None
+    department: Optional[str] = None
+    scope: Optional[str] = None
+    approved_by: Optional[str] = None
+    approval_status: Optional[str] = None
+
+class SupplierEvaluationPlanResponse(SupplierEvaluationPlanBase):
+    id: int
+    created_at: Optional[datetime] = None
+    evaluations_count: Optional[int] = 0
+
+
+# ==================== SUPPLIER EVALUATION SCHEMAS (BM03, BM03-TS, BM04) ====================
+class SupplierEvaluationBase(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    evaluation_code: str
+    plan_id: Optional[int] = None
+    supplier_id: UUID
+    criteria_type: str  # AGRI_FRESH, AQUA_ANIMAL_FRESH, PROCESSED_DRY_PACKAGING
+    evaluation_date: date
+    evaluator_name: str
+    audit_type: str = "PERIODIC"
+    criteria_scores: List[Dict[str, Any]]  # List of criteria objects with name, max_score, score, pass_fail, notes
+    total_score: float
+    grade: str  # A, B, C, D
+    conclusion: str  # APPROVED, CONDITIONAL, DISQUALIFIED
+    corrective_actions: Optional[str] = None
+    approved_by: Optional[str] = None
+
+class SupplierEvaluationCreate(SupplierEvaluationBase):
+    pass
+
+class SupplierEvaluationUpdate(BaseModel):
+    evaluation_code: Optional[str] = None
+    plan_id: Optional[int] = None
+    supplier_id: Optional[UUID] = None
+    criteria_type: Optional[str] = None
+    evaluation_date: Optional[date] = None
+    evaluator_name: Optional[str] = None
+    audit_type: Optional[str] = None
+    criteria_scores: Optional[List[Dict[str, Any]]] = None
+    total_score: Optional[float] = None
+    grade: Optional[str] = None
+    conclusion: Optional[str] = None
+    corrective_actions: Optional[str] = None
+    approved_by: Optional[str] = None
+
+class SupplierEvaluationResponse(SupplierEvaluationBase):
+    id: int
+    supplier_name: Optional[str] = None
+    supplier_code: Optional[str] = None
+    plan_code: Optional[str] = None
+    created_at: Optional[datetime] = None
+

@@ -30,23 +30,24 @@ Hệ thống chuyển đổi số toàn diện quy trình Quản lý An toàn Th
 ## 🗄️ Chi tiết Cơ sở Dữ liệu & Bảng Schema (`iso22000_db.sql`)
 
 Cơ sở dữ liệu được chuẩn hóa cho toàn bộ 10 luồng nghiệp vụ ISO 22000:
-1. **Phân quyền động (Dynamic RBAC), Phòng Ban & Người dùng:**
+1. **Phân quyền động (Dynamic RBAC), Bối cảnh Tổ chức (Clause 4 & 6.1) & Người dùng:**
    - `departments`: `dept_id` (UUID PK), `dept_code` (Unique), `dept_name` (Unique), `description`, `created_at`. Gồm 7 phòng ban chuẩn: *Ban Giám đốc, Ban QLCL & ATTP, Phòng Sản xuất, Phòng Kinh doanh & Kho, Phòng Thiết bị, Phòng Hành chính - Kế toán, Quản trị hệ thống*.
    - `roles`: `role_id` (UUID PK), `role_code` (Unique), `role_name`, `description`. Gồm 8 vai trò nghiệp vụ: *admin, management, qa_qc_manager, production, sales_logistics, maintenance, hr_accounting, staff* (+ user).
-   - `permissions`: `permission_id` (UUID PK), `permission_code` (Unique), `module`, `description`.
-   - `role_permissions`: Bảng liên kết nhiều - nhiều giữa `roles` và `permissions`.
-   - `users`: `user_id` (UUID PK), `username`, `password_hash`, `full_name`, `department`, `email`, `phone`, `is_active`, `created_at`.
-   - `user_roles`: Bảng liên kết nhiều - nhiều giữa `users` và `roles`.
+   - `permissions`, `role_permissions`, `users`, `user_roles`.
+   - `interested_parties`: (Clause 4.2 - Phụ lục 1) Quản lý bên quan tâm nội bộ/bên ngoài, nhu cầu kỳ vọng và cơ chế giám sát.
+   - `context_risks`: (Clause 4.1 & 6.1 - Phụ lục 2 & 4) Bảng đăng ký rủi ro bối cảnh với ma trận Khả năng xảy ra (L) × Mức độ nghiêm trọng (S) = Điểm rủi ro (R), phân cấp Thấp/Trung bình/Cao và biện pháp xử lý.
 2. **Audit Logs, Tệp đính kèm & Thông báo:**
    - `file_attachments`: Quản lý lưu trữ tệp số hóa của hệ thống.
    - `audit_logs`: Ghi vết lịch sử thao tác dữ liệu.
    - `notifications`: Cảnh báo và thông báo nội bộ.
 3. **Kiểm soát Tài liệu (DMS - Luồng 7 - Phase 2):**
    - `documents`: `document_id` (UUID PK), `doc_code` (Unique), `doc_title`, `doc_type` (POLICY, MANUAL, SOP, WI, FORM, RECORD), `department`, `standard` (Default 'ISO 22000:2018'), `current_version`, `status` (DRAFT, APPROVED, PENDING_APPROVAL, OBSOLETE), `file_url`, `approved_by` (FK `users`), `effective_date`, `created_at`.
-4. **Nhà cung cấp & IQC Nguyên liệu (Luồng 1 - Phase 3):** 
+4. **Nhà cung cấp, Kế hoạch Đánh giá & IQC Nguyên liệu (Luồng 1 & 12 - Phase 3):** 
    - `suppliers`: `supplier_id` (UUID PK), `supplier_code` (Unique), `supplier_name`, `contact_info` (JSONB), `category`, `certifications` (JSONB), `rating_score`, `status`, `risk_level`, `evaluation_notes`, `evaluation_date`, `created_at`.
    - `material_lots`: `material_lot_id` (UUID PK), `lot_number` (Unique), `supplier_id` (FK `suppliers`), `material_name`, `material_category`, `received_date`, `mfg_date`, `exp_date`, `quantity`, `unit`, `storage_condition`, `coa_file_url`, `status`, `created_by` (FK `users`), `created_at`.
-   - `iqc_inspections`: `inspection_id` (UUID PK), `inspection_code` (Unique), `material_lot_id` (FK `material_lots`), `inspector_id` (FK `users`), `sensory_check`, `packaging_check`, `temperature_c`, `moisture_content`, `mycotoxin_check`, `allergen_check`, `coa_compliance`, `inspection_details` (JSONB), `status`, `notes`, `inspected_at`.
+   - `iqc_inspections`: (Biểu mẫu BM01-KTNL) `inspection_id` (UUID PK), `inspection_code` (Unique), `material_lot_id` (FK `material_lots`), `inspector_id` (FK `users`), `sensory_check`, `packaging_check`, `temperature_c`, `moisture_content`, `mycotoxin_check`, `allergen_check`, `coa_compliance`, `defect_rate_percent`, `impurity_percent`, `size_uniformity_check`, `vehicle_cleanliness_check`, `delivery_vehicle_plate`, `driver_name`, `inspection_details` (JSONB), `status`, `notes`, `inspected_at`.
+   - `supplier_evaluation_plans`: (Luồng 12 - BM02-KHĐGNCC) Kế hoạch đánh giá năng lực nhà cung ứng định kỳ hàng năm theo Clause 7.1.6.
+   - `supplier_evaluations`: (Luồng 12 - BM03 / Tiêu chí bổ sung Thủy sản / BM04) Phiếu chấm điểm 100 điểm với 3 bộ tiêu chí độc lập (`AGRI_FRESH` - Nông sản tươi theo BM03 gốc, `AQUA_ANIMAL_FRESH` - Bộ tiêu chí bổ sung cho Thủy hải sản tươi do dự án tự xây dựng, `PROCESSED_DRY_PACKAGING` - Khô/Phụ gia/Bao bì theo BM04 gốc) và tự động đồng bộ điểm/hạng/kết luận về hồ sơ NCC.
 5. **Kế hoạch HACCP, Giám sát CCP & Chương trình Tiên quyết PRP (Luồng 2 - Phase 4):**
    - `process_steps`: `step_id` (UUID PK), `step_number`, `step_name`, `product_line`, `description`, `is_ccp_or_oprp`, `created_at`.
    - `hazard_analyses`: `hazard_id` (UUID PK), `step_id` (FK `process_steps`), `hazard_type`, `hazard_name`, `potential_consequence`, `likelihood`, `severity`, `risk_score`, `is_significant`, `control_measure`, `q1`, `q2`, `q3`, `q4`, `classification` (CCP, OPRP, PRP, NOT_SIGNIFICANT), `notes`, `created_at`.
@@ -54,9 +55,11 @@ Cơ sở dữ liệu được chuẩn hóa cho toàn bộ 10 luồng nghiệp v�
    - `ccp_monitoring_logs`: `log_id` (UUID PK), `ccp_id` (FK `ccp_definitions`), `batch_number`, `checked_by` (FK `users`), `test_time`, `measured_value`, `unit`, `measured_details` (JSONB), `is_critical_limit_exceeded`, `status` (NORMAL, WARNING, CRITICAL), `deviation_action`, `verification_status`, `verified_by` (FK `users`), `notes`, `created_at`.
    - `prp_programs`: `program_id` (UUID PK), `program_code` (Unique), `program_name`, `group` (GMP, SSOP, 5S, PEST_CONTROL, WATER_SAFETY), `scope`, `frequency`, `responsible_dept`, `status`, `description`, `created_at`.
    - `prp_checklist_logs`: `check_id` (UUID PK), `program_id` (FK `prp_programs`), `shift_name`, `check_date`, `check_time`, `checked_by` (FK `users`), `items_checked` (JSONB), `compliance_rate`, `status` (COMPLIANT, ACTION_REQUIRED, NON_COMPLIANT), `finding_notes`, `corrective_action`, `created_at`.
-6. **Kho FEFO, Lưu Mẫu & Truy Xuất Nguồn Gốc (Luồng 3 & 4 - Phase 6):**
+6. **Kho FEFO, Lưu Mẫu, Vận Tải & Tiêu Hủy Hàng Hóa (Luồng 3, 4, 15, 16 - Phase 6):**
    - `materials`, `batches`, `finished_products`, `traceability_logs`.
    - Sơ đồ phả hệ cây truy vết ngược/xuôi (Backward/Forward Traceability 4 tầng), mã QR ma trận RFC thực tế, kho biệt trữ an toàn.
+   - `vehicle_inspections`: (Luồng 15 - Biểu mẫu BM01-PTVC) Kiểm tra phương tiện vận chuyển trước khi bốc dỡ thực phẩm chuẩn xác theo 5 tiêu chí Đạt/Không đạt của BM01-PTVC gốc: Niên hạn/Đăng kiểm lưu hành, Kết cấu thùng chứa nguyên vẹn/kín, Thùng xe sạch sẽ/khô ráo/không han gỉ, Không có mùi lạ (xăng dầu/hóa chất), Không mốc/không côn trùng gây hại.
+   - `disposal_records`: (Luồng 16 - Biểu mẫu BM02-HỦY HÀNG) Biên bản tiêu hủy thực phẩm không phù hợp chuẩn xác theo 3 chữ ký đại diện của BM02 gốc: Đơn vị thực hiện hủy hàng, Phòng Quản lý Chất lượng (P.QLCL), Phòng ban đề xuất hủy hàng (kèm trường lý do và phương pháp tiêu hủy mở rộng của phần mềm FSMS).
 7. **Thiết Bị, Bảo Trì & Hiệu Chuẩn (Luồng 2 - Phase 5):**
    - `equipments`: `equipment_id` (UUID PK), `equipment_code`, `equipment_name`, `category`, `location`, `status`, `specs` (JSONB).
    - `equipment_maintenance_logs`: `log_id` (UUID PK), `equipment_id` (FK), `maintenance_type`, `food_grade_lube_used` (NSF H1), `sanitation_post_maintenance`, `performed_by`.
@@ -70,6 +73,10 @@ Cơ sở dữ liệu được chuẩn hóa cho toàn bộ 10 luồng nghiệp v�
    - `workflows`: `workflow_id` (UUID PK), `workflow_code` (Unique), `name`, `module`, `nodes` (JSONB), `edges` (JSONB), `version`, `status`.
 10. **Đánh Giá Nội Bộ & Đào Tạo Nhân Sự (Luồng 6 - Phase 8):**
     - `internal_audits`, `audit_findings`, `audit_checklists`, `training_courses`, `training_records`, `health_declarations`.
+11. **Chuẩn Bị & Ứng Phó Tình Huống Khẩn Cấp (Clause 8.4 - Luồng 13):**
+    - `emergency_scenarios`: Đúng chuẩn 9 tình huống khẩn cấp theo tài liệu gốc `khan_cap.doc` (Mục 8.4 ISO 22000): Cháy nổ, Tràn đổ hóa chất, Mất nước, Mất điện đột ngột, Hỏng hệ thống lạnh/kho bảo quản, Gián đoạn hơi cấp lò hơi, Khủng bố sinh học/phá hoại, Tai nạn lao động, Thiên tai lũ lụt/dịch bệnh; ma trận L × S = R và quy trình xử lý khẩn cấp (Lưu ý: Ngộ độc thực phẩm và Thu hồi sản phẩm diện rộng thuộc Luồng 4 - Mục 8.9.5, không gộp lẫn vào 8.4).
+    - `emergency_contacts`: Danh bạ khẩn cấp nội bộ (Đội trưởng, QA, Y tế, PCCC) và cơ quan thẩm quyền bên ngoài (114, 115, Chi cục ATTP, Điện lực, Cấp nước).
+    - `emergency_drill_incidents`: Sổ theo dõi diễn tập và sự cố thực tế kèm in biểu mẫu BM-EMERGENCY-01.
 
 ---
 
@@ -132,6 +139,16 @@ Cơ sở dữ liệu được chuẩn hóa cho toàn bộ 10 luồng nghiệp v�
 | `DELETE`| `/api/v1/purchasing/inspections/{id}` | `inspection_id` (UUID) | Xóa biên bản IQC. |
 | `POST` | `/api/v1/purchasing/ai/analyze-coa` | `AICoAAnalysisRequest` (`material_name`, `sample_type`, `coa_text`) | Trợ lý AI Thẩm định Phiếu COA: Đối chiếu tự động các chỉ tiêu vi sinh (Salmonella, E.coli), kim loại nặng (Pb, Cd), độc tố Aflatoxin theo QCVN/Codex. |
 | `POST` | `/api/v1/purchasing/ai/evaluate-supplier`| `AISupplierEvaluationRequest` (`supplier_id`) | Trợ lý AI Đánh giá Hiệu suất NCC: Phân tích lịch sử IQC, tỷ lệ lỗi để tính điểm đề xuất và khuyến nghị kiểm soát. |
+| `GET` | `/api/v1/purchasing/evaluation-criteria-templates` | Không có | Lấy danh mục 3 bộ tiêu chí đánh giá nhà cung ứng mẫu (BM03 Nông sản tươi, BM03-TS Thủy hải sản tươi, BM04 Khô/Phụ gia/Bao bì) với tổng 100 điểm. |
+| `GET` | `/api/v1/purchasing/evaluation-plans` | Query: `year` | Danh sách kế hoạch đánh giá nhà cung cấp định kỳ hàng năm (BM02-KHĐGNCC). |
+| `POST` | `/api/v1/purchasing/evaluation-plans` | `SupplierEvaluationPlanCreate` | Tạo mới kế hoạch đánh giá NCC năm theo ISO 22000 Điều khoản 7.1.6. |
+| `PUT` | `/api/v1/purchasing/evaluation-plans/{id}` | `id`, `SupplierEvaluationPlanUpdate` | Cập nhật kế hoạch đánh giá NCC. |
+| `DELETE`| `/api/v1/purchasing/evaluation-plans/{id}` | `id` | Xóa kế hoạch đánh giá NCC. |
+| `GET` | `/api/v1/purchasing/evaluations` | Query: `plan_id`, `supplier_id`, `criteria_type`, `conclusion` | Danh sách phiếu đánh giá NCC với điểm số (0-100), phân hạng (A/B/C/D) và kết luận ASL. |
+| `POST` | `/api/v1/purchasing/evaluations` | `SupplierEvaluationCreate` | Lập phiếu đánh giá NCC; tự động tính tổng điểm, xếp hạng A/B/C/D, kết luận và đồng bộ realtime điểm/hồ sơ NCC. |
+| `GET` | `/api/v1/purchasing/evaluations/{id}` | `id` | Chi tiết phiếu đánh giá NCC kèm danh sách tiêu chí chấm điểm JSONB. |
+| `PUT` | `/api/v1/purchasing/evaluations/{id}` | `id`, `SupplierEvaluationUpdate` | Cập nhật phiếu đánh giá NCC và đồng bộ lại điểm NCC. |
+| `DELETE`| `/api/v1/purchasing/evaluations/{id}` | `id` | Xóa phiếu đánh giá NCC. |
 
 ---
 
@@ -326,6 +343,12 @@ Cơ sở dữ liệu được chuẩn hóa cho toàn bộ 10 luồng nghiệp v�
   - **Mục Tiêu Chất Lượng & ATTP (Clause 6.2 Objectives Tracker):** Quản lý chỉ tiêu định lượng hàng năm theo từng phòng ban, đo lường kế hoạch vs thực tế, thanh tiến độ trực quan.
   - **Biên Bản Họp Xem Xét Của Lãnh Đạo (Clause 9.3 Management Review):** Quản lý kỳ họp, 6 nhóm đầu vào (9.3.2 Inputs), nghị quyết đầu ra (9.3.3 Outputs) và in Biểu mẫu ISO chuẩn A4 **BM-MR-01** qua `printHtml`.
   - **Studio Cố Vấn Trí Tuệ Nhân Tạo (Executive AI Studio):** 4 Trợ lý AI cao cấp (Dự báo độ sẵn sàng tái đánh giá chứng nhận, Tự động sinh báo cáo lãnh đạo BM-MR-01, Chat hỏi đáp CSDL FSMS đa chiều, Gợi ý mục tiêu SMART).
+- [x] **Hoàn thiện 5 Phân Hệ Bám Sát Thực Tế Nhà Máy & Hồ Sơ Biểu Mẫu (Plant Audit Gaps Resolution):**
+  - **1. Luồng 1 (IQC BM01-KTNL):** Mở rộng toàn diện các chỉ tiêu ngoại quan, cơ lý thực tế bao gồm tỷ lệ khuyết tật dập nát (`defect_rate_percent`), tỷ lệ tạp chất (`impurity_percent`), độ đồng đều kích cỡ (`size_uniformity_check`), vệ sinh phương tiện chở hàng (`vehicle_cleanliness_check`), biển số xe giao hàng (`delivery_vehicle_plate`), và tên tài xế (`driver_name`).
+  - **2. Luồng 13 (Clause 8.4 Ứng phó khẩn cấp):** Phân hệ `/emergency` chuyên biệt chuẩn xác theo 9 kịch bản khẩn cấp của tài liệu gốc `khan_cap.doc` (Cháy nổ, Tràn đổ hóa chất, Mất nước, Mất điện đột ngột, Hỏng hệ thống lạnh/kho bảo quản, Gián đoạn hơi cấp lò hơi, Khủng bố sinh học/phá hoại, Tai nạn lao động, Thiên tai lũ lụt/dịch bệnh); ma trận rủi ro L × S = R với tính điểm tự động; danh bạ liên lạc khẩn cấp nội bộ/bên ngoài và nhật ký diễn tập/sự cố kèm in ấn chuẩn **BM-EMERGENCY-01** (Lưu ý: Ngộ độc thực phẩm và Thu hồi diện rộng thuộc Luồng 4 - Mục 8.9.5, không gộp lẫn vào 8.4).
+  - **3. Luồng 05 (Clause 4 & 6.1 Bối cảnh & Rủi ro):** Tích hợp vào `/organization` gồm Bảng Bên quan tâm nội bộ/bên ngoài (`interested_parties`, Phụ lục 1) và Bảng đăng ký rủi ro bối cảnh (`context_risks`, Phụ lục 2 & 4) với ma trận L × S = R, bộ lọc phân cấp rủi ro và 2 biểu mẫu in chuẩn A4 **BM-CTX-01** & **BM-CTX-02**.
+  - **4. Luồng 15 & 16 (Logistics & Kho):** Tích hợp vào `/inventory` gồm Kiểm tra phương tiện vận chuyển trước bốc xếp (`vehicle_inspections`, Biểu mẫu **BM01-PTVC** / in **BM-PTVC-01**) chuẩn xác theo 5 tiêu chí Đạt/Không đạt gốc (Niên hạn/đăng kiểm, Kết cấu thùng chứa, Sạch sẽ/khô ráo, Không mùi lạ, Không mốc/côn trùng; bỏ các trường tự chế như nhiệt độ/loại xe) và Biên bản tiêu hủy thực phẩm không phù hợp (`disposal_records`, Biểu mẫu **BM02-HỦY HÀNG** / in **BM-DISPOSE-02**) chuẩn xác theo 3 chữ ký đại diện của tài liệu gốc: Đơn vị thực hiện hủy hàng, P.QLCL, Phòng ban đề xuất hủy hàng (kèm trường lý do và phương pháp tiêu hủy mở rộng của phần mềm FSMS).
+  - **5. Luồng 12 (Clause 7.1.6 Đánh giá nhà cung ứng nâng cao):** Tích hợp vào `/purchasing` gồm Kế hoạch đánh giá năng lực nhà cung ứng định kỳ hàng năm (`supplier_evaluation_plans`, Biểu mẫu **BM02-KHĐGNCC** / in **BM-NCC-02**) và Phiếu đánh giá năng lực 100 điểm (`supplier_evaluations`) với 3 bộ tiêu chí độc lập: Nông sản tươi (Biểu mẫu gốc **BM03**), Thủy hải sản / Tươi sống (Bộ tiêu chí bổ sung do dự án tự xây dựng), Khô / Phụ gia / Bao bì tiếp xúc trực tiếp (Biểu mẫu gốc **BM04**), tự động xếp hạng A/B/C/D, tự động kết luận ASL và đồng bộ realtime điểm/trạng thái NCC.
 - [ ] **Phase 10: Tác Nghiệp Di Động (PWA/Mobile Adaptation), Kiểm Thử Nghiệm Thu Toàn Diện & Chuẩn Bị Triển Khai** *(CURRENT TARGET)*
   - **1. Module Tác Nghiệp Di Động / Hiện Trường (Mobile & Tablet Adaptation):**
     - [ ] **PWA Configuration (Progressive Web App):**

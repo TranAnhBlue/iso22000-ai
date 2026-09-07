@@ -12,6 +12,8 @@ from app.models.inventory import (
     WarehouseInventory,
     RetainedSample,
     OrderDispatch,
+    VehicleInspection,
+    DisposalRecord,
 )
 from app.models.purchasing import MaterialLot, Supplier, IQCInspection
 from app.models.haccp import CCPMonitoringLog
@@ -29,6 +31,13 @@ from app.schemas.inventory import (
     OrderDispatchCreate,
     OrderDispatchUpdate,
     OrderDispatchResponse,
+    VehicleInspectionCreate,
+    VehicleInspectionUpdate,
+    VehicleInspectionResponse,
+    DisposalRecordCreate,
+    DisposalRecordUpdate,
+    DisposalRecordResponse,
+    LogisticsStatsResponse,
 )
 
 router = APIRouter()
@@ -552,3 +561,247 @@ def get_inventory_kpi_stats(db: Session = Depends(get_db)):
         "total_production_batches": total_batches,
         "total_order_dispatches": total_dispatches,
     }
+
+
+# =========================================================================
+# 6. VEHICLE INSPECTION ENDPOINTS (BM01-PTVC)
+# =========================================================================
+def format_vehicle_inspection(v: VehicleInspection) -> VehicleInspectionResponse:
+    return VehicleInspectionResponse(
+        id=v.id,
+        inspection_code=v.inspection_code,
+        inspection_date=v.inspection_date,
+        order_dispatch_id=v.order_dispatch_id,
+        vehicle_plate=v.vehicle_plate,
+        driver_name=v.driver_name,
+        driver_phone=v.driver_phone,
+        transport_company=v.transport_company,
+        valid_registration_check=getattr(v, "valid_registration_check", True),
+        cargo_integrity_check=getattr(v, "cargo_integrity_check", True),
+        clean_dry_check=getattr(v, "clean_dry_check", True),
+        no_odor_check=getattr(v, "no_odor_check", True),
+        pest_free_check=getattr(v, "pest_free_check", True),
+        inspection_result=v.inspection_result,
+        inspector_name=v.inspector_name,
+        notes=v.notes,
+        created_at=v.created_at,
+    )
+
+@router.get("/vehicle-inspections", response_model=List[VehicleInspectionResponse])
+def get_vehicle_inspections(
+    search: Optional[str] = None,
+    result_filter: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
+    """Lấy danh sách phiếu kiểm tra phương tiện vận chuyển trước xuất hàng (BM01-PTVC)"""
+    query = db.query(VehicleInspection)
+    if search:
+        s = f"%{search.strip()}%"
+        query = query.filter(
+            or_(
+                VehicleInspection.inspection_code.ilike(s),
+                VehicleInspection.vehicle_plate.ilike(s),
+                VehicleInspection.driver_name.ilike(s),
+                VehicleInspection.transport_company.ilike(s),
+            )
+        )
+    if result_filter and result_filter.upper() != "ALL":
+        query = query.filter(VehicleInspection.inspection_result == result_filter.upper())
+    
+    inspections = query.order_by(VehicleInspection.inspection_date.desc()).all()
+    return [format_vehicle_inspection(v) for v in inspections]
+
+@router.post("/vehicle-inspections", response_model=VehicleInspectionResponse, status_code=status.HTTP_201_CREATED)
+def create_vehicle_inspection(payload: VehicleInspectionCreate, db: Session = Depends(get_db)):
+    """Tạo mới phiếu kiểm tra phương tiện vận chuyển (BM01-PTVC)"""
+    existing = db.query(VehicleInspection).filter(VehicleInspection.inspection_code == payload.inspection_code).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Mã phiếu kiểm tra phương tiện đã tồn tại!")
+
+    # Tự động thẩm định kết quả theo 5 tiêu chuẩn kỹ thuật bắt buộc
+    all_passed = all([
+        payload.valid_registration_check,
+        payload.cargo_integrity_check,
+        payload.clean_dry_check,
+        payload.no_odor_check,
+        payload.pest_free_check,
+    ])
+    result = "PASS" if all_passed else (payload.inspection_result if payload.inspection_result == "FAIL" else "FAIL")
+
+    insp = VehicleInspection(
+        inspection_code=payload.inspection_code,
+        inspection_date=payload.inspection_date or datetime.now(),
+        order_dispatch_id=payload.order_dispatch_id,
+        vehicle_plate=payload.vehicle_plate,
+        driver_name=payload.driver_name,
+        driver_phone=payload.driver_phone,
+        transport_company=payload.transport_company,
+        valid_registration_check=payload.valid_registration_check,
+        cargo_integrity_check=payload.cargo_integrity_check,
+        clean_dry_check=payload.clean_dry_check,
+        no_odor_check=payload.no_odor_check,
+        pest_free_check=payload.pest_free_check,
+        inspection_result=result,
+        inspector_name=payload.inspector_name,
+        notes=payload.notes,
+    )
+    db.add(insp)
+    db.commit()
+    db.refresh(insp)
+    return format_vehicle_inspection(insp)
+
+@router.put("/vehicle-inspections/{inspection_id}", response_model=VehicleInspectionResponse)
+def update_vehicle_inspection(inspection_id: int, payload: VehicleInspectionUpdate, db: Session = Depends(get_db)):
+    """Cập nhật phiếu kiểm tra phương tiện"""
+    insp = db.query(VehicleInspection).filter(VehicleInspection.id == inspection_id).first()
+    if not insp:
+        raise HTTPException(status_code=404, detail="Không tìm thấy phiếu kiểm tra phương tiện!")
+
+    for field, value in payload.model_dump(exclude_unset=True).items():
+        setattr(insp, field, value)
+
+    # Tự động tính lại kết quả nếu có sửa các tiêu chí
+    all_passed = all([
+        insp.valid_registration_check,
+        insp.cargo_integrity_check,
+        insp.clean_dry_check,
+        insp.no_odor_check,
+        insp.pest_free_check,
+    ])
+    insp.inspection_result = "PASS" if all_passed else "FAIL"
+
+    db.commit()
+    db.refresh(insp)
+    return format_vehicle_inspection(insp)
+
+@router.delete("/vehicle-inspections/{inspection_id}")
+def delete_vehicle_inspection(inspection_id: int, db: Session = Depends(get_db)):
+    """Xóa phiếu kiểm tra phương tiện"""
+    insp = db.query(VehicleInspection).filter(VehicleInspection.id == inspection_id).first()
+    if not insp:
+        raise HTTPException(status_code=404, detail="Không tìm thấy phiếu kiểm tra phương tiện!")
+    db.delete(insp)
+    db.commit()
+    return {"message": "Đã xóa phiếu kiểm tra phương tiện thành công!"}
+
+
+# =========================================================================
+# 7. DISPOSAL RECORDS ENDPOINTS (BM02-HỦY HÀNG)
+# =========================================================================
+def format_disposal_record(d: DisposalRecord) -> DisposalRecordResponse:
+    return DisposalRecordResponse(
+        id=d.id,
+        record_code=d.record_code,
+        disposal_date=d.disposal_date,
+        batch_id=d.batch_id,
+        batch_number=d.batch_number,
+        product_name=d.product_name,
+        quantity=float(d.quantity),
+        unit=d.unit,
+        reason=d.reason,
+        disposal_method=d.disposal_method,
+        disposal_location=d.disposal_location,
+        witness_council=d.witness_council,
+        status=d.status,
+        approved_by=d.approved_by,
+        notes=d.notes,
+        created_at=d.created_at,
+    )
+
+@router.get("/disposal-records", response_model=List[DisposalRecordResponse])
+def get_disposal_records(
+    search: Optional[str] = None,
+    status_filter: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
+    """Lấy danh sách biên bản hủy hàng / thực phẩm không phù hợp (BM02-HỦY HÀNG)"""
+    query = db.query(DisposalRecord)
+    if search:
+        s = f"%{search.strip()}%"
+        query = query.filter(
+            or_(
+                DisposalRecord.record_code.ilike(s),
+                DisposalRecord.batch_number.ilike(s),
+                DisposalRecord.product_name.ilike(s),
+                DisposalRecord.reason.ilike(s),
+            )
+        )
+    if status_filter and status_filter.upper() != "ALL":
+        query = query.filter(DisposalRecord.status == status_filter.upper())
+
+    records = query.order_by(DisposalRecord.disposal_date.desc()).all()
+    return [format_disposal_record(d) for d in records]
+
+@router.post("/disposal-records", response_model=DisposalRecordResponse, status_code=status.HTTP_201_CREATED)
+def create_disposal_record(payload: DisposalRecordCreate, db: Session = Depends(get_db)):
+    """Tạo mới biên bản tiêu hủy hàng (BM02-HỦY HÀNG)"""
+    existing = db.query(DisposalRecord).filter(DisposalRecord.record_code == payload.record_code).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Mã biên bản hủy hàng đã tồn tại!")
+
+    record = DisposalRecord(
+        record_code=payload.record_code,
+        disposal_date=payload.disposal_date,
+        batch_id=payload.batch_id,
+        batch_number=payload.batch_number,
+        product_name=payload.product_name,
+        quantity=payload.quantity,
+        unit=payload.unit,
+        reason=payload.reason,
+        disposal_method=payload.disposal_method,
+        disposal_location=payload.disposal_location,
+        witness_council=payload.witness_council,
+        status=payload.status or "DISPOSED",
+        approved_by=payload.approved_by,
+        notes=payload.notes,
+    )
+    db.add(record)
+    db.commit()
+    db.refresh(record)
+    return format_disposal_record(record)
+
+@router.put("/disposal-records/{record_id}", response_model=DisposalRecordResponse)
+def update_disposal_record(record_id: int, payload: DisposalRecordUpdate, db: Session = Depends(get_db)):
+    """Cập nhật biên bản tiêu hủy hàng"""
+    record = db.query(DisposalRecord).filter(DisposalRecord.id == record_id).first()
+    if not record:
+        raise HTTPException(status_code=404, detail="Không tìm thấy biên bản tiêu hủy hàng!")
+
+    for field, value in payload.model_dump(exclude_unset=True).items():
+        setattr(record, field, value)
+
+    db.commit()
+    db.refresh(record)
+    return format_disposal_record(record)
+
+@router.delete("/disposal-records/{record_id}")
+def delete_disposal_record(record_id: int, db: Session = Depends(get_db)):
+    """Xóa biên bản tiêu hủy hàng"""
+    record = db.query(DisposalRecord).filter(DisposalRecord.id == record_id).first()
+    if not record:
+        raise HTTPException(status_code=404, detail="Không tìm thấy biên bản tiêu hủy hàng!")
+    db.delete(record)
+    db.commit()
+    return {"message": "Đã xóa biên bản tiêu hủy thành công!"}
+
+
+# =========================================================================
+# 8. LOGISTICS & DISPOSAL STATS
+# =========================================================================
+@router.get("/logistics-stats", response_model=LogisticsStatsResponse)
+def get_logistics_stats(db: Session = Depends(get_db)):
+    """Thống kê logistics kiểm xe xuất hàng & tiêu hủy hàng"""
+    total_vi = db.query(VehicleInspection).count()
+    passed_vi = db.query(VehicleInspection).filter(VehicleInspection.inspection_result == "PASS").count()
+    failed_vi = total_vi - passed_vi
+
+    total_dr = db.query(DisposalRecord).count()
+    sum_qty = db.query(func.sum(DisposalRecord.quantity)).scalar() or 0.0
+
+    return LogisticsStatsResponse(
+        total_vehicle_inspections=total_vi,
+        passed_inspections=passed_vi,
+        failed_inspections=failed_vi,
+        total_disposal_records=total_dr,
+        total_disposed_qty_kg=float(sum_qty),
+    )

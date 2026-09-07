@@ -35,6 +35,7 @@ import {
   Building2,
   ExternalLink,
   Phone,
+  Siren,
 } from "lucide-react";
 import { AIChatWidget } from "@/components/AIChatWidget";
 
@@ -129,6 +130,7 @@ const NAV = [
   { to: "/inventory", label: "Kho & Tồn kho FEFO", icon: Package, module: "inventory" as ModuleKey },
   { to: "/traceability", label: "Truy xuất 1 Chạm", icon: QrCode, module: "traceability" as ModuleKey },
   { to: "/purchasing", label: "Nhà cung cấp & IQC", icon: ShoppingCart, module: "purchasing" as ModuleKey },
+  { to: "/emergency", label: "Ứng phó khẩn cấp", icon: Siren, module: "emergency" as ModuleKey },
   { to: "/builder", label: "Biểu mẫu & Lưu đồ", icon: Layers, module: "builder" as ModuleKey },
 ] as const;
 

@@ -119,12 +119,22 @@ CREATE TABLE material_lots (
 
 CREATE TABLE iqc_inspections (
     inspection_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    material_lot_id UUID REFERENCES material_lots(material_lot_id),
-    inspector_id UUID REFERENCES users(user_id),
+    inspection_code VARCHAR(50) UNIQUE NOT NULL,
+    material_lot_id UUID REFERENCES material_lots(material_lot_id) ON DELETE CASCADE,
+    inspector_id UUID REFERENCES users(user_id) ON DELETE SET NULL,
     sensory_check BOOLEAN DEFAULT TRUE,
+    packaging_check BOOLEAN DEFAULT TRUE,
+    temperature_c NUMERIC(5,2),
     moisture_content NUMERIC(5,2),
     mycotoxin_check BOOLEAN DEFAULT TRUE,
     allergen_check BOOLEAN DEFAULT FALSE,
+    coa_compliance BOOLEAN DEFAULT TRUE,
+    defect_rate_percent NUMERIC(5,2) DEFAULT 0.0,
+    impurity_percent NUMERIC(5,2) DEFAULT 0.0,
+    size_uniformity_check BOOLEAN DEFAULT TRUE,
+    vehicle_cleanliness_check BOOLEAN DEFAULT TRUE,
+    delivery_vehicle_plate VARCHAR(30),
+    driver_name VARCHAR(100),
     inspection_details JSONB,
     status VARCHAR(30) NOT NULL,
     notes TEXT,
@@ -436,3 +446,164 @@ INSERT INTO user_roles (user_id, role_id)
 SELECT 'a0000000-0000-0000-0000-000000000001', role_id 
 FROM roles WHERE role_code = 'admin'
 ON CONFLICT DO NOTHING;
+
+-- 11. Luồng 13: Chuẩn bị & Ứng phó tình huống khẩn cấp (ISO 22000:2018 Clause 8.4)
+CREATE TABLE IF NOT EXISTS emergency_contacts (
+    contact_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name VARCHAR(255) NOT NULL,
+    organization_or_role VARCHAR(255) NOT NULL,
+    phone VARCHAR(50) NOT NULL,
+    phone_alt VARCHAR(50),
+    email VARCHAR(100),
+    contact_type VARCHAR(30) DEFAULT 'INTERNAL' NOT NULL,
+    priority_order INTEGER DEFAULT 1 NOT NULL,
+    address VARCHAR(255),
+    notes TEXT,
+    is_active BOOLEAN DEFAULT TRUE NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS emergency_procedures (
+    procedure_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    procedure_code VARCHAR(50) UNIQUE NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    scenario_type VARCHAR(50) NOT NULL,
+    likelihood INTEGER DEFAULT 2 NOT NULL,
+    severity INTEGER DEFAULT 3 NOT NULL,
+    risk_score INTEGER DEFAULT 6 NOT NULL,
+    risk_level VARCHAR(30) DEFAULT 'MEDIUM' NOT NULL,
+    immediate_actions JSONB,
+    responsible_team VARCHAR(100) DEFAULT 'Đội Ứng phó Khẩn cấp & PCCC' NOT NULL,
+    equipment_needed TEXT,
+    version VARCHAR(20) DEFAULT '1.0' NOT NULL,
+    status VARCHAR(30) DEFAULT 'ACTIVE' NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS emergency_drills (
+    drill_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    drill_code VARCHAR(50) UNIQUE NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    record_type VARCHAR(30) DEFAULT 'PLANNED_DRILL' NOT NULL,
+    scenario_type VARCHAR(50) NOT NULL,
+    drill_date DATE NOT NULL,
+    location VARCHAR(255) NOT NULL,
+    participants_count INTEGER DEFAULT 10 NOT NULL,
+    drill_leader VARCHAR(100) NOT NULL,
+    scenario_description TEXT,
+    response_time_minutes INTEGER,
+    evaluation_result VARCHAR(30) DEFAULT 'SATISFACTORY' NOT NULL,
+    corrective_actions_needed TEXT,
+    notes TEXT,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 17. Bối cảnh tổ chức & Quản lý rủi ro (Điều 4 & 6.1 ISO 22000:2018)
+CREATE TABLE IF NOT EXISTS interested_parties (
+    id SERIAL PRIMARY KEY,
+    party_name VARCHAR(255) NOT NULL,
+    party_type VARCHAR(50) DEFAULT 'EXTERNAL' NOT NULL,
+    needs_and_expectations TEXT NOT NULL,
+    statutory_requirements TEXT,
+    monitoring_method TEXT,
+    review_frequency VARCHAR(100) DEFAULT 'Hàng năm',
+    responsible_role VARCHAR(150) DEFAULT 'Ban QLCL & ATTP',
+    status VARCHAR(50) DEFAULT 'ACTIVE',
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS context_risks (
+    id SERIAL PRIMARY KEY,
+    code VARCHAR(50) UNIQUE NOT NULL,
+    issue_category VARCHAR(50) DEFAULT 'EXTERNAL' NOT NULL,
+    issue_description TEXT NOT NULL,
+    interested_party_id INTEGER REFERENCES interested_parties(id) ON DELETE SET NULL,
+    risk_description TEXT NOT NULL,
+    opportunity_description TEXT,
+    likelihood INTEGER DEFAULT 2 NOT NULL,
+    severity INTEGER DEFAULT 3 NOT NULL,
+    risk_score INTEGER DEFAULT 6 NOT NULL,
+    treatment_strategy VARCHAR(50) DEFAULT 'MITIGATE' NOT NULL,
+    action_plan TEXT NOT NULL,
+    responsible_role VARCHAR(150) DEFAULT 'Ban QLCL & ATTP',
+    target_date DATE,
+    status VARCHAR(50) DEFAULT 'TREATING' NOT NULL,
+    residual_likelihood INTEGER,
+    residual_severity INTEGER,
+    residual_risk_score INTEGER,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 18. Logistics & Kiểm soát Kho (BM01-PTVC & BM02-HỦY HÀNG)
+CREATE TABLE IF NOT EXISTS vehicle_inspections (
+    id SERIAL PRIMARY KEY,
+    inspection_code VARCHAR(50) UNIQUE NOT NULL,
+    inspection_date TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    order_dispatch_id UUID REFERENCES order_dispatches(dispatch_id) ON DELETE SET NULL,
+    vehicle_plate VARCHAR(50) NOT NULL,
+    driver_name VARCHAR(100) NOT NULL,
+    driver_phone VARCHAR(50),
+    transport_company VARCHAR(255) DEFAULT 'Đội xe Công ty',
+    valid_registration_check BOOLEAN DEFAULT TRUE NOT NULL,
+    cargo_integrity_check BOOLEAN DEFAULT TRUE NOT NULL,
+    clean_dry_check BOOLEAN DEFAULT TRUE NOT NULL,
+    no_odor_check BOOLEAN DEFAULT TRUE NOT NULL,
+    pest_free_check BOOLEAN DEFAULT TRUE NOT NULL,
+    inspection_result VARCHAR(30) DEFAULT 'PASS' NOT NULL,
+    inspector_name VARCHAR(100) DEFAULT 'Thủ kho xuất hàng' NOT NULL,
+    notes TEXT,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS disposal_records (
+    id SERIAL PRIMARY KEY,
+    record_code VARCHAR(50) UNIQUE NOT NULL,
+    disposal_date DATE NOT NULL,
+    batch_id UUID REFERENCES production_batches(batch_id) ON DELETE SET NULL,
+    batch_number VARCHAR(100) NOT NULL,
+    product_name VARCHAR(255) NOT NULL,
+    quantity NUMERIC(12, 2) NOT NULL,
+    unit VARCHAR(50) DEFAULT 'kg' NOT NULL,
+    reason TEXT NOT NULL,
+    disposal_method VARCHAR(100) DEFAULT 'Tiêu hủy nhiệt và chôn lấp hợp vệ sinh' NOT NULL,
+    disposal_location VARCHAR(255) DEFAULT 'Khu xử lý chất thải Nhà máy',
+    witness_council TEXT DEFAULT '1. Đơn vị thực hiện hủy hàng; 2. Phòng Quản lý Chất lượng (P.QLCL); 3. Phòng ban đề xuất hủy hàng',
+    status VARCHAR(50) DEFAULT 'DISPOSED' NOT NULL,
+    approved_by VARCHAR(100) DEFAULT 'Giám Đốc Nhà Máy',
+    notes TEXT,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 19. Đánh Giá Nhà Cung Cấp Nâng Cao (BM02-KHĐGNCC, BM03, BM03-TS, BM04)
+CREATE TABLE IF NOT EXISTS supplier_evaluation_plans (
+    id SERIAL PRIMARY KEY,
+    plan_code VARCHAR(50) UNIQUE NOT NULL,
+    year INT NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    department VARCHAR(100) DEFAULT 'Phòng Đảm Bảo Chất Lượng (QA)' NOT NULL,
+    scope TEXT,
+    approved_by VARCHAR(100),
+    approval_status VARCHAR(30) DEFAULT 'APPROVED' NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS supplier_evaluations (
+    id SERIAL PRIMARY KEY,
+    evaluation_code VARCHAR(50) UNIQUE NOT NULL,
+    plan_id INT REFERENCES supplier_evaluation_plans(id) ON DELETE SET NULL,
+    supplier_id UUID REFERENCES suppliers(supplier_id) ON DELETE CASCADE NOT NULL,
+    criteria_type VARCHAR(50) NOT NULL,
+    evaluation_date DATE NOT NULL,
+    evaluator_name VARCHAR(100) NOT NULL,
+    audit_type VARCHAR(50) DEFAULT 'PERIODIC' NOT NULL,
+    criteria_scores JSONB NOT NULL,
+    total_score NUMERIC(5, 2) NOT NULL,
+    grade VARCHAR(10) NOT NULL,
+    conclusion VARCHAR(50) NOT NULL,
+    corrective_actions TEXT,
+    approved_by VARCHAR(100),
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
