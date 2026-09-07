@@ -1,6 +1,12 @@
 from .user import User, Role, user_roles
 from .document import Document
-from .purchasing import Supplier, MaterialLot, IQCInspection
+from .purchasing import (
+    Supplier,
+    MaterialLot,
+    IQCInspection,
+    SupplierEvaluationPlan,
+    SupplierEvaluation,
+)
 from .haccp import (
     HACCPPlan,
     ProcessStep,
@@ -17,6 +23,8 @@ from .inventory import (
     WarehouseInventory,
     RetainedSample,
     OrderDispatch,
+    VehicleInspection,
+    DisposalRecord,
 )
 from .builder import (
     DynamicFormTemplate,
@@ -33,6 +41,8 @@ from .audit import (
     HealthDeclarationRecord,
 )
 from .dashboard import QualityObjective, ManagementReview
+from .emergency import EmergencyContact, EmergencyProcedure, EmergencyDrill
+from .organization import InterestedParty, ContextRisk
 
 __all__ = [
     "User",
@@ -42,6 +52,8 @@ __all__ = [
     "Supplier",
     "MaterialLot",
     "IQCInspection",
+    "SupplierEvaluationPlan",
+    "SupplierEvaluation",
     "HACCPPlan",
     "ProcessStep",
     "HazardAnalysis",
@@ -57,6 +69,8 @@ __all__ = [
     "WarehouseInventory",
     "RetainedSample",
     "OrderDispatch",
+    "VehicleInspection",
+    "DisposalRecord",
     "DynamicFormTemplate",
     "DynamicFormSubmission",
     "DynamicWorkflowTemplate",
@@ -70,4 +84,9 @@ __all__ = [
     "HealthDeclarationRecord",
     "QualityObjective",
     "ManagementReview",
+    "EmergencyContact",
+    "EmergencyProcedure",
+    "EmergencyDrill",
+    "InterestedParty",
+    "ContextRisk",
 ]

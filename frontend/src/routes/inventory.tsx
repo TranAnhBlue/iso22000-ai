@@ -37,12 +37,16 @@ import {
   FileSpreadsheet,
   QrCode,
   Flame,
+  Printer,
+  CheckSquare,
+  X,
 } from "lucide-react";
 import { useEffect, useState, useMemo } from "react";
 import api from "@/lib/api";
 import { QRCodeModal } from "@/components/QRCodeModal";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { printHtml } from "@/lib/print";
 
 export const Route = createFileRoute("/inventory")({
   head: () => ({
@@ -149,6 +153,43 @@ interface DispatchItem {
   notes?: string;
 }
 
+interface VehicleInspectionItem {
+  id: number;
+  inspection_code: string;
+  inspection_date: string;
+  order_dispatch_id?: string;
+  vehicle_plate: string;
+  driver_name: string;
+  driver_phone?: string;
+  transport_company?: string;
+  valid_registration_check: boolean;
+  cargo_integrity_check: boolean;
+  clean_dry_check: boolean;
+  no_odor_check: boolean;
+  pest_free_check: boolean;
+  inspection_result: "PASS" | "FAIL";
+  inspector_name: string;
+  notes?: string;
+}
+
+interface DisposalRecordItem {
+  id: number;
+  record_code: string;
+  disposal_date: string;
+  batch_id?: string;
+  batch_number: string;
+  product_name: string;
+  quantity: number;
+  unit: string;
+  reason: string;
+  disposal_method: string;
+  disposal_location?: string;
+  witness_council?: string;
+  status: "PENDING_APPROVAL" | "APPROVED" | "DISPOSED";
+  approved_by?: string;
+  notes?: string;
+}
+
 // ==========================================
 // SEED FALLBACK DATA
 // ==========================================
@@ -218,13 +259,22 @@ const SEED_SAMPLES: RetainedSampleItem[] = [
 ];
 
 export function InventoryPage() {
-  const [activeTab, setActiveTab] = useState<"stock" | "bins" | "samples" | "production">("stock");
+  const [activeTab, setActiveTab] = useState<"stock" | "bins" | "samples" | "production" | "vehicles" | "disposal">("stock");
   
   // Data states
   const [stocks, setStocks] = useState<StockItem[]>(SEED_STOCKS);
   const [samples, setSamples] = useState<RetainedSampleItem[]>(SEED_SAMPLES);
   const [batches, setBatches] = useState<BatchItem[]>([]);
   const [dispatches, setDispatches] = useState<DispatchItem[]>([]);
+  const [vehicleInspections, setVehicleInspections] = useState<VehicleInspectionItem[]>([]);
+  const [disposalRecords, setDisposalRecords] = useState<DisposalRecordItem[]>([]);
+  const [logisticsStats, setLogisticsStats] = useState({
+    total_vehicle_inspections: 0,
+    passed_inspections: 0,
+    failed_inspections: 0,
+    total_disposal_records: 0,
+    total_disposed_qty_kg: 0,
+  });
   const [loading, setLoading] = useState(false);
   const [kpi, setKpi] = useState({
     total_stock_items: 2,
@@ -241,6 +291,51 @@ export function InventoryPage() {
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("ALL");
   const [fefoFilter, setFefoFilter] = useState("ALL");
+
+  // Vehicle and Disposal Filters
+  const [vehicleSearch, setVehicleSearch] = useState("");
+  const [vehicleResultFilter, setVehicleResultFilter] = useState<"ALL" | "PASS" | "FAIL">("ALL");
+  const [disposalSearch, setDisposalSearch] = useState("");
+  const [disposalStatusFilter, setDisposalStatusFilter] = useState<"ALL" | "DISPOSED" | "PENDING_APPROVAL" | "APPROVED">("ALL");
+
+  // Vehicle Inspection Modal State
+  const [vehicleModalOpen, setVehicleModalOpen] = useState(false);
+  const [editingVehicle, setEditingVehicle] = useState<VehicleInspectionItem | null>(null);
+  const [vehicleForm, setVehicleForm] = useState<any>({
+    inspection_code: "",
+    inspection_date: new Date().toISOString().slice(0, 16),
+    vehicle_plate: "",
+    driver_name: "",
+    driver_phone: "",
+    transport_company: "Đội xe Công ty",
+    valid_registration_check: true,
+    cargo_integrity_check: true,
+    clean_dry_check: true,
+    no_odor_check: true,
+    pest_free_check: true,
+    inspection_result: "PASS",
+    inspector_name: "Thủ kho xuất hàng",
+    notes: "",
+  });
+
+  // Disposal Record Modal State
+  const [disposalModalOpen, setDisposalModalOpen] = useState(false);
+  const [editingDisposal, setEditingDisposal] = useState<DisposalRecordItem | null>(null);
+  const [disposalForm, setDisposalForm] = useState<any>({
+    record_code: "",
+    disposal_date: new Date().toISOString().split("T")[0],
+    batch_number: "",
+    product_name: "",
+    quantity: 10,
+    unit: "kg",
+    reason: "",
+    disposal_method: "Tiêu hủy nhiệt và chôn lấp hợp vệ sinh",
+    disposal_location: "Khu xử lý chất thải Nhà máy",
+    witness_council: "1. Đại diện BGĐ\n2. Ban QLCL & ATTP\n3. Thủ kho\n4. Kế toán",
+    status: "DISPOSED",
+    approved_by: "Giám Đốc Nhà Máy",
+    notes: "",
+  });
 
   // Modals
   const [stockModalOpen, setStockModalOpen] = useState(false);
@@ -303,12 +398,15 @@ export function InventoryPage() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [resStock, resSamples, resBatches, resDispatches, resKpi] = await Promise.allSettled([
+      const [resStock, resSamples, resBatches, resDispatches, resKpi, resVehicles, resDisposals, resLogistics] = await Promise.allSettled([
         api.get("/inventory/stock"),
         api.get("/inventory/samples"),
         api.get("/inventory/batches"),
         api.get("/inventory/dispatches"),
         api.get("/inventory/kpi-stats"),
+        api.get("/inventory/vehicle-inspections"),
+        api.get("/inventory/disposal-records"),
+        api.get("/inventory/logistics-stats"),
       ]);
 
       if (resStock.status === "fulfilled" && Array.isArray(resStock.value.data)) {
@@ -325,6 +423,15 @@ export function InventoryPage() {
       }
       if (resKpi.status === "fulfilled" && resKpi.value.data) {
         setKpi(resKpi.value.data);
+      }
+      if (resVehicles.status === "fulfilled" && Array.isArray(resVehicles.value.data)) {
+        setVehicleInspections(resVehicles.value.data);
+      }
+      if (resDisposals.status === "fulfilled" && Array.isArray(resDisposals.value.data)) {
+        setDisposalRecords(resDisposals.value.data);
+      }
+      if (resLogistics.status === "fulfilled" && resLogistics.value.data) {
+        setLogisticsStats(resLogistics.value.data);
       }
     } catch (e) {
       console.warn("Backend loading notice:", e);
@@ -388,6 +495,388 @@ export function InventoryPage() {
     }
   };
 
+  // Vehicle Inspection Handlers
+  const openNewVehicle = () => {
+    setEditingVehicle(null);
+    setVehicleForm({
+      inspection_code: `PTVC-2026-${String(vehicleInspections.length + 1).padStart(3, "0")}`,
+      inspection_date: new Date().toISOString().slice(0, 16),
+      vehicle_plate: "",
+      driver_name: "",
+      driver_phone: "",
+      transport_company: "Đội xe Công ty",
+      valid_registration_check: true,
+      cargo_integrity_check: true,
+      clean_dry_check: true,
+      no_odor_check: true,
+      pest_free_check: true,
+      inspection_result: "PASS",
+      inspector_name: "Thủ kho xuất hàng",
+      notes: "",
+    });
+    setVehicleModalOpen(true);
+  };
+
+  const openEditVehicle = (v: VehicleInspectionItem) => {
+    setEditingVehicle(v);
+    setVehicleForm({
+      inspection_code: v.inspection_code,
+      inspection_date: v.inspection_date ? v.inspection_date.slice(0, 16) : new Date().toISOString().slice(0, 16),
+      vehicle_plate: v.vehicle_plate,
+      driver_name: v.driver_name,
+      driver_phone: v.driver_phone || "",
+      transport_company: v.transport_company || "",
+      valid_registration_check: v.valid_registration_check ?? true,
+      cargo_integrity_check: v.cargo_integrity_check ?? true,
+      clean_dry_check: v.clean_dry_check ?? true,
+      no_odor_check: v.no_odor_check ?? true,
+      pest_free_check: v.pest_free_check ?? true,
+      inspection_result: v.inspection_result,
+      inspector_name: v.inspector_name,
+      notes: v.notes || "",
+    });
+    setVehicleModalOpen(true);
+  };
+
+  const handleSaveVehicle = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const payload = {
+        ...vehicleForm,
+      };
+      if (editingVehicle) {
+        await api.put(`/inventory/vehicle-inspections/${editingVehicle.id}`, payload);
+        toast.success(`Đã cập nhật phiếu kiểm tra xe [${payload.inspection_code}]`);
+      } else {
+        await api.post("/inventory/vehicle-inspections", payload);
+        toast.success(`Đã thêm phiếu kiểm tra xe [${payload.inspection_code}]`);
+      }
+      setVehicleModalOpen(false);
+      fetchData();
+    } catch (err: any) {
+      toast.error("Lỗi khi lưu phiếu kiểm tra xe: " + (err.response?.data?.detail || err.message));
+    }
+  };
+
+  const handleDeleteVehicle = async (id: number) => {
+    if (!confirm("Bạn có chắc chắn muốn xóa phiếu kiểm tra xe này?")) return;
+    try {
+      await api.delete(`/inventory/vehicle-inspections/${id}`);
+      toast.success("Đã xóa phiếu kiểm tra xe");
+      fetchData();
+    } catch (err: any) {
+      toast.error("Không thể xóa: " + (err.response?.data?.detail || err.message));
+    }
+  };
+
+  // Disposal Record Handlers
+  const openNewDisposal = () => {
+    setEditingDisposal(null);
+    setDisposalForm({
+      record_code: `BBHH-2026-${String(disposalRecords.length + 1).padStart(3, "0")}`,
+      disposal_date: new Date().toISOString().split("T")[0],
+      batch_number: "",
+      product_name: "",
+      quantity: 10,
+      unit: "kg",
+      reason: "",
+      disposal_method: "Tiêu hủy nhiệt và chôn lấp hợp vệ sinh",
+      disposal_location: "Khu xử lý chất thải Nhà máy",
+      witness_council: "1. Đại diện Ban Giám Đốc\n2. Ban QLCL & ATTP\n3. Thủ kho\n4. Kế toán",
+      status: "DISPOSED",
+      approved_by: "Giám Đốc Nhà Máy",
+      notes: "",
+    });
+    setDisposalModalOpen(true);
+  };
+
+  const openEditDisposal = (d: DisposalRecordItem) => {
+    setEditingDisposal(d);
+    setDisposalForm({
+      record_code: d.record_code,
+      disposal_date: d.disposal_date,
+      batch_number: d.batch_number,
+      product_name: d.product_name,
+      quantity: d.quantity,
+      unit: d.unit,
+      reason: d.reason,
+      disposal_method: d.disposal_method,
+      disposal_location: d.disposal_location || "",
+      witness_council: d.witness_council || "",
+      status: d.status,
+      approved_by: d.approved_by || "",
+      notes: d.notes || "",
+    });
+    setDisposalModalOpen(true);
+  };
+
+  const handleSaveDisposal = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const payload = {
+        ...disposalForm,
+        quantity: Number(disposalForm.quantity),
+      };
+      if (editingDisposal) {
+        await api.put(`/inventory/disposal-records/${editingDisposal.id}`, payload);
+        toast.success(`Đã cập nhật biên bản hủy hàng [${payload.record_code}]`);
+      } else {
+        await api.post("/inventory/disposal-records", payload);
+        toast.success(`Đã lập biên bản hủy hàng [${payload.record_code}]`);
+      }
+      setDisposalModalOpen(false);
+      fetchData();
+    } catch (err: any) {
+      toast.error("Lỗi khi lưu biên bản hủy hàng: " + (err.response?.data?.detail || err.message));
+    }
+  };
+
+  const handleDeleteDisposal = async (id: number) => {
+    if (!confirm("Bạn có chắc chắn muốn xóa biên bản hủy hàng này?")) return;
+    try {
+      await api.delete(`/inventory/disposal-records/${id}`);
+      toast.success("Đã xóa biên bản hủy hàng");
+      fetchData();
+    } catch (err: any) {
+      toast.error("Không thể xóa: " + (err.response?.data?.detail || err.message));
+    }
+  };
+
+  // IN BM01-PTVC (Kiểm tra phương tiện vận chuyển trước xếp hàng)
+  const handlePrintVehicleInspection = (v: VehicleInspectionItem) => {
+    const html = `
+      <div style="font-family: 'Times New Roman', serif; font-size: 12pt; line-height: 1.4; color: #111; max-width: 800px; margin: 0 auto; padding: 20px;">
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+          <tr>
+            <td style="width: 25%; text-align: center; border: 1px solid #333; padding: 6px;">
+              <strong style="font-size: 13pt; color: #047857;">WCERT FOOD</strong><br/>
+              <span style="font-size: 9pt;">HỆ THỐNG FSMS ISO 22000</span>
+            </td>
+            <td style="width: 50%; text-align: center; border: 1px solid #333; padding: 6px;">
+              <strong style="font-size: 13pt; text-transform: uppercase;">PHIẾU KIỂM TRA PHƯƠNG TIỆN VẬN CHUYỂN</strong><br/>
+              <span style="font-size: 10pt; font-weight: bold;">(Trước khi bốc xếp hàng hóa lên xe)</span>
+            </td>
+            <td style="width: 25%; border: 1px solid #333; padding: 6px; font-size: 9.5pt;">
+              Biểu mẫu: <strong>BM01-PTVC</strong><br/>
+              Lần ban hành: <strong>02</strong><br/>
+              Ngày áp dụng: <strong>01/01/2026</strong>
+            </td>
+          </tr>
+        </table>
+
+        <div style="text-align: center; margin-bottom: 16px;">
+          <h2 style="margin: 0; font-size: 15pt; text-transform: uppercase;">
+            BIÊN BẢN KIỂM SOÁT PHƯƠNG TIỆN VẬN CHUYỂN
+          </h2>
+          <div style="font-style: italic; margin-top: 3px;">Mã phiếu: <strong>${v.inspection_code}</strong></div>
+        </div>
+
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 11pt;">
+          <tr>
+            <td style="padding: 4px 0; width: 50%;"><strong>1. Biển kiểm soát xe:</strong> ${v.vehicle_plate}</td>
+            <td style="padding: 4px 0; width: 50%;"><strong>2. Thời gian kiểm tra:</strong> ${v.inspection_date}</td>
+          </tr>
+          <tr>
+            <td style="padding: 4px 0;"><strong>3. Họ tên lái xe:</strong> ${v.driver_name}</td>
+            <td style="padding: 4px 0;"><strong>4. Điện thoại liên lạc:</strong> ${v.driver_phone || "--"}</td>
+          </tr>
+          <tr>
+            <td style="padding: 4px 0;" colSpan="2"><strong>5. Đơn vị vận tải:</strong> ${v.transport_company || "Đội xe Công ty"}</td>
+          </tr>
+        </table>
+
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 11pt;" border="1">
+          <thead>
+            <tr style="background-color: #f1f5f9; text-align: center;">
+              <th style="padding: 6px; width: 8%;">STT</th>
+              <th style="padding: 6px; width: 42%;">Hạng mục kiểm tra</th>
+              <th style="padding: 6px; width: 34%;">Tiêu chuẩn kỹ thuật quy định</th>
+              <th style="padding: 6px; width: 16%;">Kết quả</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="text-align: center; padding: 6px;">1</td>
+              <td style="padding: 6px;"><strong>Niên hạn / Giấy phép đăng kiểm xe</strong></td>
+              <td style="padding: 6px;">Xe còn niên hạn sử dụng, được cơ quan đăng kiểm cấp phép lưu hành hợp lệ</td>
+              <td style="text-align: center; font-weight: bold; color: ${v.valid_registration_check ? "#047857" : "#b91c1c"};">
+                ${v.valid_registration_check ? "ĐẠT" : "K. ĐẠT"}
+              </td>
+            </tr>
+            <tr>
+              <td style="text-align: center; padding: 6px;">2</td>
+              <td style="padding: 6px;"><strong>Kết cấu thùng chứa hàng</strong></td>
+              <td style="padding: 6px;">Kết cấu bền chắc, kín, không thủng rách, không có góc cạnh sắc nhọn</td>
+              <td style="text-align: center; font-weight: bold; color: ${v.cargo_integrity_check ? "#047857" : "#b91c1c"};">
+                ${v.cargo_integrity_check ? "ĐẠT" : "K. ĐẠT"}
+              </td>
+            </tr>
+            <tr>
+              <td style="text-align: center; padding: 6px;">3</td>
+              <td style="padding: 6px;"><strong>Vệ sinh thùng xe</strong></td>
+              <td style="padding: 6px;">Sạch sẽ, khô ráo, không han gỉ, phù hợp với chủng loại hàng hóa</td>
+              <td style="text-align: center; font-weight: bold; color: ${v.clean_dry_check ? "#047857" : "#b91c1c"};">
+                ${v.clean_dry_check ? "ĐẠT" : "K. ĐẠT"}
+              </td>
+            </tr>
+            <tr>
+              <td style="text-align: center; padding: 6px;">4</td>
+              <td style="padding: 6px;"><strong>Kiểm soát mùi lạ</strong></td>
+              <td style="padding: 6px;">Không mùi lạ (hóa chất độc hại, xăng dầu, phân bón, thuốc BVTV...)</td>
+              <td style="text-align: center; font-weight: bold; color: ${v.no_odor_check ? "#047857" : "#b91c1c"};">
+                ${v.no_odor_check ? "ĐẠT" : "K. ĐẠT"}
+              </td>
+            </tr>
+            <tr>
+              <td style="text-align: center; padding: 6px;">5</td>
+              <td style="padding: 6px;"><strong>Côn trùng & Động vật gây hại</strong></td>
+              <td style="padding: 6px;">Không ẩm mốc, không có côn trùng, chuột bọ hoặc động vật gây hại</td>
+              <td style="text-align: center; font-weight: bold; color: ${v.pest_free_check ? "#047857" : "#b91c1c"};">
+                ${v.pest_free_check ? "ĐẠT" : "K. ĐẠT"}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div style="margin-bottom: 20px; padding: 10px; border: 1px solid #333; background-color: ${v.inspection_result === "PASS" ? "#f0fdf4" : "#fef2f2"};">
+          <strong>KẾT LUẬN KIỂM TRA:</strong> 
+          <span style="font-size: 13pt; font-weight: bold; color: ${v.inspection_result === "PASS" ? "#047857" : "#b91c1c"}; margin-left: 8px;">
+            ${v.inspection_result === "PASS" ? "ĐỦ ĐIỀU KIỆN XẾP HÀNG (PASS)" : "KHÔNG ĐỦ ĐIỀU KIỆN XẾP HÀNG (FAIL)"}
+          </span>
+          ${v.notes ? `<div style="margin-top: 4px; font-size: 10.5pt; font-style: italic;">Ghi chú KCS: ${v.notes}</div>` : ""}
+        </div>
+
+        <table style="width: 100%; border-collapse: collapse; margin-top: 35px; text-align: center;">
+          <tr>
+            <td style="width: 50%; vertical-align: top;">
+              <strong>LÁI XE VẬN CHUYỂN</strong><br/>
+              <span style="font-size: 9.5pt; font-style: italic;">(Ký & ghi rõ họ tên)</span>
+              <div style="height: 60px;"></div>
+              <strong>${v.driver_name}</strong>
+            </td>
+            <td style="width: 50%; vertical-align: top;">
+              <strong>KCS / THỦ KHO KIỂM TRA</strong><br/>
+              <span style="font-size: 9.5pt; font-style: italic;">(Ký & ghi rõ họ tên)</span>
+              <div style="height: 60px;"></div>
+              <strong>${v.inspector_name}</strong>
+            </td>
+          </tr>
+        </table>
+      </div>
+    `;
+    printHtml(html);
+  };
+
+  // IN BM02-HỦY HÀNG (Biên bản tiêu hủy thực phẩm / hàng không phù hợp)
+  const handlePrintDisposalRecord = (d: DisposalRecordItem) => {
+    const html = `
+      <div style="font-family: 'Times New Roman', serif; font-size: 12pt; line-height: 1.45; color: #111; max-width: 800px; margin: 0 auto; padding: 20px;">
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+          <tr>
+            <td style="width: 25%; text-align: center; border: 1px solid #333; padding: 6px;">
+              <strong style="font-size: 13pt; color: #047857;">WCERT FOOD</strong><br/>
+              <span style="font-size: 9pt;">HỆ THỐNG FSMS ISO 22000</span>
+            </td>
+            <td style="width: 50%; text-align: center; border: 1px solid #333; padding: 6px;">
+              <strong style="font-size: 13pt; text-transform: uppercase;">BIÊN BẢN TIÊU HỦY SẢN PHẨM KHÔNG PHÙ HỢP</strong><br/>
+              <span style="font-size: 10pt; font-weight: bold;">(Căn cứ Điều khoản 8.9.3 & 8.9.4 Tiêu chuẩn ISO 22000:2018)</span>
+            </td>
+            <td style="width: 25%; border: 1px solid #333; padding: 6px; font-size: 9.5pt;">
+              Biểu mẫu: <strong>BM02-HỦY HÀNG</strong><br/>
+              Lần ban hành: <strong>02</strong><br/>
+              Ngày áp dụng: <strong>01/01/2026</strong>
+            </td>
+          </tr>
+        </table>
+
+        <div style="text-align: center; margin-bottom: 18px;">
+          <h2 style="margin: 0; font-size: 15pt; text-transform: uppercase;">
+            BIÊN BẢN TIÊU HỦY SẢN PHẨM / NGUYÊN LIỆU LỖI
+          </h2>
+          <div style="font-style: italic; margin-top: 3px;">Mã số biên bản: <strong>${d.record_code}</strong></div>
+        </div>
+
+        <div style="margin-bottom: 14px;">
+          Hôm nay, ngày <strong>${d.disposal_date}</strong>, tại <strong>${d.disposal_location || "Khu xử lý chất thải Nhà máy"}</strong>, Hội đồng tiến hành tiêu hủy lô hàng không phù hợp với các nội dung chi tiết như sau:
+        </div>
+
+        <div style="margin-bottom: 14px;">
+          <strong>1. Thành phần tham gia chứng kiến tiêu hủy (Hội đồng 3 bên):</strong>
+          <div style="border: 1px solid #777; padding: 8px 12px; margin-top: 4px; white-space: pre-line; background-color: #fafafa; font-size: 10pt;">
+            ${d.witness_council || "1. Đại diện Đơn vị thực hiện hủy hàng: Ông/Bà ................. - Phòng/Ban: ................. - Chức vụ: .................\n2. Đại diện Phòng Quản lý Chất lượng (P.QLCL): Ông/Bà ................. - Phòng/Ban: QLCL - Chức vụ: .................\n3. Đại diện Phòng ban đề xuất hủy hàng: Ông/Bà ................. - Phòng/Ban: ................. - Chức vụ: ................."}
+          </div>
+        </div>
+
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 12px; font-size: 11pt;" border="1">
+          <thead>
+            <tr style="background-color: #f1f5f9; text-align: center;">
+              <th style="padding: 6px; width: 6%;">STT</th>
+              <th style="padding: 6px; width: 28%;">Danh mục / Tên mặt hàng</th>
+              <th style="padding: 6px; width: 8%;">ĐVT</th>
+              <th style="padding: 6px; width: 14%;">Số lượng</th>
+              <th style="padding: 6px; width: 24%;">Phương pháp tiêu hủy (*)</th>
+              <th style="padding: 6px; width: 20%;">Đánh giá kết quả</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="text-align: center; padding: 8px;">1</td>
+              <td style="padding: 8px;">
+                <strong>${d.product_name}</strong><br/>
+                <span style="font-size: 9pt; color: #555;">Mã lô: ${d.batch_number}</span>
+              </td>
+              <td style="text-align: center; padding: 8px;">${d.unit}</td>
+              <td style="text-align: center; padding: 8px; font-weight: bold; color: #b91c1c;">${d.quantity}</td>
+              <td style="padding: 8px; font-size: 10pt;">${d.disposal_method}</td>
+              <td style="text-align: center; padding: 8px; font-weight: bold; color: #047857;">
+                ${d.status === "DISPOSED" ? "ĐÃ TIÊU HỦY HOÀN TOÀN" : "CHỜ TIÊU HỦY"}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div style="margin-bottom: 12px; font-size: 9.5pt; font-style: italic; color: #444;">
+          (*) <strong>Ghi chú quy trình FSMS:</strong> Các mục Lý do hủy và Phương pháp hủy là nội dung mở rộng trên phần mềm quản trị ISO 22000 (biểu mẫu gốc BM02 ghi nhận chung trong cột Ghi chú tự do).
+        </div>
+
+        <div style="margin-bottom: 14px;">
+          <strong>2. Lý do tiêu hủy:</strong>
+          <div style="border: 1px solid #777; padding: 8px 12px; margin-top: 4px; background-color: #fafafa;">
+            ${d.reason}
+          </div>
+        </div>
+
+        <div style="margin-bottom: 20px; padding: 10px; border: 1px solid #047857; background-color: #f0fdf4;">
+          <strong>3. CAM KẾT HỘI ĐỒNG:</strong> Toàn bộ số lượng sản phẩm không phù hợp nêu trên đã được tiêu hủy triệt để, không còn khả năng tái sử dụng, không đưa vào chuỗi thực phẩm và không gây ô nhiễm môi trường.
+        </div>
+
+        <table style="width: 100%; border-collapse: collapse; margin-top: 30px; text-align: center;">
+          <tr>
+            <td style="width: 33.3%; vertical-align: top;">
+              <strong style="text-transform: uppercase;">ĐƠN VỊ THỰC HIỆN HỦY HÀNG</strong><br/>
+              <span style="font-size: 9pt; font-style: italic;">(Ký & ghi rõ họ tên)</span>
+              <div style="height: 60px;"></div>
+              <span style="font-size: 9pt; color: #555; font-style: italic;">(Ký xác nhận hoàn tất)</span>
+            </td>
+            <td style="width: 33.3%; vertical-align: top;">
+              <strong style="text-transform: uppercase;">PHÒNG QUẢN LÝ CHẤT LƯỢNG (P.QLCL)</strong><br/>
+              <span style="font-size: 9pt; font-style: italic;">(Ký & ghi rõ họ tên)</span>
+              <div style="height: 60px;"></div>
+              <strong>${d.approved_by || "Phòng QLCL Thẩm định"}</strong>
+            </td>
+            <td style="width: 33.3%; vertical-align: top;">
+              <strong style="text-transform: uppercase;">PHÒNG BAN ĐỀ XUẤT HỦY HÀNG</strong><br/>
+              <span style="font-size: 9pt; font-style: italic;">(Ký & ghi rõ họ tên)</span>
+              <div style="height: 60px;"></div>
+              <span style="font-size: 9pt; color: #555; font-style: italic;">(Ký xác nhận đề xuất)</span>
+            </td>
+          </tr>
+        </table>
+      </div>
+    `;
+    printHtml(html);
+  };
+
   // Filtered stocks
   const filteredStocks = useMemo(() => {
     return stocks.filter((s) => {
@@ -409,6 +898,34 @@ export function InventoryPage() {
       return matchSearch && matchCat && matchFefo;
     });
   }, [stocks, search, categoryFilter, fefoFilter]);
+
+  // Filtered vehicles
+  const filteredVehicles = useMemo(() => {
+    return vehicleInspections.filter((v) => {
+      const matchSearch =
+        vehicleSearch === "" ||
+        v.inspection_code.toLowerCase().includes(vehicleSearch.toLowerCase()) ||
+        v.vehicle_plate.toLowerCase().includes(vehicleSearch.toLowerCase()) ||
+        v.driver_name.toLowerCase().includes(vehicleSearch.toLowerCase()) ||
+        (v.transport_company || "").toLowerCase().includes(vehicleSearch.toLowerCase());
+      const matchResult = vehicleResultFilter === "ALL" || v.inspection_result === vehicleResultFilter;
+      return matchSearch && matchResult;
+    });
+  }, [vehicleInspections, vehicleSearch, vehicleResultFilter]);
+
+  // Filtered disposals
+  const filteredDisposals = useMemo(() => {
+    return disposalRecords.filter((d) => {
+      const matchSearch =
+        disposalSearch === "" ||
+        d.record_code.toLowerCase().includes(disposalSearch.toLowerCase()) ||
+        d.batch_number.toLowerCase().includes(disposalSearch.toLowerCase()) ||
+        d.product_name.toLowerCase().includes(disposalSearch.toLowerCase()) ||
+        d.reason.toLowerCase().includes(disposalSearch.toLowerCase());
+      const matchStatus = disposalStatusFilter === "ALL" || d.status === disposalStatusFilter;
+      return matchSearch && matchStatus;
+    });
+  }, [disposalRecords, disposalSearch, disposalStatusFilter]);
 
   return (
     <div className="space-y-6">
@@ -579,6 +1096,30 @@ export function InventoryPage() {
         >
           <Truck className="h-4 w-4" />
           4. Mẻ Sản Xuất & Xuất Hàng ({batches.length + dispatches.length})
+        </button>
+
+        <button
+          onClick={() => setActiveTab("vehicles")}
+          className={`flex items-center gap-2 px-4 py-2.5 text-xs sm:text-sm font-semibold border-b-2 transition-all whitespace-nowrap ${
+            activeTab === "vehicles"
+              ? "border-primary text-primary"
+              : "border-transparent text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <CheckSquare className="h-4 w-4" />
+          5. Kiểm Xe Xuất Hàng (BM01-PTVC) ({vehicleInspections.length})
+        </button>
+
+        <button
+          onClick={() => setActiveTab("disposal")}
+          className={`flex items-center gap-2 px-4 py-2.5 text-xs sm:text-sm font-semibold border-b-2 transition-all whitespace-nowrap ${
+            activeTab === "disposal"
+              ? "border-primary text-primary"
+              : "border-transparent text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <Trash2 className="h-4 w-4" />
+          6. Hủy Hàng Không Phù Hợp (BM02) ({disposalRecords.length})
         </button>
       </div>
 
@@ -1184,6 +1725,340 @@ export function InventoryPage() {
       )}
 
       {/* ==========================================
+          TAB 5: KIỂM XE XUẤT HÀNG (BM01-PTVC)
+      ========================================== */}
+      {activeTab === "vehicles" && (
+        <div className="space-y-4">
+          {/* SEARCH & FILTERS */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-card p-3 rounded-xl border">
+            <div className="flex flex-1 flex-col sm:flex-row items-stretch sm:items-center gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Tìm theo biển số xe, tên tài xế, mã phiếu, nhà xe..."
+                  value={vehicleSearch}
+                  onChange={(e) => setVehicleSearch(e.target.value)}
+                  className="pl-9 text-xs sm:text-sm"
+                />
+              </div>
+
+              <select
+                value={vehicleResultFilter}
+                onChange={(e) => setVehicleResultFilter(e.target.value as any)}
+                className="h-9 rounded-md border bg-background px-3 text-xs sm:text-sm"
+              >
+                <option value="ALL">Tất cả kết quả</option>
+                <option value="PASS">ĐẠT (PASS - Cho phép bốc hàng)</option>
+                <option value="FAIL">TỪ CHỐI (FAIL - Không đạt chuẩn)</option>
+              </select>
+            </div>
+
+            <Button onClick={openNewVehicle} size="sm" className="gap-2 shrink-0 bg-primary hover:bg-primary/90 font-semibold">
+              <Plus className="h-4 w-4" />
+              Lập Phiếu Kiểm Xe (BM01-PTVC)
+            </Button>
+          </div>
+
+          {/* TABLE OF VEHICLE INSPECTIONS */}
+          <div className="rounded-xl border bg-card overflow-hidden shadow-sm">
+            <div className="p-4 border-b bg-muted/20 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+              <div>
+                <h3 className="font-bold text-sm sm:text-base flex items-center gap-2">
+                  <Truck className="h-4 w-4 text-primary" />
+                  Sổ Nhật Ký Kiểm Tra Phương Tiện Vận Chuyển Trước Bốc Hàng
+                </h3>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Biểu mẫu BM01-PTVC (Điều khoản 8.2 ISO 22000) — Đánh giá 5 tiêu chí: Đăng kiểm hợp lệ, thùng xe kín bền, sạch khô, không mùi lạ, không côn trùng hại.
+                </p>
+              </div>
+              <div className="flex items-center gap-2 text-xs">
+                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-1 font-semibold text-emerald-700">
+                  <CheckCircle2 className="h-3.5 w-3.5" /> Đạt: {vehicleInspections.filter(v => v.inspection_result === "PASS").length}
+                </span>
+                <span className="inline-flex items-center gap-1 rounded-full bg-rose-500/10 px-2.5 py-1 font-semibold text-rose-700">
+                  <AlertTriangle className="h-3.5 w-3.5" /> Từ chối: {vehicleInspections.filter(v => v.inspection_result === "FAIL").length}
+                </span>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs sm:text-sm text-left">
+                <thead className="bg-muted/40 text-muted-foreground uppercase text-[11px] font-bold border-b">
+                  <tr>
+                    <th className="py-2.5 px-3">Mã Phiếu & Ngày Giờ</th>
+                    <th className="py-2.5 px-3">Biển Số & Đơn Vị</th>
+                    <th className="py-2.5 px-3">Tài Xế</th>
+                    <th className="py-2.5 px-3 text-center">5 Tiêu Chuẩn Kỹ Thuật (BM01-PTVC)</th>
+                    <th className="py-2.5 px-3 text-center">Kết Quả</th>
+                    <th className="py-2.5 px-3">Người Kiểm Tra</th>
+                    <th className="py-2.5 px-3 text-right">Thao Tác</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {filteredVehicles.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="py-8 text-center text-muted-foreground">
+                        Chưa có phiếu kiểm tra phương tiện vận chuyển nào phù hợp.
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredVehicles.map((v) => (
+                      <tr key={v.id} className="hover:bg-muted/30 transition-colors">
+                        <td className="py-3 px-3">
+                          <div className="font-mono font-bold text-primary">{v.inspection_code}</div>
+                          <div className="text-[11px] text-muted-foreground">
+                            {new Date(v.inspection_date).toLocaleString("vi-VN")}
+                          </div>
+                        </td>
+                        <td className="py-3 px-3">
+                          <div className="font-bold text-foreground">{v.vehicle_plate}</div>
+                          <div className="text-[11px] text-muted-foreground">
+                            {v.transport_company || "Đội xe Công ty"}
+                          </div>
+                        </td>
+                        <td className="py-3 px-3">
+                          <div className="font-medium text-foreground">{v.driver_name}</div>
+                          <div className="text-[11px] text-muted-foreground">
+                            {v.driver_phone || "--"}
+                          </div>
+                        </td>
+                        <td className="py-3 px-3 text-center">
+                          <div className="inline-flex items-center gap-1.5 flex-wrap justify-center max-w-md">
+                            <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${v.valid_registration_check ? "bg-emerald-100 text-emerald-800" : "bg-rose-100 text-rose-800"}`}>
+                              {v.valid_registration_check ? "✓ Đăng kiểm còn hạn" : "✗ Hết đăng kiểm"}
+                            </span>
+                            <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${v.cargo_integrity_check ? "bg-emerald-100 text-emerald-800" : "bg-rose-100 text-rose-800"}`}>
+                              {v.cargo_integrity_check ? "✓ Thùng kín, bền" : "✗ Thủng/Rách"}
+                            </span>
+                            <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${v.clean_dry_check ? "bg-emerald-100 text-emerald-800" : "bg-rose-100 text-rose-800"}`}>
+                              {v.clean_dry_check ? "✓ Sạch sẽ, khô ráo" : "✗ Bẩn/Ẩm"}
+                            </span>
+                            <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${v.no_odor_check ? "bg-emerald-100 text-emerald-800" : "bg-rose-100 text-rose-800"}`}>
+                              {v.no_odor_check ? "✓ Không mùi lạ" : "✗ Có mùi lạ"}
+                            </span>
+                            <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${v.pest_free_check ? "bg-emerald-100 text-emerald-800" : "bg-rose-100 text-rose-800"}`}>
+                              {v.pest_free_check ? "✓ Không sâu hại/mốc" : "✗ Côn trùng/Mốc"}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="py-3 px-3 text-center">
+                          {v.inspection_result === "PASS" ? (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-bold text-emerald-700 border border-emerald-500/20">
+                              <CheckCircle2 className="h-3 w-3" /> ĐẠT (CHO PHÉP)
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-rose-500/10 px-2.5 py-0.5 text-xs font-bold text-rose-700 border border-rose-500/20">
+                              <AlertTriangle className="h-3 w-3" /> TỪ CHỐI
+                            </span>
+                          )}
+                        </td>
+                        <td className="py-3 px-3">
+                          <div className="font-medium text-foreground">{v.inspector_name}</div>
+                          {v.notes && <div className="text-[11px] text-muted-foreground line-clamp-1 italic">{v.notes}</div>}
+                        </td>
+                        <td className="py-3 px-3 text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handlePrintVehicleInspection(v)}
+                              title="In Phiếu Kiểm Tra PTVC (BM01-PTVC)"
+                              className="h-8 w-8 p-0 text-slate-700 hover:text-primary hover:border-primary"
+                            >
+                              <Printer className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => openEditVehicle(v)}
+                              title="Chỉnh sửa phiếu"
+                              className="h-8 w-8 p-0"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDeleteVehicle(v.id)}
+                              title="Xóa phiếu"
+                              className="h-8 w-8 p-0 text-rose-600 hover:text-rose-700 hover:bg-rose-50"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ==========================================
+          TAB 6: HỦY HÀNG KHÔNG PHÙ HỢP (BM02)
+      ========================================== */}
+      {activeTab === "disposal" && (
+        <div className="space-y-4">
+          {/* SEARCH & FILTERS */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-card p-3 rounded-xl border">
+            <div className="flex flex-1 flex-col sm:flex-row items-stretch sm:items-center gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Tìm theo số biên bản, mã lô, tên sản phẩm, lý do hủy..."
+                  value={disposalSearch}
+                  onChange={(e) => setDisposalSearch(e.target.value)}
+                  className="pl-9 text-xs sm:text-sm"
+                />
+              </div>
+
+              <select
+                value={disposalStatusFilter}
+                onChange={(e) => setDisposalStatusFilter(e.target.value as any)}
+                className="h-9 rounded-md border bg-background px-3 text-xs sm:text-sm"
+              >
+                <option value="ALL">Tất cả trạng thái</option>
+                <option value="DISPOSED">ĐÃ TIÊU HỦY (Hoàn tất)</option>
+                <option value="APPROVED">ĐÃ PHÊ DUYỆT (Chờ hủy)</option>
+                <option value="PENDING_APPROVAL">CHỜ PHÊ DUYỆT</option>
+              </select>
+            </div>
+
+            <Button onClick={openNewDisposal} size="sm" className="gap-2 shrink-0 bg-rose-600 hover:bg-rose-700 text-white font-semibold">
+              <Plus className="h-4 w-4" />
+              Lập Biên Bản Hủy Hàng (BM02)
+            </Button>
+          </div>
+
+          {/* TABLE OF DISPOSAL RECORDS */}
+          <div className="rounded-xl border bg-card overflow-hidden shadow-sm">
+            <div className="p-4 border-b bg-muted/20 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+              <div>
+                <h3 className="font-bold text-sm sm:text-base flex items-center gap-2">
+                  <Trash2 className="h-4 w-4 text-rose-600" />
+                  Sổ Theo Dõi Tiêu Hủy Sản Phẩm / Thực Phẩm Không Phù Hợp
+                </h3>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Biểu mẫu BM02-HỦY HÀNG (Điều khoản 8.9.4 & 8.9.5 ISO 22000) — Hội đồng 3 bên chứng kiến, giám sát và ký biên bản (Đơn vị thực hiện hủy, P.QLCL, Phòng ban đề xuất).
+                </p>
+              </div>
+              <div className="flex items-center gap-2 text-xs">
+                <span className="inline-flex items-center gap-1 rounded-full bg-rose-500/10 px-2.5 py-1 font-semibold text-rose-700">
+                  <Flame className="h-3.5 w-3.5" /> Tổng khối lượng đã hủy: {disposalRecords.reduce((sum, r) => sum + (r.unit === 'kg' ? r.quantity : 0), 0).toLocaleString()} kg
+                </span>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs sm:text-sm text-left">
+                <thead className="bg-muted/40 text-muted-foreground uppercase text-[11px] font-bold border-b">
+                  <tr>
+                    <th className="py-2.5 px-3">Số Biên Bản & Ngày</th>
+                    <th className="py-2.5 px-3">Mã Lô & Sản Phẩm</th>
+                    <th className="py-2.5 px-3 text-right">Khối Lượng Hủy</th>
+                    <th className="py-2.5 px-3">Lý Do Tiêu Hủy</th>
+                    <th className="py-2.5 px-3">Phương Pháp & Địa Điểm</th>
+                    <th className="py-2.5 px-3 text-center">Trạng Thái</th>
+                    <th className="py-2.5 px-3">Phê Duyệt</th>
+                    <th className="py-2.5 px-3 text-right">Thao Tác</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {filteredDisposals.length === 0 ? (
+                    <tr>
+                      <td colSpan={8} className="py-8 text-center text-muted-foreground">
+                        Chưa có biên bản hủy hàng nào phù hợp.
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredDisposals.map((d) => (
+                      <tr key={d.id} className="hover:bg-muted/30 transition-colors">
+                        <td className="py-3 px-3">
+                          <div className="font-mono font-bold text-rose-600">{d.record_code}</div>
+                          <div className="text-[11px] text-muted-foreground">{d.disposal_date}</div>
+                        </td>
+                        <td className="py-3 px-3">
+                          <div className="font-bold text-foreground">{d.product_name}</div>
+                          <div className="text-[11px] font-mono text-muted-foreground">Lô: {d.batch_number}</div>
+                        </td>
+                        <td className="py-3 px-3 text-right">
+                          <div className="font-mono font-bold text-foreground text-sm">
+                            {d.quantity.toLocaleString()} {d.unit}
+                          </div>
+                        </td>
+                        <td className="py-3 px-3 max-w-xs">
+                          <div className="text-xs text-rose-700 font-medium line-clamp-2">{d.reason}</div>
+                        </td>
+                        <td className="py-3 px-3 max-w-xs">
+                          <div className="text-xs font-semibold text-foreground line-clamp-1">{d.disposal_method}</div>
+                          <div className="text-[11px] text-muted-foreground line-clamp-1">{d.disposal_location}</div>
+                        </td>
+                        <td className="py-3 px-3 text-center">
+                          {d.status === "DISPOSED" ? (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-bold text-emerald-700 border border-emerald-500/20">
+                              <CheckCircle2 className="h-3 w-3" /> ĐÃ HỦY
+                            </span>
+                          ) : d.status === "APPROVED" ? (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-blue-500/10 px-2.5 py-0.5 text-xs font-bold text-blue-700 border border-blue-500/20">
+                              <CheckSquare className="h-3 w-3" /> ĐÃ DUYỆT
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2.5 py-0.5 text-xs font-bold text-amber-700 border border-amber-500/20">
+                              <Clock className="h-3 w-3" /> CHỜ DUYỆT
+                            </span>
+                          )}
+                        </td>
+                        <td className="py-3 px-3">
+                          <div className="font-medium text-foreground">{d.approved_by || "Chưa ký"}</div>
+                          {d.witness_council && (
+                            <div className="text-[11px] text-muted-foreground line-clamp-1 italic">Hội đồng 3 bên</div>
+                          )}
+                        </td>
+                        <td className="py-3 px-3 text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handlePrintDisposalRecord(d)}
+                              title="In Biên Bản Hủy Hàng (BM02)"
+                              className="h-8 w-8 p-0 text-slate-700 hover:text-rose-600 hover:border-rose-600"
+                            >
+                              <Printer className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => openEditDisposal(d)}
+                              title="Chỉnh sửa biên bản"
+                              className="h-8 w-8 p-0"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDeleteDisposal(d.id)}
+                              title="Xóa biên bản"
+                              className="h-8 w-8 p-0 text-rose-600 hover:text-rose-700 hover:bg-rose-50"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ==========================================
           MODAL: THÊM / SỬA TỒN KHO FEFO (DẠNG DỌC CHUẨN)
       ========================================== */}
       <Dialog open={stockModalOpen} onOpenChange={setStockModalOpen}>
@@ -1503,6 +2378,446 @@ export function InventoryPage() {
               </Button>
               <Button type="submit" className="w-full sm:w-auto font-semibold">
                 Lưu Mẫu Lưu
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* ==========================================
+          MODAL: KIỂM TRA PHƯƠNG TIỆN VẬN CHUYỂN (BM01-PTVC)
+      ========================================== */}
+      <Dialog open={vehicleModalOpen} onOpenChange={setVehicleModalOpen}>
+        <DialogContent className="max-w-lg sm:max-w-2xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
+          <DialogHeader>
+            <DialogTitle className="text-lg sm:text-xl font-bold flex items-center gap-2">
+              <Truck className="h-5 w-5 text-primary" />
+              {editingVehicle ? "Chỉnh Sửa Phiếu Kiểm Tra Xe" : "Lập Phiếu Kiểm Tra Phương Tiện Vận Chuyển (BM01-PTVC)"}
+            </DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground">
+              Đánh giá 5 tiêu chí kỹ thuật chuẩn ISO 22000 / BM01-PTVC gốc (niên hạn/đăng kiểm, thùng kín bền, sạch khô, không mùi lạ, không sâu hại) trước khi bốc hàng.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleSaveVehicle} className="space-y-4 mt-2">
+            {/* NHÓM 1: THÔNG TIN PHƯƠNG TIỆN & TÀI XẾ */}
+            <div className="rounded-lg border bg-muted/20 p-3.5 space-y-3">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-primary flex items-center gap-1.5">
+                <Truck className="h-3.5 w-3.5" /> 1. Định Danh Phương Tiện & Tài Xế
+              </h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold">Mã phiếu kiểm tra *</label>
+                  <Input
+                    required
+                    value={vehicleForm.inspection_code}
+                    onChange={(e) => setVehicleForm({ ...vehicleForm, inspection_code: e.target.value })}
+                    className="text-xs sm:text-sm font-mono font-bold"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold">Ngày giờ kiểm tra *</label>
+                  <Input
+                    type="datetime-local"
+                    required
+                    value={vehicleForm.inspection_date}
+                    onChange={(e) => setVehicleForm({ ...vehicleForm, inspection_date: e.target.value })}
+                    className="text-xs sm:text-sm"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold">Biển số xe *</label>
+                  <Input
+                    required
+                    value={vehicleForm.vehicle_plate}
+                    onChange={(e) => setVehicleForm({ ...vehicleForm, vehicle_plate: e.target.value })}
+                    placeholder="VD: 67C-184.29"
+                    className="text-xs sm:text-sm font-bold font-mono"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold">Đơn vị vận chuyển</label>
+                  <Input
+                    value={vehicleForm.transport_company}
+                    onChange={(e) => setVehicleForm({ ...vehicleForm, transport_company: e.target.value })}
+                    placeholder="VD: Đội xe Công ty / Vận tải Mekong"
+                    className="text-xs sm:text-sm"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold">Họ tên tài xế *</label>
+                  <Input
+                    required
+                    value={vehicleForm.driver_name}
+                    onChange={(e) => setVehicleForm({ ...vehicleForm, driver_name: e.target.value })}
+                    placeholder="VD: Nguyễn Văn Tài"
+                    className="text-xs sm:text-sm"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold">Số điện thoại tài xế</label>
+                  <Input
+                    value={vehicleForm.driver_phone}
+                    onChange={(e) => setVehicleForm({ ...vehicleForm, driver_phone: e.target.value })}
+                    placeholder="VD: 0918 234 567"
+                    className="text-xs sm:text-sm font-mono"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* NHÓM 2: 5 TIÊU CHUẨN KỸ THUẬT BM01-PTVC */}
+            <div className="rounded-lg border bg-muted/20 p-3.5 space-y-3">
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-primary flex items-center gap-1.5">
+                  <CheckSquare className="h-3.5 w-3.5" /> 2. Đánh Giá 5 Tiêu Chuẩn Kỹ Thuật (Đạt / Không đạt)
+                </h4>
+                <span className="text-[11px] text-muted-foreground italic">Căn cứ biểu mẫu BM01-PTVC</span>
+              </div>
+
+              <div className="space-y-2">
+                <label className="flex items-center gap-2.5 p-2.5 rounded-lg border bg-background hover:bg-muted/30 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={vehicleForm.valid_registration_check}
+                    onChange={(e) => {
+                      const val = e.target.checked;
+                      const next = { ...vehicleForm, valid_registration_check: val };
+                      const pass = val && next.cargo_integrity_check && next.clean_dry_check && next.no_odor_check && next.pest_free_check;
+                      next.inspection_result = pass ? "PASS" : "FAIL";
+                      setVehicleForm(next);
+                    }}
+                    className="h-4 w-4 rounded border-gray-300 text-primary"
+                  />
+                  <div>
+                    <div className="text-xs font-semibold">1. Niên hạn sử dụng & Đăng kiểm xe hợp lệ</div>
+                    <div className="text-[11px] text-muted-foreground">Xe còn niên hạn sử dụng, được cơ quan đăng kiểm cho phép lưu hành</div>
+                  </div>
+                </label>
+
+                <label className="flex items-center gap-2.5 p-2.5 rounded-lg border bg-background hover:bg-muted/30 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={vehicleForm.cargo_integrity_check}
+                    onChange={(e) => {
+                      const val = e.target.checked;
+                      const next = { ...vehicleForm, cargo_integrity_check: val };
+                      const pass = next.valid_registration_check && val && next.clean_dry_check && next.no_odor_check && next.pest_free_check;
+                      next.inspection_result = pass ? "PASS" : "FAIL";
+                      setVehicleForm(next);
+                    }}
+                    className="h-4 w-4 rounded border-gray-300 text-primary"
+                  />
+                  <div>
+                    <div className="text-xs font-semibold">2. Kết cấu thùng chứa hàng bền, kín</div>
+                    <div className="text-[11px] text-muted-foreground">Kết cấu thùng chứa bền, kín, không thủng rách, không có vật sắc nhọn</div>
+                  </div>
+                </label>
+
+                <label className="flex items-center gap-2.5 p-2.5 rounded-lg border bg-background hover:bg-muted/30 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={vehicleForm.clean_dry_check}
+                    onChange={(e) => {
+                      const val = e.target.checked;
+                      const next = { ...vehicleForm, clean_dry_check: val };
+                      const pass = next.valid_registration_check && next.cargo_integrity_check && val && next.no_odor_check && next.pest_free_check;
+                      next.inspection_result = pass ? "PASS" : "FAIL";
+                      setVehicleForm(next);
+                    }}
+                    className="h-4 w-4 rounded border-gray-300 text-primary"
+                  />
+                  <div>
+                    <div className="text-xs font-semibold">3. Tình trạng vệ sinh sạch sẽ, khô ráo</div>
+                    <div className="text-[11px] text-muted-foreground">Thùng xe sạch sẽ, khô ráo, không han gỉ, phù hợp chủng loại hàng</div>
+                  </div>
+                </label>
+
+                <label className="flex items-center gap-2.5 p-2.5 rounded-lg border bg-background hover:bg-muted/30 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={vehicleForm.no_odor_check}
+                    onChange={(e) => {
+                      const val = e.target.checked;
+                      const next = { ...vehicleForm, no_odor_check: val };
+                      const pass = next.valid_registration_check && next.cargo_integrity_check && next.clean_dry_check && val && next.pest_free_check;
+                      next.inspection_result = pass ? "PASS" : "FAIL";
+                      setVehicleForm(next);
+                    }}
+                    className="h-4 w-4 rounded border-gray-300 text-primary"
+                  />
+                  <div>
+                    <div className="text-xs font-semibold">4. Kiểm soát mùi lạ</div>
+                    <div className="text-[11px] text-muted-foreground">Không mùi lạ (hóa chất, xăng dầu, phân bón, thuốc bảo vệ thực vật...)</div>
+                  </div>
+                </label>
+
+                <label className="flex items-center gap-2.5 p-2.5 rounded-lg border bg-background hover:bg-muted/30 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={vehicleForm.pest_free_check}
+                    onChange={(e) => {
+                      const val = e.target.checked;
+                      const next = { ...vehicleForm, pest_free_check: val };
+                      const pass = next.valid_registration_check && next.cargo_integrity_check && next.clean_dry_check && next.no_odor_check && val;
+                      next.inspection_result = pass ? "PASS" : "FAIL";
+                      setVehicleForm(next);
+                    }}
+                    className="h-4 w-4 rounded border-gray-300 text-primary"
+                  />
+                  <div>
+                    <div className="text-xs font-semibold">5. Kiểm soát côn trùng & nấm mốc</div>
+                    <div className="text-[11px] text-muted-foreground">Không có dấu hiệu ẩm mốc, không có côn trùng, mối mọt, chuột bọ gây hại</div>
+                  </div>
+                </label>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold">Kết luận thẩm định *</label>
+                  <select
+                    value={vehicleForm.inspection_result}
+                    onChange={(e) => setVehicleForm({ ...vehicleForm, inspection_result: e.target.value as any })}
+                    className="w-full h-9 rounded-md border bg-background px-3 text-xs sm:text-sm font-bold"
+                  >
+                    <option value="PASS">ĐẠT (PASS - Đủ điều kiện xếp hàng)</option>
+                    <option value="FAIL">TỪ CHỐI (FAIL - Không đạt chuẩn BM01)</option>
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold">Người kiểm tra (KCS/Thủ kho) *</label>
+                  <Input
+                    required
+                    value={vehicleForm.inspector_name}
+                    onChange={(e) => setVehicleForm({ ...vehicleForm, inspector_name: e.target.value })}
+                    className="text-xs sm:text-sm"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-semibold">Ghi chú & Biện pháp xử lý nếu có</label>
+              <Textarea
+                rows={2}
+                value={vehicleForm.notes}
+                onChange={(e) => setVehicleForm({ ...vehicleForm, notes: e.target.value })}
+                placeholder="Ghi nhận hiện trạng đặc biệt của xe, yêu cầu vệ sinh lại..."
+                className="text-xs sm:text-sm"
+              />
+            </div>
+
+            <DialogFooter className="flex-col-reverse sm:flex-row gap-2 pt-2 border-t">
+              <Button type="button" variant="outline" onClick={() => setVehicleModalOpen(false)} className="w-full sm:w-auto">
+                Hủy bỏ
+              </Button>
+              <Button type="submit" className="w-full sm:w-auto font-semibold">
+                Lưu Phiếu Kiểm Xe
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* ==========================================
+          MODAL: BIÊN BẢN HỦY HÀNG KHÔNG PHÙ HỢP (BM02)
+      ========================================== */}
+      <Dialog open={disposalModalOpen} onOpenChange={setDisposalModalOpen}>
+        <DialogContent className="max-w-lg sm:max-w-2xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
+          <DialogHeader>
+            <DialogTitle className="text-lg sm:text-xl font-bold flex items-center gap-2 text-rose-600">
+              <Trash2 className="h-5 w-5 text-rose-600" />
+              {editingDisposal ? "Chỉnh Sửa Biên Bản Hủy Hàng" : "Lập Biên Bản Hủy Hàng Không Phù Hợp (BM02)"}
+            </DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground">
+              Tiêu hủy sản phẩm không phù hợp chuẩn Điều khoản 8.9.4 & 8.9.5 ISO 22000 với Hội đồng 3 bên (Đơn vị thực hiện hủy, P.QLCL, Phòng ban đề xuất).
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleSaveDisposal} className="space-y-4 mt-2">
+            {/* NHÓM 1: LÔ HÀNG VÀ KHỐI LƯỢNG */}
+            <div className="rounded-lg border bg-muted/20 p-3.5 space-y-3">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-primary flex items-center gap-1.5">
+                <Tag className="h-3.5 w-3.5" /> 1. Định Danh Lô Hàng Cần Tiêu Hủy
+              </h4>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold">Số biên bản *</label>
+                  <Input
+                    required
+                    value={disposalForm.record_code}
+                    onChange={(e) => setDisposalForm({ ...disposalForm, record_code: e.target.value })}
+                    className="text-xs sm:text-sm font-mono font-bold"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold">Ngày tiêu hủy *</label>
+                  <Input
+                    type="date"
+                    required
+                    value={disposalForm.disposal_date}
+                    onChange={(e) => setDisposalForm({ ...disposalForm, disposal_date: e.target.value })}
+                    className="text-xs sm:text-sm"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold">Mã Lô Hàng (Lot Number) *</label>
+                  <Input
+                    required
+                    value={disposalForm.batch_number}
+                    onChange={(e) => setDisposalForm({ ...disposalForm, batch_number: e.target.value })}
+                    placeholder="VD: NL-2026-CA01 hoặc LOT-202608-B01"
+                    className="text-xs sm:text-sm font-mono"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold">Tên sản phẩm / nguyên liệu *</label>
+                  <Input
+                    required
+                    value={disposalForm.product_name}
+                    onChange={(e) => setDisposalForm({ ...disposalForm, product_name: e.target.value })}
+                    placeholder="VD: Cá Tra Fillet vụn dập..."
+                    className="text-xs sm:text-sm font-semibold"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold">Số lượng tiêu hủy *</label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0.01"
+                    required
+                    value={disposalForm.quantity}
+                    onChange={(e) => setDisposalForm({ ...disposalForm, quantity: e.target.value })}
+                    className="text-xs sm:text-sm font-bold text-rose-600"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold">Đơn vị tính *</label>
+                  <select
+                    value={disposalForm.unit}
+                    onChange={(e) => setDisposalForm({ ...disposalForm, unit: e.target.value })}
+                    className="w-full h-9 rounded-md border bg-background px-3 text-xs sm:text-sm"
+                  >
+                    <option value="kg">kg</option>
+                    <option value="tấn">tấn</option>
+                    <option value="thùng">thùng</option>
+                    <option value="gói">gói</option>
+                    <option value="cái">cái</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* NHÓM 2: LÝ DO, PHƯƠNG PHÁP & HỘI ĐỒNG */}
+            <div className="rounded-lg border bg-muted/20 p-3.5 space-y-3">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-primary flex items-center gap-1.5">
+                <AlertTriangle className="h-3.5 w-3.5 text-rose-600" /> 2. Lý Do & Phương Pháp Tiêu Hủy
+              </h4>
+
+              <div className="space-y-1">
+                <label className="text-xs font-semibold">Lý do tiêu hủy (Mô tả sự không phù hợp) *</label>
+                <Textarea
+                  rows={2}
+                  required
+                  value={disposalForm.reason}
+                  onChange={(e) => setDisposalForm({ ...disposalForm, reason: e.target.value })}
+                  placeholder="VD: Lô hàng bảo quản đứt gãy nhiệt độ, phát hiện vi sinh Salmonella vượt ngưỡng cho phép..."
+                  className="text-xs sm:text-sm"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold">Phương pháp tiêu hủy *</label>
+                  <Input
+                    required
+                    value={disposalForm.disposal_method}
+                    onChange={(e) => setDisposalForm({ ...disposalForm, disposal_method: e.target.value })}
+                    placeholder="VD: Thiêu đốt nhiệt và chôn lấp hợp vệ sinh"
+                    className="text-xs sm:text-sm"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold">Địa điểm tiêu hủy *</label>
+                  <Input
+                    required
+                    value={disposalForm.disposal_location}
+                    onChange={(e) => setDisposalForm({ ...disposalForm, disposal_location: e.target.value })}
+                    placeholder="VD: Khu xử lý chất thải Nhà máy"
+                    className="text-xs sm:text-sm"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-semibold">Hội đồng 3 bên chứng kiến & giám sát *</label>
+                <Textarea
+                  rows={3}
+                  required
+                  value={disposalForm.witness_council}
+                  onChange={(e) => setDisposalForm({ ...disposalForm, witness_council: e.target.value })}
+                  placeholder="1. Đại diện Đơn vị thực hiện hủy: Ông/Bà ... - Chức vụ: ...&#10;2. Đại diện Phòng Quản lý Chất lượng (P.QLCL): Ông/Bà ... - Chức vụ: ...&#10;3. Đại diện Phòng ban đề xuất hủy: Ông/Bà ... - Chức vụ: ..."
+                  className="text-xs sm:text-sm font-mono"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold">Trạng thái hồ sơ *</label>
+                  <select
+                    value={disposalForm.status}
+                    onChange={(e) => setDisposalForm({ ...disposalForm, status: e.target.value as any })}
+                    className="w-full h-9 rounded-md border bg-background px-3 text-xs sm:text-sm font-bold"
+                  >
+                    <option value="DISPOSED">ĐÃ TIÊU HỦY (Hoàn tất biên bản)</option>
+                    <option value="APPROVED">ĐÃ PHÊ DUYỆT (Chờ lịch hủy)</option>
+                    <option value="PENDING_APPROVAL">CHỜ PHÊ DUYỆT</option>
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold">Người phê duyệt *</label>
+                  <Input
+                    required
+                    value={disposalForm.approved_by}
+                    onChange={(e) => setDisposalForm({ ...disposalForm, approved_by: e.target.value })}
+                    placeholder="VD: Giám Đốc Nhà Máy"
+                    className="text-xs sm:text-sm font-semibold"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-semibold">Ghi chú bổ sung</label>
+              <Textarea
+                rows={2}
+                value={disposalForm.notes}
+                onChange={(e) => setDisposalForm({ ...disposalForm, notes: e.target.value })}
+                placeholder="Ghi chú về hình ảnh hiện trường, niêm phong bao bì trước khi hủy..."
+                className="text-xs sm:text-sm"
+              />
+            </div>
+
+            <DialogFooter className="flex-col-reverse sm:flex-row gap-2 pt-2 border-t">
+              <Button type="button" variant="outline" onClick={() => setDisposalModalOpen(false)} className="w-full sm:w-auto">
+                Hủy bỏ
+              </Button>
+              <Button type="submit" className="w-full sm:w-auto font-semibold bg-rose-600 hover:bg-rose-700 text-white">
+                Lưu Biên Bản Hủy Hàng
               </Button>
             </DialogFooter>
           </form>

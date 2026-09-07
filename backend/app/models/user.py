@@ -22,6 +22,15 @@ class Role(Base):
     role_name: Mapped[str] = mapped_column(String(100), nullable=False)
     description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
+class Department(Base):
+    __tablename__ = "departments"
+
+    dept_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    dept_code: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
+    dept_name: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
 class User(Base):
     __tablename__ = "users"
 

@@ -15,6 +15,7 @@ import { Route as BuilderRouteImport } from './routes/builder'
 import { Route as CapaRouteImport } from './routes/capa'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as DocumentsRouteImport } from './routes/documents'
+import { Route as EmergencyRouteImport } from './routes/emergency'
 import { Route as EquipmentRouteImport } from './routes/equipment'
 import { Route as HaccpRouteImport } from './routes/haccp'
 import { Route as InventoryRouteImport } from './routes/inventory'
@@ -51,6 +52,11 @@ const DashboardRoute = DashboardRouteImport.update({
 const DocumentsRoute = DocumentsRouteImport.update({
   id: '/documents',
   path: '/documents',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EmergencyRoute = EmergencyRouteImport.update({
+  id: '/emergency',
+  path: '/emergency',
   getParentRoute: () => rootRouteImport,
 } as any)
 const EquipmentRoute = EquipmentRouteImport.update({
@@ -96,6 +102,7 @@ export interface FileRoutesByFullPath {
   '/capa': typeof CapaRoute
   '/dashboard': typeof DashboardRoute
   '/documents': typeof DocumentsRoute
+  '/emergency': typeof EmergencyRoute
   '/equipment': typeof EquipmentRoute
   '/haccp': typeof HaccpRoute
   '/inventory': typeof InventoryRoute
@@ -111,6 +118,7 @@ export interface FileRoutesByTo {
   '/capa': typeof CapaRoute
   '/dashboard': typeof DashboardRoute
   '/documents': typeof DocumentsRoute
+  '/emergency': typeof EmergencyRoute
   '/equipment': typeof EquipmentRoute
   '/haccp': typeof HaccpRoute
   '/inventory': typeof InventoryRoute
@@ -127,6 +135,7 @@ export interface FileRoutesById {
   '/capa': typeof CapaRoute
   '/dashboard': typeof DashboardRoute
   '/documents': typeof DocumentsRoute
+  '/emergency': typeof EmergencyRoute
   '/equipment': typeof EquipmentRoute
   '/haccp': typeof HaccpRoute
   '/inventory': typeof InventoryRoute
@@ -144,6 +153,7 @@ export interface FileRouteTypes {
     | '/capa'
     | '/dashboard'
     | '/documents'
+    | '/emergency'
     | '/equipment'
     | '/haccp'
     | '/inventory'
@@ -159,6 +169,7 @@ export interface FileRouteTypes {
     | '/capa'
     | '/dashboard'
     | '/documents'
+    | '/emergency'
     | '/equipment'
     | '/haccp'
     | '/inventory'
@@ -174,6 +185,7 @@ export interface FileRouteTypes {
     | '/capa'
     | '/dashboard'
     | '/documents'
+    | '/emergency'
     | '/equipment'
     | '/haccp'
     | '/inventory'
@@ -190,6 +202,7 @@ export interface RootRouteChildren {
   CapaRoute: typeof CapaRoute
   DashboardRoute: typeof DashboardRoute
   DocumentsRoute: typeof DocumentsRoute
+  EmergencyRoute: typeof EmergencyRoute
   EquipmentRoute: typeof EquipmentRoute
   HaccpRoute: typeof HaccpRoute
   InventoryRoute: typeof InventoryRoute
@@ -241,6 +254,13 @@ declare module '@tanstack/react-router' {
       path: '/documents'
       fullPath: '/documents'
       preLoaderRoute: typeof DocumentsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/emergency': {
+      id: '/emergency'
+      path: '/emergency'
+      fullPath: '/emergency'
+      preLoaderRoute: typeof EmergencyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/equipment': {
@@ -302,6 +322,7 @@ const rootRouteChildren: RootRouteChildren = {
   CapaRoute: CapaRoute,
   DashboardRoute: DashboardRoute,
   DocumentsRoute: DocumentsRoute,
+  EmergencyRoute: EmergencyRoute,
   EquipmentRoute: EquipmentRoute,
   HaccpRoute: HaccpRoute,
   InventoryRoute: InventoryRoute,

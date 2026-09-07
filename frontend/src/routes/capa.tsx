@@ -55,14 +55,19 @@ interface NonConformance {
   nc_id: string;
   nc_number: string;
   title: string;
-  source: "HACCP_CCP" | "PRP_GMP" | "IQC_INCOMING" | "INTERNAL_AUDIT" | "CUSTOMER_COMPLAINT" | "EQUIPMENT_FAIL";
-  severity: "CRITICAL" | "MAJOR" | "MINOR" | "OFI";
-  detected_date: string;
-  detected_by_name: string;
+  source: "HACCP_CCP" | "PRP_GMP" | "IQC_INCOMING" | "INTERNAL_AUDIT" | "CUSTOMER_COMPLAINT" | "EQUIPMENT_FAIL" | string;
+  severity: "CRITICAL" | "MAJOR" | "MINOR" | "OFI" | string;
+  detected_date?: string;
+  detected_by_name?: string;
+  occurred_date?: string;
+  occurred_location?: string;
   description: string;
   lot_number?: string;
+  affected_lot_number?: string;
+  affected_quantity?: string;
+  reported_by_name?: string;
   immediate_action?: string;
-  status: "OPEN" | "INVESTIGATING" | "CAPA_REQUIRED" | "CLOSED";
+  status: "OPEN" | "INVESTIGATING" | "CAPA_REQUIRED" | "CLOSED" | string;
   capa_id?: string;
   created_at?: string;
 }
@@ -71,6 +76,8 @@ interface CAPAPlan {
   capa_id: string;
   capa_number: string;
   nc_id: string;
+  title?: string;
+  root_cause_method?: string;
   root_cause_summary: string;
   five_why_analysis?: {
     why1: string;
@@ -104,6 +111,8 @@ interface CAPAPlan {
   nc_severity?: string;
   created_at?: string;
 }
+
+type CAPARecord = CAPAPlan;
 
 interface CAPAStats {
   total_ncs: number;
@@ -1614,7 +1623,7 @@ function CAPAManagementPage() {
                   <label className="block font-semibold text-slate-700 mb-1">Phòng Ban Phụ Trách</label>
                   <select
                     name="assigned_dept"
-                    defaultValue={editingCAPA?.assigned_dept || departments[0] || "Phòng Cơ điện & Thiết bị"}
+                    defaultValue={editingCAPA?.assigned_dept || departments[0] || "Phòng Thiết bị"}
                     className="w-full text-xs h-9 bg-white border border-slate-200 rounded-lg px-2.5 font-semibold focus:outline-none focus:ring-1 focus:ring-emerald-500"
                   >
                     {departments.map((d) => (

@@ -100,7 +100,7 @@ export const WorkflowBuilder: React.FC<WorkflowBuilderProps> = ({
           id: "node_1",
           type: "process",
           label: "1. Tiếp nhận & Kiểm tra nguyên liệu đầu vào",
-          role: "QC Tiếp nhận",
+          role: "Ban QLCL & ATTP",
           description: "Kiểm tra nhiệt độ xe lạnh (≤ 4°C), cảm quan tươi và hồ sơ COA.",
           is_ccp: true,
           step_number: 1,
@@ -109,7 +109,7 @@ export const WorkflowBuilder: React.FC<WorkflowBuilderProps> = ({
           id: "node_2",
           type: "process",
           label: "2. Rửa sơ chế & Phân cỡ",
-          role: "Tổ Sơ chế",
+          role: "Phòng Sản xuất",
           description: "Rửa bằng nước sạch tuần hoàn, loại bỏ tạp chất và màng đen.",
           is_ccp: false,
           step_number: 2,
@@ -118,7 +118,7 @@ export const WorkflowBuilder: React.FC<WorkflowBuilderProps> = ({
           id: "node_3",
           type: "ccp_check",
           label: "3. Gia nhiệt / Thanh trùng tiệt khuẩn sơ bộ",
-          role: "QC & Trưởng ca",
+          role: "Ban QLCL & ATTP",
           description: "Hấp ở nhiệt độ tâm ≥ 85°C trong 15 phút để diệt Salmonella.",
           is_ccp: true,
           step_number: 3,
@@ -127,7 +127,7 @@ export const WorkflowBuilder: React.FC<WorkflowBuilderProps> = ({
           id: "node_4",
           type: "process",
           label: "4. Cấp đông nhanh IQF & Đóng gói hút chân không",
-          role: "Tổ Đóng gói",
+          role: "Phòng Sản xuất",
           description: "Cấp đông đạt nhiệt độ tâm ≤ -18°C, dán nhãn truy xuất QR.",
           is_ccp: true,
           step_number: 4,
@@ -165,7 +165,7 @@ export const WorkflowBuilder: React.FC<WorkflowBuilderProps> = ({
       id: newId,
       type: nodeType,
       label: `${newStepNum}. Công đoạn mới (${nodeType})`,
-      role: "Tổ Sản xuất / QC",
+      role: "Phòng Sản xuất",
       description: "Mô tả yêu cầu kỹ thuật và giám sát...",
       is_ccp: nodeType === "ccp_check",
       step_number: newStepNum,
@@ -624,13 +624,13 @@ export const WorkflowBuilder: React.FC<WorkflowBuilderProps> = ({
                           />
                         </div>
                         <div>
-                          <label className="text-[11px] font-semibold text-slate-500">Phòng ban / Vai trò phụ trách</label>
+                          <label className="text-[11px] font-semibold text-slate-500">Phòng ban phụ trách</label>
                           <select
                             value={node.role || ""}
                             onChange={(e) => handleUpdateNode(node.id, { role: e.target.value })}
                             className="w-full mt-0.5 bg-white border border-slate-300 rounded px-2 py-1 text-xs text-slate-900 font-semibold"
                           >
-                            <option value="">-- Chọn phòng ban / vai trò --</option>
+                            <option value="">-- Chọn phòng ban phụ trách --</option>
                             {departments.map((d) => (
                               <option key={d} value={d}>
                                 {d}
@@ -695,13 +695,13 @@ export const WorkflowBuilder: React.FC<WorkflowBuilderProps> = ({
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-slate-700">Phòng ban / Vai trò phụ trách</label>
+                <label className="text-xs font-semibold text-slate-700">Phòng ban phụ trách</label>
                 <select
                   value={selectedNode.role || ""}
                   onChange={(e) => handleUpdateNode(selectedNode.id, { role: e.target.value })}
                   className="w-full mt-1 bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-xs text-slate-800 font-semibold focus:border-blue-600 focus:outline-none"
                 >
-                  <option value="">-- Chọn phòng ban / vai trò --</option>
+                  <option value="">-- Chọn phòng ban phụ trách --</option>
                   {departments.map((d) => (
                     <option key={d} value={d}>
                       {d}

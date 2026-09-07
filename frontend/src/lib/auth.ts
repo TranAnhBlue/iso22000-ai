@@ -90,6 +90,7 @@ export type ModuleKey =
   | "inventory"
   | "traceability"
   | "purchasing"
+  | "emergency"
   | "builder";
 
 export type Access = "none" | "view" | "edit";
@@ -106,6 +107,7 @@ const ALL_EDIT: Record<ModuleKey, Access> = {
   inventory: "edit",
   traceability: "edit",
   purchasing: "edit",
+  emergency: "edit",
   builder: "edit",
 };
 
@@ -121,6 +123,7 @@ const ALL_VIEW: Record<ModuleKey, Access> = {
   inventory: "view",
   traceability: "view",
   purchasing: "view",
+  emergency: "view",
   builder: "view",
 };
 
@@ -136,6 +139,7 @@ const ALL_NONE: Record<ModuleKey, Access> = {
   inventory: "none",
   traceability: "none",
   purchasing: "none",
+  emergency: "none",
   builder: "none",
 };
 
@@ -160,6 +164,7 @@ export const PERMISSIONS: Record<string, Record<ModuleKey, Access>> = {
     inventory: "view",      // Điều 8.2.4: Xem tình trạng kho hàng & mẫu lưu
     traceability: "edit",   // Điều 8.9.5: Ký duyệt Lệnh thu hồi sản phẩm khẩn cấp
     purchasing: "view",     // Điều 7.1.6: Xem danh bạ nhà cung cấp ASL
+    emergency: "edit",      // Điều 8.4: Chỉ đạo chuẩn bị và ứng phó tình huống khẩn cấp
     builder: "none",        // Không can thiệp cấu hình builder
   },
   executive: {
@@ -174,6 +179,7 @@ export const PERMISSIONS: Record<string, Record<ModuleKey, Access>> = {
     inventory: "view",
     traceability: "edit",
     purchasing: "view",
+    emergency: "edit",
     builder: "none",
   },
 
@@ -190,6 +196,7 @@ export const PERMISSIONS: Record<string, Record<ModuleKey, Access>> = {
     inventory: "view",      // Kiểm tra mẫu lưu đối chứng 24h/48h
     traceability: "edit",   // Diễn tập thu hồi sản phẩm 4h
     purchasing: "edit",     // Thẩm định nhà cung cấp ASL & kiểm định IQC
+    emergency: "edit",      // Điều 8.4: Chủ trì lập kịch bản và diễn tập khẩn cấp
     builder: "view",        // Xem biểu mẫu hệ thống
   },
   iso_manager: {
@@ -204,6 +211,7 @@ export const PERMISSIONS: Record<string, Record<ModuleKey, Access>> = {
     inventory: "view",
     traceability: "edit",
     purchasing: "edit",
+    emergency: "edit",
     builder: "view",
   },
 
@@ -220,6 +228,7 @@ export const PERMISSIONS: Record<string, Record<ModuleKey, Access>> = {
     inventory: "edit",      // Quản lý mẻ sản xuất & biệt trữ lô lỗi
     traceability: "view",   // Tra cứu mã mẻ sản xuất
     purchasing: "none",     // Không truy cập thu mua
+    emergency: "view",      // Xem danh bạ cứu hộ & quy trình ứng phó tức thì tại chuyền
     builder: "none",        // Không truy cập builder
   },
 
@@ -236,6 +245,7 @@ export const PERMISSIONS: Record<string, Record<ModuleKey, Access>> = {
     inventory: "none",
     traceability: "none",
     purchasing: "none",
+    emergency: "view",      // Đội ứng phó sự cố cơ điện/nồi hơi/máy lạnh
     builder: "none",
   },
   equipment: {
@@ -250,6 +260,7 @@ export const PERMISSIONS: Record<string, Record<ModuleKey, Access>> = {
     inventory: "none",
     traceability: "none",
     purchasing: "none",
+    emergency: "view",
     builder: "none",
   },
 
@@ -266,6 +277,7 @@ export const PERMISSIONS: Record<string, Record<ModuleKey, Access>> = {
     inventory: "edit",      // Quản lý xuất/nhập/tồn FEFO & tủ mẫu lưu
     traceability: "edit",   // Tra cứu chuỗi cung ứng & phiếu xuất kho
     purchasing: "view",     // Xem thông tin tiếp nhận vật tư & phiếu IQC
+    emergency: "view",      // Xem quy trình ứng phó cháy nổ kho & sự cố vận chuyển
     builder: "none",
   },
   sales: {
@@ -280,6 +292,7 @@ export const PERMISSIONS: Record<string, Record<ModuleKey, Access>> = {
     inventory: "edit",
     traceability: "edit",
     purchasing: "view",
+    emergency: "view",
     builder: "none",
   },
   warehouse: {
@@ -294,6 +307,7 @@ export const PERMISSIONS: Record<string, Record<ModuleKey, Access>> = {
     inventory: "edit",
     traceability: "edit",
     purchasing: "view",
+    emergency: "view",
     builder: "none",
   },
 
@@ -310,6 +324,7 @@ export const PERMISSIONS: Record<string, Record<ModuleKey, Access>> = {
     inventory: "none",
     traceability: "none",
     purchasing: "none",
+    emergency: "view",      // Liên lạc cơ quan chức năng & sơ cấp cứu
     builder: "none",
   },
   admin_acct: {
@@ -324,6 +339,7 @@ export const PERMISSIONS: Record<string, Record<ModuleKey, Access>> = {
     inventory: "none",
     traceability: "none",
     purchasing: "none",
+    emergency: "view",
     builder: "none",
   },
 
@@ -340,6 +356,7 @@ export const PERMISSIONS: Record<string, Record<ModuleKey, Access>> = {
     inventory: "none",      // Chặn
     traceability: "none",   // Chặn
     purchasing: "none",     // Chặn
+    emergency: "view",      // Xem danh bạ khẩn cấp & hướng dẫn thoát hiểm
     builder: "none",        // Chặn
   },
 };

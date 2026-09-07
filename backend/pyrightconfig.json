@@ -3,6 +3,6 @@
   "venv": "venv",
   "extraPaths": [
     ".",
-    "venv/Lib/site-packages"
+    "venv/lib/python3.12/site-packages"
   ]
 }

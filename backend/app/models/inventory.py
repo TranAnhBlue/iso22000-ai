@@ -143,3 +143,65 @@ class OrderDispatch(Base):
 
     batch: Mapped[Optional[ProductionBatch]] = relationship("ProductionBatch", back_populates="dispatches", lazy="joined")
     dispatcher: Mapped[Optional[User]] = relationship("User", foreign_keys=[dispatched_by], lazy="joined")
+
+
+# ==================== 6. VEHICLE INSPECTIONS (BM01-PTVC: KIỂM TRA PHƯƠNG TIỆN VẬN CHUYỂN) ====================
+class VehicleInspection(Base):
+    """
+    Luồng 15 - Biểu mẫu BM01-PTVC: Kiểm tra phương tiện vận chuyển trước khi bốc xếp hàng
+    Chuẩn hóa theo đúng 5 tiêu chí kỹ thuật gốc (dạng Đạt / Không đạt)
+    """
+    __tablename__ = "vehicle_inspections"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    inspection_code: Mapped[str] = mapped_column(String(50), unique=True, index=True, nullable=False)  # PTVC-2026-001
+    inspection_date: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    order_dispatch_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), ForeignKey("order_dispatches.dispatch_id", ondelete="SET NULL"), nullable=True)
+    
+    vehicle_plate: Mapped[str] = mapped_column(String(50), nullable=False)  # 67C-123.45
+    driver_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    driver_phone: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    transport_company: Mapped[Optional[str]] = mapped_column(String(255), default="Đội xe Công ty", nullable=True)
+    
+    # 5 TIÊU CHÍ NGUYÊN BẢN THEO BIỂU MẪU BM01-PTVC
+    valid_registration_check: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)  # 1. Xe còn niên hạn sử dụng / được đăng kiểm cho phép lưu hành
+    cargo_integrity_check: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)     # 2. Kết cấu thùng chứa bền, kín, không thủng rách, không vật sắc nhọn
+    clean_dry_check: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)           # 3. Sạch sẽ, khô ráo, không han gỉ, phù hợp loại hàng hóa
+    no_odor_check: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)             # 4. Không mùi lạ (hóa chất, xăng dầu, phân bón...)
+    pest_free_check: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)           # 5. Không mốc, không côn trùng/động vật gây hại
+    
+    inspection_result: Mapped[str] = mapped_column(String(30), default="PASS", nullable=False)  # PASS, FAIL
+    inspector_name: Mapped[str] = mapped_column(String(100), default="Thủ kho xuất hàng", nullable=False)
+    notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+# ==================== 7. DISPOSAL RECORDS (BM02-HỦY HÀNG: BIÊN BẢN HỦY THỰC PHẨM KHÔNG PHÙ HỢP) ====================
+class DisposalRecord(Base):
+    """
+    Luồng 16 - Biểu mẫu BM02-HỦY HÀNG: Biên bản tiêu hủy thực phẩm / lô hàng không phù hợp
+    Hội đồng 3 bên chứng kiến: Đơn vị thực hiện hủy hàng, Phòng Quản lý Chất lượng (P.QLCL), Phòng ban đề xuất hủy hàng
+    """
+    __tablename__ = "disposal_records"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    record_code: Mapped[str] = mapped_column(String(50), unique=True, index=True, nullable=False)  # BBHH-2026-001
+    disposal_date: Mapped[date] = mapped_column(Date, nullable=False)
+    batch_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), ForeignKey("production_batches.batch_id", ondelete="SET NULL"), nullable=True)
+    batch_number: Mapped[str] = mapped_column(String(100), nullable=False)
+    product_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    
+    quantity: Mapped[float] = mapped_column(Numeric(12, 2), nullable=False)
+    unit: Mapped[str] = mapped_column(String(50), default="kg", nullable=False)
+    # Ghi chú mở rộng phần mềm FSMS: Lý do & Phương pháp hủy (thực tế form gốc gộp trong cột Ghi chú)
+    reason: Mapped[str] = mapped_column(Text, nullable=False)
+    disposal_method: Mapped[str] = mapped_column(String(100), default="Tiêu hủy nhiệt và chôn lấp hợp vệ sinh", nullable=False)
+    disposal_location: Mapped[Optional[str]] = mapped_column(String(255), default="Khu xử lý chất thải Nhà máy", nullable=True)
+    witness_council: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # 3 đại diện: Đơn vị thực hiện, P.QLCL, Phòng đề xuất
+    
+    status: Mapped[str] = mapped_column(String(50), default="DISPOSED", nullable=False)  # PENDING_APPROVAL, APPROVED, DISPOSED
+    approved_by: Mapped[Optional[str]] = mapped_column(String(100), default="Phòng Quản lý Chất lượng (P.QLCL)", nullable=True)
+    notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
