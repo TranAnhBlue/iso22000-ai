@@ -35,7 +35,6 @@ Hệ thống giúp các doanh nghiệp sản xuất, chế biến thực phẩm 
 
 👉 **Tài liệu tham khảo chuyên sâu:**
 * [📘 Sổ Tay Hướng Dẫn Sử Dụng Chi Tiết Cho Người Dùng (USER_GUIDE.md)](./USER_GUIDE.md)
-* [☁️ Hướng Dẫn Cấu Hình & Triển Khai Cơ Sở Dữ Liệu Cloud (DEPLOY_DATABASE.md)](./DEPLOY_DATABASE.md)
 
 ---
 
