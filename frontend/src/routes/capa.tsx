@@ -165,7 +165,7 @@ function CAPAManagementPage() {
   const [showVerifyModal, setShowVerifyModal] = useState(false);
   const [verifyingCAPA, setVerifyingCAPA] = useState<CAPARecord | null>(null);
   const [verificationForm, setVerificationForm] = useState({
-    verified_by_name: "Trưởng Ban QLCL & ATTP",
+    verified_by_name: "Lê Hoàng Nam (Trưởng ban QA/QC)",
     verification_result: "",
     verification_status: "EFFECTIVE",
   });
@@ -1460,7 +1460,7 @@ function CAPAManagementPage() {
                   <label className="block font-semibold text-slate-700 mb-1">Người Báo Cáo / KCS</label>
                   <Input
                     name="reported_by_name"
-                    defaultValue={editingNC?.reported_by_name || "Trần Văn An (QC Lead)"}
+                    defaultValue={editingNC?.reported_by_name || "Nguyễn Văn An (Trưởng ca Sản xuất & QC)"}
                     className="text-xs h-9"
                   />
                 </div>
@@ -1614,7 +1614,7 @@ function CAPAManagementPage() {
                   <label className="block font-semibold text-slate-700 mb-1">Người Chịu Trách Nhiệm</label>
                   <Input
                     name="assigned_to_name"
-                    defaultValue={editingCAPA?.assigned_to_name || "Nguyễn Văn Hùng"}
+                    defaultValue={editingCAPA?.assigned_to_name || "Phạm Hùng Cường (Trưởng phòng Cơ Điện & Bảo trì)"}
                     className="text-xs h-9"
                   />
                 </div>
@@ -1892,7 +1892,9 @@ function CAPAManagementPage() {
                   toast.success("Đã lưu lưu đồ quy trình CAPA 5 bước thành công!");
                   setShowWorkflowModal(false);
                 } catch (err: any) {
-                  toast.error("Lỗi khi lưu quy trình: " + (err.response?.data?.detail || err.message));
+                  const msg = err.response?.data?.detail || err.message;
+                  toast.error("Lỗi khi lưu quy trình: " + msg);
+                  throw new Error(msg);
                 }
               }}
               onCancel={() => setShowWorkflowModal(false)}

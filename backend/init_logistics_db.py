@@ -1,5 +1,5 @@
 from app.core.database import SessionLocal, engine, Base
-from app.models.inventory import VehicleInspection, DisposalRecord
+from app.modules.inventory.models import VehicleInspection, DisposalRecord
 from datetime import date, datetime
 
 def init_logistics_tables():

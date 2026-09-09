@@ -52,6 +52,7 @@ import {
   Save,
   BookOpen,
   ChevronDown,
+  ClipboardCheck,
 } from "lucide-react";
 import api from "@/lib/api";
 import { toast } from "sonner";
@@ -60,6 +61,7 @@ import { WorkflowBuilder, type WorkflowTemplateData } from "@/components/builder
 import { DynamicFormRenderer } from "@/components/builder/DynamicFormRenderer";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import type { FormTemplateData } from "@/components/builder/FormBuilder";
+import { printHtml } from "@/lib/print";
 
 export const Route = createFileRoute("/haccp")({
   head: () => ({
@@ -80,7 +82,34 @@ export const Route = createFileRoute("/haccp")({
 });
 
 // ==================== INTERFACES ====================
+interface HACCPPlanReview {
+  id: number;
+  review_code: string;
+  plan_id: string;
+  review_date: string;
+  review_type: "PERIODIC" | "POST_CHANGE" | "INCIDENT_TRIGGERED" | "ANNUAL";
+  change_request_id?: number;
+  scope_and_objective: string;
+  reviewers: string;
+  ccp_audit_summary?: string;
+  prp_audit_summary?: string;
+  hazard_analysis_validity: boolean;
+  monitoring_records_adequate: boolean;
+  corrective_actions_effective: boolean;
+  findings?: string;
+  required_actions?: string;
+  conclusion: "COMPLIANT" | "NEEDS_UPDATE" | "CRITICAL_DEFICIENCY";
+  approved_by?: string;
+  approval_date?: string;
+  status: "DRAFT" | "SUBMITTED" | "APPROVED" | "REJECTED";
+  notes?: string;
+  plan_name?: string;
+  change_request_code?: string;
+  created_at?: string;
+}
+
 interface HACCPPlan {
+  id?: string;
   plan_id: string;
   plan_code: string;
   plan_name: string;
@@ -268,7 +297,7 @@ const AI_DEVIATION_PRESETS = [
 
 // ==================== MAIN COMPONENT ====================
 function HACCPModule() {
-  const [activeTab, setActiveTab] = useState<"flowchart" | "ccp_plan" | "hazards" | "logs" | "ai">("flowchart");
+  const [activeTab, setActiveTab] = useState<"flowchart" | "ccp_plan" | "hazards" | "logs" | "reviews" | "ai">("flowchart");
 
   // Data states
   const [stats, setStats] = useState<HACCPStats | null>(null);
@@ -278,7 +307,37 @@ function HACCPModule() {
   const [hazards, setHazards] = useState<HazardAnalysis[]>([]);
   const [ccps, setCcps] = useState<CCPDefinition[]>([]);
   const [logs, setLogs] = useState<CCPMonitoringLog[]>([]);
+  const [reviews, setReviews] = useState<HACCPPlanReview[]>([]);
+  const [changeRequests, setChangeRequests] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+
+  // Reviews Filters & Modal
+  const [reviewSearch, setReviewSearch] = useState("");
+  const [reviewFilterType, setReviewFilterType] = useState<string>("ALL");
+  const [reviewFilterConclusion, setReviewFilterConclusion] = useState<string>("ALL");
+  const [reviewModalOpen, setReviewModalOpen] = useState(false);
+  const [editingReview, setEditingReview] = useState<HACCPPlanReview | null>(null);
+  const [reviewForm, setReviewForm] = useState<any>({
+    review_code: "",
+    plan_id: "",
+    review_date: new Date().toISOString().split("T")[0],
+    review_type: "PERIODIC",
+    change_request_id: "",
+    scope_and_objective: "Thẩm tra định kỳ toàn diện kế hoạch HACCP, tính đầy đủ của hồ sơ giám sát CCP và hiệu lực phân tích mối nguy.",
+    reviewers: "Nguyễn Văn An (Trưởng ban HACCP), Trần Thị Mai (QA)",
+    ccp_audit_summary: "Đạt yêu cầu kiểm soát giới hạn tới hạn.",
+    prp_audit_summary: "Các chương trình tiên quyết duy trì vệ sinh tốt.",
+    hazard_analysis_validity: true,
+    monitoring_records_adequate: true,
+    corrective_actions_effective: true,
+    findings: "Hệ thống vận hành ổn định, không phát hiện khiếm khuyết lớn.",
+    required_actions: "Tiếp tục duy trì kế hoạch giám sát hiện hành.",
+    conclusion: "COMPLIANT",
+    approved_by: "Lê Hoàng Quân (Giám đốc Nhà máy)",
+    approval_date: new Date().toISOString().split("T")[0],
+    status: "APPROVED",
+    notes: "",
+  });
 
   // Filters
   const [ccpSearch, setCcpSearch] = useState("");
@@ -398,13 +457,15 @@ function HACCPModule() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [sRes, plRes, stRes, hzRes, ccpRes, lgRes] = await Promise.all([
+      const [sRes, plRes, stRes, hzRes, ccpRes, lgRes, revRes, crRes] = await Promise.all([
         api.get("/haccp/stats"),
         api.get("/haccp/plans"),
         api.get("/haccp/process-steps"),
         api.get("/haccp/hazards"),
         api.get("/haccp/ccp-definitions"),
         api.get("/haccp/ccp-logs"),
+        api.get("/haccp/reviews"),
+        api.get("/change-management/requests"),
       ]);
       setStats(sRes.data);
       setPlans(plRes.data);
@@ -415,12 +476,240 @@ function HACCPModule() {
       setHazards(hzRes.data);
       setCcps(ccpRes.data);
       setLogs(lgRes.data);
+      setReviews(revRes.data);
+      setChangeRequests(crRes.data);
     } catch (err: any) {
       console.error(err);
       toast.error("Không thể tải dữ liệu HACCP: " + (err.response?.data?.detail || err.message));
     } finally {
       setLoading(false);
     }
+  };
+
+  // HANDLERS THẨM TRA ĐỊNH KỲ KẾ HOẠCH HACCP (CLAUSE 8.6 & 8.8)
+  const openNewReview = () => {
+    setEditingReview(null);
+    const codeNum = reviews.length + 1;
+    const defaultPlan = plans[0]?.plan_id || "";
+    setReviewForm({
+      review_code: `HACCP-REV-2026-${String(codeNum).padStart(3, "0")}`,
+      plan_id: selectedPlanId !== "ALL" ? selectedPlanId : defaultPlan,
+      review_date: new Date().toISOString().split("T")[0],
+      review_type: "PERIODIC",
+      change_request_id: "",
+      scope_and_objective: "Thẩm tra định kỳ toàn diện kế hoạch HACCP, tính đầy đủ của hồ sơ giám sát CCP và hiệu lực phân tích mối nguy.",
+      reviewers: "Nguyễn Văn An (Trưởng ban HACCP), Trần Thị Mai (QA)",
+      ccp_audit_summary: "Đạt yêu cầu kiểm soát giới hạn tới hạn.",
+      prp_audit_summary: "Các chương trình tiên quyết duy trì vệ sinh tốt.",
+      hazard_analysis_validity: true,
+      monitoring_records_adequate: true,
+      corrective_actions_effective: true,
+      findings: "Hệ thống vận hành ổn định, không phát hiện khiếm khuyết lớn.",
+      required_actions: "Tiếp tục duy trì kế hoạch giám sát hiện hành.",
+      conclusion: "COMPLIANT",
+      approved_by: "Lê Hoàng Quân (Giám đốc Nhà máy)",
+      approval_date: new Date().toISOString().split("T")[0],
+      status: "APPROVED",
+      notes: "",
+    });
+    setReviewModalOpen(true);
+  };
+
+  const openEditReview = (r: HACCPPlanReview) => {
+    setEditingReview(r);
+    setReviewForm({
+      review_code: r.review_code,
+      plan_id: r.plan_id,
+      review_date: r.review_date,
+      review_type: r.review_type,
+      change_request_id: r.change_request_id ? String(r.change_request_id) : "",
+      scope_and_objective: r.scope_and_objective,
+      reviewers: r.reviewers,
+      ccp_audit_summary: r.ccp_audit_summary || "",
+      prp_audit_summary: r.prp_audit_summary || "",
+      hazard_analysis_validity: r.hazard_analysis_validity,
+      monitoring_records_adequate: r.monitoring_records_adequate,
+      corrective_actions_effective: r.corrective_actions_effective,
+      findings: r.findings || "",
+      required_actions: r.required_actions || "",
+      conclusion: r.conclusion,
+      approved_by: r.approved_by || "",
+      approval_date: r.approval_date || "",
+      status: r.status,
+      notes: r.notes || "",
+    });
+    setReviewModalOpen(true);
+  };
+
+  const handleSaveReview = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const payload = {
+        ...reviewForm,
+        change_request_id: reviewForm.change_request_id ? Number(reviewForm.change_request_id) : null,
+        approval_date: reviewForm.approval_date || null,
+      };
+      if (editingReview) {
+        await api.put(`/haccp/reviews/${editingReview.id}`, payload);
+        toast.success("Đã cập nhật biên bản thẩm tra HACCP");
+      } else {
+        await api.post("/haccp/reviews", payload);
+        toast.success("Đã tạo đợt thẩm tra HACCP mới");
+      }
+      setReviewModalOpen(false);
+      fetchData();
+    } catch (err: any) {
+      toast.error(err.response?.data?.detail || "Lỗi khi lưu biên bản thẩm tra");
+    }
+  };
+
+  const handleDeleteReview = async (id: number) => {
+    if (!confirm("Bạn có chắc chắn muốn xóa biên bản thẩm tra này?")) return;
+    try {
+      await api.delete(`/haccp/reviews/${id}`);
+      toast.success("Đã xóa đợt thẩm tra");
+      fetchData();
+    } catch (err: any) {
+      toast.error(err.response?.data?.detail || "Không thể xóa");
+    }
+  };
+
+  // IN BIÊN BẢN THẨM TRA KẾ HOẠCH HACCP & OPRP (BM-HACCP-REV-01)
+  const handlePrintHACCPReview = (rev: HACCPPlanReview) => {
+    const p = plans.find((pl) => pl.plan_id === rev.plan_id);
+    const cr = changeRequests.find((c) => c.id === rev.change_request_id);
+    const html = `
+      <div style="font-family: 'Times New Roman', serif; font-size: 11pt; line-height: 1.45; color: #111; padding: 25px 30px;">
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+          <tr>
+            <td style="width: 25%; text-align: center; border: 1px solid #333; padding: 6px;">
+              <strong style="font-size: 13pt; color: #047857;">WCERT FOOD</strong><br/>
+              <span style="font-size: 9pt;">HỆ THỐNG FSMS ISO 22000</span>
+            </td>
+            <td style="width: 50%; text-align: center; border: 1px solid #333; padding: 6px;">
+              <strong style="font-size: 13pt; text-transform: uppercase;">BIÊN BẢN THẨM TRA KẾ HOẠCH HACCP & OPRP</strong><br/>
+              <span style="font-size: 10pt; font-weight: bold;">(Căn cứ Điều 8.6 & 8.8 Tiêu chuẩn ISO 22000:2018)</span>
+            </td>
+            <td style="width: 25%; border: 1px solid #333; padding: 6px; font-size: 9pt;">
+              Biểu mẫu: <strong>BM-HACCP-REV-01</strong><br/>
+              Số phiếu: <strong>${rev.review_code}</strong><br/>
+              Ngày lập: <strong>${rev.review_date}</strong>
+            </td>
+          </tr>
+        </table>
+
+        <div style="border: 1px solid #333; padding: 10px; margin-bottom: 15px; font-size: 10.5pt; background-color: #f8fafc;">
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+              <td style="width: 50%; padding: 3px 0;"><strong>Kế hoạch HACCP:</strong> ${p ? `${p.plan_name} (${p.plan_code})` : rev.plan_id}</td>
+              <td style="width: 50%; padding: 3px 0;"><strong>Loại thẩm tra:</strong> ${
+                rev.review_type === "PERIODIC"
+                  ? "Thẩm tra định kỳ 6 tháng"
+                  : rev.review_type === "POST_CHANGE"
+                  ? "Thẩm tra sau thay đổi (Clause 6.3)"
+                  : rev.review_type === "INCIDENT_TRIGGERED"
+                  ? "Thẩm tra sau sự cố CCP/NC"
+                  : "Thẩm tra thường niên"
+              }</td>
+            </tr>
+            <tr>
+              <td style="padding: 3px 0;"><strong>Đoàn thẩm tra / Thành viên:</strong> ${rev.reviewers}</td>
+              <td style="padding: 3px 0;"><strong>Yêu cầu thay đổi liên kết:</strong> ${
+                cr ? `${cr.change_code} - ${cr.title}` : rev.change_request_code || "Không có"
+              }</td>
+            </tr>
+            <tr>
+              <td colspan="2" style="padding: 3px 0;"><strong>Mục đích & Phạm vi thẩm tra:</strong> ${rev.scope_and_objective}</td>
+            </tr>
+          </table>
+        </div>
+
+        <h4 style="margin: 10px 0 6px 0; font-size: 11pt; text-transform: uppercase;">1. ĐÁNH GIÁ 3 NỘI DUNG TRỌNG TÂM CỦA KẾ HOẠCH</h4>
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 10.5pt;" border="1" cellpadding="6">
+          <tr style="background-color: #f1f5f9; font-weight: bold; text-align: center;">
+            <th style="width: 10%;">STT</th>
+            <th style="width: 60%;">Tiêu chí thẩm tra theo ISO 22000 Điều 8.6 & 8.8</th>
+            <th style="width: 30%;">Kết quả đánh giá</th>
+          </tr>
+          <tr>
+            <td style="text-align: center;">1.1</td>
+            <td><strong>Hiệu lực của Phân tích mối nguy (Hazard Analysis):</strong><br/><span style="font-size: 9.5pt; color: #475569;">Các mối nguy sinh học, hóa học, vật lý và chất gây dị ứng đã được nhận diện đầy đủ và ngưỡng chấp nhận còn giá trị.</span></td>
+            <td style="text-align: center; font-weight: bold; color: ${rev.hazard_analysis_validity ? "#047857" : "#b91c1c"};">
+              ${rev.hazard_analysis_validity ? "✅ ĐẠT HIỆU LỰC" : "❌ KHÔNG ĐẠT - CẦN ĐIỀU CHỈNH"}
+            </td>
+          </tr>
+          <tr>
+            <td style="text-align: center;">1.2</td>
+            <td><strong>Tính đầy đủ & tin cậy của Hồ sơ giám sát CCP/OPRP:</strong><br/><span style="font-size: 9.5pt; color: #475569;">Nhật ký đo đạc nhiệt độ, áp suất, thời gian, tần suất giám sát được nhân viên ghi chép trung thực, đúng quy định.</span></td>
+            <td style="text-align: center; font-weight: bold; color: ${rev.monitoring_records_adequate ? "#047857" : "#b91c1c"};">
+              ${rev.monitoring_records_adequate ? "✅ ĐẦY ĐỦ & PHÙ HỢP" : "❌ THIẾU HỒ SƠ / KHÔNG ĐẠT"}
+            </td>
+          </tr>
+          <tr>
+            <td style="text-align: center;">1.3</td>
+            <td><strong>Hiệu quả của Hành động khắc phục khi có vi phạm giới hạn tới hạn:</strong><br/><span style="font-size: 9.5pt; color: #475569;">Mọi sự cố vượt ngưỡng CCP đều được cô lập lô hàng, điều tra nguyên nhân gốc và thực hiện CAPA triệt để.</span></td>
+            <td style="text-align: center; font-weight: bold; color: ${rev.corrective_actions_effective ? "#047857" : "#b91c1c"};">
+              ${rev.corrective_actions_effective ? "✅ HIỆU QUẢ TRIỆT ĐỂ" : "❌ CHƯA HIỆU QUẢ"}
+            </td>
+          </tr>
+        </table>
+
+        <h4 style="margin: 10px 0 6px 0; font-size: 11pt; text-transform: uppercase;">2. TÓM TẮT PHÁT HIỆN & ĐIỀU CHỈNH YÊU CẦU</h4>
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 10.5pt;" border="1" cellpadding="6">
+          <tr>
+            <td style="width: 35%; vertical-align: top; background-color: #f8fafc;"><strong>Thẩm tra CCP:</strong></td>
+            <td>${rev.ccp_audit_summary || "Đạt yêu cầu kiểm soát giới hạn tới hạn."}</td>
+          </tr>
+          <tr>
+            <td style="vertical-align: top; background-color: #f8fafc;"><strong>Thẩm tra PRP/OPRP:</strong></td>
+            <td>${rev.prp_audit_summary || "Các chương trình tiên quyết duy trì vệ sinh tốt."}</td>
+          </tr>
+          <tr>
+            <td style="vertical-align: top; background-color: #f8fafc;"><strong>Phát hiện trong kỳ thẩm tra:</strong></td>
+            <td>${rev.findings || "Hệ thống vận hành ổn định, không phát hiện khiếm khuyết lớn."}</td>
+          </tr>
+          <tr>
+            <td style="vertical-align: top; background-color: #f8fafc;"><strong>Hành động yêu cầu thực hiện:</strong></td>
+            <td>${rev.required_actions || "Tiếp tục duy trì kế hoạch giám sát hiện hành."}</td>
+          </tr>
+        </table>
+
+        <div style="border: 2px solid ${
+          rev.conclusion === "COMPLIANT" ? "#047857" : rev.conclusion === "NEEDS_UPDATE" ? "#d97706" : "#b91c1c"
+        }; padding: 12px; border-radius: 4px; margin-bottom: 20px; text-align: center;">
+          <strong style="font-size: 12pt; text-transform: uppercase;">KẾT LUẬN THẨM TRA: </strong>
+          <span style="font-size: 12pt; font-weight: bold; color: ${
+            rev.conclusion === "COMPLIANT" ? "#047857" : rev.conclusion === "NEEDS_UPDATE" ? "#d97706" : "#b91c1c"
+          };">
+            ${
+              rev.conclusion === "COMPLIANT"
+                ? "KẾ HOẠCH HACCP & OPRP HOÀN TOÀN PHÙ HỢP & CÓ HIỆU LỰC"
+                : rev.conclusion === "NEEDS_UPDATE"
+                ? "CẦN CẬP NHẬT / SỬA ĐỔI BỔ SUNG KẾ HOẠCH (KÍCH HOẠT ĐIỀU 6.3)"
+                : "KHIẾM KHUYẾT NGHIÊM TRỌNG - ĐÌNH CHỈ / TÁI THẨM ĐỊNH TOÀN DIỆN"
+            }
+          </span>
+        </div>
+
+        <table style="width: 100%; border-collapse: collapse; margin-top: 30px; text-align: center; font-size: 11pt;">
+          <tr>
+            <td style="width: 50%; vertical-align: top;">
+              <strong>TRƯỞNG ĐOÀN THẨM TRA / ĐỘI TRƯỞNG HACCP</strong><br/>
+              <span style="font-size: 10pt; font-style: italic;">(Ký & ghi rõ họ tên)</span>
+              <div style="height: 60px;"></div>
+              <strong>${rev.reviewers.split(",")[0] || "Đội Trưởng HACCP"}</strong>
+            </td>
+            <td style="width: 50%; vertical-align: top;">
+              <strong>BAN GIÁM ĐỐC PHÊ DUYỆT</strong><br/>
+              <span style="font-size: 10pt; font-style: italic;">(Ký, đóng dấu và ghi rõ họ tên)</span>
+              <div style="height: 60px;"></div>
+              <strong>${rev.approved_by || "Lê Hoàng Quân (Giám đốc Nhà máy)"}</strong>
+            </td>
+          </tr>
+        </table>
+      </div>
+    `;
+    printHtml(html);
   };
 
   useEffect(() => {
@@ -469,6 +758,21 @@ function HACCPModule() {
       return matchCcp && matchStat;
     });
   }, [logs, logCcpFilter, logStatusFilter]);
+
+  // Filtered Reviews
+  const filteredReviews = useMemo(() => {
+    return reviews.filter((r) => {
+      const matchType = reviewFilterType === "ALL" || r.review_type === reviewFilterType;
+      const matchConclusion = reviewFilterConclusion === "ALL" || r.conclusion === reviewFilterConclusion;
+      const matchSearch =
+        !reviewSearch.trim() ||
+        r.review_code.toLowerCase().includes(reviewSearch.toLowerCase()) ||
+        (r.scope_and_objective || "").toLowerCase().includes(reviewSearch.toLowerCase()) ||
+        (r.reviewers || "").toLowerCase().includes(reviewSearch.toLowerCase()) ||
+        (r.findings || "").toLowerCase().includes(reviewSearch.toLowerCase());
+      return matchType && matchConclusion && matchSearch;
+    });
+  }, [reviews, reviewFilterType, reviewFilterConclusion, reviewSearch]);
 
   // ==================== ACTIONS: HACCP PLANS ====================
   const handleOpenCreatePlan = () => {
@@ -1165,6 +1469,18 @@ function HACCPModule() {
           </button>
 
           <button
+            onClick={() => setActiveTab("reviews")}
+            className={`pb-3 px-4 text-xs sm:text-sm font-bold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap ${
+              activeTab === "reviews"
+                ? "border-teal-600 text-teal-700"
+                : "border-transparent text-slate-500 hover:text-slate-900"
+            }`}
+          >
+            <ShieldCheck className="h-4 w-4 shrink-0" />
+            Thẩm Tra Kế Hoạch (8.6 & 8.8) ({reviews.length})
+          </button>
+
+          <button
             onClick={() => setActiveTab("ai")}
             className={`pb-3 px-4 text-xs sm:text-sm font-bold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap ${
               activeTab === "ai"
@@ -1797,6 +2113,545 @@ function HACCPModule() {
           </div>
         </div>
       )}
+
+      {/* ==================== TAB 6: THẨM TRA ĐỊNH KỲ KẾ HOẠCH HACCP & OPRP (CLAUSE 8.6 & 8.8) ==================== */}
+      {activeTab === "reviews" && (
+        <div className="space-y-4">
+          <div className="bg-gradient-to-r from-emerald-900 to-teal-900 text-white rounded-2xl p-5 shadow-lg flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div className="flex items-center gap-3.5">
+              <div className="w-12 h-12 rounded-xl bg-white/10 backdrop-blur border border-white/20 flex items-center justify-center text-emerald-300 shadow-inner">
+                <ClipboardCheck className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold flex items-center gap-2">
+                  Thẩm Tra Hiệu Lực Kế Hoạch HACCP & OPRP
+                  <span className="text-[10px] font-semibold bg-emerald-500/30 text-emerald-200 border border-emerald-400/30 px-2 py-0.5 rounded-full">
+                    ISO 22000:2018 Điều 8.6 & 8.8
+                  </span>
+                </h3>
+                <p className="text-xs text-slate-200 mt-1 max-w-2xl leading-relaxed">
+                  Đánh giá toàn diện định kỳ hoặc sau thay đổi đối với phân tích mối nguy, hồ sơ giám sát CCP/OPRP, hiệu lực CAPA và năng lực duy trì an toàn thực phẩm của nhà máy.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <Button
+                onClick={openNewReview}
+                className="bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold shadow-md flex items-center gap-1.5"
+              >
+                <Plus className="w-4 h-4" />
+                Lập Đợt Thẩm Tra Mới
+              </Button>
+            </div>
+          </div>
+
+          {/* Filters & Search */}
+          <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm">
+            <div className="flex flex-wrap items-center gap-3 flex-1 min-w-[300px]">
+              <div className="relative flex-1 min-w-[200px] max-w-sm">
+                <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
+                <Input
+                  value={reviewSearch}
+                  onChange={(e) => setReviewSearch(e.target.value)}
+                  placeholder="Tìm theo mã, phạm vi, người thẩm tra, kết quả..."
+                  className="pl-9 text-xs bg-slate-50 border-slate-200 text-slate-800"
+                />
+              </div>
+              <div className="flex items-center gap-2 text-xs">
+                <span className="text-slate-500 font-medium">Loại thẩm tra:</span>
+                <select
+                  value={reviewFilterType}
+                  onChange={(e) => setReviewFilterType(e.target.value)}
+                  className="h-9 px-3 py-1 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                >
+                  <option value="ALL">Tất cả loại hình</option>
+                  <option value="PERIODIC">Định kỳ (Periodic)</option>
+                  <option value="POST_CHANGE">Sau thay đổi (Clause 6.3)</option>
+                  <option value="INCIDENT_TRIGGERED">Sau sự cố (Incident)</option>
+                  <option value="ANNUAL">Định kỳ thường niên (Annual)</option>
+                </select>
+              </div>
+              <div className="flex items-center gap-2 text-xs">
+                <span className="text-slate-500 font-medium">Kết luận:</span>
+                <select
+                  value={reviewFilterConclusion}
+                  onChange={(e) => setReviewFilterConclusion(e.target.value)}
+                  className="h-9 px-3 py-1 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                >
+                  <option value="ALL">Tất cả kết luận</option>
+                  <option value="COMPLIANT">Hiệu lực (Đạt)</option>
+                  <option value="NEEDS_UPDATE">Cần cập nhật</option>
+                  <option value="CRITICAL_DEFICIENCY">Khiếm khuyết lớn</option>
+                </select>
+              </div>
+            </div>
+            <div className="text-xs text-slate-500 font-semibold">
+              Tổng số đợt: <span className="text-slate-900 font-bold">{filteredReviews.length}</span>
+            </div>
+          </div>
+
+          {/* Table */}
+          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs text-left border-collapse">
+                <thead>
+                  <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase tracking-wider text-[10px]">
+                    <th className="p-3.5">Mã & Kế hoạch</th>
+                    <th className="p-3.5">Ngày & Loại Thẩm Tra</th>
+                    <th className="p-3.5">Phạm vi & Đoàn thẩm tra</th>
+                    <th className="p-3.5 text-center">3 Trụ Cột Thẩm Tra</th>
+                    <th className="p-3.5 text-center">Kết Luận</th>
+                    <th className="p-3.5">Phê Duyệt</th>
+                    <th className="p-3.5 text-right">Thao Tác</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {filteredReviews.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="p-8 text-center text-slate-400">
+                        <ClipboardCheck className="w-10 h-10 mx-auto mb-2 text-slate-300" />
+                        Chưa có đợt thẩm tra kế hoạch HACCP nào phù hợp điều kiện lọc.
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredReviews.map((rev) => {
+                      const linkedPlan = plans.find((p) => p.plan_id === rev.plan_id || p.id === rev.plan_id);
+                      const linkedCR = changeRequests.find((cr) => cr.id === rev.change_request_id);
+                      return (
+                        <tr key={rev.id} className="hover:bg-slate-50 transition-colors">
+                          <td className="p-3.5">
+                            <div className="font-mono font-bold text-slate-900">{rev.review_code}</div>
+                            <div className="text-[11px] text-slate-600 mt-0.5 font-medium">
+                              {linkedPlan ? linkedPlan.plan_name : "Kế hoạch toàn bộ"}
+                            </div>
+                          </td>
+                          <td className="p-3.5">
+                            <div className="font-semibold text-slate-800">{rev.review_date}</div>
+                            <div className="mt-1 flex flex-wrap items-center gap-1">
+                              {rev.review_type === "PERIODIC" && (
+                                <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                                  Định kỳ
+                                </span>
+                              )}
+                              {rev.review_type === "POST_CHANGE" && (
+                                <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-purple-50 text-purple-700 border border-purple-200">
+                                  Sau thay đổi (6.3)
+                                </span>
+                              )}
+                              {rev.review_type === "INCIDENT_TRIGGERED" && (
+                                <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                                  Sau sự cố
+                                </span>
+                              )}
+                              {rev.review_type === "ANNUAL" && (
+                                <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-300">
+                                  Thường niên
+                                </span>
+                              )}
+                              {linkedCR && (
+                                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                                  MCR: {linkedCR.request_code}
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="p-3.5 max-w-xs">
+                            <div className="text-slate-800 line-clamp-2 leading-relaxed font-medium">
+                              {rev.scope_and_objective}
+                            </div>
+                            <div className="text-[11px] text-slate-500 mt-1">
+                              <span className="font-semibold">Đoàn:</span> {rev.reviewers}
+                            </div>
+                          </td>
+                          <td className="p-3.5">
+                            <div className="flex flex-col gap-1 items-center">
+                              <div className="flex items-center gap-1.5 text-[10px]">
+                                <span className="text-slate-500">Mối nguy:</span>
+                                {rev.hazard_analysis_validity ? (
+                                  <span className="font-bold text-emerald-600 flex items-center gap-0.5">
+                                    <Check className="w-3 h-3" /> Đạt
+                                  </span>
+                                ) : (
+                                  <span className="font-bold text-rose-600 flex items-center gap-0.5">
+                                    <XCircle className="w-3 h-3" /> Cần sửa
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-1.5 text-[10px]">
+                                <span className="text-slate-500">Hồ sơ CCP:</span>
+                                {rev.monitoring_records_adequate ? (
+                                  <span className="font-bold text-emerald-600 flex items-center gap-0.5">
+                                    <Check className="w-3 h-3" /> Đầy đủ
+                                  </span>
+                                ) : (
+                                  <span className="font-bold text-rose-600 flex items-center gap-0.5">
+                                    <XCircle className="w-3 h-3" /> Thiếu
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-1.5 text-[10px]">
+                                <span className="text-slate-500">Hiệu lực CAPA:</span>
+                                {rev.corrective_actions_effective ? (
+                                  <span className="font-bold text-emerald-600 flex items-center gap-0.5">
+                                    <Check className="w-3 h-3" /> Tốt
+                                  </span>
+                                ) : (
+                                  <span className="font-bold text-rose-600 flex items-center gap-0.5">
+                                    <XCircle className="w-3 h-3" /> Tồn tại
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="p-3.5 text-center">
+                            {rev.conclusion === "COMPLIANT" && (
+                              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                Hiệu Lực (Đạt)
+                              </span>
+                            )}
+                            {rev.conclusion === "NEEDS_UPDATE" && (
+                              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                                Cần Cập Nhật
+                              </span>
+                            )}
+                            {rev.conclusion === "CRITICAL_DEFICIENCY" && (
+                              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                                Khiếm Khuyết Lớn
+                              </span>
+                            )}
+                          </td>
+                          <td className="p-3.5 text-[11px]">
+                            <div className="font-semibold text-slate-800">{rev.approved_by || "Chưa duyệt"}</div>
+                            <div className="text-slate-500">{rev.approval_date || "-"}</div>
+                            <div className="mt-0.5">
+                              <span
+                                className={`inline-block px-1.5 py-0.2 rounded text-[9px] font-bold ${
+                                  rev.status === "APPROVED"
+                                    ? "bg-emerald-100 text-emerald-800"
+                                    : "bg-slate-100 text-slate-700"
+                                }`}
+                              >
+                                {rev.status}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="p-3.5 text-right">
+                            <div className="flex items-center justify-end gap-1">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handlePrintHACCPReview(rev)}
+                                title="In biên bản thẩm tra HACCP (BM-HACCP-REV-01)"
+                                className="h-7 w-7 p-0 text-slate-600 hover:text-emerald-700 hover:bg-emerald-50"
+                              >
+                                <Printer className="w-3.5 h-3.5" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => openEditReview(rev)}
+                                title="Chỉnh sửa biên bản"
+                                className="h-7 w-7 p-0 text-slate-600 hover:text-blue-700 hover:bg-blue-50"
+                              >
+                                <Pencil className="w-3.5 h-3.5" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleDeleteReview(rev.id)}
+                                title="Xóa biên bản"
+                                className="h-7 w-7 p-0 text-slate-600 hover:text-rose-700 hover:bg-rose-50"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ==================== MODAL: HACCP PLAN REVIEW (CLAUSE 8.6 & 8.8) ==================== */}
+      <Dialog open={reviewModalOpen} onOpenChange={setReviewModalOpen}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto bg-white border-slate-200 text-slate-900 shadow-2xl p-6">
+          <DialogHeader>
+            <DialogTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
+              <ClipboardCheck className="w-5 h-5 text-emerald-600" />
+              {editingReview ? "Cập Nhật Biên Bản Thẩm Tra Kế Hoạch HACCP" : "Lập Biên Bản Thẩm Tra Kế Hoạch HACCP Mới"}
+            </DialogTitle>
+          </DialogHeader>
+
+          <form onSubmit={handleSaveReview} className="space-y-4 py-2 text-xs">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div>
+                <Label className="text-slate-700 font-bold">Mã Biên Bản Thẩm Tra *</Label>
+                <Input
+                  value={reviewForm.review_code}
+                  onChange={(e) => setReviewForm({ ...reviewForm, review_code: e.target.value })}
+                  placeholder="VD: REV-HACCP-2026-001"
+                  className="mt-1 text-xs bg-white border-slate-300 font-mono font-bold"
+                  required
+                />
+              </div>
+              <div>
+                <Label className="text-slate-700 font-bold">Kế Hoạch HACCP Thẩm Tra *</Label>
+                <select
+                  value={reviewForm.plan_id}
+                  onChange={(e) => setReviewForm({ ...reviewForm, plan_id: e.target.value })}
+                  className="w-full mt-1 h-9 px-3 py-1 bg-white border border-slate-300 rounded-md text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  required
+                >
+                  <option value="">-- Chọn Kế hoạch HACCP --</option>
+                  {plans.map((p) => {
+                    const pid = p.plan_id || p.id || "";
+                    return (
+                      <option key={pid} value={pid}>
+                        {p.plan_code} - {p.plan_name}
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
+              <div>
+                <Label className="text-slate-700 font-bold">Ngày Thẩm Tra *</Label>
+                <Input
+                  type="date"
+                  value={reviewForm.review_date}
+                  onChange={(e) => setReviewForm({ ...reviewForm, review_date: e.target.value })}
+                  className="mt-1 text-xs bg-white border-slate-300"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <Label className="text-slate-700 font-bold">Loại Hình Thẩm Tra *</Label>
+                <select
+                  value={reviewForm.review_type}
+                  onChange={(e) => setReviewForm({ ...reviewForm, review_type: e.target.value })}
+                  className="w-full mt-1 h-9 px-3 py-1 bg-white border border-slate-300 rounded-md text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                >
+                  <option value="PERIODIC">Định kỳ định thời (Periodic)</option>
+                  <option value="POST_CHANGE">Sau khi có thay đổi (Clause 6.3)</option>
+                  <option value="INCIDENT_TRIGGERED">Sau sự cố / Sự sai lệch nghiêm trọng</option>
+                  <option value="ANNUAL">Đánh giá tổng thể thường niên</option>
+                </select>
+              </div>
+              <div>
+                <Label className="text-slate-700 font-semibold">Liên kết Yêu cầu thay đổi (MCR - Điều 6.3)</Label>
+                <select
+                  value={reviewForm.change_request_id || ""}
+                  onChange={(e) => setReviewForm({ ...reviewForm, change_request_id: e.target.value })}
+                  className="w-full mt-1 h-9 px-3 py-1 bg-white border border-slate-300 rounded-md text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                >
+                  <option value="">-- Không liên kết thay đổi --</option>
+                  {changeRequests.map((cr) => (
+                    <option key={cr.id} value={cr.id}>
+                      {cr.request_code}: {cr.title} ({cr.status})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <Label className="text-slate-700 font-bold">Mục Đích & Phạm Vi Thẩm Tra *</Label>
+                <textarea
+                  rows={2}
+                  value={reviewForm.scope_and_objective}
+                  onChange={(e) => setReviewForm({ ...reviewForm, scope_and_objective: e.target.value })}
+                  placeholder="Mục đích, phạm vi dây chuyền hoặc công đoạn được thẩm tra..."
+                  className="w-full mt-1 bg-white border border-slate-300 rounded-md p-2 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  required
+                />
+              </div>
+              <div>
+                <Label className="text-slate-700 font-bold">Thành Phần Đoàn / Người Thẩm Tra *</Label>
+                <textarea
+                  rows={2}
+                  value={reviewForm.reviewers}
+                  onChange={(e) => setReviewForm({ ...reviewForm, reviewers: e.target.value })}
+                  placeholder="Họ tên, chức danh các thành viên đoàn thẩm tra..."
+                  className="w-full mt-1 bg-white border border-slate-300 rounded-md p-2 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  required
+                />
+              </div>
+            </div>
+
+            {/* 3 Verification Pillars */}
+            <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+              <div className="font-bold text-slate-800 text-xs">
+                Đánh giá 3 Trụ Cột Thẩm Tra Theo ISO 22000:2018 Điều 8.6 & 8.8:
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                <label className="flex items-center gap-2 p-2 rounded-lg bg-white border border-slate-200 cursor-pointer hover:border-emerald-300">
+                  <input
+                    type="checkbox"
+                    checked={reviewForm.hazard_analysis_validity}
+                    onChange={(e) => setReviewForm({ ...reviewForm, hazard_analysis_validity: e.target.checked })}
+                    className="w-4 h-4 text-emerald-600 rounded"
+                  />
+                  <span className="text-[11px] font-medium text-slate-800">
+                    Phân tích mối nguy & Biện pháp kiểm soát còn hiệu lực
+                  </span>
+                </label>
+                <label className="flex items-center gap-2 p-2 rounded-lg bg-white border border-slate-200 cursor-pointer hover:border-emerald-300">
+                  <input
+                    type="checkbox"
+                    checked={reviewForm.monitoring_records_adequate}
+                    onChange={(e) => setReviewForm({ ...reviewForm, monitoring_records_adequate: e.target.checked })}
+                    className="w-4 h-4 text-emerald-600 rounded"
+                  />
+                  <span className="text-[11px] font-medium text-slate-800">
+                    Hồ sơ giám sát CCP & OPRP đầy đủ, trung thực
+                  </span>
+                </label>
+                <label className="flex items-center gap-2 p-2 rounded-lg bg-white border border-slate-200 cursor-pointer hover:border-emerald-300">
+                  <input
+                    type="checkbox"
+                    checked={reviewForm.corrective_actions_effective}
+                    onChange={(e) => setReviewForm({ ...reviewForm, corrective_actions_effective: e.target.checked })}
+                    className="w-4 h-4 text-emerald-600 rounded"
+                  />
+                  <span className="text-[11px] font-medium text-slate-800">
+                    Các hành động khắc phục (CAPA) đã thực hiện hiệu quả
+                  </span>
+                </label>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <Label className="text-slate-700 font-semibold">Tóm Tắt Thẩm Tra Giám Sát CCP</Label>
+                <textarea
+                  rows={2}
+                  value={reviewForm.ccp_audit_summary || ""}
+                  onChange={(e) => setReviewForm({ ...reviewForm, ccp_audit_summary: e.target.value })}
+                  placeholder="Ghi nhận về việc kiểm soát ngưỡng tới hạn, tần suất giám sát..."
+                  className="w-full mt-1 bg-white border border-slate-300 rounded-md p-2 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+              <div>
+                <Label className="text-slate-700 font-semibold">Tóm Tắt Thẩm Tra PRP / OPRP</Label>
+                <textarea
+                  rows={2}
+                  value={reviewForm.prp_audit_summary || ""}
+                  onChange={(e) => setReviewForm({ ...reviewForm, prp_audit_summary: e.target.value })}
+                  placeholder="Ghi nhận về vệ sinh nhà xưởng, nước đá, bảo hộ lao động..."
+                  className="w-full mt-1 bg-white border border-slate-300 rounded-md p-2 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <Label className="text-slate-700 font-bold">Phát Hiện & Điểm Chưa Phù Hợp *</Label>
+                <textarea
+                  rows={2}
+                  value={reviewForm.findings || ""}
+                  onChange={(e) => setReviewForm({ ...reviewForm, findings: e.target.value })}
+                  placeholder="Các điểm phù hợp và các khiếm khuyết phát hiện..."
+                  className="w-full mt-1 bg-white border border-slate-300 rounded-md p-2 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  required
+                />
+              </div>
+              <div>
+                <Label className="text-slate-700 font-bold">Hành Động Cần Thực Hiện / Khắc Phục *</Label>
+                <textarea
+                  rows={2}
+                  value={reviewForm.required_actions || ""}
+                  onChange={(e) => setReviewForm({ ...reviewForm, required_actions: e.target.value })}
+                  placeholder="Yêu cầu sửa đổi kế hoạch, bổ sung huấn luyện, hiệu chuẩn lại..."
+                  className="w-full mt-1 bg-white border border-slate-300 rounded-md p-2 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+              <div>
+                <Label className="text-slate-700 font-bold">Kết Luận Thẩm Tra *</Label>
+                <select
+                  value={reviewForm.conclusion}
+                  onChange={(e) => setReviewForm({ ...reviewForm, conclusion: e.target.value })}
+                  className="w-full mt-1 h-9 px-3 py-1 bg-white border border-slate-300 rounded-md text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                >
+                  <option value="COMPLIANT">Hiệu Lực (Đạt)</option>
+                  <option value="NEEDS_UPDATE">Cần Cập Nhật</option>
+                  <option value="CRITICAL_DEFICIENCY">Khiếm Khuyết Lớn</option>
+                </select>
+              </div>
+              <div>
+                <Label className="text-slate-700 font-semibold">Người Phê Duyệt</Label>
+                <Input
+                  value={reviewForm.approved_by || ""}
+                  onChange={(e) => setReviewForm({ ...reviewForm, approved_by: e.target.value })}
+                  placeholder="Lê Hoàng Quân (Giám đốc)"
+                  className="mt-1 text-xs bg-white border-slate-300"
+                />
+              </div>
+              <div>
+                <Label className="text-slate-700 font-semibold">Ngày Phê Duyệt</Label>
+                <Input
+                  type="date"
+                  value={reviewForm.approval_date || ""}
+                  onChange={(e) => setReviewForm({ ...reviewForm, approval_date: e.target.value })}
+                  className="mt-1 text-xs bg-white border-slate-300"
+                />
+              </div>
+              <div>
+                <Label className="text-slate-700 font-bold">Trạng Thái Hồ Sơ *</Label>
+                <select
+                  value={reviewForm.status}
+                  onChange={(e) => setReviewForm({ ...reviewForm, status: e.target.value })}
+                  className="w-full mt-1 h-9 px-3 py-1 bg-white border border-slate-300 rounded-md text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                >
+                  <option value="DRAFT">DRAFT (Dự thảo)</option>
+                  <option value="PENDING_APPROVAL">PENDING_APPROVAL (Chờ duyệt)</option>
+                  <option value="APPROVED">APPROVED (Đã duyệt)</option>
+                  <option value="REJECTED">REJECTED (Bác bỏ)</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <Label className="text-slate-700 font-semibold">Ghi Chú Bổ Sung</Label>
+              <textarea
+                rows={1}
+                value={reviewForm.notes || ""}
+                onChange={(e) => setReviewForm({ ...reviewForm, notes: e.target.value })}
+                className="w-full mt-1 bg-white border border-slate-300 rounded-md p-2 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              />
+            </div>
+
+            <DialogFooter className="pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setReviewModalOpen(false)}
+                className="text-xs"
+              >
+                Hủy Bỏ
+              </Button>
+              <Button
+                type="submit"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold"
+              >
+                {editingReview ? "Cập Nhật Hồ Sơ Thẩm Tra" : "Lưu Biên Bản Thẩm Tra"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
       {/* ==================== MODAL: HACCP PLAN (CREATE / EDIT) ==================== */}
       <Dialog open={showPlanModal} onOpenChange={setShowPlanModal}>
         <DialogContent className="max-w-md bg-white border-slate-200 text-slate-900 shadow-2xl">
@@ -1963,11 +2818,30 @@ function HACCPModule() {
               initialData={currentWorkflowData}
               onSave={async (wf) => {
                 try {
+                  // 1. Lưu sơ đồ workflow template vào hệ thống Dynamic Workflows
                   await api.post("/builders/workflows", wf);
-                  toast.success("Đã lưu sơ đồ lưu đồ quy trình vào hệ thống!");
+
+                  // 2. Đồng bộ công đoạn với Kế hoạch HACCP hiện tại
+                  const targetPlanId = selectedPlanId !== "ALL" ? selectedPlanId : (currentPlan?.plan_id || plans[0]?.plan_id);
+                  if (targetPlanId) {
+                    const stepPayload = wf.nodes.map((n, idx) => ({
+                      step_id: n.id && n.id.length === 36 ? n.id : undefined,
+                      step_number: idx + 1,
+                      step_name: n.label.replace(/^\d+[\.\:\-]\s*/, ""),
+                      description: n.description || "",
+                      is_ccp_or_oprp: !!n.is_ccp,
+                      product_line: currentPlan?.product_line || "Chế biến Thủy hải sản",
+                    }));
+                    await api.post(`/haccp/plans/${targetPlanId}/sync-flow-steps`, { steps: stepPayload });
+                  }
+
+                  toast.success("Đã lưu lưu đồ và đồng bộ danh mục công đoạn HACCP thành công!");
                   setShowWorkflowStudio(false);
+                  await fetchData();
                 } catch (err: any) {
-                  toast.error("Lỗi khi lưu: " + (err.response?.data?.detail || err.message));
+                  const msg = err.response?.data?.detail || err.message;
+                  toast.error("Lỗi khi lưu: " + msg);
+                  throw new Error(msg);
                 }
               }}
               onCancel={() => setShowWorkflowStudio(false)}
@@ -2371,17 +3245,59 @@ function HACCPModule() {
             </div>
 
             <DynamicFormRenderer
+              key={`${formTemplateCCP.template_id || 'ccp-form'}-${showDynamicFormLog}`}
               template={formTemplateCCP}
+              initialValues={{
+                batch_number: "LOT-2026-B01",
+                retort_number: "Nồi Retort #01",
+                core_temperature_c: 85.5,
+                measured_temp: 85.5,
+                holding_time_min: 15,
+                holding_time: 15,
+                pressure_bar: 1.8,
+                is_limit_pass: true,
+                is_pass: true,
+              }}
               onSubmit={async (formData) => {
                 try {
+                  // 1. Lưu vào Form Builder Submissions
                   await api.post("/builders/submissions", {
                     template_id: formTemplateCCP.template_id || "00000000-0000-0000-0000-000000000000",
-                    submitted_by_name: "QC Ca Sản Xuất",
+                    submitted_by_name: "Nguyễn Văn An (Trưởng ca Sản xuất & QC)",
                     form_data: formData,
                     status: "COMPLETED",
                   });
-                  toast.success("Đã ghi nhận phiếu giám sát CCP vào cơ sở dữ liệu!");
+
+                  // 2. Tự động ghi nhận log vào bảng Giám Sát CCP (ccp_monitoring_logs)
+                  const targetCcp = ccps.find((c) => c.ccp_number === "CCP 1" || (c.name && c.name.toLowerCase().includes("thanh trùng"))) || ccps[0];
+                  if (targetCcp) {
+                    const tempVal = parseFloat(formData["core_temperature_c"] || formData["measured_temp"] || formData["measured_value"] || 85.5);
+                    const isPass = formData["is_limit_pass"] !== false && formData["is_pass"] !== false && String(formData["is_limit_pass"]).toLowerCase() !== "false";
+                    
+                    const logPayload = {
+                      ccp_id: targetCcp.ccp_id,
+                      batch_number: String(formData["batch_number"] || "LOT-2026-B01").trim(),
+                      measured_value: isNaN(tempVal) ? 85.5 : tempVal,
+                      unit: "°C",
+                      deviation_action: !isPass ? "Biệt trữ lô hàng, tái gia nhiệt lại hoặc xử lý theo quy trình ứng phó sai lệch CCP" : null,
+                      notes: String(formData["notes"] || formData["qc_signature"] || `Ghi nhận qua phiếu kiểm soát CCP động ${formTemplateCCP.code}`),
+                    };
+
+                    const res = await api.post("/haccp/ccp-logs", logPayload);
+                    const saved = res.data;
+                    if (saved.status === "CRITICAL") {
+                      toast.error(`CẢNH BÁO VI PHẠM: Giá trị ${saved.measured_value}${saved.unit} vượt ngoài giới hạn tới hạn!`);
+                    } else if (saved.status === "WARNING") {
+                      toast.warning(`LƯU Ý: Giá trị ${saved.measured_value}${saved.unit} sát ngưỡng tới hạn.`);
+                    } else {
+                      toast.success(`Đã ghi nhận nhật ký đo CCP [${targetCcp.ccp_number}] thành công!`);
+                    }
+                  } else {
+                    toast.success("Đã ghi nhận phiếu giám sát CCP vào cơ sở dữ liệu!");
+                  }
+
                   setShowDynamicFormLog(false);
+                  await fetchData();
                 } catch (err: any) {
                   toast.error("Lỗi khi gửi phiếu: " + (err.response?.data?.detail || err.message));
                 }

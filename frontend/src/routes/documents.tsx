@@ -2163,7 +2163,9 @@ KÝ DUYỆT VĂN BẢN (ĐIỀU KHOẢN 7.5 ISO 22000:2018):
                   toast.success("Đã lưu lưu đồ quy trình phê duyệt SOP thành công!");
                   setShowSopWorkflowModal(false);
                 } catch (err: any) {
-                  toast.error("Lỗi khi lưu quy trình: " + (err.response?.data?.detail || err.message));
+                  const msg = err.response?.data?.detail || err.message;
+                  toast.error("Lỗi khi lưu quy trình: " + msg);
+                  throw new Error(msg);
                 }
               }}
               onCancel={() => setShowSopWorkflowModal(false)}

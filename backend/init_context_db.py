@@ -1,6 +1,6 @@
 import sys
 from app.core.database import SessionLocal, engine, Base
-from app.models.organization import InterestedParty, ContextRisk
+from app.modules.organization.models import InterestedParty, ContextRisk
 from datetime import date
 
 def init_context_tables():

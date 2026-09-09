@@ -749,17 +749,58 @@ function PurchasingPage() {
   const handleSaveVendorDynamicForm = async (vals: Record<string, any>) => {
     if (!selectedSupplierForForm) return;
     try {
+      // 1. Phân tích kết quả đánh giá từ biểu mẫu động
+      const hasIso = vals["has_iso_cert"] !== false && String(vals["has_iso_cert"]).toLowerCase() !== "false";
+      const ranking = String(vals["final_ranking"] || vals["supplier_ranking"] || "");
+      const score = Number(vals["quality_score"] || selectedSupplierForForm.rating_score || 0);
+
+      let newStatus = "APPROVED";
+      let newRisk = "LOW";
+
+      // Nếu không có chứng nhận ISO hoặc xếp Loại D (đình chỉ) hoặc điểm < 50 => Đình chỉ hợp tác (SUSPENDED)
+      if (!hasIso || ranking.includes("Loại D") || ranking.includes("Hạng D") || ranking.includes("Đình chỉ") || ranking.includes("Loại khỏi") || score < 50) {
+        newStatus = "SUSPENDED";
+        newRisk = "HIGH";
+      } else if (ranking.includes("Loại C") || ranking.includes("Hạng C") || ranking.includes("khắc phục") || score < 75) {
+        newStatus = "WARNING";
+        newRisk = "MEDIUM";
+      } else {
+        newStatus = "APPROVED";
+        newRisk = "LOW";
+      }
+
+      const note = vals["audit_notes"] || (
+        newStatus === "SUSPENDED" 
+          ? "Đình chỉ: Không đạt thẩm định định kỳ ATTP / Thiếu chứng nhận ISO còn hiệu lực" 
+          : newStatus === "WARNING" 
+          ? "Cảnh báo: Cần khắc phục các điểm không phù hợp trước đợt giao hàng tiếp theo" 
+          : "Đạt chuẩn thẩm định năng lực & ATTP định kỳ"
+      );
+      const today = new Date().toISOString().split("T")[0];
+
+      // 2. Lưu kết quả submission vào Form Builder
       await api.post("/builders/submissions", {
         template_id: vendorFormTemplate?.template_id || "FORM-VENDOR-01",
         reference_id: selectedSupplierForForm.supplier_id,
         reference_type: "SUPPLIER",
-        submitted_by_name: "Chuyên viên QA Đánh giá NCC",
+        submitted_by_name: "Lê Hoàng Nam (Trưởng ban QA/QC)",
         form_data: vals,
         status: "COMPLETED",
       });
-      toast.success(`Đã lưu kết quả đánh giá cho "${selectedSupplierForForm.supplier_name}" thành công!`);
+
+      // 3. Cập nhật trực tiếp trạng thái & điểm đánh giá của Nhà cung ứng vào CSDL
+      await api.put(`/purchasing/suppliers/${selectedSupplierForForm.supplier_id}`, {
+        status: newStatus,
+        risk_level: newRisk,
+        rating_score: score || selectedSupplierForForm.rating_score,
+        evaluation_notes: note,
+        evaluation_date: today,
+      });
+
+      const statusLabel = newStatus === "APPROVED" ? "ĐẠT CHUẨN (APPROVED)" : newStatus === "WARNING" ? "CẢNH BÁO (WARNING)" : "ĐÌNH CHỈ / KHÔNG ĐẠT (SUSPENDED)";
+      toast.success(`Đã cập nhật trạng thái NCC "${selectedSupplierForForm.supplier_name}" -> ${statusLabel}!`);
       setShowDynamicVendorModal(false);
-      fetchData();
+      await fetchData();
     } catch (err: any) {
       toast.error("Lỗi khi lưu kết quả đánh giá: " + (err.response?.data?.detail || err.message));
     }
@@ -4344,11 +4385,23 @@ function PurchasingPage() {
       </Dialog>
 
       {/* ==================== MODAL: DYNAMIC FORM - SUPPLIER AUDIT (BM-NCC-01) ==================== */}
-      {showDynamicVendorModal && vendorFormTemplate && (
+      {showDynamicVendorModal && vendorFormTemplate && selectedSupplierForForm && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="w-full max-w-3xl">
             <DynamicFormRenderer
+              key={`${selectedSupplierForForm.supplier_id}-${showDynamicVendorModal}`}
               template={vendorFormTemplate}
+              initialValues={{
+                vendor_name: selectedSupplierForForm.supplier_name,
+                supplier_name: selectedSupplierForForm.supplier_name,
+                has_iso_cert: selectedSupplierForForm.status !== "WARNING" && selectedSupplierForForm.status !== "SUSPENDED" && selectedSupplierForForm.status !== "REJECTED",
+                quality_score: selectedSupplierForForm.rating_score || 95,
+                delivery_ontime_rate: 98,
+                ontime_delivery_rate: 98,
+                final_ranking: selectedSupplierForForm.status === "WARNING" ? "Loại C - Cần khắc phục" : selectedSupplierForForm.status === "SUSPENDED" || selectedSupplierForForm.status === "REJECTED" ? "Loại D - Loại khỏi danh bạ" : "Loại A - Ưu tiên hàng đầu",
+                supplier_ranking: selectedSupplierForForm.status === "WARNING" ? "Hạng C (Cần khắc phục)" : selectedSupplierForForm.status === "SUSPENDED" || selectedSupplierForForm.status === "REJECTED" ? "Hạng D (Đình chỉ)" : "Hạng A (Ưu tiên)",
+                audit_notes: selectedSupplierForForm.evaluation_notes || "",
+              }}
               onSubmit={handleSaveVendorDynamicForm}
               onCancel={() => setShowDynamicVendorModal(false)}
             />
@@ -4357,11 +4410,26 @@ function PurchasingPage() {
       )}
 
       {/* ==================== MODAL: DYNAMIC FORM - IQC INSPECTION (FORM-IQC-01) ==================== */}
-      {showDynamicIqcModal && iqcFormTemplate && (
+      {showDynamicIqcModal && iqcFormTemplate && selectedLotForForm && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="w-full max-w-3xl">
             <DynamicFormRenderer
+              key={`${selectedLotForForm.material_lot_id}-${showDynamicIqcModal}`}
               template={iqcFormTemplate}
+              initialValues={{
+                lot_number: selectedLotForForm.lot_number,
+                material_lot: selectedLotForForm.lot_number,
+                material_name: selectedLotForForm.material_name,
+                supplier_name: selectedLotForForm.supplier_name || "Nhà cung cấp uy tín",
+                temp_delivery: -19.2,
+                truck_temperature_c: -19.2,
+                sensory_pass: true,
+                sensory_color: true,
+                has_coa: true,
+                coa_attached: true,
+                qc_decision: "CHẤP NHẬN NHẬP KHO (PASS)",
+                iqc_verdict: "CHẤP NHẬN NHẬP KHO",
+              }}
               onSubmit={handleSaveIqcDynamicForm}
               onCancel={() => setShowDynamicIqcModal(false)}
             />
@@ -4381,7 +4449,9 @@ function PurchasingPage() {
                   toast.success("Đã lưu quy trình thẩm định nhà cung cấp thành công!");
                   setShowWorkflowModal(false);
                 } catch (err: any) {
-                  toast.error("Lỗi khi lưu quy trình: " + (err.response?.data?.detail || err.message));
+                  const msg = err.response?.data?.detail || err.message;
+                  toast.error("Lỗi khi lưu quy trình: " + msg);
+                  throw new Error(msg);
                 }
               }}
               onCancel={() => setShowWorkflowModal(false)}

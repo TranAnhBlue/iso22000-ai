@@ -202,15 +202,32 @@ export const WorkflowBuilder: React.FC<WorkflowBuilderProps> = ({
     setTemplate((prev) => {
       const remainingNodes = prev.nodes
         .filter((n) => n.id !== id)
-        .map((n, idx) => ({ ...n, step_number: idx + 1 }));
-      const remainingEdges = prev.edges.filter((e) => e.source !== id && e.target !== id);
+        .map((n, idx) => {
+          const cleanLabel = n.label.replace(/^\d+[\.\:\-]\s*/, "");
+          return {
+            ...n,
+            step_number: idx + 1,
+            label: `${idx + 1}. ${cleanLabel}`,
+          };
+        });
+
+      // Tái tạo lại chuỗi liên kết edges theo thứ tự mới để sơ đồ không bị đứt gãy
+      const newEdges: WorkflowEdgeData[] = [];
+      for (let i = 0; i < remainingNodes.length - 1; i++) {
+        newEdges.push({
+          id: `e_${remainingNodes[i].id}_${remainingNodes[i + 1].id}`,
+          source: remainingNodes[i].id,
+          target: remainingNodes[i + 1].id,
+          label: remainingNodes[i].is_ccp ? "Kiểm soát CCP Đạt" : "Chuyển tiếp",
+        });
+      }
 
       if (selectedNodeId === id) {
         setSelectedNodeId(remainingNodes[0]?.id || null);
       }
-      return { ...prev, nodes: remainingNodes, edges: remainingEdges };
+      return { ...prev, nodes: remainingNodes, edges: newEdges };
     });
-    toast.info("Đã xóa công đoạn khỏi lưu đồ");
+    toast.info("Đã xóa công đoạn. Các công đoạn sau tự động đôn lên thành công đoạn trước (1, 2, 3...)");
   };
 
   const handleMoveNode = (index: number, direction: "UP" | "DOWN") => {
@@ -223,11 +240,15 @@ export const WorkflowBuilder: React.FC<WorkflowBuilderProps> = ({
       newNodes[index] = newNodes[targetIdx];
       newNodes[targetIdx] = temp;
 
-      // Cập nhật lại step_number
-      const renumberedNodes = newNodes.map((n, idx) => ({
-        ...n,
-        step_number: idx + 1,
-      }));
+      // Cập nhật lại step_number và label theo thứ tự mới
+      const renumberedNodes = newNodes.map((n, idx) => {
+        const cleanLabel = n.label.replace(/^\d+[\.\:\-]\s*/, "");
+        return {
+          ...n,
+          step_number: idx + 1,
+          label: `${idx + 1}. ${cleanLabel}`,
+        };
+      });
 
       // Tái tạo lại chuỗi liên kết edges theo thứ tự mới
       const newEdges: WorkflowEdgeData[] = [];
@@ -261,7 +282,6 @@ export const WorkflowBuilder: React.FC<WorkflowBuilderProps> = ({
     setSaving(true);
     try {
       await onSave(template);
-      toast.success("Đã lưu Quy trình / Lưu đồ thành công!");
     } catch (e: any) {
       toast.error(`Lỗi khi lưu quy trình: ${e?.message || "Không thể kết nối máy chủ"}`);
     } finally {
