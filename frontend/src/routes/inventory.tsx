@@ -791,31 +791,37 @@ export function InventoryPage() {
 
         <div style="text-align: center; margin-bottom: 18px;">
           <h2 style="margin: 0; font-size: 15pt; text-transform: uppercase;">
-            BIÊN BẢN TIÊU HỦY SẢN PHẨM / NGUYÊN LIỆU LỖI
+            BIÊN BẢN XÁC NHẬN HỦY HÀNG
           </h2>
-          <div style="font-style: italic; margin-top: 3px;">Mã số biên bản: <strong>${d.record_code}</strong></div>
+          <div style="font-style: italic; margin-top: 3px;">Mã số biên bản: <strong>${d.record_code}</strong> &nbsp;|&nbsp; Ngày lập: <strong>${d.disposal_date}</strong></div>
         </div>
 
-        <div style="margin-bottom: 14px;">
-          Hôm nay, ngày <strong>${d.disposal_date}</strong>, tại <strong>${d.disposal_location || "Khu xử lý chất thải Nhà máy"}</strong>, Hội đồng tiến hành tiêu hủy lô hàng không phù hợp với các nội dung chi tiết như sau:
-        </div>
-
-        <div style="margin-bottom: 14px;">
-          <strong>1. Thành phần tham gia chứng kiến tiêu hủy (Hội đồng 3 bên):</strong>
-          <div style="border: 1px solid #777; padding: 8px 12px; margin-top: 4px; white-space: pre-line; background-color: #fafafa; font-size: 10pt;">
-            ${d.witness_council || "1. Đại diện Đơn vị thực hiện hủy hàng: Ông/Bà ................. - Phòng/Ban: ................. - Chức vụ: .................\n2. Đại diện Phòng Quản lý Chất lượng (P.QLCL): Ông/Bà ................. - Phòng/Ban: QLCL - Chức vụ: .................\n3. Đại diện Phòng ban đề xuất hủy hàng: Ông/Bà ................. - Phòng/Ban: ................. - Chức vụ: ................."}
+        <div style="margin-bottom: 12px; font-size: 11pt;">
+          <strong>Thành phần tham gia xác nhận hủy hàng bao gồm:</strong>
+          <div style="border: 1px solid #999; padding: 10px 14px; margin-top: 5px; background-color: #fafafa; font-size: 10.5pt; line-height: 1.6;">
+            ${
+              d.witness_council && d.witness_council.includes("1.")
+                ? d.witness_council.split("\n").map((line, idx) => `<div>${line}</div>`).join("")
+                : `<div>1. Ông/Bà: <strong>Nguyễn Văn Tài</strong> &nbsp;&nbsp;&nbsp;&nbsp; Phòng / Ban: <strong>Kho Vận</strong> &nbsp;&nbsp;&nbsp;&nbsp; Chức vụ: <strong>Thủ kho</strong></div>
+                   <div>2. Ông/Bà: <strong>Lê Hoàng Nam</strong> &nbsp;&nbsp;&nbsp;&nbsp; Phòng / Ban: <strong>QLCL (QA/QC)</strong> &nbsp;&nbsp;&nbsp;&nbsp; Chức vụ: <strong>Chuyên viên HACCP</strong></div>
+                   <div>3. Ông/Bà: <strong>Trần Quốc Huy</strong> &nbsp;&nbsp;&nbsp;&nbsp; Phòng / Ban: <strong>Phân xưởng Chế biến</strong> &nbsp;&nbsp;&nbsp;&nbsp; Chức vụ: <strong>Quản đốc Sản xuất</strong></div>`
+            }
           </div>
         </div>
 
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 12px; font-size: 11pt;" border="1">
+        <div style="margin-bottom: 10px; font-size: 11pt;">
+          Chúng tôi đã tiến hành bàn giao hàng hủy tại <strong>${d.disposal_location || "Khu xử lý chất thải Nhà máy"}</strong> với số lượng như sau:
+        </div>
+
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 12px; font-size: 10.5pt;" border="1">
           <thead>
             <tr style="background-color: #f1f5f9; text-align: center;">
-              <th style="padding: 6px; width: 6%;">STT</th>
-              <th style="padding: 6px; width: 28%;">Danh mục / Tên mặt hàng</th>
+              <th style="padding: 6px; width: 5%;">STT</th>
+              <th style="padding: 6px; width: 30%;">DANH MỤC</th>
               <th style="padding: 6px; width: 8%;">ĐVT</th>
-              <th style="padding: 6px; width: 14%;">Số lượng</th>
-              <th style="padding: 6px; width: 24%;">Phương pháp tiêu hủy (*)</th>
-              <th style="padding: 6px; width: 20%;">Đánh giá kết quả</th>
+              <th style="padding: 6px; width: 14%;">SỐ LƯỢNG</th>
+              <th style="padding: 6px; width: 23%;">PHƯƠNG PHÁP TIÊU HỦY (*)</th>
+              <th style="padding: 6px; width: 20%;">ĐÁNH GIÁ KẾT QUẢ</th>
             </tr>
           </thead>
           <tbody>
@@ -829,46 +835,47 @@ export function InventoryPage() {
               <td style="text-align: center; padding: 8px; font-weight: bold; color: #b91c1c;">${d.quantity}</td>
               <td style="padding: 8px; font-size: 10pt;">${d.disposal_method}</td>
               <td style="text-align: center; padding: 8px; font-weight: bold; color: #047857;">
-                ${d.status === "DISPOSED" ? "ĐÃ TIÊU HỦY HOÀN TOÀN" : "CHỜ TIÊU HỦY"}
+                ${d.status === "DISPOSED" ? "ĐÃ TIÊU HỦY" : "CHỜ TIÊU HỦY"}
               </td>
             </tr>
           </tbody>
         </table>
 
-        <div style="margin-bottom: 12px; font-size: 9.5pt; font-style: italic; color: #444;">
-          (*) <strong>Ghi chú quy trình FSMS:</strong> Các mục Lý do hủy và Phương pháp hủy là nội dung mở rộng trên phần mềm quản trị ISO 22000 (biểu mẫu gốc BM02 ghi nhận chung trong cột Ghi chú tự do).
+        <div style="margin-bottom: 10px; font-size: 9pt; font-style: italic; color: #555;">
+          (*) <strong>Ghi chú mở rộng phần mềm:</strong> Trường phương pháp hủy và lý do hủy là tính năng số hóa hỗ trợ hệ thống quản lý FSMS (trên mẫu giấy BM02 gốc ghi chung tại mục đánh giá/ghi chú).
         </div>
 
-        <div style="margin-bottom: 14px;">
-          <strong>2. Lý do tiêu hủy:</strong>
-          <div style="border: 1px solid #777; padding: 8px 12px; margin-top: 4px; background-color: #fafafa;">
+        <div style="margin-bottom: 12px; font-size: 10.5pt;">
+          <strong>Lý do tiêu hủy:</strong>
+          <div style="border: 1px solid #ccc; padding: 6px 10px; margin-top: 3px; background-color: #fafafa;">
             ${d.reason}
           </div>
         </div>
 
-        <div style="margin-bottom: 20px; padding: 10px; border: 1px solid #047857; background-color: #f0fdf4;">
-          <strong>3. CAM KẾT HỘI ĐỒNG:</strong> Toàn bộ số lượng sản phẩm không phù hợp nêu trên đã được tiêu hủy triệt để, không còn khả năng tái sử dụng, không đưa vào chuỗi thực phẩm và không gây ô nhiễm môi trường.
+        <div style="margin-bottom: 25px; padding: 10px 14px; border: 1px dashed #047857; background-color: #f0fdf4; font-size: 10.5pt; line-height: 1.5;">
+          Số lượng hàng đã tiêu hủy và quá trình hủy hàng được sự giám sát và thực hiện đúng cách thức hủy hàng đã nêu trong biên bản.<br/>
+          Các bên đã thống nhất những nội dung và đồng ý ký vào biên bản này.
         </div>
 
-        <table style="width: 100%; border-collapse: collapse; margin-top: 30px; text-align: center;">
+        <table style="width: 100%; border-collapse: collapse; margin-top: 25px; text-align: center;">
           <tr>
             <td style="width: 33.3%; vertical-align: top;">
               <strong style="text-transform: uppercase;">ĐƠN VỊ THỰC HIỆN HỦY HÀNG</strong><br/>
               <span style="font-size: 9pt; font-style: italic;">(Ký & ghi rõ họ tên)</span>
               <div style="height: 60px;"></div>
-              <span style="font-size: 9pt; color: #555; font-style: italic;">(Ký xác nhận hoàn tất)</span>
+              <span style="font-size: 9.5pt; color: #444; font-style: italic;">(Đã ký xác nhận)</span>
             </td>
             <td style="width: 33.3%; vertical-align: top;">
-              <strong style="text-transform: uppercase;">PHÒNG QUẢN LÝ CHẤT LƯỢNG (P.QLCL)</strong><br/>
+              <strong style="text-transform: uppercase;">P. QLCL</strong><br/>
               <span style="font-size: 9pt; font-style: italic;">(Ký & ghi rõ họ tên)</span>
               <div style="height: 60px;"></div>
-              <strong>${d.approved_by || "Phòng QLCL Thẩm định"}</strong>
+              <strong>${d.approved_by || "Lê Hoàng Nam (QA)"}</strong>
             </td>
             <td style="width: 33.3%; vertical-align: top;">
               <strong style="text-transform: uppercase;">PHÒNG BAN ĐỀ XUẤT HỦY HÀNG</strong><br/>
               <span style="font-size: 9pt; font-style: italic;">(Ký & ghi rõ họ tên)</span>
               <div style="height: 60px;"></div>
-              <span style="font-size: 9pt; color: #555; font-style: italic;">(Ký xác nhận đề xuất)</span>
+              <span style="font-size: 9.5pt; color: #444; font-style: italic;">(Đã ký xác nhận)</span>
             </td>
           </tr>
         </table>

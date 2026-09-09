@@ -1,5 +1,5 @@
 from app.core.database import SessionLocal, engine, Base
-from app.models.purchasing import Supplier, SupplierEvaluationPlan, SupplierEvaluation
+from app.modules.purchasing.models import Supplier, SupplierEvaluationPlan, SupplierEvaluation
 from datetime import date, datetime
 import uuid
 

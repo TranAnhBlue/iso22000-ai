@@ -15,6 +15,8 @@ export interface CrudField {
   placeholder?: string;
   mono?: boolean;
   hideInTable?: boolean;
+  hideInForm?: boolean;
+  readonly?: boolean;
   render?: (val: any, row: any) => React.ReactNode;
 }
 
@@ -204,36 +206,40 @@ export function CrudTable({
 
           <form onSubmit={handleFormSubmit} className="space-y-4 pt-2">
             <div className="grid gap-3 sm:grid-cols-2">
-              {fields.map((f) => (
-                <div key={f.key} className={`space-y-1.5 ${f.key === "name" ? "sm:col-span-2" : ""}`}>
-                  <Label className="text-xs">
-                    {f.label} {f.required && <span className="text-destructive">*</span>}
-                  </Label>
+              {fields
+                .filter((f) => !f.hideInForm)
+                .map((f) => (
+                  <div key={f.key} className={`space-y-1.5 ${f.key === "name" ? "sm:col-span-2" : ""}`}>
+                    <Label className="text-xs">
+                      {f.label} {f.required && <span className="text-destructive">*</span>}
+                    </Label>
 
-                  {f.type === "select" ? (
-                    <select
-                      className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                      value={formData[f.key] || ""}
-                      onChange={(e) => setFormData({ ...formData, [f.key]: e.target.value })}
-                    >
-                      {f.options?.map((opt) => (
-                        <option key={opt} value={opt}>
-                          {opt}
-                        </option>
-                      ))}
-                    </select>
-                  ) : (
-                    <Input
-                      type={f.type || "text"}
-                      required={f.required}
-                      placeholder={f.label}
-                      className="h-9 text-xs"
-                      value={formData[f.key] ?? ""}
-                      onChange={(e) => setFormData({ ...formData, [f.key]: e.target.value })}
-                    />
-                  )}
-                </div>
-              ))}
+                    {f.type === "select" ? (
+                      <select
+                        disabled={f.readonly}
+                        className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50"
+                        value={formData[f.key] || ""}
+                        onChange={(e) => setFormData({ ...formData, [f.key]: e.target.value })}
+                      >
+                        {f.options?.map((opt) => (
+                          <option key={opt} value={opt}>
+                            {opt}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <Input
+                        type={f.type || "text"}
+                        required={f.required}
+                        disabled={f.readonly}
+                        placeholder={f.label}
+                        className="h-9 text-xs disabled:opacity-50"
+                        value={formData[f.key] ?? ""}
+                        onChange={(e) => setFormData({ ...formData, [f.key]: e.target.value })}
+                      />
+                    )}
+                  </div>
+                ))}
             </div>
 
             <div className="flex justify-end gap-2 pt-4">

@@ -1,0 +1,33 @@
+from app.modules import (
+    auth,
+    organization,
+    documents,
+    change_management,
+    emergency,
+    equipment,
+    purchasing,
+    inventory,
+    traceability,
+    haccp,
+    capa,
+    audits,
+    dashboard,
+    builder,
+)
+
+__all__ = [
+    "auth",
+    "organization",
+    "documents",
+    "change_management",
+    "emergency",
+    "equipment",
+    "purchasing",
+    "inventory",
+    "traceability",
+    "haccp",
+    "capa",
+    "audits",
+    "dashboard",
+    "builder",
+]

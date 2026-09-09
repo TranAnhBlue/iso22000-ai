@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuditsRouteImport } from './routes/audits'
 import { Route as BuilderRouteImport } from './routes/builder'
 import { Route as CapaRouteImport } from './routes/capa'
+import { Route as ChangeManagementRouteImport } from './routes/change-management'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as DocumentsRouteImport } from './routes/documents'
 import { Route as EmergencyRouteImport } from './routes/emergency'
@@ -42,6 +43,11 @@ const BuilderRoute = BuilderRouteImport.update({
 const CapaRoute = CapaRouteImport.update({
   id: '/capa',
   path: '/capa',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ChangeManagementRoute = ChangeManagementRouteImport.update({
+  id: '/change-management',
+  path: '/change-management',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardRoute = DashboardRouteImport.update({
@@ -100,6 +106,7 @@ export interface FileRoutesByFullPath {
   '/audits': typeof AuditsRoute
   '/builder': typeof BuilderRoute
   '/capa': typeof CapaRoute
+  '/change-management': typeof ChangeManagementRoute
   '/dashboard': typeof DashboardRoute
   '/documents': typeof DocumentsRoute
   '/emergency': typeof EmergencyRoute
@@ -116,6 +123,7 @@ export interface FileRoutesByTo {
   '/audits': typeof AuditsRoute
   '/builder': typeof BuilderRoute
   '/capa': typeof CapaRoute
+  '/change-management': typeof ChangeManagementRoute
   '/dashboard': typeof DashboardRoute
   '/documents': typeof DocumentsRoute
   '/emergency': typeof EmergencyRoute
@@ -133,6 +141,7 @@ export interface FileRoutesById {
   '/audits': typeof AuditsRoute
   '/builder': typeof BuilderRoute
   '/capa': typeof CapaRoute
+  '/change-management': typeof ChangeManagementRoute
   '/dashboard': typeof DashboardRoute
   '/documents': typeof DocumentsRoute
   '/emergency': typeof EmergencyRoute
@@ -151,6 +160,7 @@ export interface FileRouteTypes {
     | '/audits'
     | '/builder'
     | '/capa'
+    | '/change-management'
     | '/dashboard'
     | '/documents'
     | '/emergency'
@@ -167,6 +177,7 @@ export interface FileRouteTypes {
     | '/audits'
     | '/builder'
     | '/capa'
+    | '/change-management'
     | '/dashboard'
     | '/documents'
     | '/emergency'
@@ -183,6 +194,7 @@ export interface FileRouteTypes {
     | '/audits'
     | '/builder'
     | '/capa'
+    | '/change-management'
     | '/dashboard'
     | '/documents'
     | '/emergency'
@@ -200,6 +212,7 @@ export interface RootRouteChildren {
   AuditsRoute: typeof AuditsRoute
   BuilderRoute: typeof BuilderRoute
   CapaRoute: typeof CapaRoute
+  ChangeManagementRoute: typeof ChangeManagementRoute
   DashboardRoute: typeof DashboardRoute
   DocumentsRoute: typeof DocumentsRoute
   EmergencyRoute: typeof EmergencyRoute
@@ -240,6 +253,13 @@ declare module '@tanstack/react-router' {
       path: '/capa'
       fullPath: '/capa'
       preLoaderRoute: typeof CapaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/change-management': {
+      id: '/change-management'
+      path: '/change-management'
+      fullPath: '/change-management'
+      preLoaderRoute: typeof ChangeManagementRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard': {
@@ -320,6 +340,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuditsRoute: AuditsRoute,
   BuilderRoute: BuilderRoute,
   CapaRoute: CapaRoute,
+  ChangeManagementRoute: ChangeManagementRoute,
   DashboardRoute: DashboardRoute,
   DocumentsRoute: DocumentsRoute,
   EmergencyRoute: EmergencyRoute,
