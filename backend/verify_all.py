@@ -4,26 +4,24 @@ import json
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
 from app.core.database import engine, Base, SessionLocal
-from app.models.haccp import HACCPPlan, ProcessStep, HazardAnalysis, CCPDefinition, CCPMonitoringLog
-from app.models.builder import DynamicFormTemplate, DynamicFormSubmission, DynamicWorkflowTemplate, WorkflowInstance
-from app.api.v1.endpoints.builder import (
+from app.modules.haccp.models import HACCPPlan, ProcessStep, HazardAnalysis, CCPDefinition, CCPMonitoringLog
+from app.modules.builder.models import DynamicFormTemplate, DynamicFormSubmission, DynamicWorkflowTemplate, WorkflowInstance
+from app.modules.builder.router import (
     format_form_out, format_wf_out, seed_default_builders
 )
-from app.api.v1.endpoints.haccp import (
+from app.modules.haccp.router import (
     format_plan_out, format_step_out, seed_haccp_data_if_empty
 )
+
+from app.core.master_seed import seed_all_system_data
 
 db = SessionLocal()
 try:
     print("=== KIỂM TRA HỆ THỐNG TOÀN DIỆN ===")
     
-    # 1. Builders Seed
-    res_b = seed_default_builders(db)
-    print("1. Seed Builders:", res_b['message'])
+    # 0. Đồng bộ dữ liệu toàn hệ thống (Users, Roles, Food Safety Team, Context, Suppliers)
+    seed_all_system_data(db)
 
-    # 2. HACCP Seed
-    seed_haccp_data_if_empty(db)
-    print("2. Seed HACCP: Hoàn tất")
 
     # 3. HACCP Plans Check
     plans = db.query(HACCPPlan).all()

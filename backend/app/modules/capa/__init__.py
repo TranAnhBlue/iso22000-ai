@@ -1,0 +1,45 @@
+from app.modules.capa.models import (
+    NonConformance,
+    CAPARecord,
+)
+from app.modules.capa.schemas import (
+    NonConformanceBase,
+    NonConformanceCreate,
+    NonConformanceUpdate,
+    NonConformanceResponse,
+    CAPARecordBase,
+    CAPARecordCreate,
+    CAPARecordUpdate,
+    CAPAVerifyRequest,
+    CAPARecordResponse,
+    CAPAStatsResponse,
+    AI5WhyRequest,
+    AI5WhyResponse,
+    AIFishboneRequest,
+    AIFishboneResponse,
+    AISuggestActionsRequest,
+    AISuggestActionsResponse,
+)
+from app.modules.capa.router import router
+
+__all__ = [
+    "NonConformance",
+    "CAPARecord",
+    "NonConformanceBase",
+    "NonConformanceCreate",
+    "NonConformanceUpdate",
+    "NonConformanceResponse",
+    "CAPARecordBase",
+    "CAPARecordCreate",
+    "CAPARecordUpdate",
+    "CAPAVerifyRequest",
+    "CAPARecordResponse",
+    "CAPAStatsResponse",
+    "AI5WhyRequest",
+    "AI5WhyResponse",
+    "AIFishboneRequest",
+    "AIFishboneResponse",
+    "AISuggestActionsRequest",
+    "AISuggestActionsResponse",
+    "router",
+]

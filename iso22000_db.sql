@@ -607,3 +607,111 @@ CREATE TABLE IF NOT EXISTS supplier_evaluations (
     approved_by VARCHAR(100),
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
+
+-- ============================================================================
+-- PHẦN B & C: HOÀN THIỆN THEO CHUẨN ISO 22000:2018 & TÀI LIỆU CÔNG TY
+-- ============================================================================
+
+-- 20. Hoạch định sự thay đổi hệ thống FSMS (ISO 22000:2018 Điều 6.3)
+CREATE TABLE IF NOT EXISTS change_requests (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    request_code VARCHAR(50) UNIQUE NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    change_type VARCHAR(50) NOT NULL, -- RAW_MATERIAL, PROCESS_TECH, EQUIPMENT_FACILITY, PACKAGING_LABEL, REGULATORY, PERSONNEL, OTHER
+    reason TEXT NOT NULL,
+    description TEXT NOT NULL,
+    scope TEXT NOT NULL,
+    proposer VARCHAR(100) NOT NULL,
+    proposal_date DATE NOT NULL,
+    target_completion_date DATE,
+    impact_level VARCHAR(30) DEFAULT 'MEDIUM' NOT NULL, -- LOW, MEDIUM, HIGH, CRITICAL
+    impact_assessment TEXT,
+    haccp_impact_required BOOLEAN DEFAULT FALSE,
+    prp_impact_required BOOLEAN DEFAULT FALSE,
+    emergency_impact_required BOOLEAN DEFAULT FALSE,
+    action_plan JSONB,
+    verification_method TEXT,
+    verification_result TEXT,
+    verified_by VARCHAR(100),
+    verification_date DATE,
+    status VARCHAR(50) DEFAULT 'SUBMITTED' NOT NULL, -- DRAFT, SUBMITTED, REVIEWED, APPROVED, IN_PROGRESS, VERIFIED, CLOSED, REJECTED
+    approved_by VARCHAR(100),
+    approval_date DATE,
+    notes TEXT,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 21. Sổ nhật ký trao đổi thông tin ATTP nội bộ & bên ngoài (ISO 22000:2018 Điều 7.4)
+CREATE TABLE IF NOT EXISTS communications_log (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    comm_code VARCHAR(50) UNIQUE NOT NULL,
+    comm_type VARCHAR(20) NOT NULL, -- INTERNAL, EXTERNAL
+    channel VARCHAR(50) NOT NULL, -- MEETING, MEMO, EMAIL, DISPATCH, HOTLINE, AUDIT, NOTICE, OTHER
+    direction VARCHAR(20) DEFAULT 'INBOUND' NOT NULL, -- INBOUND, OUTBOUND, INTERNAL
+    comm_date DATE NOT NULL,
+    sender VARCHAR(255) NOT NULL,
+    sender_type VARCHAR(50) NOT NULL, -- CUSTOMER, AUTHORITY, SUPPLIER, EMPLOYEE, MANAGEMENT, CONTRACTOR, OTHER
+    recipient VARCHAR(255) NOT NULL,
+    subject VARCHAR(255) NOT NULL,
+    content_summary TEXT NOT NULL,
+    urgency VARCHAR(30) DEFAULT 'NORMAL' NOT NULL, -- LOW, NORMAL, HIGH, URGENT
+    related_module VARCHAR(50), -- HACCP, PRP, RECALL, COMPLAINT, GENERAL
+    action_required TEXT,
+    assigned_to VARCHAR(100),
+    response_deadline DATE,
+    response_content TEXT,
+    response_date DATE,
+    status VARCHAR(50) DEFAULT 'RECEIVED' NOT NULL, -- RECEIVED, PROCESSING, RESPONDED, CLOSED
+    recorded_by VARCHAR(100) NOT NULL,
+    notes TEXT,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 22. Đội An toàn thực phẩm chính thức (ISO 22000:2018 Điều 5.3 & QĐ 02 Thành lập đội ATTP)
+CREATE TABLE IF NOT EXISTS food_safety_team_members (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    decision_number VARCHAR(100) NOT NULL,
+    member_name VARCHAR(150) NOT NULL,
+    fst_role VARCHAR(50) NOT NULL, -- TEAM_LEADER (Đội trưởng), SECRETARY (Thư ký), MEMBER (Đội viên)
+    company_position VARCHAR(150) NOT NULL,
+    department VARCHAR(100) NOT NULL,
+    education_qualification VARCHAR(255),
+    training_certificates JSONB,
+    years_of_experience NUMERIC(4, 1),
+    assigned_responsibilities TEXT NOT NULL,
+    deputy_for VARCHAR(150),
+    is_active BOOLEAN DEFAULT TRUE NOT NULL,
+    appointment_date DATE NOT NULL,
+    phone VARCHAR(50),
+    email VARCHAR(100),
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 23. Thẩm tra định kỳ kế hoạch HACCP tổng thể (ISO 22000:2018 Điều 8.6 & 8.8)
+CREATE TABLE IF NOT EXISTS haccp_plan_reviews (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    review_code VARCHAR(50) UNIQUE NOT NULL,
+    plan_id UUID REFERENCES haccp_plans(plan_id) ON DELETE CASCADE,
+    review_date DATE NOT NULL,
+    review_type VARCHAR(50) DEFAULT 'PERIODIC' NOT NULL, -- PERIODIC, POST_CHANGE, INCIDENT_TRIGGERED, ANNUAL
+    change_request_id UUID REFERENCES change_requests(id) ON DELETE SET NULL,
+    scope_and_objective TEXT NOT NULL,
+    reviewers TEXT NOT NULL,
+    ccp_audit_summary TEXT,
+    prp_audit_summary TEXT,
+    hazard_analysis_validity BOOLEAN DEFAULT TRUE NOT NULL,
+    monitoring_records_adequate BOOLEAN DEFAULT TRUE NOT NULL,
+    corrective_actions_effective BOOLEAN DEFAULT TRUE NOT NULL,
+    findings TEXT NOT NULL,
+    required_actions TEXT NOT NULL,
+    conclusion VARCHAR(50) DEFAULT 'COMPLIANT' NOT NULL, -- COMPLIANT, NEEDS_UPDATE, CRITICAL_DEFICIENCY
+    approved_by VARCHAR(100),
+    approval_date DATE,
+    status VARCHAR(50) DEFAULT 'APPROVED' NOT NULL, -- DRAFT, PENDING_APPROVAL, APPROVED, REJECTED
+    notes TEXT,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
