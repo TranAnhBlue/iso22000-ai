@@ -50,6 +50,8 @@ import api from "@/lib/api";
 import logoImg from "@/assets/logo.png";
 import { WorkflowBuilder, type WorkflowTemplateData } from "@/components/builder/WorkflowBuilder";
 import { useModuleAccess } from "@/lib/rbac";
+import { EmptyState } from "@/components/EmptyState";
+import { ModuleGuideModal } from "@/components/ModuleGuideModal";
 
 export const Route = createFileRoute("/documents")({
   head: () => ({
@@ -295,6 +297,7 @@ function DocumentsPage() {
   const [selectedType, setSelectedType] = useState<string>("ALL");
   const [selectedStatus, setSelectedStatus] = useState<string>("ALL");
   const [selectedDept, setSelectedDept] = useState<string>("ALL");
+  const [showGuide, setShowGuide] = useState(false);
 
   // Modal States
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -524,7 +527,7 @@ function DocumentsPage() {
         setSopWorkflowTemplate({
           module: "DOCUMENTS",
           code: "WF-SOP-APPROVAL",
-          title: "Quy Trình Soạn Thảo & Phê Duyệt Tài Liệu / SOP Đa Cấp (ISO 7.5)",
+          title: "Quy Trình Soạn Thảo & Phê Duyệt Tài Liệu / SOP Đa Cấp",
           description: "Quy trình 4 bước kiểm soát thông tin dạng văn bản: Soạn thảo -> Thẩm tra QA -> Ký duyệt Ban Giám Đốc -> Ban hành và phân phối.",
           version: "1.0",
           nodes: [
@@ -834,7 +837,7 @@ Quy định trình tự và các bước thao tác chuẩn cho: ${doc.doc_title}
         <div class="content-body">${exportContent.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</div>
 
         <div class="signatures-container">
-          <div class="sig-header">TRÁCH NHIỆM PHÊ DUYỆT THÔNG TIN DẠNG VĂN BẢN (ĐIỀU KHOẢN 7.5 ISO 22000)</div>
+          <div class="sig-header">TRÁCH NHIỆM PHÊ DUYỆT THÔNG TIN DẠNG VĂN BẢN</div>
           <table class="sig-table">
             <tr>
               <td class="sig-col">
@@ -893,7 +896,7 @@ NỘI DUNG TÀI LIỆU:
 ${exportContent}
 
 ================================================================================
-KÝ DUYỆT VĂN BẢN (ĐIỀU KHOẢN 7.5 ISO 22000:2018):
+KÝ DUYỆT VĂN BẢN:
 - Người soạn thảo : ................................... Ngày: ....................
 - Người thẩm tra  : ................................... Ngày: ....................
 - Người phê duyệt : ................................... Ngày: ....................
@@ -984,10 +987,20 @@ KÝ DUYỆT VĂN BẢN (ĐIỀU KHOẢN 7.5 ISO 22000:2018):
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <PageHeader
           title="Hệ thống Tài liệu & Quy trình (SOP)"
-          description="Quản lý tài liệu 5 cấp theo ISO 22000:2018 (Mục 7.5). Kết nối cơ sở dữ liệu thực tế, kiểm tra tuân thủ động và trợ lý AI."
+          description="Quản lý tài liệu 5 cấp theo ISO 22000:2018. Kết nối cơ sở dữ liệu thực tế, kiểm tra tuân thủ động và trợ lý AI."
         />
 
         <div className="flex flex-wrap items-center gap-2.5">
+          <Button
+            onClick={() => setShowGuide(true)}
+            variant="outline"
+            size="sm"
+            className="gap-1.5 border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 text-xs font-bold"
+          >
+            <BookOpen className="h-3.5 w-3.5 text-emerald-600" />
+            Hướng Dẫn Nghiệp Vụ
+          </Button>
+
           <Button
             variant="outline"
             size="sm"
@@ -1184,7 +1197,17 @@ KÝ DUYỆT VĂN BẢN (ĐIỀU KHOẢN 7.5 ISO 22000:2018):
       </div>
 
       {/* Bảng Danh sách Tài liệu */}
-      <div className="overflow-hidden rounded-2xl border bg-card shadow-sm">
+      {!loading && documents.length === 0 ? (
+        <EmptyState
+          icon={FileText}
+          title="Chưa có tài liệu hoặc quy trình (SOP) nào"
+          description="Khởi tạo hệ thống tài liệu 5 cấp: Chính sách, Sổ tay ATTP, Quy trình chuẩn (SOP), Hướng dẫn công việc và Biểu mẫu."
+          actionLabel="+ Tạo Tài Liệu Mới"
+          onAction={handleOpenCreate}
+          onGuide={() => setShowGuide(true)}
+        />
+      ) : (
+        <div className="overflow-hidden rounded-2xl border bg-card shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead className="border-b bg-muted/40 font-semibold text-muted-foreground">
@@ -1371,10 +1394,11 @@ KÝ DUYỆT VĂN BẢN (ĐIỀU KHOẢN 7.5 ISO 22000:2018):
             Hiển thị <b>{documents.length}</b> tài liệu
           </div>
           <div className="text-[11px]">
-            Hệ thống quản lý thông tin dạng văn bản theo ISO 22000:2018 (Mục 7.5)
+            Hệ thống quản lý thông tin dạng văn bản theo ISO 22000:2018
           </div>
         </div>
       </div>
+      )}
 
       {/* Modal Thêm / Chỉnh Sửa Tài Liệu */}
       <Dialog
@@ -1785,7 +1809,7 @@ KÝ DUYỆT VĂN BẢN (ĐIỀU KHOẢN 7.5 ISO 22000:2018):
                         )}
                         <div className="flex-1 truncate text-[11.5px] leading-none">
                           <span className={`font-semibold ${c.passed ? "text-foreground" : "text-amber-700 dark:text-amber-400"}`}>
-                            {c.title} ({c.clause}):
+                            {c.title}:
                           </span>{" "}
                           <span className="text-muted-foreground">{c.desc}</span>
                         </div>
@@ -2062,7 +2086,7 @@ KÝ DUYỆT VĂN BẢN (ĐIỀU KHOẢN 7.5 ISO 22000:2018):
                   {/* Khung 3 Chữ ký Phê duyệt Ban hành theo Điều khoản 7.5 */}
                   <div className="mt-12 pt-6 border-t-2 border-slate-900">
                     <div className="text-center text-xs font-bold uppercase tracking-wider mb-6 text-slate-700">
-                      TRÁCH NHIỆM PHÊ DUYỆT THÔNG TIN DẠNG VĂN BẢN (ĐIỀU KHOẢN 7.5 ISO 22000)
+                      TRÁCH NHIỆM PHÊ DUYỆT THÔNG TIN DẠNG VĂN BẢN
                     </div>
                     <div className="grid grid-cols-3 gap-4 text-center text-xs">
                       <div className="space-y-12">
@@ -2187,6 +2211,13 @@ KÝ DUYỆT VĂN BẢN (ĐIỀU KHOẢN 7.5 ISO 22000:2018):
         description={`Bạn có chắc chắn muốn xoá tài liệu [${deletingDocItem?.code}] - "${deletingDocItem?.title}" không? Hành động này sẽ loại bỏ tài liệu khỏi hệ thống FSMS và không thể hoàn tác.`}
         confirmLabel="Xóa tài liệu"
         variant="destructive"
+      />
+
+      {/* Module Guide Modal */}
+      <ModuleGuideModal
+        module="documents"
+        isOpen={showGuide}
+        onClose={() => setShowGuide(false)}
       />
     </div>
   );

@@ -15,7 +15,7 @@ from app.modules.change_management.schemas import (
     ChangeRequestStats,
 )
 
-router = APIRouter(tags=["Change Management (Clause 6.3)"])
+router = APIRouter(tags=["Change Management"])
 
 def format_change_request(cr: ChangeRequest) -> ChangeRequestResponse:
     return ChangeRequestResponse.model_validate(cr)

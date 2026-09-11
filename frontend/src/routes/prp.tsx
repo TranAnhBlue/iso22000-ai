@@ -40,6 +40,7 @@ import {
   Bug,
   Sparkle,
   Sliders,
+  BookOpen,
 } from "lucide-react";
 import api from "@/lib/api";
 import { toast } from "sonner";
@@ -48,6 +49,8 @@ import { useDepartments } from "@/lib/departments";
 import logoImg from "@/assets/logo.png";
 import { DynamicFormRenderer } from "@/components/builder/DynamicFormRenderer";
 import type { FormTemplateData } from "@/components/builder/types";
+import { EmptyState } from "@/components/EmptyState";
+import { ModuleGuideModal } from "@/components/ModuleGuideModal";
 
 export const Route = createFileRoute("/prp")({
   head: () => ({
@@ -56,7 +59,7 @@ export const Route = createFileRoute("/prp")({
       {
         name: "description",
         content:
-          "Thư viện quy chuẩn GMP, SSOP, 5S và giám sát tuân thủ checklist theo ca sản xuất theo tiêu chuẩn ISO 22000:2018 Điều khoản 8.2.",
+          "Thư viện quy chuẩn GMP, SSOP, 5S và giám sát tuân thủ checklist theo ca sản xuất theo tiêu chuẩn ISO 22000:2018.",
       },
     ],
   }),
@@ -133,6 +136,7 @@ function PRPModule() {
   const [programs, setPrograms] = useState<PRPProgram[]>([]);
   const [checklists, setChecklists] = useState<PRPChecklistLog[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [showGuide, setShowGuide] = useState(false);
 
   // Filters
   const [progSearch, setProgSearch] = useState("");
@@ -480,9 +484,18 @@ function PRPModule() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
         <PageHeader
           title="Chương trình Tiên quyết (PRP / GMP / SSOP)"
-          description="Thư viện quy chuẩn thực hành sản xuất tốt (GMP), quy trình vệ sinh chuẩn (SSOP), 5S và giám sát checklist theo ca sản xuất theo ISO 22000:2018 Điều khoản 8.2."
+          description="Thư viện quy chuẩn thực hành sản xuất tốt (GMP), quy trình vệ sinh chuẩn (SSOP), 5S và giám sát checklist theo ca sản xuất theo ISO 22000:2018."
         />
         <div className="flex flex-wrap items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowGuide(true)}
+            className="border-emerald-300 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 flex items-center gap-1.5 font-bold text-xs"
+          >
+            <BookOpen className="h-4 w-4 text-emerald-600" />
+            <span>Hướng Dẫn Nghiệp Vụ</span>
+          </Button>
           <Button
             variant="outline"
             size="sm"
@@ -594,7 +607,17 @@ function PRPModule() {
 
       {/* ==================== TAB 1: PRP PROGRAMS ==================== */}
       {activeTab === "programs" && (
-        <div className="space-y-4">
+        programs.length === 0 ? (
+          <EmptyState
+            icon={ShieldCheck}
+            title="Chưa có chương trình tiên quyết (PRP / GMP / SSOP) nào"
+            description="Khởi tạo thư viện các chương trình thực hành sản xuất tốt GMP, kiểm soát vệ sinh chuẩn SSOP và 5S cho nhà máy."
+            actionLabel="+ Thêm Chương Trình Mới"
+            onAction={handleOpenCreateProg}
+            onGuide={() => setShowGuide(true)}
+          />
+        ) : (
+          <div className="space-y-4">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
             <div className="relative w-full sm:w-72">
               <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -668,11 +691,22 @@ function PRPModule() {
             ))}
           </div>
         </div>
+        )
       )}
 
       {/* ==================== TAB 2: CHECKLISTS ==================== */}
       {activeTab === "checklists" && (
-        <div className="space-y-4">
+        checklists.length === 0 ? (
+          <EmptyState
+            icon={ClipboardCheck}
+            title="Chưa có nhật ký checklist giám sát ca nào"
+            description="Thực hiện kiểm tra tuân thủ các quy định GMP, SSOP và 5S theo từng ca sản xuất trong ngày."
+            actionLabel="+ Thực Hiện Checklist Ca Mới"
+            onAction={() => handleOpenCreateChecklist()}
+            onGuide={() => setShowGuide(true)}
+          />
+        ) : (
+          <div className="space-y-4">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
             <div className="flex items-center gap-2 w-full sm:w-auto">
               <select
@@ -761,6 +795,7 @@ function PRPModule() {
             ))}
           </div>
         </div>
+        )
       )}
 
       {/* ==================== MODAL: ADD / EDIT PROGRAM ==================== */}
@@ -1006,7 +1041,7 @@ function PRPModule() {
               </div>
               <div className="text-right text-[11px] text-slate-600">
                 <p className="font-bold text-slate-900 text-sm">BIỂU MẪU: BM-PRP-01</p>
-                <p>Tiêu chuẩn: ISO 22000:2018 Điều khoản 8.2</p>
+                <p>Tiêu chuẩn: ISO 22000:2018</p>
                 <p>Ngày in: {new Date().toLocaleDateString("vi-VN")}</p>
               </div>
             </div>
@@ -1110,6 +1145,13 @@ function PRPModule() {
         description={`Bạn có chắc chắn muốn xóa bản ghi checklist của chương trình [${deletingChecklist?.program_code}] ngày ${deletingChecklist?.check_date} (${deletingChecklist?.shift_name}) không?`}
         confirmLabel="Xóa bản ghi"
         variant="destructive"
+      />
+
+      {/* Module Guide Modal */}
+      <ModuleGuideModal
+        module="prp"
+        isOpen={showGuide}
+        onClose={() => setShowGuide(false)}
       />
     </div>
   );

@@ -17,8 +17,10 @@ import {
   ShieldAlert,
   AlertTriangle,
   ClipboardList,
+  Pin,
 } from "lucide-react";
 import logoImg from "@/assets/logo.png";
+import { toast } from "sonner";
 
 interface Msg {
   id: string;
@@ -27,7 +29,7 @@ interface Msg {
   timestamp: string;
 }
 
-type WidgetState = "closed" | "minimized" | "open" | "expanded";
+type WidgetState = "closed" | "minimized" | "open" | "expanded" | "hidden";
 
 const SUGGESTIONS = [
   {
@@ -54,6 +56,19 @@ const SUGGESTIONS = [
 
 export function AIChatWidget() {
   const [widgetState, setWidgetState] = useState<WidgetState>("closed");
+  const [isDocked, setIsDocked] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem("wcert.ai_docked") === "true";
+  });
+  const [posY, setPosY] = useState<number>(() => {
+    if (typeof window === "undefined") return 96;
+    const val = Number(localStorage.getItem("wcert.ai_pos_y"));
+    return !isNaN(val) && val >= 32 && val <= 800 ? val : 96;
+  });
+
+  const dragRef = useRef<{ startY: number; startPos: number; moved: boolean }>({ startY: 0, startPos: 96, moved: false });
+  const isDraggingRef = useRef(false);
+
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -68,6 +83,15 @@ export function AIChatWidget() {
     },
   ]);
 
+  // Lắng nghe sự kiện mở chat từ thanh điều hướng / header
+  useEffect(() => {
+    const handleOpen = () => {
+      setWidgetState("open");
+    };
+    window.addEventListener("open-ai-chat", handleOpen);
+    return () => window.removeEventListener("open-ai-chat", handleOpen);
+  }, []);
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
@@ -77,6 +101,61 @@ export function AIChatWidget() {
       scrollToBottom();
     }
   }, [msgs, isTyping, widgetState]);
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    if (e.button !== 0) return;
+    dragRef.current = { startY: e.clientY, startPos: posY, moved: false };
+    isDraggingRef.current = true;
+    (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+  };
+
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (!isDraggingRef.current) return;
+    const dy = dragRef.current.startY - e.clientY;
+    if (Math.abs(dy) > 5) {
+      dragRef.current.moved = true;
+      const maxH = typeof window !== "undefined" ? window.innerHeight - 120 : 600;
+      const nextY = Math.min(Math.max(dragRef.current.startPos + dy, 32), maxH);
+      setPosY(nextY);
+    }
+  };
+
+  const handlePointerUp = (e: React.PointerEvent) => {
+    if (!isDraggingRef.current) return;
+    isDraggingRef.current = false;
+    (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
+    if (dragRef.current.moved) {
+      localStorage.setItem("wcert.ai_pos_y", String(posY));
+    }
+  };
+
+  const handleButtonClick = (e: React.MouseEvent) => {
+    if (dragRef.current.moved) {
+      e.stopPropagation();
+      return;
+    }
+    setWidgetState("open");
+  };
+
+  const toggleDock = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsDocked((prev) => {
+      const next = !prev;
+      localStorage.setItem("wcert.ai_docked", String(next));
+      toast.success(next ? "Đã neo trợ lý AI sát mép phải" : "Đã chuyển sang nút nổi góc màn hình", {
+        duration: 2000,
+      });
+      return next;
+    });
+  };
+
+  const handleHideFloating = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setWidgetState("hidden");
+    toast.info("Đã ẩn nút nổi. Bạn có thể mở Trợ lý AI bất cứ lúc nào từ thanh Menu hoặc Header.", {
+      duration: 3500,
+    });
+  };
 
   const send = (q?: string) => {
     const text = (q ?? input).trim();
@@ -123,138 +202,234 @@ export function AIChatWidget() {
     ]);
   };
 
-  return (
-    <div className="fixed bottom-4 right-4 z-40 sm:bottom-6 sm:right-6 font-sans">
-      {/* 1. TRẠNG THÁI NÚT TRÒN GỌN NHẸ (CLOSED) */}
-      {widgetState === "closed" && (
-        <div className="group relative flex items-center justify-end">
-          {/* Tooltip hiển thị khi hover */}
-          <div className="pointer-events-none absolute right-14 mr-2 hidden whitespace-nowrap rounded-lg border bg-popover px-3 py-1.5 text-xs font-medium text-popover-foreground shadow-md transition-all duration-200 group-hover:block animate-in fade-in slide-in-from-right-2">
-            ✨ Trợ lý AI ISO 22000
-          </div>
+  if (widgetState === "hidden") {
+    return null;
+  }
 
-          <button
-            onClick={() => setWidgetState("open")}
-            aria-label="Mở Trợ lý AI"
-            className="relative flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-tr from-primary via-primary/90 to-accent text-primary-foreground shadow-xl shadow-primary/30 transition-all duration-300 hover:scale-110 active:scale-95 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
-          >
-            <Sparkles className="h-5 w-5 animate-pulse" />
-            <span className="absolute -top-0.5 -right-0.5 flex h-3 w-3">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-              <span className="relative inline-flex h-3 w-3 rounded-full bg-emerald-500" />
-            </span>
-          </button>
+  return (
+    <>
+      {/* 1A. TRẠNG THÁI NÚT NEO MÉP PHẢI (DOCKED EDGE TAB - KHÔNG BAO GIỜ CHE BUTTON TRONG BẢNG) */}
+      {widgetState === "closed" && isDocked && (
+        <div
+          style={{ bottom: `${posY}px` }}
+          className="fixed right-0 z-40 font-sans select-none group"
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+        >
+          <div className="relative flex items-center">
+            {/* Hover Actions: Undock, Hide */}
+            <div className="absolute right-full mr-2 hidden group-hover:flex items-center gap-1 bg-slate-900/90 text-white rounded-lg px-2 py-1 text-[10px] shadow-lg backdrop-blur-sm whitespace-nowrap animate-in fade-in slide-in-from-right-2 z-50">
+              <span className="text-slate-400 pr-1.5 border-r border-slate-700">Kéo để dời</span>
+              <button
+                type="button"
+                onClick={toggleDock}
+                className="hover:text-emerald-300 pr-1.5 border-r border-slate-700 transition"
+                title="Tách nút ra khỏi mép (Chế độ bong bóng nổi)"
+              >
+                Tách mép
+              </button>
+              <button
+                type="button"
+                onClick={handleHideFloating}
+                className="hover:text-rose-300 transition"
+                title="Ẩn nút hoàn toàn"
+              >
+                ✕ Ẩn
+              </button>
+            </div>
+
+            <button
+              onClick={handleButtonClick}
+              title="Trợ lý AI ISO 22000 (Kéo để dời lên/xuống)"
+              className="relative flex items-center gap-1 rounded-l-2xl border-y border-l border-emerald-600/40 bg-gradient-to-l from-emerald-700 via-emerald-600 to-teal-700 text-white pl-2.5 pr-2 py-3 shadow-xl hover:pl-3.5 transition-all cursor-grab active:cursor-grabbing group-hover:shadow-emerald-500/25"
+            >
+              <Sparkles className="h-4 w-4 text-emerald-200 animate-pulse shrink-0" />
+              <span className="text-xs font-bold tracking-wide [writing-mode:vertical-rl] rotate-180 py-0.5">
+                Trợ lý AI
+              </span>
+              <span className="absolute -left-1 top-2 flex h-2.5 w-2.5">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-400" />
+              </span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 1B. TRẠNG THÁI NÚT TRÒN NỔI GÓC MÀN HÌNH (FLOATING BUBBLE - CÓ THỂ KÉO DỜI VỊ TRÍ) */}
+      {widgetState === "closed" && !isDocked && (
+        <div
+          style={{ bottom: `${posY}px` }}
+          className="fixed right-4 sm:right-6 z-40 font-sans select-none group"
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+        >
+          <div className="relative flex items-center justify-end">
+            {/* Quick controls on hover: Dock to edge, Hide */}
+            <div className="absolute -top-7 right-0 hidden group-hover:flex items-center gap-1.5 bg-slate-900/90 text-white rounded-lg px-2 py-0.5 text-[10px] shadow-lg backdrop-blur-sm animate-in fade-in slide-in-from-bottom-1 z-50 whitespace-nowrap">
+              <span className="text-slate-400 text-[9px] border-r border-slate-700 pr-1">Kéo để dời</span>
+              <button
+                type="button"
+                onClick={toggleDock}
+                className="hover:text-emerald-300 flex items-center gap-1 transition pr-1.5 border-r border-slate-700"
+                title="Thu gọn và neo sát mép phải màn hình để không che nút"
+              >
+                <Pin className="h-2.5 w-2.5" /> Neo mép
+              </button>
+              <button
+                type="button"
+                onClick={handleHideFloating}
+                className="hover:text-rose-300 transition"
+                title="Ẩn nút nổi (mở lại từ Header hoặc Menu)"
+              >
+                ✕ Ẩn
+              </button>
+            </div>
+
+            {/* Tooltip khi hover */}
+            <div className="pointer-events-none absolute right-14 mr-2 hidden whitespace-nowrap rounded-lg border bg-popover px-3 py-1.5 text-xs font-medium text-popover-foreground shadow-md transition-all duration-200 group-hover:block animate-in fade-in slide-in-from-right-2">
+              ✨ Trợ lý AI (Kéo để dời vị trí)
+            </div>
+
+            <button
+              onClick={handleButtonClick}
+              aria-label="Mở Trợ lý AI"
+              className="relative flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-tr from-primary via-primary/90 to-accent text-primary-foreground shadow-xl shadow-primary/30 transition-all duration-300 hover:scale-110 active:scale-95 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 cursor-grab active:cursor-grabbing"
+            >
+              <Sparkles className="h-5 w-5 animate-pulse" />
+              <span className="absolute -top-0.5 -right-0.5 flex h-3 w-3">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                <span className="relative inline-flex h-3 w-3 rounded-full bg-emerald-500" />
+              </span>
+            </button>
+          </div>
         </div>
       )}
 
       {/* 2. TRẠNG THÁI RÚT GỌN / THU NHỎ DƯỚI GÓC MÀN HÌNH (MINIMIZED) */}
       {widgetState === "minimized" && (
-        <div className="flex items-center gap-2 rounded-full border border-primary/20 bg-background/95 px-3.5 py-2 shadow-xl backdrop-blur-md transition-all duration-300 hover:border-primary/40 animate-in fade-in slide-in-from-bottom-3">
-          <button
-            onClick={() => setWidgetState("open")}
-            className="flex items-center gap-2 text-xs font-semibold text-foreground hover:text-primary transition"
-          >
-            <div className="relative flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-primary">
-              <Bot className="h-3.5 w-3.5" />
-              <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-emerald-500" />
-            </div>
-            <span>Trợ lý AI (Đang ẩn)</span>
-            <span className="text-[10px] text-muted-foreground">({msgs.length} tin nhắn)</span>
-          </button>
-
-          <div className="flex items-center gap-1 border-l pl-2">
+        <div
+          style={{ bottom: `${posY}px` }}
+          className="fixed right-4 sm:right-6 z-40 font-sans"
+        >
+          <div className="flex items-center gap-2 rounded-full border border-primary/20 bg-background/95 px-3.5 py-2 shadow-xl backdrop-blur-md transition-all duration-300 hover:border-primary/40 animate-in fade-in slide-in-from-bottom-3">
             <button
               onClick={() => setWidgetState("open")}
-              title="Mở rộng cửa sổ chat"
-              className="rounded-full p-1 text-muted-foreground hover:bg-muted hover:text-foreground transition"
+              className="flex items-center gap-2 text-xs font-semibold text-foreground hover:text-primary transition"
             >
-              <ChevronUp className="h-3.5 w-3.5" />
+              <div className="relative flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-primary">
+                <Bot className="h-3.5 w-3.5" />
+                <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-emerald-500" />
+              </div>
+              <span>Trợ lý AI (Đang ẩn)</span>
+              <span className="text-[10px] text-muted-foreground">({msgs.length} tin nhắn)</span>
             </button>
-            <button
-              onClick={() => setWidgetState("closed")}
-              title="Đóng hoàn toàn"
-              className="rounded-full p-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition"
-            >
-              <X className="h-3.5 w-3.5" />
-            </button>
+
+            <div className="flex items-center gap-1 border-l pl-2">
+              <button
+                onClick={() => setWidgetState("open")}
+                title="Mở rộng cửa sổ chat"
+                className="rounded-full p-1 text-muted-foreground hover:bg-muted hover:text-foreground transition"
+              >
+                <ChevronUp className="h-3.5 w-3.5" />
+              </button>
+              <button
+                onClick={() => setWidgetState("closed")}
+                title="Đóng về nút tròn"
+                className="rounded-full p-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
           </div>
         </div>
       )}
 
       {/* 3. TRẠNG THÁI MỞ CỬA SỔ CHAT (OPEN HOẶC EXPANDED) */}
       {(widgetState === "open" || widgetState === "expanded") && (
-        <div
-          className={`flex flex-col overflow-hidden rounded-2xl border border-border/80 bg-card/95 shadow-2xl backdrop-blur-md transition-all duration-300 animate-in fade-in zoom-in-95 ${
-            widgetState === "expanded"
-              ? "h-[85vh] w-[90vw] max-w-3xl sm:h-[680px]"
-              : "h-[540px] w-[360px] max-w-[calc(100vw-1.5rem)] sm:w-[390px]"
-          }`}
-        >
-          {/* Header Thanh tiêu đề & các nút điều khiển */}
-          <div className="flex items-center justify-between border-b bg-gradient-to-r from-primary via-primary/95 to-accent px-4 py-3 text-primary-foreground shadow-sm">
-            <div className="flex items-center gap-2.5">
-              <div className="grid h-8 w-8 place-items-center rounded-full bg-white p-0.5 shadow-sm ring-2 ring-white/30">
-                <img
-                  src={logoImg}
-                  alt="WCERT Logo"
-                  className="h-7 w-7 rounded-full object-contain"
-                />
+        <div className="fixed bottom-4 right-4 z-50 sm:bottom-6 sm:right-6 font-sans">
+          <div
+            className={`flex flex-col overflow-hidden rounded-2xl border border-border/80 bg-card/95 shadow-2xl backdrop-blur-md transition-all duration-300 animate-in fade-in zoom-in-95 ${
+              widgetState === "expanded"
+                ? "h-[85vh] w-[90vw] max-w-3xl sm:h-[680px]"
+                : "h-[540px] w-[360px] max-w-[calc(100vw-1.5rem)] sm:w-[390px]"
+            }`}
+          >
+            {/* Header Thanh tiêu đề & các nút điều khiển */}
+            <div className="flex items-center justify-between border-b bg-gradient-to-r from-primary via-primary/95 to-accent px-4 py-3 text-primary-foreground shadow-sm">
+              <div className="flex items-center gap-2.5">
+                <div className="grid h-8 w-8 place-items-center rounded-full bg-white p-0.5 shadow-sm ring-2 ring-white/30">
+                  <img
+                    src={logoImg}
+                    alt="WCERT Logo"
+                    className="h-7 w-7 rounded-full object-contain"
+                  />
+                </div>
+                <div>
+                  <div className="flex items-center gap-1.5 text-xs font-bold sm:text-sm">
+                    <span>WCERT AI Expert</span>
+                    <span className="rounded-full bg-white/20 px-1.5 py-0.2 text-[9px] font-normal backdrop-blur-sm">
+                      ISO 22000
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1 text-[10px] opacity-85">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-300 animate-pulse" />
+                    <span>Sẵn sàng hỗ trợ 24/7</span>
+                  </div>
+                </div>
               </div>
-              <div>
-                <div className="flex items-center gap-1.5 text-xs font-bold sm:text-sm">
-                  <span>WCERT AI Expert</span>
-                  <span className="rounded-full bg-white/20 px-1.5 py-0.2 text-[9px] font-normal backdrop-blur-sm">
-                    ISO 22000
-                  </span>
-                </div>
-                <div className="flex items-center gap-1 text-[10px] opacity-85">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-300 animate-pulse" />
-                  <span>Sẵn sàng hỗ trợ 24/7</span>
-                </div>
+
+              {/* Bộ nút điều khiển góc phải: Neo mép, Làm mới, Thu nhỏ, Mở rộng, Đóng */}
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={toggleDock}
+                  title={isDocked ? "Chuyển sang nút nổi góc màn hình" : "Neo nút sát mép phải màn hình để không che nút trong bảng"}
+                  className="rounded-lg p-1.5 text-white/80 hover:bg-white/20 hover:text-white transition"
+                >
+                  <Pin className={`h-3.5 w-3.5 ${isDocked ? "text-emerald-300 fill-emerald-300" : ""}`} />
+                </button>
+
+                <button
+                  onClick={handleResetChat}
+                  title="Làm mới hội thoại"
+                  className="rounded-lg p-1.5 text-white/80 hover:bg-white/20 hover:text-white transition"
+                >
+                  <RotateCcw className="h-3.5 w-3.5" />
+                </button>
+
+                <button
+                  onClick={() => setWidgetState("minimized")}
+                  title="Thu nhỏ thanh tác vụ"
+                  className="rounded-lg p-1.5 text-white/80 hover:bg-white/20 hover:text-white transition"
+                >
+                  <Minus className="h-3.5 w-3.5" />
+                </button>
+
+                <button
+                  onClick={() =>
+                    setWidgetState(widgetState === "expanded" ? "open" : "expanded")
+                  }
+                  title={widgetState === "expanded" ? "Thu về kích thước chuẩn" : "Phóng to cửa sổ"}
+                  className="rounded-lg p-1.5 text-white/80 hover:bg-white/20 hover:text-white transition"
+                >
+                  {widgetState === "expanded" ? (
+                    <Minimize2 className="h-3.5 w-3.5" />
+                  ) : (
+                    <Maximize2 className="h-3.5 w-3.5" />
+                  )}
+                </button>
+
+                <button
+                  onClick={() => setWidgetState("closed")}
+                  title="Đóng widget"
+                  className="rounded-lg p-1.5 text-white/80 hover:bg-white/20 hover:text-white transition"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
               </div>
             </div>
-
-            {/* Bộ nút điều khiển góc phải: Làm mới, Thu nhỏ, Mở rộng, Đóng */}
-            <div className="flex items-center gap-1">
-              <button
-                onClick={handleResetChat}
-                title="Làm mới hội thoại"
-                className="rounded-lg p-1.5 text-white/80 hover:bg-white/20 hover:text-white transition"
-              >
-                <RotateCcw className="h-3.5 w-3.5" />
-              </button>
-
-              <button
-                onClick={() => setWidgetState("minimized")}
-                title="Thu nhỏ thanh tác vụ"
-                className="rounded-lg p-1.5 text-white/80 hover:bg-white/20 hover:text-white transition"
-              >
-                <Minus className="h-3.5 w-3.5" />
-              </button>
-
-              <button
-                onClick={() =>
-                  setWidgetState(widgetState === "expanded" ? "open" : "expanded")
-                }
-                title={widgetState === "expanded" ? "Thu về kích thước chuẩn" : "Phóng to cửa sổ"}
-                className="rounded-lg p-1.5 text-white/80 hover:bg-white/20 hover:text-white transition"
-              >
-                {widgetState === "expanded" ? (
-                  <Minimize2 className="h-3.5 w-3.5" />
-                ) : (
-                  <Maximize2 className="h-3.5 w-3.5" />
-                )}
-              </button>
-
-              <button
-                onClick={() => setWidgetState("closed")}
-                title="Đóng widget"
-                className="rounded-lg p-1.5 text-white/80 hover:bg-white/20 hover:text-white transition"
-              >
-                <X className="h-3.5 w-3.5" />
-              </button>
-            </div>
-          </div>
 
           {/* Vùng Tin nhắn Cuộn */}
           <div className="flex-1 space-y-3 overflow-y-auto bg-muted/20 p-3.5 text-xs sm:p-4">
@@ -383,9 +558,10 @@ export function AIChatWidget() {
             </div>
           </div>
         </div>
-      )}
-    </div>
-  );
+      </div>
+    )}
+  </>
+);
 }
 
 function aiMock(q: string): string {

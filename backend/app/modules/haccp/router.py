@@ -237,11 +237,8 @@ def format_prp_log_out(l: Any) -> PRPChecklistLogResponse:
     )
 
 
-# ==================== AUTO SEEDING FUNCTION ====================
 def seed_haccp_data_if_empty(db: Session):
-    has_steps = db.scalar(select(func.count(ProcessStep.step_id)))
-    if has_steps and has_steps > 0:
-        return
+    return
 
     # 0. Seed HACCP Plan
     plan1 = HACCPPlan(

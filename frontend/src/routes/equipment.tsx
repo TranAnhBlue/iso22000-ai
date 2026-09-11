@@ -38,12 +38,15 @@ import {
   Info,
   Clock,
   ExternalLink,
+  BookOpen,
 } from "lucide-react";
 import api from "@/lib/api";
 import { printHtml } from "@/lib/print";
 import logoImg from "@/assets/logo.png";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { EmptyState } from "@/components/EmptyState";
+import { ModuleGuideModal } from "@/components/ModuleGuideModal";
 
 export const Route = createFileRoute("/equipment")({
   head: () => ({
@@ -52,7 +55,7 @@ export const Route = createFileRoute("/equipment")({
       {
         name: "description",
         content:
-          "Quản lý vòng đời thiết bị, chu kỳ hiệu chuẩn và bảo trì phòng ngừa theo ISO 22000:2018 Điều khoản 7.1.5 & 8.2.",
+          "Quản lý vòng đời thiết bị, chu kỳ hiệu chuẩn và bảo trì phòng ngừa theo ISO 22000:2018.",
       },
     ],
   }),
@@ -256,6 +259,7 @@ function EquipmentModule() {
   const [equipments, setEquipments] = useState<EquipmentItem[]>([]);
   const [maintenanceLogs, setMaintenanceLogs] = useState<MaintenanceLogItem[]>([]);
   const [calibrationLogs, setCalibrationLogs] = useState<CalibrationLogItem[]>([]);
+  const [showGuide, setShowGuide] = useState(false);
 
   // Modals thao tác
   const [isEqModalOpen, setIsEqModalOpen] = useState(false);
@@ -475,7 +479,7 @@ function EquipmentModule() {
 
     const location = eqForm.installation_location?.trim();
     if (!location || location.length < 2) {
-      toast.error("Lỗi nghiệp vụ ISO 22000 (Điều khoản 7.1.5): Vị trí lắp đặt là bắt buộc để quản lý phân vùng ATTP và chống nhiễm chéo.");
+      toast.error("Lỗi nghiệp vụ: Vị trí lắp đặt là bắt buộc để quản lý phân vùng ATTP và chống nhiễm chéo.");
       return;
     }
 
@@ -590,7 +594,7 @@ function EquipmentModule() {
     }
     const taskDesc = maintForm.task_desc?.trim();
     if (!taskDesc || taskDesc.length < 5) {
-      toast.error("Lỗi nghiệp vụ ISO 22000 (Điều khoản 8.2): Nội dung công việc bảo trì phải mô tả chi tiết tối thiểu 5 ký tự.");
+      toast.error("Lỗi nghiệp vụ: Nội dung công việc bảo trì phải mô tả chi tiết tối thiểu 5 ký tự.");
       return;
     }
     const performer = maintForm.performer_name?.trim();
@@ -678,7 +682,7 @@ function EquipmentModule() {
 
     const certNum = calForm.certificate_number?.trim();
     if (!certNum) {
-      toast.error("Lỗi nghiệp vụ ISO 22000 (Điều khoản 7.1.5.2): Số tem kiểm định / Số giấy chứng nhận là bắt buộc để truy xuất nguồn gốc đo lường.");
+      toast.error("Lỗi nghiệp vụ: Số tem kiểm định / Số giấy chứng nhận là bắt buộc để truy xuất nguồn gốc đo lường.");
       return;
     }
 
@@ -1014,10 +1018,20 @@ function EquipmentModule() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <PageHeader
           title="Quản lý Thiết bị, Hiệu chuẩn & Bảo trì máy móc"
-          description="Kiểm soát vòng đời thiết bị, hạn tem hiệu chuẩn QUATEST/VILAS & bảo dưỡng phòng ngừa theo ISO 22000 Điều khoản 7.1.5 & 8.2."
+          description="Kiểm soát vòng đời thiết bị, hạn tem hiệu chuẩn QUATEST/VILAS & bảo dưỡng phòng ngừa theo ISO 22000."
         />
 
         <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 w-full sm:w-auto">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowGuide(true)}
+            className="flex-1 sm:flex-initial gap-1.5 border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-bold text-xs h-9 sm:h-8"
+          >
+            <BookOpen className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+            <span>Hướng Dẫn Nghiệp Vụ</span>
+          </Button>
+
           <Button
             variant="outline"
             size="sm"
@@ -1219,7 +1233,17 @@ function EquipmentModule() {
 
       {/* ==================== TAB 1: DANH MỤC THIẾT BỊ ==================== */}
       {activeTab === "equipments" && (
-        <div className="space-y-4">
+        equipments.length === 0 ? (
+          <EmptyState
+            icon={Wrench}
+            title="Chưa có thiết bị hoặc phương tiện đo nào"
+            description="Đăng ký hồ sơ máy móc, thiết bị chế biến, kho bảo quản và phương tiện đo lường kiểm soát điểm CCP/oPRP."
+            actionLabel="+ Thêm Thiết Bị Mới"
+            onAction={handleOpenCreateEq}
+            onGuide={() => setShowGuide(true)}
+          />
+        ) : (
+          <div className="space-y-4">
           {/* SEARCH & FILTERS BAR */}
           <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
             <div className="relative flex-1">
@@ -1443,11 +1467,22 @@ function EquipmentModule() {
             </div>
           )}
         </div>
+        )
       )}
 
       {/* ==================== TAB 2: NHẬT KÝ HIỆU CHUẨN ==================== */}
       {activeTab === "calibration" && (
-        <div className="space-y-4">
+        calibrationLogs.length === 0 ? (
+          <EmptyState
+            icon={ShieldCheck}
+            title="Chưa có nhật ký hiệu chuẩn hoặc kiểm định đo lường"
+            description="Ghi nhận hồ sơ kiểm định, số tem chứng nhận QUATEST/VILAS, sai số đo lường và theo dõi chu kỳ tái hiệu chuẩn."
+            actionLabel="+ Lập Phiếu Hiệu Chuẩn Mới"
+            onAction={() => handleOpenCreateCal()}
+            onGuide={() => setShowGuide(true)}
+          />
+        ) : (
+          <div className="space-y-4">
           <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h3 className="text-sm font-bold tracking-tight">Hồ sơ Tem & Biên bản Hiệu chuẩn Đo lường</h3>
@@ -1561,11 +1596,22 @@ function EquipmentModule() {
             </div>
           )}
         </div>
+        )
       )}
 
       {/* ==================== TAB 3: KẾ HOẠCH BẢO TRÌ ==================== */}
       {activeTab === "maintenance" && (
-        <div className="space-y-4">
+        maintenanceLogs.length === 0 ? (
+          <EmptyState
+            icon={Calendar}
+            title="Chưa có nhật ký bảo trì thiết bị nào"
+            description="Lập lịch bảo trì phòng ngừa (PM), ghi nhận vật tư mỡ bôi trơn an toàn thực phẩm NSF H1 và xác nhận vệ sinh sau bảo trì."
+            actionLabel="+ Lập Phiếu Bảo Trì Mới"
+            onAction={() => handleOpenCreateMaint()}
+            onGuide={() => setShowGuide(true)}
+          />
+        ) : (
+          <div className="space-y-4">
           <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h3 className="text-sm font-bold tracking-tight">Nhật ký Bảo trì Phòng ngừa (PM) & Sửa chữa</h3>
@@ -1684,13 +1730,14 @@ function EquipmentModule() {
             </div>
           )}
         </div>
+        )
       )}
 
       {/* ==================== TAB 4: TRỢ LÝ AI BẢO TRÌ & DỰ ĐOÁN ==================== */}
       {activeTab === "ai" && (
         <div className="space-y-4 sm:space-y-6">
           <AIBadge>
-            <b>AI Kỹ thuật & Bảo trì thông minh:</b> Tự động hóa dự báo hỏng hóc máy móc theo dữ liệu cảm biến & Thẩm định rủi ro an toàn thực phẩm khi thiết bị đo lệch dung sai theo ISO 22000:2018 Điều khoản 7.1.5.2.
+            <b>AI Kỹ thuật & Bảo trì thông minh:</b> Tự động hóa dự báo hỏng hóc máy móc theo dữ liệu cảm biến & Thẩm định rủi ro an toàn thực phẩm khi thiết bị đo lệch dung sai theo ISO 22000:2018.
           </AIBadge>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
@@ -1825,7 +1872,7 @@ function EquipmentModule() {
                 <div>
                   <h4 className="text-sm font-bold">2. AI Thẩm Định Sai Số Hiệu Chuẩn & CAPA</h4>
                   <p className="text-xs text-muted-foreground">
-                    Đánh giá tác động đến các lô sản phẩm đã xuất xưởng khi thiết bị đo lệch chuẩn (ISO 7.1.5.2).
+                    Đánh giá tác động đến các lô sản phẩm đã xuất xưởng khi thiết bị đo lệch chuẩn.
                   </p>
                 </div>
               </div>
@@ -2748,6 +2795,13 @@ function EquipmentModule() {
         description={`Bạn có chắc chắn muốn xoá thiết bị "${deletingEqItem?.name}" khỏi hệ thống hồ sơ máy móc không? Dữ liệu lịch sử bảo dưỡng và hiệu chuẩn liên quan sẽ bị ảnh hưởng.`}
         confirmLabel="Xóa thiết bị"
         variant="destructive"
+      />
+
+      {/* Module Guide Modal */}
+      <ModuleGuideModal
+        module="equipment"
+        isOpen={showGuide}
+        onClose={() => setShowGuide(false)}
       />
     </div>
   );

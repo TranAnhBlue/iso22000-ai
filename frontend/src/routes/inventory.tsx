@@ -40,10 +40,13 @@ import {
   Printer,
   CheckSquare,
   X,
+  BookOpen,
 } from "lucide-react";
 import { useEffect, useState, useMemo } from "react";
 import api from "@/lib/api";
 import { QRCodeModal } from "@/components/QRCodeModal";
+import { EmptyState } from "@/components/EmptyState";
+import { ModuleGuideModal } from "@/components/ModuleGuideModal";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { printHtml } from "@/lib/print";
@@ -190,80 +193,13 @@ interface DisposalRecordItem {
   notes?: string;
 }
 
-// ==========================================
-// SEED FALLBACK DATA
-// ==========================================
-const SEED_STOCKS: StockItem[] = [
-  {
-    inventory_id: "stk-01",
-    item_code: "NL-03",
-    item_name: "Bột lòng trắng trứng nhập khẩu",
-    category: "RAW_MATERIAL",
-    lot_number: "NL-2026-TRUNG01",
-    qr_code: "QR-FEFO-NEAR",
-    quantity: 45,
-    unit: "kg",
-    min_stock_level: 50,
-    mfg_date: "2026-03-01",
-    exp_date: "2026-09-01",
-    warehouse_type: "DRY_STORAGE",
-    location_bin: "Kệ B2-03 (Kho Khô)",
-    temperature_c: 24.0,
-    status: "AVAILABLE",
-    days_to_expiry: 5,
-    fefo_status: "CRITICAL_NEAR_EXPIRY",
-    fefo_priority_rank: 1,
-    notes: "Cảnh báo FEFO: Lô hàng còn 5 ngày hết hạn - Ưu tiên xuất trước!",
-  },
-  {
-    inventory_id: "stk-02",
-    item_code: "SP-CC500",
-    item_name: "Chả cá Ba Sa Thượng Hạng 500g",
-    category: "FINISHED_GOOD",
-    lot_number: "LOT-202608-B01",
-    qr_code: "QR-CC500-B01",
-    quantity: 300,
-    unit: "gói",
-    min_stock_level: 100,
-    mfg_date: "2026-08-25",
-    exp_date: "2026-10-26",
-    warehouse_type: "COLD_STORAGE",
-    location_bin: "Kệ A1-01 (Kho Đông)",
-    temperature_c: -18.5,
-    status: "AVAILABLE",
-    days_to_expiry: 60,
-    fefo_status: "GOOD",
-    fefo_priority_rank: 3,
-    notes: "Thành phẩm đạt chuẩn vi sinh đã kiểm tra.",
-  },
-];
-
-const SEED_SAMPLES: RetainedSampleItem[] = [
-  {
-    sample_id: "smp-01",
-    sample_code: "ML-202608-01",
-    batch_number: "LOT-202608-B01",
-    product_name: "Chả cá Ba Sa Thượng Hạng 500g",
-    sample_weight_g: 250,
-    storage_cabinet: "Tủ đông mẫu T-01",
-    storage_temperature_c: -18.0,
-    sample_date: "2026-08-25",
-    expiry_date: "2026-11-25",
-    sampled_by: "Trần Thị Lan (QC KCS)",
-    test_result: "PASS",
-    status: "STORED",
-    days_remaining: 90,
-    is_expired_storage: false,
-    notes: "Lưu mẫu đối chứng chuẩn ISO 22000 Điều khoản 8.5.2.",
-  },
-];
-
 export function InventoryPage() {
   const [activeTab, setActiveTab] = useState<"stock" | "bins" | "samples" | "production" | "vehicles" | "disposal">("stock");
+  const [showGuide, setShowGuide] = useState(false);
   
   // Data states
-  const [stocks, setStocks] = useState<StockItem[]>(SEED_STOCKS);
-  const [samples, setSamples] = useState<RetainedSampleItem[]>(SEED_SAMPLES);
+  const [stocks, setStocks] = useState<StockItem[]>([]);
+  const [samples, setSamples] = useState<RetainedSampleItem[]>([]);
   const [batches, setBatches] = useState<BatchItem[]>([]);
   const [dispatches, setDispatches] = useState<DispatchItem[]>([]);
   const [vehicleInspections, setVehicleInspections] = useState<VehicleInspectionItem[]>([]);
@@ -277,14 +213,14 @@ export function InventoryPage() {
   });
   const [loading, setLoading] = useState(false);
   const [kpi, setKpi] = useState({
-    total_stock_items: 2,
-    total_stock_quantity: 345,
+    total_stock_items: 0,
+    total_stock_quantity: 0,
     expired_items: 0,
-    near_expiry_items: 1,
-    total_retained_samples: 1,
-    active_retained_samples: 1,
-    total_production_batches: 1,
-    total_order_dispatches: 2,
+    near_expiry_items: 0,
+    total_retained_samples: 0,
+    active_retained_samples: 0,
+    total_production_batches: 0,
+    total_order_dispatches: 0,
   });
 
   // Filters
@@ -444,20 +380,6 @@ export function InventoryPage() {
     fetchData();
   }, []);
 
-  // Quick Seed Demo Data
-  const handleSeedDemo = async () => {
-    setLoading(true);
-    try {
-      await api.post("/traceability/seed-demo");
-      await fetchData();
-      toast.success("Đã nạp dữ liệu mẫu kho FEFO và mẫu lưu đối chứng thành công!");
-    } catch (err) {
-      console.error("Lỗi khi nạp dữ liệu mẫu:", err);
-      toast.error("Không thể nạp dữ liệu mẫu.");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   // Stock Save Handler
   const handleSaveStock = async (e: React.FormEvent) => {
@@ -945,9 +867,14 @@ export function InventoryPage() {
           />
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Button variant="outline" size="sm" onClick={handleSeedDemo} disabled={loading} className="gap-2">
-            <Sparkles className="h-4 w-4 text-amber-500" />
-            Nạp mẫu Demo ISO
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowGuide(true)}
+            className="gap-2 text-primary border-primary/30 hover:bg-primary/5"
+          >
+            <BookOpen className="h-4 w-4" />
+            Hướng Dẫn Nghiệp Vụ
           </Button>
           <Button variant="outline" size="sm" onClick={fetchData} disabled={loading} className="gap-2">
             <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
@@ -995,7 +922,7 @@ export function InventoryPage() {
             <span className="text-xs text-rose-600 font-medium">({kpi.expired_items} hết hạn)</span>
           </div>
           <div className="mt-1 text-[11px] text-amber-700 font-medium">
-            Ưu tiên xuất trước theo Điều khoản 8.2
+            Ưu tiên xuất trước theo nguyên tắc FEFO
           </div>
         </div>
 
@@ -1042,7 +969,7 @@ export function InventoryPage() {
                 Hệ Thống Truy Xuất Nguồn Gốc 1 Chạm (One-Touch Traceability Engine)
               </h3>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Nhập mã Lô thành phẩm hoặc mã Lô nguyên liệu để vẽ sơ đồ chuỗi cung ứng 4 tầng & In Biên bản BM-TX-01 chuẩn ISO 22000:2018 Điều khoản 8.5.2.
+                Nhập mã Lô thành phẩm hoặc mã Lô nguyên liệu để vẽ sơ đồ chuỗi cung ứng 4 tầng & In Biên bản BM-TX-01 chuẩn ISO 22000.
               </p>
             </div>
           </div>
@@ -1202,29 +1129,51 @@ export function InventoryPage() {
           </div>
 
           {/* STOCK TABLE */}
-          <div className="rounded-xl border bg-card overflow-hidden shadow-sm">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs sm:text-sm border-collapse">
-                <thead>
-                  <tr className="border-b bg-muted/50 text-muted-foreground font-semibold">
-                    <th className="py-3 px-4">Mã & Mặt Hàng</th>
-                    <th className="py-3 px-4">Mã Lô & QR</th>
-                    <th className="py-3 px-4">Số Lượng Tồn</th>
-                    <th className="py-3 px-4">Vị Trí & Nhiệt Độ</th>
-                    <th className="py-3 px-4">Ngày SX / Hạn Dùng</th>
-                    <th className="py-3 px-4">Ưu Tiên FEFO</th>
-                    <th className="py-3 px-4 text-right">Thao Tác</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y">
-                  {filteredStocks.length === 0 ? (
-                    <tr>
-                      <td colSpan={7} className="py-8 text-center text-muted-foreground">
-                        Không tìm thấy mục tồn kho nào phù hợp.
-                      </td>
+          {filteredStocks.length === 0 ? (
+            <EmptyState
+              icon={Boxes}
+              title="Chưa có dữ liệu tồn kho"
+              description="Nhập lô hàng nguyên vật liệu, phụ gia hoặc thành phẩm mới theo nguyên tắc kiểm soát FEFO và vị trí kho chuẩn ATTP."
+              actionLabel="+ Nhập Kho Mới"
+              onAction={() => {
+                setSelectedStock(null);
+                setStockForm({
+                  item_code: "",
+                  item_name: "",
+                  category: "RAW_MATERIAL",
+                  lot_number: "",
+                  quantity: 100,
+                  unit: "kg",
+                  min_stock_level: 50,
+                  mfg_date: new Date().toISOString().split("T")[0],
+                  exp_date: new Date(Date.now() + 60 * 86400000).toISOString().split("T")[0],
+                  warehouse_type: "COLD_STORAGE",
+                  location_bin: "Kệ A1-01",
+                  temperature_c: -18.0,
+                  status: "AVAILABLE",
+                  notes: "",
+                });
+                setStockModalOpen(true);
+              }}
+              onOpenGuide={() => setShowGuide(true)}
+            />
+          ) : (
+            <div className="rounded-xl border bg-card overflow-hidden shadow-sm">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs sm:text-sm border-collapse">
+                  <thead>
+                    <tr className="border-b bg-muted/50 text-muted-foreground font-semibold">
+                      <th className="py-3 px-4">Mã & Mặt Hàng</th>
+                      <th className="py-3 px-4">Mã Lô & QR</th>
+                      <th className="py-3 px-4">Số Lượng Tồn</th>
+                      <th className="py-3 px-4">Vị Trí & Nhiệt Độ</th>
+                      <th className="py-3 px-4">Ngày SX / Hạn Dùng</th>
+                      <th className="py-3 px-4">Ưu Tiên FEFO</th>
+                      <th className="py-3 px-4 text-right">Thao Tác</th>
                     </tr>
-                  ) : (
-                    filteredStocks.map((item) => (
+                  </thead>
+                  <tbody className="divide-y">
+                    {filteredStocks.map((item) => (
                       <tr key={item.inventory_id} className="hover:bg-muted/30 transition-colors">
                         <td className="py-3 px-4 font-medium">
                           <div className="font-semibold text-foreground">{item.item_name}</div>
@@ -1359,12 +1308,12 @@ export function InventoryPage() {
                           </div>
                         </td>
                       </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       )}
 
@@ -1379,7 +1328,7 @@ export function InventoryPage() {
               Bản Đồ Phân Vùng Kho & Ma Trận Ô Kệ (Warehouse Bin Layout)
             </h3>
             <p className="text-xs text-muted-foreground mt-1">
-              Phân vùng kho theo tiêu chuẩn PRP (ISO 22000 Điều khoản 8.2) chống nhiễm chéo giữa nguyên liệu sống và thành phẩm.
+              Phân vùng kho theo tiêu chuẩn PRP chống nhiễm chéo giữa nguyên liệu sống và thành phẩm.
             </p>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-5">
@@ -1487,17 +1436,26 @@ export function InventoryPage() {
       ========================================== */}
       {activeTab === "samples" && (
         <div className="space-y-4">
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-card p-3 rounded-xl border">
+          <div className="rounded-xl border bg-card p-4 sm:p-5">
+            <h3 className="text-base font-bold text-foreground">Quản lý mẫu lưu đối chứng</h3>
+            <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+              Quản lý mẫu lưu đối chứng theo từng ca/mẻ sản xuất. Hạn lưu tối thiểu: <b>HSD + 30 ngày</b>.
+            </p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-muted/30 p-3 rounded-lg border">
             <div className="text-xs sm:text-sm text-muted-foreground">
-              Quản lý mẫu lưu đối chứng theo từng ca/mẻ sản xuất. Hạn lưu tối thiểu: <b>HSD + 30 ngày</b> theo ISO 22000 Điều khoản 8.5.2.
+              Tổng số mẫu lưu: <span className="font-semibold text-foreground">{samples.length}</span> | 
+              Đạt chuẩn: <span className="font-semibold text-emerald-600">{samples.filter(s => s.test_result === "PASS").length}</span> | 
+              Đang chờ/Cảnh báo: <span className="font-semibold text-amber-600">{samples.filter(s => s.test_result !== "PASS").length}</span>
             </div>
             <Button
               onClick={() => {
                 setSelectedSample(null);
                 setSampleForm({
-                  sample_code: `ML-202608-${(samples.length + 1).toString().padStart(2, "0")}`,
-                  batch_number: "LOT-202608-B01",
-                  product_name: "Chả cá Ba Sa Thượng Hạng 500g",
+                  sample_code: `ML-${new Date().getFullYear()}${String(new Date().getMonth() + 1).padStart(2, "0")}-${Math.floor(100 + Math.random() * 900)}`,
+                  batch_number: "",
+                  product_name: "",
                   sample_weight_g: 250,
                   storage_cabinet: "Tủ đông mẫu T-01",
                   storage_temperature_c: -18.0,
@@ -1518,92 +1476,120 @@ export function InventoryPage() {
             </Button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {samples.map((sample) => (
-              <div key={sample.sample_id} className="rounded-xl border bg-card p-4 shadow-sm space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="font-mono font-bold text-sm text-primary">{sample.sample_code}</span>
-                  <span
-                    className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold ${
-                      sample.test_result === "PASS"
-                        ? "bg-emerald-500/10 text-emerald-700"
-                        : sample.test_result === "FAIL"
-                        ? "bg-rose-500/10 text-rose-700"
-                        : "bg-amber-500/10 text-amber-700"
-                    }`}
-                  >
-                    {sample.test_result === "PASS" ? "Vi sinh: ĐẠT" : sample.test_result === "FAIL" ? "KHÔNG ĐẠT" : "Đang kiểm nghiệm"}
-                  </span>
-                </div>
-
-                <div>
-                  <h4 className="font-bold text-sm text-foreground">{sample.product_name}</h4>
-                  <div className="text-xs text-muted-foreground mt-0.5">
-                    Mẻ sản xuất: <span className="font-mono font-semibold text-foreground">{sample.batch_number}</span>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2 text-xs bg-muted/40 p-2.5 rounded-lg">
-                  <div>
-                    <span className="text-muted-foreground">Vị trí tủ:</span>
-                    <div className="font-semibold text-foreground">{sample.storage_cabinet}</div>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">Nhiệt độ lưu:</span>
-                    <div className="font-semibold text-blue-600">{sample.storage_temperature_c}°C</div>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">Ngày lấy mẫu:</span>
-                    <div className="font-semibold text-foreground">{sample.sample_date}</div>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">Hạn lưu mẫu:</span>
-                    <div className="font-semibold text-foreground">{sample.expiry_date}</div>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between text-xs pt-1 border-t">
-                  <span className="text-muted-foreground">Người lấy: {sample.sampled_by}</span>
-                  <div className="flex gap-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        setSelectedSample(sample);
-                        setSampleForm({
-                          sample_code: sample.sample_code,
-                          batch_number: sample.batch_number,
-                          product_name: sample.product_name,
-                          sample_weight_g: sample.sample_weight_g,
-                          storage_cabinet: sample.storage_cabinet,
-                          storage_temperature_c: sample.storage_temperature_c ?? -18.0,
-                          sample_date: sample.sample_date,
-                          expiry_date: sample.expiry_date,
-                          sampled_by: sample.sampled_by,
-                          test_result: sample.test_result,
-                          status: sample.status,
-                          notes: sample.notes || "",
-                        });
-                        setSampleModalOpen(true);
-                      }}
-                      className="h-7 w-7 p-0"
+          {samples.length === 0 ? (
+            <EmptyState
+              icon={FlaskConical}
+              title="Chưa có mẫu lưu nghiệm thức nào"
+              description="Hệ thống tủ lưu mẫu chưa ghi nhận mẫu sản phẩm hoặc lô kiểm nghiệm nào. Hãy bắt đầu lưu mẫu đối chứng kiểm nghiệm vi sinh/hóa lý."
+              actionLabel="+ Thêm Mẫu Lưu Mới"
+              onAction={() => {
+                setSelectedSample(null);
+                setSampleForm({
+                  sample_code: `ML-${new Date().getFullYear()}${String(new Date().getMonth() + 1).padStart(2, "0")}-${Math.floor(100 + Math.random() * 900)}`,
+                  batch_number: "",
+                  product_name: "",
+                  sample_weight_g: 250,
+                  storage_cabinet: "Tủ đông mẫu T-01",
+                  storage_temperature_c: -18.0,
+                  sample_date: new Date().toISOString().split("T")[0],
+                  expiry_date: new Date(Date.now() + 90 * 86400000).toISOString().split("T")[0],
+                  sampled_by: "QC Ca",
+                  test_result: "PASS",
+                  status: "STORED",
+                  notes: "",
+                });
+                setSampleModalOpen(true);
+              }}
+              onOpenGuide={() => setShowGuide(true)}
+            />
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {samples.map((sample) => (
+                <div key={sample.sample_id} className="rounded-xl border bg-card p-4 shadow-sm space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono font-bold text-sm text-primary">{sample.sample_code}</span>
+                    <span
+                      className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                        sample.test_result === "PASS"
+                          ? "bg-emerald-500/10 text-emerald-700"
+                          : sample.test_result === "FAIL"
+                          ? "bg-rose-500/10 text-rose-700"
+                          : "bg-amber-500/10 text-amber-700"
+                      }`}
                     >
-                      <Edit className="h-3.5 w-3.5" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setDeletingSampleItem({ id: sample.sample_id, code: sample.sample_code })}
-                      className="h-7 w-7 p-0 text-rose-600 hover:text-rose-700 hover:bg-rose-50"
-                      title="Xóa mẫu lưu"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
+                      {sample.test_result === "PASS" ? "Vi sinh: ĐẠT" : sample.test_result === "FAIL" ? "KHÔNG ĐẠT" : "Đang kiểm nghiệm"}
+                    </span>
+                  </div>
+
+                  <div>
+                    <h4 className="font-bold text-sm text-foreground">{sample.product_name}</h4>
+                    <div className="text-xs text-muted-foreground mt-0.5">
+                      Mẻ sản xuất: <span className="font-mono font-semibold text-foreground">{sample.batch_number}</span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 text-xs bg-muted/40 p-2.5 rounded-lg">
+                    <div>
+                      <span className="text-muted-foreground">Vị trí tủ:</span>
+                      <div className="font-semibold text-foreground">{sample.storage_cabinet}</div>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Nhiệt độ lưu:</span>
+                      <div className="font-semibold text-blue-600">{sample.storage_temperature_c}°C</div>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Ngày lấy mẫu:</span>
+                      <div className="font-semibold text-foreground">{sample.sample_date}</div>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Hạn lưu mẫu:</span>
+                      <div className="font-semibold text-foreground">{sample.expiry_date}</div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between text-xs pt-1 border-t">
+                    <span className="text-muted-foreground">Người lấy: {sample.sampled_by}</span>
+                    <div className="flex gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedSample(sample);
+                          setSampleForm({
+                            sample_code: sample.sample_code,
+                            batch_number: sample.batch_number,
+                            product_name: sample.product_name,
+                            sample_weight_g: sample.sample_weight_g,
+                            storage_cabinet: sample.storage_cabinet,
+                            storage_temperature_c: sample.storage_temperature_c ?? -18.0,
+                            sample_date: sample.sample_date,
+                            expiry_date: sample.expiry_date,
+                            sampled_by: sample.sampled_by,
+                            test_result: sample.test_result,
+                            status: sample.status,
+                            notes: sample.notes || "",
+                          });
+                          setSampleModalOpen(true);
+                        }}
+                        className="h-7 w-7 p-0"
+                      >
+                        <Edit className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setDeletingSampleItem({ id: sample.sample_id, code: sample.sample_code })}
+                        className="h-7 w-7 p-0 text-rose-600 hover:text-rose-700 hover:bg-rose-50"
+                        title="Xóa mẫu lưu"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -1621,59 +1607,70 @@ export function InventoryPage() {
               </h3>
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs sm:text-sm border-collapse">
-                <thead>
-                  <tr className="border-b bg-muted/50 text-muted-foreground font-semibold">
-                    <th className="py-2.5 px-3">Mã Mẻ & Tên Sản Phẩm</th>
-                    <th className="py-2.5 px-3">Ca Kíp & Dây Chuyền</th>
-                    <th className="py-2.5 px-3">Sản Lượng</th>
-                    <th className="py-2.5 px-3">Nguyên Liệu Cấu Thành</th>
-                    <th className="py-2.5 px-3">Thời Gian & QC</th>
-                    <th className="py-2.5 px-3">Trạng Thái</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y">
-                  {batches.map((batch) => (
-                    <tr key={batch.batch_id} className="hover:bg-muted/30">
-                      <td className="py-3 px-3">
-                        <div className="font-mono font-bold text-primary">{batch.batch_number}</div>
-                        <div className="font-medium text-foreground">{batch.product_name}</div>
-                      </td>
-                      <td className="py-3 px-3">
-                        <div>{batch.shift}</div>
-                        <div className="text-xs text-muted-foreground">{batch.production_line}</div>
-                      </td>
-                      <td className="py-3 px-3 font-semibold">
-                        {batch.actual_quantity} {batch.unit}
-                      </td>
-                      <td className="py-3 px-3">
-                        {batch.material_usages && batch.material_usages.length > 0 ? (
-                          <div className="space-y-0.5">
-                            {batch.material_usages.map((m, idx) => (
-                              <div key={idx} className="text-xs">
-                                • {m.material_name} ({m.lot_number}): <b>{m.quantity_used} {m.unit}</b>
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <span className="text-muted-foreground italic">2 lô nguyên liệu</span>
-                        )}
-                      </td>
-                      <td className="py-3 px-3 text-xs text-muted-foreground">
-                        <div>Bắt đầu: {new Date(batch.start_time).toLocaleString("vi-VN")}</div>
-                        <div className="text-foreground font-medium">QC: {batch.qc_inspector}</div>
-                      </td>
-                      <td className="py-3 px-3">
-                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-semibold text-emerald-700">
-                          <CheckCircle2 className="h-3 w-3" /> {batch.status}
-                        </span>
-                      </td>
+            {batches.length === 0 ? (
+              <EmptyState
+                icon={Boxes}
+                title="Chưa có mẻ sản xuất nào"
+                description="Hệ thống chưa ghi nhận lệnh sản xuất hoặc mẻ thành phẩm nào trong ca. Hãy hoàn tất sản xuất để ghi nhận sản lượng và nguyên liệu sử dụng."
+                actionLabel="Xem hướng dẫn mẻ sản xuất"
+                onAction={() => setShowGuide(true)}
+                onOpenGuide={() => setShowGuide(true)}
+              />
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs sm:text-sm border-collapse">
+                  <thead>
+                    <tr className="border-b bg-muted/50 text-muted-foreground font-semibold">
+                      <th className="py-2.5 px-3">Mã Mẻ & Tên Sản Phẩm</th>
+                      <th className="py-2.5 px-3">Ca Kíp & Dây Chuyền</th>
+                      <th className="py-2.5 px-3">Sản Lượng</th>
+                      <th className="py-2.5 px-3">Nguyên Liệu Cấu Thành</th>
+                      <th className="py-2.5 px-3">Thời Gian & QC</th>
+                      <th className="py-2.5 px-3">Trạng Thái</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody className="divide-y">
+                    {batches.map((batch) => (
+                      <tr key={batch.batch_id} className="hover:bg-muted/30">
+                        <td className="py-3 px-3">
+                          <div className="font-mono font-bold text-primary">{batch.batch_number}</div>
+                          <div className="font-medium text-foreground">{batch.product_name}</div>
+                        </td>
+                        <td className="py-3 px-3">
+                          <div>{batch.shift}</div>
+                          <div className="text-xs text-muted-foreground">{batch.production_line}</div>
+                        </td>
+                        <td className="py-3 px-3 font-semibold">
+                          {batch.actual_quantity} {batch.unit}
+                        </td>
+                        <td className="py-3 px-3">
+                          {batch.material_usages && batch.material_usages.length > 0 ? (
+                            <div className="space-y-0.5">
+                              {batch.material_usages.map((m, idx) => (
+                                <div key={idx} className="text-xs">
+                                  • {m.material_name} ({m.lot_number}): <b>{m.quantity_used} {m.unit}</b>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground italic">2 lô nguyên liệu</span>
+                          )}
+                        </td>
+                        <td className="py-3 px-3 text-xs text-muted-foreground">
+                          <div>Bắt đầu: {new Date(batch.start_time).toLocaleString("vi-VN")}</div>
+                          <div className="text-foreground font-medium">QC: {batch.qc_inspector}</div>
+                        </td>
+                        <td className="py-3 px-3">
+                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-semibold text-emerald-700">
+                            <CheckCircle2 className="h-3 w-3" /> {batch.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
 
           {/* ORDER DISPATCHES */}
@@ -1685,48 +1682,59 @@ export function InventoryPage() {
               </h3>
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs sm:text-sm border-collapse">
-                <thead>
-                  <tr className="border-b bg-muted/50 text-muted-foreground font-semibold">
-                    <th className="py-2.5 px-3">Mã Phiếu & Đơn Hàng</th>
-                    <th className="py-2.5 px-3">Khách Hàng / Đại Lý</th>
-                    <th className="py-2.5 px-3">Lô Xuất & Số Lượng</th>
-                    <th className="py-2.5 px-3">Xe Giao & Nhiệt Độ</th>
-                    <th className="py-2.5 px-3">Trạng Thái</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y">
-                  {dispatches.map((d) => (
-                    <tr key={d.dispatch_id} className="hover:bg-muted/30">
-                      <td className="py-3 px-3">
-                        <div className="font-mono font-bold text-primary">{d.dispatch_code}</div>
-                        <div className="text-xs text-muted-foreground">{d.order_number}</div>
-                      </td>
-                      <td className="py-3 px-3 font-medium text-foreground">
-                        <div>{d.customer_name}</div>
-                        <div className="text-xs text-muted-foreground">{d.destination_address}</div>
-                      </td>
-                      <td className="py-3 px-3">
-                        <div className="font-mono font-semibold">{d.batch_number}</div>
-                        <div className="text-xs text-foreground font-bold">
-                          {d.quantity_dispatched} {d.unit}
-                        </div>
-                      </td>
-                      <td className="py-3 px-3">
-                        <div className="text-xs font-semibold">{d.vehicle_number}</div>
-                        <div className="text-xs text-blue-600 font-medium">Nhiệt độ: {d.vehicle_temp_c}°C (ĐẠT)</div>
-                      </td>
-                      <td className="py-3 px-3">
-                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-semibold text-emerald-700">
-                          <CheckCircle2 className="h-3 w-3" /> {d.status}
-                        </span>
-                      </td>
+            {dispatches.length === 0 ? (
+              <EmptyState
+                icon={Truck}
+                title="Chưa có phiếu xuất kho nào"
+                description="Chưa có phiếu điều phối xuất kho hoặc đơn giao hàng thành phẩm nào được lập."
+                actionLabel="Xem quy trình xuất hàng"
+                onAction={() => setShowGuide(true)}
+                onOpenGuide={() => setShowGuide(true)}
+              />
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs sm:text-sm border-collapse">
+                  <thead>
+                    <tr className="border-b bg-muted/50 text-muted-foreground font-semibold">
+                      <th className="py-2.5 px-3">Mã Phiếu & Đơn Hàng</th>
+                      <th className="py-2.5 px-3">Khách Hàng / Đại Lý</th>
+                      <th className="py-2.5 px-3">Lô Xuất & Số Lượng</th>
+                      <th className="py-2.5 px-3">Xe Giao & Nhiệt Độ</th>
+                      <th className="py-2.5 px-3">Trạng Thái</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody className="divide-y">
+                    {dispatches.map((d) => (
+                      <tr key={d.dispatch_id} className="hover:bg-muted/30">
+                        <td className="py-3 px-3">
+                          <div className="font-mono font-bold text-primary">{d.dispatch_code}</div>
+                          <div className="text-xs text-muted-foreground">{d.order_number}</div>
+                        </td>
+                        <td className="py-3 px-3 font-medium text-foreground">
+                          <div>{d.customer_name}</div>
+                          <div className="text-xs text-muted-foreground">{d.destination_address}</div>
+                        </td>
+                        <td className="py-3 px-3">
+                          <div className="font-mono font-semibold">{d.batch_number}</div>
+                          <div className="text-xs text-foreground font-bold">
+                            {d.quantity_dispatched} {d.unit}
+                          </div>
+                        </td>
+                        <td className="py-3 px-3">
+                          <div className="text-xs font-semibold">{d.vehicle_number}</div>
+                          <div className="text-xs text-blue-600 font-medium">Nhiệt độ: {d.vehicle_temp_c}°C (ĐẠT)</div>
+                        </td>
+                        <td className="py-3 px-3">
+                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-semibold text-emerald-700">
+                            <CheckCircle2 className="h-3 w-3" /> {d.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -1766,27 +1774,37 @@ export function InventoryPage() {
             </Button>
           </div>
 
-          {/* TABLE OF VEHICLE INSPECTIONS */}
-          <div className="rounded-xl border bg-card overflow-hidden shadow-sm">
-            <div className="p-4 border-b bg-muted/20 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-              <div>
-                <h3 className="font-bold text-sm sm:text-base flex items-center gap-2">
-                  <Truck className="h-4 w-4 text-primary" />
-                  Sổ Nhật Ký Kiểm Tra Phương Tiện Vận Chuyển Trước Bốc Hàng
-                </h3>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  Biểu mẫu BM01-PTVC (Điều khoản 8.2 ISO 22000) — Đánh giá 5 tiêu chí: Đăng kiểm hợp lệ, thùng xe kín bền, sạch khô, không mùi lạ, không côn trùng hại.
-                </p>
+          {vehicleInspections.length === 0 ? (
+            <EmptyState
+              icon={Truck}
+              title="Chưa có phiếu kiểm xe vận chuyển nào"
+              description="Theo quy trình an toàn vệ sinh vận chuyển thực phẩm, mọi phương tiện cần được kiểm định 5 tiêu chuẩn trước khi xếp hàng."
+              actionLabel="+ Lập Phiếu Kiểm Xe Mới (BM01-PTVC)"
+              onAction={openNewVehicle}
+              onOpenGuide={() => setShowGuide(true)}
+            />
+          ) : (
+            /* TABLE OF VEHICLE INSPECTIONS */
+            <div className="rounded-xl border bg-card overflow-hidden shadow-sm">
+              <div className="p-4 border-b bg-muted/20 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                <div>
+                  <h3 className="font-bold text-sm sm:text-base flex items-center gap-2">
+                    <Truck className="h-4 w-4 text-primary" />
+                    Sổ Nhật Ký Kiểm Tra Phương Tiện Vận Chuyển Trước Bốc Hàng
+                  </h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Biểu mẫu BM01-PTVC — Đánh giá 5 tiêu chí: Đăng kiểm hợp lệ, thùng xe kín bền, sạch khô, không mùi lạ, không côn trùng hại.
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 text-xs">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-1 font-semibold text-emerald-700">
+                    <CheckCircle2 className="h-3.5 w-3.5" /> Đạt: {vehicleInspections.filter(v => v.inspection_result === "PASS").length}
+                  </span>
+                  <span className="inline-flex items-center gap-1 rounded-full bg-rose-500/10 px-2.5 py-1 font-semibold text-rose-700">
+                    <AlertTriangle className="h-3.5 w-3.5" /> Từ chối: {vehicleInspections.filter(v => v.inspection_result === "FAIL").length}
+                  </span>
+                </div>
               </div>
-              <div className="flex items-center gap-2 text-xs">
-                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-1 font-semibold text-emerald-700">
-                  <CheckCircle2 className="h-3.5 w-3.5" /> Đạt: {vehicleInspections.filter(v => v.inspection_result === "PASS").length}
-                </span>
-                <span className="inline-flex items-center gap-1 rounded-full bg-rose-500/10 px-2.5 py-1 font-semibold text-rose-700">
-                  <AlertTriangle className="h-3.5 w-3.5" /> Từ chối: {vehicleInspections.filter(v => v.inspection_result === "FAIL").length}
-                </span>
-              </div>
-            </div>
 
             <div className="overflow-x-auto">
               <table className="w-full text-xs sm:text-sm text-left">
@@ -1901,6 +1919,7 @@ export function InventoryPage() {
               </table>
             </div>
           </div>
+          )}
         </div>
       )}
 
@@ -1940,128 +1959,139 @@ export function InventoryPage() {
             </Button>
           </div>
 
-          {/* TABLE OF DISPOSAL RECORDS */}
-          <div className="rounded-xl border bg-card overflow-hidden shadow-sm">
-            <div className="p-4 border-b bg-muted/20 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-              <div>
-                <h3 className="font-bold text-sm sm:text-base flex items-center gap-2">
-                  <Trash2 className="h-4 w-4 text-rose-600" />
-                  Sổ Theo Dõi Tiêu Hủy Sản Phẩm / Thực Phẩm Không Phù Hợp
-                </h3>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  Biểu mẫu BM02-HỦY HÀNG (Điều khoản 8.9.4 & 8.9.5 ISO 22000) — Hội đồng 3 bên chứng kiến, giám sát và ký biên bản (Đơn vị thực hiện hủy, P.QLCL, Phòng ban đề xuất).
-                </p>
+          {disposalRecords.length === 0 ? (
+            <EmptyState
+              icon={Trash2}
+              title="Chưa có biên bản hủy hàng nào"
+              description="Chưa có sản phẩm hoặc lô hàng không phù hợp nào cần lập biên bản xử lý tiêu hủy. Mọi thao tác hủy hàng sẽ được lưu vết và lập biên bản BM02 với hội đồng 3 bên."
+              actionLabel="+ Lập Biên Bản Hủy Hàng (BM02)"
+              onAction={openNewDisposal}
+              onOpenGuide={() => setShowGuide(true)}
+            />
+          ) : (
+            /* TABLE OF DISPOSAL RECORDS */
+            <div className="rounded-xl border bg-card overflow-hidden shadow-sm">
+              <div className="p-4 border-b bg-muted/20 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                <div>
+                  <h3 className="font-bold text-sm sm:text-base flex items-center gap-2">
+                    <Trash2 className="h-4 w-4 text-rose-600" />
+                    Sổ Theo Dõi Tiêu Hủy Sản Phẩm / Thực Phẩm Không Phù Hợp
+                  </h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Biểu mẫu BM02-HỦY HÀNG — Hội đồng 3 bên chứng kiến, giám sát và ký biên bản (Đơn vị thực hiện hủy, P.QLCL, Phòng ban đề xuất).
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 text-xs">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-rose-500/10 px-2.5 py-1 font-semibold text-rose-700">
+                    <Flame className="h-3.5 w-3.5" /> Tổng khối lượng đã hủy: {disposalRecords.reduce((sum, r) => sum + (r.unit === 'kg' ? r.quantity : 0), 0).toLocaleString()} kg
+                  </span>
+                </div>
               </div>
-              <div className="flex items-center gap-2 text-xs">
-                <span className="inline-flex items-center gap-1 rounded-full bg-rose-500/10 px-2.5 py-1 font-semibold text-rose-700">
-                  <Flame className="h-3.5 w-3.5" /> Tổng khối lượng đã hủy: {disposalRecords.reduce((sum, r) => sum + (r.unit === 'kg' ? r.quantity : 0), 0).toLocaleString()} kg
-                </span>
-              </div>
-            </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs sm:text-sm text-left">
-                <thead className="bg-muted/40 text-muted-foreground uppercase text-[11px] font-bold border-b">
-                  <tr>
-                    <th className="py-2.5 px-3">Số Biên Bản & Ngày</th>
-                    <th className="py-2.5 px-3">Mã Lô & Sản Phẩm</th>
-                    <th className="py-2.5 px-3 text-right">Khối Lượng Hủy</th>
-                    <th className="py-2.5 px-3">Lý Do Tiêu Hủy</th>
-                    <th className="py-2.5 px-3">Phương Pháp & Địa Điểm</th>
-                    <th className="py-2.5 px-3 text-center">Trạng Thái</th>
-                    <th className="py-2.5 px-3">Phê Duyệt</th>
-                    <th className="py-2.5 px-3 text-right">Thao Tác</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y">
-                  {filteredDisposals.length === 0 ? (
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs sm:text-sm text-left">
+                  <thead className="bg-muted/40 text-muted-foreground uppercase text-[11px] font-bold border-b">
                     <tr>
-                      <td colSpan={8} className="py-8 text-center text-muted-foreground">
-                        Chưa có biên bản hủy hàng nào phù hợp.
-                      </td>
+                      <th className="py-2.5 px-3">Số Biên Bản & Ngày</th>
+                      <th className="py-2.5 px-3">Mã Lô & Sản Phẩm</th>
+                      <th className="py-2.5 px-3 text-right">Khối Lượng Hủy</th>
+                      <th className="py-2.5 px-3">Lý Do Tiêu Hủy</th>
+                      <th className="py-2.5 px-3">Phương Pháp & Địa Điểm</th>
+                      <th className="py-2.5 px-3 text-center">Trạng Thái</th>
+                      <th className="py-2.5 px-3">Phê Duyệt</th>
+                      <th className="py-2.5 px-3 text-right">Thao Tác</th>
                     </tr>
-                  ) : (
-                    filteredDisposals.map((d) => (
-                      <tr key={d.id} className="hover:bg-muted/30 transition-colors">
-                        <td className="py-3 px-3">
-                          <div className="font-mono font-bold text-rose-600">{d.record_code}</div>
-                          <div className="text-[11px] text-muted-foreground">{d.disposal_date}</div>
-                        </td>
-                        <td className="py-3 px-3">
-                          <div className="font-bold text-foreground">{d.product_name}</div>
-                          <div className="text-[11px] font-mono text-muted-foreground">Lô: {d.batch_number}</div>
-                        </td>
-                        <td className="py-3 px-3 text-right">
-                          <div className="font-mono font-bold text-foreground text-sm">
-                            {d.quantity.toLocaleString()} {d.unit}
-                          </div>
-                        </td>
-                        <td className="py-3 px-3 max-w-xs">
-                          <div className="text-xs text-rose-700 font-medium line-clamp-2">{d.reason}</div>
-                        </td>
-                        <td className="py-3 px-3 max-w-xs">
-                          <div className="text-xs font-semibold text-foreground line-clamp-1">{d.disposal_method}</div>
-                          <div className="text-[11px] text-muted-foreground line-clamp-1">{d.disposal_location}</div>
-                        </td>
-                        <td className="py-3 px-3 text-center">
-                          {d.status === "DISPOSED" ? (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-bold text-emerald-700 border border-emerald-500/20">
-                              <CheckCircle2 className="h-3 w-3" /> ĐÃ HỦY
-                            </span>
-                          ) : d.status === "APPROVED" ? (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-blue-500/10 px-2.5 py-0.5 text-xs font-bold text-blue-700 border border-blue-500/20">
-                              <CheckSquare className="h-3 w-3" /> ĐÃ DUYỆT
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2.5 py-0.5 text-xs font-bold text-amber-700 border border-amber-500/20">
-                              <Clock className="h-3 w-3" /> CHỜ DUYỆT
-                            </span>
-                          )}
-                        </td>
-                        <td className="py-3 px-3">
-                          <div className="font-medium text-foreground">{d.approved_by || "Chưa ký"}</div>
-                          {d.witness_council && (
-                            <div className="text-[11px] text-muted-foreground line-clamp-1 italic">Hội đồng 3 bên</div>
-                          )}
-                        </td>
-                        <td className="py-3 px-3 text-right">
-                          <div className="flex items-center justify-end gap-1">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handlePrintDisposalRecord(d)}
-                              title="In Biên Bản Hủy Hàng (BM02)"
-                              className="h-8 w-8 p-0 text-slate-700 hover:text-rose-600 hover:border-rose-600"
-                            >
-                              <Printer className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => openEditDisposal(d)}
-                              title="Chỉnh sửa biên bản"
-                              className="h-8 w-8 p-0"
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleDeleteDisposal(d.id)}
-                              title="Xóa biên bản"
-                              className="h-8 w-8 p-0 text-rose-600 hover:text-rose-700 hover:bg-rose-50"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
+                  </thead>
+                  <tbody className="divide-y">
+                    {filteredDisposals.length === 0 ? (
+                      <tr>
+                        <td colSpan={8} className="py-8 text-center text-muted-foreground">
+                          Chưa có biên bản hủy hàng nào phù hợp.
                         </td>
                       </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
+                    ) : (
+                      filteredDisposals.map((d) => (
+                        <tr key={d.id} className="hover:bg-muted/30 transition-colors">
+                          <td className="py-3 px-3">
+                            <div className="font-mono font-bold text-rose-600">{d.record_code}</div>
+                            <div className="text-[11px] text-muted-foreground">{d.disposal_date}</div>
+                          </td>
+                          <td className="py-3 px-3">
+                            <div className="font-bold text-foreground">{d.product_name}</div>
+                            <div className="text-[11px] font-mono text-muted-foreground">Lô: {d.batch_number}</div>
+                          </td>
+                          <td className="py-3 px-3 text-right">
+                            <div className="font-mono font-bold text-foreground text-sm">
+                              {d.quantity.toLocaleString()} {d.unit}
+                            </div>
+                          </td>
+                          <td className="py-3 px-3 max-w-xs">
+                            <div className="text-xs text-rose-700 font-medium line-clamp-2">{d.reason}</div>
+                          </td>
+                          <td className="py-3 px-3 max-w-xs">
+                            <div className="text-xs font-semibold text-foreground line-clamp-1">{d.disposal_method}</div>
+                            <div className="text-[11px] text-muted-foreground line-clamp-1">{d.disposal_location}</div>
+                          </td>
+                          <td className="py-3 px-3 text-center">
+                            {d.status === "DISPOSED" ? (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-bold text-emerald-700 border border-emerald-500/20">
+                                <CheckCircle2 className="h-3 w-3" /> ĐÃ HỦY
+                              </span>
+                            ) : d.status === "APPROVED" ? (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-blue-500/10 px-2.5 py-0.5 text-xs font-bold text-blue-700 border border-blue-500/20">
+                                <CheckSquare className="h-3 w-3" /> ĐÃ DUYỆT
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2.5 py-0.5 text-xs font-bold text-amber-700 border border-amber-500/20">
+                                <Clock className="h-3 w-3" /> CHỜ DUYỆT
+                              </span>
+                            )}
+                          </td>
+                          <td className="py-3 px-3">
+                            <div className="font-medium text-foreground">{d.approved_by || "Chưa ký"}</div>
+                            {d.witness_council && (
+                              <div className="text-[11px] text-muted-foreground line-clamp-1 italic">Hội đồng 3 bên</div>
+                            )}
+                          </td>
+                          <td className="py-3 px-3 text-right">
+                            <div className="flex items-center justify-end gap-1">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handlePrintDisposalRecord(d)}
+                                title="In Biên Bản Hủy Hàng (BM02)"
+                                className="h-8 w-8 p-0 text-slate-700 hover:text-rose-600 hover:border-rose-600"
+                              >
+                                <Printer className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => openEditDisposal(d)}
+                                title="Chỉnh sửa biên bản"
+                                className="h-8 w-8 p-0"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleDeleteDisposal(d.id)}
+                                title="Xóa biên bản"
+                                className="h-8 w-8 p-0 text-rose-600 hover:text-rose-700 hover:bg-rose-50"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       )}
 
@@ -2262,7 +2292,7 @@ export function InventoryPage() {
           <DialogHeader>
             <DialogTitle className="text-lg sm:text-xl font-bold flex items-center gap-2">
               <FlaskConical className="h-5 w-5 text-primary" />
-              {selectedSample ? "Cập Nhật Mẫu Lưu Nghiệm Thức" : "Ghi Nhận Mẫu Lưu Mới (ISO 8.5.2)"}
+              {selectedSample ? "Cập Nhật Mẫu Lưu Nghiệm Thức" : "Ghi Nhận Mẫu Lưu Mới"}
             </DialogTitle>
             <DialogDescription className="text-xs text-muted-foreground">
               Mẫu lưu nghiệm thức đối chứng phục vụ điều tra sự cố và đối chiếu khiếu nại chất lượng.
@@ -2643,7 +2673,7 @@ export function InventoryPage() {
               {editingDisposal ? "Chỉnh Sửa Biên Bản Hủy Hàng" : "Lập Biên Bản Hủy Hàng Không Phù Hợp (BM02)"}
             </DialogTitle>
             <DialogDescription className="text-xs text-muted-foreground">
-              Tiêu hủy sản phẩm không phù hợp chuẩn Điều khoản 8.9.4 & 8.9.5 ISO 22000 với Hội đồng 3 bên (Đơn vị thực hiện hủy, P.QLCL, Phòng ban đề xuất).
+              Tiêu hủy sản phẩm không phù hợp với Hội đồng 3 bên (Đơn vị thực hiện hủy, P.QLCL, Phòng ban đề xuất).
             </DialogDescription>
           </DialogHeader>
 
@@ -2887,6 +2917,12 @@ export function InventoryPage() {
         description={`Bạn có chắc chắn muốn xóa mẫu lưu đối chứng [${deletingSampleItem?.code}] khỏi hệ thống tủ bảo quản?`}
         confirmLabel="Xóa mẫu lưu"
         variant="destructive"
+      />
+
+      <ModuleGuideModal
+        module="inventory"
+        isOpen={showGuide}
+        onClose={() => setShowGuide(false)}
       />
     </div>
   );

@@ -276,9 +276,7 @@ SEED_SUPPLIERS = [
 ]
 
 def seed_purchasing_data_if_empty(db: Session) -> None:
-    existing_count = db.query(Supplier).count()
-    if existing_count > 0:
-        return
+    return
 
     admin_user = db.query(User).first()
     admin_id = admin_user.user_id if admin_user else None

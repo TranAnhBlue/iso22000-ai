@@ -16,9 +16,7 @@ from app.modules.equipment.schemas import (
 
 
 def seed_default_equipments_if_empty(db: Session):
-    existing = db.scalars(select(Equipment)).first()
-    if existing:
-        return
+    return
 
     today = date.today()
     admin_user = db.scalars(select(User).order_by(User.created_at.asc())).first()

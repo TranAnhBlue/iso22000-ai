@@ -62,6 +62,9 @@ import { DynamicFormRenderer } from "@/components/builder/DynamicFormRenderer";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import type { FormTemplateData } from "@/components/builder/FormBuilder";
 import { printHtml } from "@/lib/print";
+import { EmptyState } from "@/components/EmptyState";
+import { ModuleGuideModal } from "@/components/ModuleGuideModal";
+import { WorkflowGuideModal } from "@/components/WorkflowGuideModal";
 
 export const Route = createFileRoute("/haccp")({
   head: () => ({
@@ -70,7 +73,7 @@ export const Route = createFileRoute("/haccp")({
       {
         name: "description",
         content:
-          "Quản lý kế hoạch HACCP, lưu đồ quy trình công đoạn, ma trận phân tích mối nguy, điểm kiểm soát tới hạn (CCP/oPRP) và giám sát đo đạc thời gian thực theo tiêu chuẩn ISO 22000:2018 Điều khoản 8.5.",
+          "Quản lý kế hoạch HACCP, lưu đồ quy trình công đoạn, ma trận phân tích mối nguy, điểm kiểm soát tới hạn (CCP/oPRP) và giám sát đo đạc thời gian thực theo tiêu chuẩn FSMS.",
       },
     ],
   }),
@@ -298,6 +301,8 @@ const AI_DEVIATION_PRESETS = [
 // ==================== MAIN COMPONENT ====================
 function HACCPModule() {
   const [activeTab, setActiveTab] = useState<"flowchart" | "ccp_plan" | "hazards" | "logs" | "reviews" | "ai">("flowchart");
+  const [showGuide, setShowGuide] = useState(false);
+  const [showWfGuide, setShowWfGuide] = useState(false);
 
   // Data states
   const [stats, setStats] = useState<HACCPStats | null>(null);
@@ -486,7 +491,7 @@ function HACCPModule() {
     }
   };
 
-  // HANDLERS THẨM TRA ĐỊNH KỲ KẾ HOẠCH HACCP (CLAUSE 8.6 & 8.8)
+  // HANDLERS THẨM TRA ĐỊNH KỲ KẾ HOẠCH HACCP & OPRP
   const openNewReview = () => {
     setEditingReview(null);
     const codeNum = reviews.length + 1;
@@ -606,7 +611,7 @@ function HACCPModule() {
                 rev.review_type === "PERIODIC"
                   ? "Thẩm tra định kỳ 6 tháng"
                   : rev.review_type === "POST_CHANGE"
-                  ? "Thẩm tra sau thay đổi (Clause 6.3)"
+                  ? "Thẩm tra sau thay đổi"
                   : rev.review_type === "INCIDENT_TRIGGERED"
                   ? "Thẩm tra sau sự cố CCP/NC"
                   : "Thẩm tra thường niên"
@@ -911,7 +916,7 @@ function HACCPModule() {
       module: "HACCP_FLOW",
       code: currentPlan?.plan_code ? `WF-${currentPlan.plan_code}` : "WF-HACCP-FLOW",
       title: currentPlan ? `Lưu Đồ: ${currentPlan.plan_name}` : "Lưu Đồ Quy Trình Công Đoạn HACCP",
-      description: currentPlan?.scope_description || "Lưu đồ công đoạn sản xuất tuần tự ISO 8.5.1",
+      description: currentPlan?.scope_description || "Lưu đồ công đoạn sản xuất tuần tự theo chuẩn FSMS",
       version: currentPlan?.version || "1.0",
       nodes,
       edges,
@@ -1306,9 +1311,17 @@ function HACCPModule() {
       {/* Page Header */}
       <PageHeader
         title="Quản Lý Kế Hoạch HACCP, Mối Nguy & Giám Sát CCP"
-        description="Hệ thống xây dựng Kế hoạch HACCP, lưu đồ công đoạn tuần tự, ma trận phân tích mối nguy Codex Q1-Q4 và giám sát đo đạc thời gian thực theo tiêu chuẩn ISO 22000:2018 Điều khoản 8.5."
+        description="Hệ thống xây dựng Kế hoạch HACCP, lưu đồ công đoạn tuần tự, ma trận phân tích mối nguy Codex Q1-Q4 và giám sát đo đạc thời gian thực."
         actions={
           <div className="flex flex-wrap items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowGuide(true)}
+              className="text-xs border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 font-semibold"
+            >
+              <BookOpen className="h-3.5 w-3.5 mr-1.5 text-emerald-600" /> Hướng Dẫn Nghiệp Vụ
+            </Button>
             <Button
               variant="outline"
               size="sm"
@@ -1477,7 +1490,7 @@ function HACCPModule() {
             }`}
           >
             <ShieldCheck className="h-4 w-4 shrink-0" />
-            Thẩm Tra Kế Hoạch (8.6 & 8.8) ({reviews.length})
+            Thẩm Tra Kế Hoạch ({reviews.length})
           </button>
 
           <button
@@ -1550,6 +1563,16 @@ function HACCPModule() {
                   <Workflow className="w-3.5 h-3.5 text-blue-600" />
                   Bộ Thiết Kế Lưu Đồ (Studio)
                 </Button>
+
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setShowWfGuide(true)}
+                  className="border-indigo-300 bg-indigo-50 text-indigo-800 hover:bg-indigo-100 text-xs font-bold flex items-center gap-1.5 shadow-sm"
+                >
+                  <BookOpen className="w-3.5 h-3.5 text-indigo-600" />
+                  Hướng Dẫn Lưu Đồ HACCP
+                </Button>
               </div>
             </div>
 
@@ -1584,25 +1607,63 @@ function HACCPModule() {
               <div>
                 <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
                   <GitBranch className="w-4 h-4 text-emerald-600" />
-                  Sơ Đồ Lưu Đồ Quy Trình Công Đoạn Tuần Tự (ISO 22000 Điều khoản 8.5.1)
+                  Sơ Đồ Lưu Đồ Quy Trình Công Đoạn Tuần Tự
                 </h3>
                 <p className="text-xs text-slate-500 mt-0.5">
                   Lưu đồ thể hiện toàn bộ các bước sản xuất từ tiếp nhận đến thành phẩm và vị trí các điểm kiểm soát tới hạn CCP.
                 </p>
               </div>
 
-              <Button
-                size="sm"
-                onClick={handleOpenCreateStep}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm"
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setShowWfGuide(true)}
+                  className="border-slate-300 text-slate-700 hover:bg-slate-100 text-xs font-semibold flex items-center gap-1.5"
+                >
+                  <BookOpen className="w-3.5 h-3.5 text-blue-600" />
+                  Nguyên Tắc Lưu Đồ
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={handleOpenCreateStep}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  Thêm Công Đoạn
+                </Button>
+              </div>
+            </div>
+
+            {/* Inline Guidance Tip Banner */}
+            <div className="flex items-center justify-between gap-3 p-3.5 rounded-xl bg-gradient-to-r from-blue-50/80 via-indigo-50/50 to-blue-50/80 border border-blue-200 text-xs text-blue-900 shadow-sm">
+              <div className="flex items-center gap-2.5">
+                <Sparkles className="w-4 h-4 text-blue-600 shrink-0" />
+                <span>
+                  <strong>Hướng Dẫn Chuẩn Hóa Lưu Đồ Công Đoạn:</strong> Đảm bảo tính tuần tự liên tục từ tiếp nhận đến xuất kho, xác định đầy đủ thông số kỹ thuật (nhiệt độ, thời gian, thiết bị) và đánh dấu nổi bật các điểm kiểm soát tới hạn CCP/oPRP.
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowWfGuide(true)}
+                className="shrink-0 px-2.5 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-[11px] flex items-center gap-1 shadow-sm transition"
               >
-                <Plus className="w-3.5 h-3.5" />
-                Thêm Công Đoạn
-              </Button>
+                Xem Hướng Dẫn
+              </button>
             </div>
 
             {/* Visual Flow Pipeline */}
-            <div className="max-w-2xl mx-auto space-y-3 py-2">
+            {filteredSteps.length === 0 ? (
+              <EmptyState
+                icon={GitBranch}
+                title="Chưa có lưu đồ công đoạn nào"
+                description="Hãy bắt đầu thiết lập các bước công nghệ trong dây chuyền sản xuất từ khâu tiếp nhận nguyên liệu đến bảo quản thành phẩm."
+                actionLabel="+ Thêm Công Đoạn Đầu Tiên"
+                onAction={handleOpenCreateStep}
+                onGuide={() => setShowGuide(true)}
+              />
+            ) : (
+              <div className="max-w-2xl mx-auto space-y-3 py-2">
               {filteredSteps.map((step, idx) => (
                 <React.Fragment key={step.step_id}>
                   {/* Step Card */}
@@ -1675,6 +1736,7 @@ function HACCPModule() {
                 </React.Fragment>
               ))}
             </div>
+            )}
           </div>
         </div>
       )}
@@ -1708,7 +1770,17 @@ function HACCPModule() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {filteredCCPs.length === 0 ? (
+            <EmptyState
+              icon={Flame}
+              title="Chưa có điểm kiểm soát tới hạn CCP / oPRP"
+              description="Dựa trên kết quả đánh giá cây quyết định phân tích mối nguy Codex, hãy thiết lập các điểm kiểm soát tới hạn CCP kèm giới hạn tới hạn cụ thể."
+              actionLabel="+ Thêm Điểm CCP Mới"
+              onAction={handleOpenCreateCCP}
+              onGuide={() => setShowGuide(true)}
+            />
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {filteredCCPs.map((ccp) => {
               const cl = ccp.critical_limit || {};
               const isOprp = ccp.ccp_code.startsWith("oPRP");
@@ -1781,6 +1853,7 @@ function HACCPModule() {
               );
             })}
           </div>
+          )}
         </div>
       )}
 
@@ -1818,8 +1891,18 @@ function HACCPModule() {
             </Button>
           </div>
 
-          <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
-            <div className="overflow-x-auto">
+          {filteredHazards.length === 0 ? (
+            <EmptyState
+              icon={ShieldAlert}
+              title="Chưa có phân tích mối nguy nào"
+              description="Thực hiện nhận diện các mối nguy sinh học, hóa học, vật lý và dị nguyên cho từng công đoạn kèm đánh giá cây quyết định Codex Q1-Q4."
+              actionLabel="+ Thêm Mối Nguy Mới"
+              onAction={handleOpenCreateHazard}
+              onGuide={() => setShowGuide(true)}
+            />
+          ) : (
+            <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+              <div className="overflow-x-auto">
               <table className="w-full text-left text-xs text-slate-800">
                 <thead className="bg-slate-50 text-slate-700 uppercase font-bold border-b border-slate-200">
                   <tr>
@@ -1871,6 +1954,7 @@ function HACCPModule() {
               </table>
             </div>
           </div>
+          )}
         </div>
       )}
 
@@ -1921,8 +2005,18 @@ function HACCPModule() {
             </div>
           </div>
 
-          <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
-            <div className="overflow-x-auto">
+          {filteredLogs.length === 0 ? (
+            <EmptyState
+              icon={Thermometer}
+              title="Chưa có nhật ký giám sát đo đạc CCP nào"
+              description="Thực hiện ghi nhận định kỳ các thông số giám sát (nhiệt độ, áp suất, thời gian, kích thước lưới sàng...) để kiểm soát điểm tới hạn CCP."
+              actionLabel="+ Ghi Nhật Ký Đo Đạc"
+              onAction={() => handleOpenCreateLog()}
+              onGuide={() => setShowGuide(true)}
+            />
+          ) : (
+            <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+              <div className="overflow-x-auto">
               <table className="w-full text-left text-xs text-slate-800">
                 <thead className="bg-slate-50 text-slate-700 uppercase font-bold border-b border-slate-200">
                   <tr>
@@ -1958,6 +2052,7 @@ function HACCPModule() {
               </table>
             </div>
           </div>
+          )}
         </div>
       )}
 
@@ -2114,7 +2209,7 @@ function HACCPModule() {
         </div>
       )}
 
-      {/* ==================== TAB 6: THẨM TRA ĐỊNH KỲ KẾ HOẠCH HACCP & OPRP (CLAUSE 8.6 & 8.8) ==================== */}
+      {/* ==================== TAB 6: THẨM TRA ĐỊNH KỲ KẾ HOẠCH HACCP & OPRP ==================== */}
       {activeTab === "reviews" && (
         <div className="space-y-4">
           <div className="bg-gradient-to-r from-emerald-900 to-teal-900 text-white rounded-2xl p-5 shadow-lg flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
@@ -2126,7 +2221,7 @@ function HACCPModule() {
                 <h3 className="text-base font-bold flex items-center gap-2">
                   Thẩm Tra Hiệu Lực Kế Hoạch HACCP & OPRP
                   <span className="text-[10px] font-semibold bg-emerald-500/30 text-emerald-200 border border-emerald-400/30 px-2 py-0.5 rounded-full">
-                    ISO 22000:2018 Điều 8.6 & 8.8
+                    ISO 22000:2018
                   </span>
                 </h3>
                 <p className="text-xs text-slate-200 mt-1 max-w-2xl leading-relaxed">
@@ -2166,7 +2261,7 @@ function HACCPModule() {
                 >
                   <option value="ALL">Tất cả loại hình</option>
                   <option value="PERIODIC">Định kỳ (Periodic)</option>
-                  <option value="POST_CHANGE">Sau thay đổi (Clause 6.3)</option>
+                  <option value="POST_CHANGE">Sau thay đổi</option>
                   <option value="INCIDENT_TRIGGERED">Sau sự cố (Incident)</option>
                   <option value="ANNUAL">Định kỳ thường niên (Annual)</option>
                 </select>
@@ -2191,8 +2286,18 @@ function HACCPModule() {
           </div>
 
           {/* Table */}
-          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
-            <div className="overflow-x-auto">
+          {reviews.length === 0 ? (
+            <EmptyState
+              icon={ClipboardCheck}
+              title="Chưa có đợt thẩm tra kế hoạch HACCP nào"
+              description="Thực hiện đánh giá toàn diện định kỳ hoặc sau thay đổi đối với phân tích mối nguy, hồ sơ giám sát CCP/OPRP và hiệu lực CAPA."
+              actionLabel="+ Lập Đợt Thẩm Tra Mới"
+              onAction={openNewReview}
+              onGuide={() => setShowGuide(true)}
+            />
+          ) : (
+            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+              <div className="overflow-x-auto">
               <table className="w-full text-xs text-left border-collapse">
                 <thead>
                   <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase tracking-wider text-[10px]">
@@ -2235,7 +2340,7 @@ function HACCPModule() {
                               )}
                               {rev.review_type === "POST_CHANGE" && (
                                 <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-purple-50 text-purple-700 border border-purple-200">
-                                  Sau thay đổi (6.3)
+                                  Sau thay đổi
                                 </span>
                               )}
                               {rev.review_type === "INCIDENT_TRIGGERED" && (
@@ -2374,10 +2479,11 @@ function HACCPModule() {
               </table>
             </div>
           </div>
+          )}
         </div>
       )}
 
-      {/* ==================== MODAL: HACCP PLAN REVIEW (CLAUSE 8.6 & 8.8) ==================== */}
+      {/* ==================== MODAL: HACCP PLAN REVIEW ==================== */}
       <Dialog open={reviewModalOpen} onOpenChange={setReviewModalOpen}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto bg-white border-slate-200 text-slate-900 shadow-2xl p-6">
           <DialogHeader>
@@ -2439,13 +2545,13 @@ function HACCPModule() {
                   className="w-full mt-1 h-9 px-3 py-1 bg-white border border-slate-300 rounded-md text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 >
                   <option value="PERIODIC">Định kỳ định thời (Periodic)</option>
-                  <option value="POST_CHANGE">Sau khi có thay đổi (Clause 6.3)</option>
+                  <option value="POST_CHANGE">Sau khi có thay đổi công nghệ / quy trình</option>
                   <option value="INCIDENT_TRIGGERED">Sau sự cố / Sự sai lệch nghiêm trọng</option>
                   <option value="ANNUAL">Đánh giá tổng thể thường niên</option>
                 </select>
               </div>
               <div>
-                <Label className="text-slate-700 font-semibold">Liên kết Yêu cầu thay đổi (MCR - Điều 6.3)</Label>
+                <Label className="text-slate-700 font-semibold">Liên kết Yêu cầu thay đổi (MCR)</Label>
                 <select
                   value={reviewForm.change_request_id || ""}
                   onChange={(e) => setReviewForm({ ...reviewForm, change_request_id: e.target.value })}
@@ -3269,7 +3375,7 @@ function HACCPModule() {
                   });
 
                   // 2. Tự động ghi nhận log vào bảng Giám Sát CCP (ccp_monitoring_logs)
-                  const targetCcp = ccps.find((c) => c.ccp_number === "CCP 1" || (c.name && c.name.toLowerCase().includes("thanh trùng"))) || ccps[0];
+                  const targetCcp = ccps.find((c) => c.ccp_code === "CCP 1" || (c.name && c.name.toLowerCase().includes("thanh trùng"))) || ccps[0];
                   if (targetCcp) {
                     const tempVal = parseFloat(formData["core_temperature_c"] || formData["measured_temp"] || formData["measured_value"] || 85.5);
                     const isPass = formData["is_limit_pass"] !== false && formData["is_pass"] !== false && String(formData["is_limit_pass"]).toLowerCase() !== "false";
@@ -3290,7 +3396,7 @@ function HACCPModule() {
                     } else if (saved.status === "WARNING") {
                       toast.warning(`LƯU Ý: Giá trị ${saved.measured_value}${saved.unit} sát ngưỡng tới hạn.`);
                     } else {
-                      toast.success(`Đã ghi nhận nhật ký đo CCP [${targetCcp.ccp_number}] thành công!`);
+                      toast.success(`Đã ghi nhận nhật ký đo CCP [${targetCcp.ccp_code}] thành công!`);
                     }
                   } else {
                     toast.success("Đã ghi nhận phiếu giám sát CCP vào cơ sở dữ liệu!");
@@ -3461,6 +3567,19 @@ function HACCPModule() {
         description={`Bạn có chắc chắn muốn xóa mối nguy "${deletingHazard?.hazard_name}" khỏi ma trận đánh giá không?`}
         confirmLabel="Xóa mối nguy"
         variant="destructive"
+      />
+
+      {/* Module Guide Modal */}
+      <ModuleGuideModal
+        module="haccp"
+        isOpen={showGuide}
+        onClose={() => setShowGuide(false)}
+      />
+
+      {/* Workflow & Flowchart Guide Modal */}
+      <WorkflowGuideModal
+        isOpen={showWfGuide}
+        onClose={() => setShowWfGuide(false)}
       />
     </div>
   );

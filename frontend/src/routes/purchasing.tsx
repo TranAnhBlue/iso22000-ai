@@ -48,6 +48,7 @@ import {
   GitFork,
   Sliders,
   ClipboardList,
+  BookOpen,
 } from "lucide-react";
 import api from "@/lib/api";
 import { toast } from "sonner";
@@ -57,6 +58,8 @@ import { WorkflowBuilder, type WorkflowTemplateData } from "@/components/builder
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import type { FormTemplateData } from "@/components/builder/types";
 import { printHtml } from "@/lib/print";
+import { EmptyState } from "@/components/EmptyState";
+import { ModuleGuideModal } from "@/components/ModuleGuideModal";
 
 export const Route = createFileRoute("/purchasing")({
   head: () => ({
@@ -65,7 +68,7 @@ export const Route = createFileRoute("/purchasing")({
       {
         name: "description",
         content:
-          "Kiểm soát các quá trình, sản phẩm hoặc dịch vụ do bên ngoài cung cấp (ASL), tiếp nhận lô nguyên liệu (FEFO) và thẩm định COA/IQC theo tiêu chuẩn ISO 22000:2018 Điều khoản 7.1.6.",
+          "Kiểm soát các quá trình, sản phẩm hoặc dịch vụ do bên ngoài cung cấp (ASL), tiếp nhận lô nguyên liệu (FEFO) và thẩm định COA/IQC theo tiêu chuẩn ISO 22000:2018.",
       },
     ],
   }),
@@ -367,6 +370,7 @@ function PurchasingPage() {
   const [evaluations, setEvaluations] = useState<SupplierEvaluationItem[]>([]);
   const [criteriaTemplates, setCriteriaTemplates] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [showGuide, setShowGuide] = useState(false);
 
   // Filters
   const [searchQuery, setSearchQuery] = useState("");
@@ -818,7 +822,7 @@ function PurchasingPage() {
           module: "IQC",
           code: "FORM-IQC-01",
           title: "Phiếu Nghiệm Thu Nguyên Liệu Thủy Sản Đầu Vào (IQC-01)",
-          description: "Đánh giá chất lượng cảm quan, nhiệt độ xe đông lạnh và phiếu COA nhà cung cấp theo ISO 22000 Điều khoản 8.2.",
+          description: "Đánh giá chất lượng cảm quan, nhiệt độ xe đông lạnh và phiếu COA nhà cung cấp theo ISO 22000.",
           version: "1.0",
           fields: [
             { id: "f_lot", name: "lot_number", label: "Số Lô Nguyên Liệu", type: "TEXT", required: true, default_value: lot.lot_number },
@@ -877,7 +881,7 @@ function PurchasingPage() {
         setWorkflowTemplate({
           module: "SUPPLIER_AUDIT",
           code: "WF-SUPPLIER-AUDIT",
-          title: "Quy Trình Thẩm Định & Phê Duyệt Nhà Cung Cấp ASL (ISO 7.1.6)",
+          title: "Quy Trình Thẩm Định & Phê Duyệt Nhà Cung Cấp ASL",
           description: "Quy trình 4 bước thẩm định hồ sơ pháp lý, đánh giá thực địa và cấp mã ASL chính thức.",
           version: "1.0",
           nodes: [
@@ -1365,7 +1369,7 @@ function PurchasingPage() {
         </div>
 
         <div class="title">KẾ HOẠCH ĐÁNH GIÁ NĂNG LỰC NHÀ CUNG CẤP HÀNG NĂM</div>
-        <div class="sub-title">(Theo quy định Điều khoản 7.1.6 ISO 22000:2018 — Đánh giá & Phê duyệt nhà cung ứng)</div>
+        <div class="sub-title">Đánh giá & Phê duyệt nhà cung ứng theo chuẩn ISO 22000:2018</div>
 
         <div class="info-box">
           <div class="info-row"><span class="info-label">Mã số kế hoạch:</span><span class="info-val"><strong>${plan.plan_code}</strong></span></div>
@@ -1492,7 +1496,7 @@ function PurchasingPage() {
           <div class="form-meta">
             <div><strong>Mã biểu mẫu:</strong> ${formCode}</div>
             <div><strong>Số phiếu:</strong> ${ev.evaluation_code}</div>
-            <div><strong>Lần soát xét:</strong> 02 | <strong>ISO Clause:</strong> 7.1.6</div>
+            <div><strong>Lần soát xét:</strong> 02 | <strong>Tiêu chuẩn:</strong> Tiêu chí ASL</div>
           </div>
         </div>
 
@@ -1585,9 +1589,19 @@ function PurchasingPage() {
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <PageHeader
           title="Đánh Giá Nhà Cung Cấp & Tiếp Nhận Kiểm Định IQC"
-          description="Kiểm soát các quá trình, sản phẩm hoặc dịch vụ do bên ngoài cung cấp (ASL), tiếp nhận lô nguyên liệu (FEFO) và thẩm định COA theo ISO 22000:2018 Điều khoản 7.1.6."
+          description="Kiểm soát các quá trình, sản phẩm hoặc dịch vụ do bên ngoài cung cấp (ASL), tiếp nhận lô nguyên liệu (FEFO) và thẩm định COA theo ISO 22000:2018."
         />
         <div className="flex flex-wrap items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowGuide(true)}
+            className="border-emerald-300 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 flex items-center gap-1.5 font-bold text-xs"
+          >
+            <BookOpen className="h-4 w-4 text-emerald-600" />
+            <span>Hướng Dẫn Nghiệp Vụ</span>
+          </Button>
+
           <Button
             variant="outline"
             size="sm"
@@ -2032,7 +2046,17 @@ function PurchasingPage() {
 
       {/* ==================== TAB 1: SUPPLIERS LIST ==================== */}
       {activeTab === "suppliers" && (
-        <div className="rounded-xl border border-border bg-card shadow-sm">
+        suppliers.length === 0 ? (
+          <EmptyState
+            icon={Building2}
+            title="Chưa có nhà cung cấp nào trong danh mục ASL"
+            description="Thiết lập danh mục nhà cung cấp được phê duyệt (Approved Supplier List - ASL), quản lý chứng chỉ ATTP và đánh giá định kỳ."
+            actionLabel="+ Thêm Nhà Cung Cấp Mới"
+            onAction={() => handleOpenCreateSupplier()}
+            onGuide={() => setShowGuide(true)}
+          />
+        ) : (
+          <div className="rounded-xl border border-border bg-card shadow-sm">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead className="border-b border-border bg-muted/40 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
@@ -2207,11 +2231,22 @@ function PurchasingPage() {
             </table>
           </div>
         </div>
+        )
       )}
 
       {/* ==================== TAB 2: MATERIAL LOTS LIST ==================== */}
       {activeTab === "lots" && (
-        <div className="rounded-xl border border-border bg-card shadow-sm">
+        lots.length === 0 ? (
+          <EmptyState
+            icon={Package}
+            title="Chưa có lô nguyên liệu nào được tiếp nhận"
+            description="Ghi nhận thông tin lô hàng tiếp nhận, số lượng, hạn sử dụng FEFO và hồ sơ kiểm soát nhiệt độ xe vận chuyển."
+            actionLabel="+ Tiếp Nhận Lô Hàng Mới"
+            onAction={() => handleOpenCreateLot()}
+            onGuide={() => setShowGuide(true)}
+          />
+        ) : (
+          <div className="rounded-xl border border-border bg-card shadow-sm">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead className="border-b border-border bg-muted/40 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
@@ -2374,11 +2409,22 @@ function PurchasingPage() {
             </table>
           </div>
         </div>
+        )
       )}
 
       {/* ==================== TAB 3: IQC INSPECTIONS LIST ==================== */}
       {activeTab === "inspections" && (
-        <div className="rounded-xl border border-border bg-card shadow-sm">
+        inspections.length === 0 ? (
+          <EmptyState
+            icon={ShieldCheck}
+            title="Chưa có biên bản kiểm định tiếp nhận IQC nào"
+            description="Thực hiện kiểm tra cảm quan, bao bì, nhiệt độ và thẩm định COA của nguyên liệu trước khi nhập kho."
+            actionLabel="+ Lập Phiếu Kiểm Định IQC"
+            onAction={() => handleOpenCreateInspection()}
+            onGuide={() => setShowGuide(true)}
+          />
+        ) : (
+          <div className="rounded-xl border border-border bg-card shadow-sm">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead className="border-b border-border bg-muted/40 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
@@ -2546,6 +2592,7 @@ function PurchasingPage() {
             </table>
           </div>
         </div>
+        )
       )}
 
       {/* ==================== TAB 4: AI COA SMART INSPECTOR ==================== */}
@@ -2738,7 +2785,17 @@ function PurchasingPage() {
 
       {/* ==================== TAB 4: EVALUATION PLANS (BM02-KHĐGNCC) ==================== */}
       {activeTab === "eval_plans" && (
-        <div className="space-y-4">
+        evaluationPlans.length === 0 ? (
+          <EmptyState
+            icon={Calendar}
+            title="Chưa có kế hoạch đánh giá nhà cung cấp nào"
+            description="Lập kế hoạch định kỳ và đột xuất để đánh giá năng lực các nhà cung ứng trong chuỗi cung ứng thực phẩm."
+            actionLabel="+ Thêm Kế Hoạch Năm"
+            onAction={() => openNewPlan()}
+            onGuide={() => setShowGuide(true)}
+          />
+        ) : (
+          <div className="space-y-4">
           <div className="rounded-xl border border-border bg-card shadow-sm">
             <div className="flex items-center justify-between border-b border-border/80 px-4 py-3 bg-muted/20">
               <div>
@@ -2747,7 +2804,7 @@ function PurchasingPage() {
                   Kế Hoạch Đánh Giá Năng Lực Nhà Cung Cấp Hàng Năm (BM02-KHĐGNCC)
                 </h3>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Quy định lập lịch định kỳ và đột xuất đánh giá nhà cung ứng theo ISO 22000:2018 Điều khoản 7.1.6
+                  Quy định lập lịch định kỳ và đột xuất đánh giá nhà cung ứng theo ISO 22000:2018
                 </p>
               </div>
               <Button
@@ -2875,11 +2932,22 @@ function PurchasingPage() {
             </div>
           </div>
         </div>
+        )
       )}
 
       {/* ==================== TAB 5: SUPPLIER EVALUATIONS (BM03 / BM03-TS / BM04) ==================== */}
       {activeTab === "evaluations" && (
-        <div className="space-y-4">
+        evaluations.length === 0 ? (
+          <EmptyState
+            icon={Award}
+            title="Chưa có hồ sơ đánh giá nhà cung cấp nào"
+            description="Thực hiện chấm điểm năng lực nhà cung cấp theo các bộ tiêu chí Nông sản tươi, Thủy hải sản hoặc Khô/Bao bì."
+            actionLabel="+ Lập Phiếu Đánh Giá Mới"
+            onAction={() => openNewEval()}
+            onGuide={() => setShowGuide(true)}
+          />
+        ) : (
+          <div className="space-y-4">
           <div className="rounded-xl border border-border bg-card shadow-sm">
             <div className="flex items-center justify-between border-b border-border/80 px-4 py-3 bg-muted/20">
               <div>
@@ -3049,6 +3117,7 @@ function PurchasingPage() {
             </div>
           </div>
         </div>
+        )
       )}
       <Dialog open={isCreateSupplierOpen} onOpenChange={setIsCreateSupplierOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -4209,7 +4278,7 @@ function PurchasingPage() {
                     HỆ THỐNG QUẢN LÝ AN TOÀN THỰC PHẨM ISO 22000:2018
                   </h3>
                   <p className="text-xs text-muted-foreground">
-                    Biểu mẫu BM-ASL-01 • Điều khoản 7.1.6 Kiểm soát quá trình thuê ngoài
+                    Biểu mẫu BM-ASL-01 • Kiểm soát quá trình thuê ngoài
                   </p>
                 </div>
               </div>
@@ -4715,7 +4784,7 @@ function PurchasingPage() {
                   Chi tiết bảng chấm điểm tiêu chí ({evalForm.criteria_scores?.length || 0} tiêu chí - Thang điểm 100)
                 </div>
                 <div className="text-xs text-muted-foreground">
-                  Chuẩn ISO 22000 Điều khoản 7.1.6
+                  Chuẩn ISO 22000
                 </div>
               </div>
 
@@ -4895,6 +4964,13 @@ function PurchasingPage() {
         description={`Bạn có chắc chắn muốn xóa Phiếu đánh giá "${deletingEvalItem?.code}" không?`}
         confirmLabel="Xóa Phiếu"
         variant="destructive"
+      />
+
+      {/* Module Guide Modal */}
+      <ModuleGuideModal
+        module="purchasing"
+        isOpen={showGuide}
+        onClose={() => setShowGuide(false)}
       />
     </div>
   );

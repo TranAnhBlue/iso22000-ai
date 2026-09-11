@@ -203,7 +203,7 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
             <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
               Bộ Thiết Kế Biểu Mẫu Tùy Biến (Dynamic Form Studio)
               <span className="text-xs px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-semibold border border-emerald-200">
-                ISO 22000 Clause 8.2 & 8.5
+                Chuẩn Hóa Biểu Mẫu
               </span>
             </h2>
             <p className="text-xs text-slate-500">

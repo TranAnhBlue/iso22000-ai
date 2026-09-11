@@ -21,7 +21,9 @@ import {
   ListOrdered,
   LayoutGrid,
   FileText,
+  BookOpen,
 } from "lucide-react";
+import { WorkflowGuideModal } from "@/components/WorkflowGuideModal";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useDepartments } from "@/lib/departments";
@@ -74,9 +76,9 @@ const NODE_TYPES = [
 ];
 
 const MODULE_OPTIONS = [
-  { value: "HACCP_FLOW", label: "Lưu Đồ Quy Trình Công Đoạn (ISO 8.5.1)" },
-  { value: "DOC_APPROVAL", label: "Quy Trình Phê Duyệt Tài Liệu SOP (ISO 7.5)" },
-  { value: "CAPA_FLOW", label: "Quy Trình Xử Lý Sự Cố CAPA (ISO 8.9 & 10.1)" },
+  { value: "HACCP_FLOW", label: "Lưu Đồ Quy Trình Công Đoạn" },
+  { value: "DOC_APPROVAL", label: "Quy Trình Phê Duyệt Tài Liệu SOP" },
+  { value: "CAPA_FLOW", label: "Quy Trình Xử Lý Sự Cố CAPA" },
   { value: "SUPPLIER_AUDIT", label: "Quy Trình Đánh Giá Nhà Cung Cấp" },
   { value: "EQUIPMENT_MAINT", label: "Quy Trình Bảo Trì & Hiệu Chuẩn Máy" },
   { value: "INTERNAL_AUDIT", label: "Quy Trình Đánh Giá Nội Bộ ISO" },
@@ -88,11 +90,12 @@ export const WorkflowBuilder: React.FC<WorkflowBuilderProps> = ({
   onCancel,
 }) => {
   const { departments } = useDepartments();
+  const [showGuide, setShowGuide] = useState(false);
   const [template, setTemplate] = useState<WorkflowTemplateData>(
     initialData || {
       module: "HACCP_FLOW",
       code: `WF-HACCP-${Date.now().toString().slice(-4)}`,
-      title: "Lưu Đồ Quy Trình Chế Biến Mới (ISO 8.5.1)",
+      title: "Lưu Đồ Quy Trình Chế Biến Mới",
       description: "Quy trình công nghệ các bước tuần tự từ tiếp nhận nguyên liệu đến thành phẩm.",
       version: "1.0",
       nodes: [
@@ -301,7 +304,7 @@ export const WorkflowBuilder: React.FC<WorkflowBuilderProps> = ({
             <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
               Bộ Thiết Kế Lưu Đồ & Quy Trình Động (Workflow Studio)
               <span className="text-xs px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 font-semibold border border-blue-200">
-                ISO 22000 Clause 8.5.1
+                Chuẩn Hóa FSMS
               </span>
             </h2>
             <p className="text-xs text-slate-500">
@@ -337,6 +340,16 @@ export const WorkflowBuilder: React.FC<WorkflowBuilderProps> = ({
               Danh Sách Các Bước
             </button>
           </div>
+
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setShowGuide(true)}
+            className="border-blue-300 bg-blue-50 text-blue-800 hover:bg-blue-100 text-xs font-semibold flex items-center gap-1.5 shadow-sm"
+          >
+            <BookOpen className="w-3.5 h-3.5 text-blue-600" />
+            Hướng Dẫn Quy Trình
+          </Button>
 
           <Button
             onClick={handleSaveSubmit}
@@ -481,6 +494,23 @@ export const WorkflowBuilder: React.FC<WorkflowBuilderProps> = ({
                 <span className="text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full bg-white text-slate-700 border border-slate-300 shadow-sm">
                   Sơ Đồ Lưu Đồ Công Đoạn Tuần Tự ({template.nodes.length} bước)
                 </span>
+              </div>
+
+              {/* Guidance tip banner */}
+              <div className="flex items-center justify-between gap-3 p-3 bg-blue-50/80 border border-blue-200 rounded-xl text-xs text-blue-900 shadow-sm">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-blue-600 shrink-0" />
+                  <span>
+                    <b>Mẹo thiết kế:</b> Nhấp vào công đoạn bất kỳ để cấu hình thông số và điểm CCP ở cột bên phải. Dùng nút "Hướng Dẫn Quy Trình" để xem chuẩn mực lưu đồ.
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowGuide(true)}
+                  className="text-xs text-blue-700 hover:text-blue-900 font-bold underline shrink-0 cursor-pointer"
+                >
+                  Xem Hướng Dẫn
+                </button>
               </div>
 
               {template.nodes.length === 0 ? (
@@ -796,6 +826,9 @@ export const WorkflowBuilder: React.FC<WorkflowBuilderProps> = ({
           )}
         </div>
       </div>
+
+      {/* Modal Hướng Dẫn Quy Trình & Lưu Đồ */}
+      <WorkflowGuideModal isOpen={showGuide} onClose={() => setShowGuide(false)} />
     </div>
   );
 };

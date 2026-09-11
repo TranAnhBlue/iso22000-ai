@@ -335,13 +335,18 @@ MIGRATION_STATEMENTS = [
 
 
 def run_migrations():
-    """Hàm chạy toàn bộ DDL create_all và migration statements"""
+    """Hàm chạy toàn bộ DDL create_all và migration statements tối ưu qua 1 kết nối duy nhất"""
     try:
         print("[MIGRATION] Khởi tạo các bảng từ Base.metadata...")
         Base.metadata.create_all(bind=engine)
         print(f"[MIGRATION] Đang chạy {len(MIGRATION_STATEMENTS)} câu lệnh migration...")
-        for stmt in MIGRATION_STATEMENTS:
-            run_migration_sql(stmt)
+        with engine.connect() as conn:
+            autocommit_conn = conn.execution_options(isolation_level="AUTOCOMMIT")
+            for stmt in MIGRATION_STATEMENTS:
+                try:
+                    autocommit_conn.execute(text(stmt))
+                except Exception:
+                    pass
         print("[MIGRATION] Hoàn tất migrations thành công!")
     except Exception as e:
         print(f"[MIGRATION WARNING] Database tables create_all note: {e}")

@@ -29,12 +29,15 @@ import {
   Flame,
   ChevronRight,
   ShieldAlert,
+  BookOpen,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import api from "@/lib/api";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { QRCodeModal } from "@/components/QRCodeModal";
+import { EmptyState } from "@/components/EmptyState";
+import { ModuleGuideModal } from "@/components/ModuleGuideModal";
 
 import { useModuleAccess } from "@/lib/rbac";
 
@@ -42,7 +45,7 @@ export const Route = createFileRoute("/traceability")({
   head: () => ({
     meta: [
       { title: "Truy Xuất Nguồn Gốc 1 Chạm & Thu Hồi – WCERT FSMS" },
-      { name: "description", content: "Hệ thống truy xuất nguồn gốc ngược và xuôi 1 chạm theo tiêu chuẩn ISO 22000:2018 Điều khoản 8.5.2." },
+      { name: "description", content: "Hệ thống truy xuất nguồn gốc ngược và xuôi 1 chạm theo tiêu chuẩn ISO 22000:2018." },
       { property: "og:title", content: "Truy Xuất Nguồn Gốc 1 Chạm & Thu Hồi – WCERT FSMS" },
       { property: "og:description", content: "Truy xuất chuỗi cung ứng 4 tầng và giả lập thu hồi sản phẩm." },
     ],
@@ -57,12 +60,13 @@ export const Route = createFileRoute("/traceability")({
 export function TraceabilityPage() {
   const { canEdit, isManagement, isAdmin, isQA } = useModuleAccess();
   const [mode, setMode] = useState<"backward" | "forward">("backward");
-  const [queryCode, setQueryCode] = useState("LOT-202608-B01");
-  const [forwardCode, setForwardCode] = useState("NL-2026-CA01");
+  const [queryCode, setQueryCode] = useState("");
+  const [forwardCode, setForwardCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [quarantining, setQuarantining] = useState(false);
   const [isQuarantinedSuccess, setIsQuarantinedSuccess] = useState(false);
   const [qrModalOpen, setQrModalOpen] = useState(false);
+  const [showGuide, setShowGuide] = useState(false);
   const [qrModalData, setQrModalData] = useState<{
     title: string;
     qrCodeText: string;
@@ -74,9 +78,9 @@ export function TraceabilityPage() {
     unit?: string;
   }>({
     title: "Mã QR Lô Hàng Thành Phẩm",
-    qrCodeText: "QR-CC500-B01",
-    lotNumber: "LOT-202608-B01",
-    productName: "Chả cá Ba Sa Thượng Hạng 500g",
+    qrCodeText: "",
+    lotNumber: "",
+    productName: "",
   });
 
   // Results
@@ -112,26 +116,6 @@ export function TraceabilityPage() {
     } catch (err: any) {
       console.error("Lỗi truy xuất xuôi:", err);
       toast.error("Không thể kết nối API truy xuất xuôi: " + (err.response?.data?.detail || err.message));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Seed demo data and auto query
-  const handleSeedAndSearch = async () => {
-    setLoading(true);
-    try {
-      await api.post("/traceability/seed-demo");
-      setIsQuarantinedSuccess(false);
-      if (mode === "backward") {
-        await handleBackwardSearch("LOT-202608-B01");
-      } else {
-        await handleForwardSearch("NL-2026-CA01");
-      }
-      toast.success("Đã nạp dữ liệu thực hành mẫu và thực hiện truy xuất thành công!");
-    } catch (err) {
-      console.error("Lỗi seed demo:", err);
-      toast.error("Không thể nạp dữ liệu mẫu.");
     } finally {
       setLoading(false);
     }
@@ -205,13 +189,18 @@ export function TraceabilityPage() {
           </div>
           <PageHeader
             title="Truy Xuất Nguồn Gốc 1 Chạm (Traceability Engine)"
-            description="Truy xuất ngược từ Thành phẩm sang Nguyên liệu & Truy xuất xuôi thu hồi khẩn cấp theo ISO 22000:2018 Điều khoản 8.5.2."
+            description="Truy xuất ngược từ Thành phẩm sang Nguyên liệu & Truy xuất xuôi thu hồi khẩn cấp theo ISO 22000:2018."
           />
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Button variant="outline" size="sm" onClick={handleSeedAndSearch} disabled={loading} className="gap-2">
-            <Sparkles className="h-4 w-4 text-amber-500" />
-            Nạp mẫu Demo ISO
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowGuide(true)}
+            className="border-emerald-300 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 flex items-center gap-1.5 font-bold text-xs"
+          >
+            <BookOpen className="h-4 w-4 text-emerald-600" />
+            <span>Hướng Dẫn Nghiệp Vụ</span>
           </Button>
           {backwardTree && backwardTree.found && mode === "backward" && (
             <Button size="sm" onClick={triggerPrint} className="gap-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold">
@@ -305,27 +294,6 @@ export function TraceabilityPage() {
                 {loading ? "Đang truy xuất..." : "Truy Xuất Ngược 1 Chạm"}
               </Button>
             </div>
-            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-              <span>Mẫu thử nghiệm nhanh:</span>
-              <button
-                onClick={() => {
-                  setQueryCode("LOT-202608-B01");
-                  handleBackwardSearch("LOT-202608-B01");
-                }}
-                className="font-mono text-primary font-semibold hover:underline bg-muted/60 px-2 py-0.5 rounded"
-              >
-                LOT-202608-B01 (Chả cá Ba Sa)
-              </button>
-              <button
-                onClick={() => {
-                  setQueryCode("PXK-2026-0801");
-                  handleBackwardSearch("PXK-2026-0801");
-                }}
-                className="font-mono text-primary font-semibold hover:underline bg-muted/60 px-2 py-0.5 rounded"
-              >
-                PXK-2026-0801 (Xuất Co.opmart)
-              </button>
-            </div>
           </div>
         ) : (
           <div className="space-y-3">
@@ -349,27 +317,6 @@ export function TraceabilityPage() {
                 {loading ? "Đang quét..." : "Quét Giả Lập Thu Hồi (Mock Recall)"}
               </Button>
             </div>
-            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-              <span>Mẫu thử nghiệm nhanh:</span>
-              <button
-                onClick={() => {
-                  setForwardCode("NL-2026-CA01");
-                  handleForwardSearch("NL-2026-CA01");
-                }}
-                className="font-mono text-rose-600 font-semibold hover:underline bg-rose-50 px-2 py-0.5 rounded border border-rose-200"
-              >
-                NL-2026-CA01 (Cá Tra Fillet)
-              </button>
-              <button
-                onClick={() => {
-                  setForwardCode("NL-2026-GV01");
-                  handleForwardSearch("NL-2026-GV01");
-                }}
-                className="font-mono text-rose-600 font-semibold hover:underline bg-rose-50 px-2 py-0.5 rounded border border-rose-200"
-              >
-                NL-2026-GV01 (Gia vị tổng hợp)
-              </button>
-            </div>
           </div>
         )}
       </div>
@@ -377,6 +324,17 @@ export function TraceabilityPage() {
       {/* =========================================================================
           MODE A: BACKWARD TRACEABILITY TREE & REPORT (BM-TX-01)
       ========================================================================= */}
+      {mode === "backward" && !backwardTree && (
+        <EmptyState
+          icon={Search}
+          title="Chưa có kết quả truy xuất nguồn gốc ngược"
+          description="Nhập mã số lô thành phẩm hoặc số phiếu xuất kho (PXK) vào ô tìm kiếm phía trên để tra cứu toàn bộ phả hệ chuỗi cung ứng 4 tầng."
+          actionLabel="Xem Hướng Dẫn Truy Xuất"
+          onAction={() => setShowGuide(true)}
+          onGuide={() => setShowGuide(true)}
+        />
+      )}
+
       {mode === "backward" && backwardTree && (
         <div className="space-y-6">
           {/* COMPLIANCE SCORECARD (HIDE IN PRINT) */}
@@ -433,7 +391,7 @@ export function TraceabilityPage() {
                     <Building2 className="h-4 w-4 text-blue-600" />
                     TẦNG 1: NHÀ CUNG CẤP & NGUYÊN VẬT LIỆU ĐẦU VÀO ({backwardTree.suppliers_and_materials.length} lô)
                   </span>
-                  <span className="text-[11px] font-semibold text-muted-foreground">ISO 22000 Điều khoản 7.1.6 & 8.2</span>
+                  <span className="text-[11px] font-semibold text-muted-foreground">ISO 22000</span>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -504,7 +462,7 @@ export function TraceabilityPage() {
                         Xem Tem Mã QR
                       </Button>
                     )}
-                    <span className="text-[11px] font-semibold text-muted-foreground hidden sm:inline">ISO 22000 Điều khoản 8.5.4</span>
+                    <span className="text-[11px] font-semibold text-muted-foreground hidden sm:inline">ISO 22000</span>
                   </div>
                 </div>
 
@@ -574,7 +532,7 @@ export function TraceabilityPage() {
                     <ThermometerSnowflake className="h-4 w-4 text-teal-600" />
                     TẦNG 3: TỒN KHO HIỆN TẠI & MẪU LƯU ĐỐI CHỨNG
                   </span>
-                  <span className="text-[11px] font-semibold text-muted-foreground">ISO 22000 Điều khoản 8.5.2 & 8.7</span>
+                  <span className="text-[11px] font-semibold text-muted-foreground">ISO 22000</span>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
@@ -637,7 +595,7 @@ export function TraceabilityPage() {
                     <Truck className="h-4 w-4 text-emerald-600" />
                     TẦNG 4: ĐƠN HÀNG XUẤT KHO & KHÁCH HÀNG TIÊU THỤ ({backwardTree.customers_dispatched.length} phiếu xuất)
                   </span>
-                  <span className="text-[11px] font-semibold text-muted-foreground">ISO 22000 Điều khoản 8.5.2</span>
+                  <span className="text-[11px] font-semibold text-muted-foreground">ISO 22000</span>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -701,7 +659,7 @@ export function TraceabilityPage() {
                 BIÊN BẢN TRUY XUẤT NGUỒN GỐC LÔ HÀNG THÀNH PHẨM
               </h1>
               <p className="text-xs text-muted-foreground italic mt-1">
-                (Áp dụng theo quy định truy xuất nguồn gốc một chạm - ISO 22000:2018 Điều khoản 8.5.2)
+                (Áp dụng theo quy định truy xuất nguồn gốc một chạm ISO 22000:2018)
               </p>
             </div>
 
@@ -816,6 +774,17 @@ export function TraceabilityPage() {
       {/* =========================================================================
           MODE B: FORWARD TRACEABILITY & MOCK RECALL (GIẢ LẬP THU HỒI SỰ CỐ)
       ========================================================================= */}
+      {mode === "forward" && !forwardRecall && (
+        <EmptyState
+          icon={ShieldAlert}
+          title="Chưa thực hiện quét giả lập thu hồi khẩn cấp"
+          description="Nhập mã lô nguyên liệu nghi ngờ bị sự cố để quét toàn bộ các mẻ sản xuất và khách hàng/đại lý cần kích hoạt thu hồi khẩn cấp."
+          actionLabel="Xem Hướng Dẫn Thu Hồi"
+          onAction={() => setShowGuide(true)}
+          onGuide={() => setShowGuide(true)}
+        />
+      )}
+
       {mode === "forward" && forwardRecall && (
         <div className="space-y-6">
           {/* MOCK RECALL BANNER */}
@@ -899,7 +868,7 @@ export function TraceabilityPage() {
               Danh Sách Khách Hàng / Đại Lý Đã Nhận Hàng (Cần Kích Hoạt Thu Hồi Trong 2 Giờ)
             </h3>
             <p className="text-xs text-muted-foreground">
-              Theo quy định Điều khoản 8.5.2 & 8.9.5, danh sách khách hàng dưới đây phải được thông báo khẩn cấp và niêm phong sản phẩm trên kệ bán lẻ.
+              Theo quy định tiêu chuẩn, danh sách khách hàng dưới đây phải được thông báo khẩn cấp và niêm phong sản phẩm trên kệ bán lẻ.
             </p>
 
             <div className="overflow-x-auto">
@@ -962,7 +931,7 @@ export function TraceabilityPage() {
           }
         }}
         title="Xác nhận khóa & biệt trữ tồn kho mẻ sản phẩm"
-        description={`Bạn có chắc chắn muốn chuyển toàn bộ tồn kho của mẻ sản xuất [${quarantineTarget}] sang trạng thái BIỆT TRỮ CÁCH LY (QUARANTINE)? Hệ thống sẽ lập tức chặn xuất kho tự động theo tiêu chuẩn Điều khoản 8.9 ISO 22000.`}
+        description={`Bạn có chắc chắn muốn chuyển toàn bộ tồn kho của mẻ sản xuất [${quarantineTarget}] sang trạng thái BIỆT TRỮ CÁCH LY (QUARANTINE)? Hệ thống sẽ lập tức chặn xuất kho tự động theo tiêu chuẩn ISO 22000.`}
         confirmLabel="Khóa & Biệt Trữ Cách Ly"
         variant="destructive"
       />
@@ -979,6 +948,13 @@ export function TraceabilityPage() {
         expDate={qrModalData.expDate}
         quantity={qrModalData.quantity}
         unit={qrModalData.unit}
+      />
+
+      {/* Module Guide Modal */}
+      <ModuleGuideModal
+        module="traceability"
+        isOpen={showGuide}
+        onClose={() => setShowGuide(false)}
       />
     </div>
   );

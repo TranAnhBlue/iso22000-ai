@@ -37,6 +37,7 @@ import {
   Phone,
   Siren,
   GitCompare,
+  Truck,
 } from "lucide-react";
 import { AIChatWidget } from "@/components/AIChatWidget";
 
@@ -50,72 +51,82 @@ interface RoleQuickLink {
 
 function getRoleQuickLinks(role: string): RoleQuickLink[] {
   const r = (role || "").toLowerCase();
-  // 1. Ban Giám Đốc (Management / Executive)
+  // 1. Ban Giám Đốc
   if (["management", "executive"].includes(r)) {
     return [
-      { to: "/dashboard", label: "Trung tâm điều hành & Xem xét lãnh đạo", sublabel: "Báo cáo KPI & Đánh giá toàn diện FSMS (Điều 9.3)", icon: LayoutDashboard, tone: "text-emerald-600 bg-emerald-50 hover:bg-emerald-100/80 border-emerald-200/60" },
-      { to: "/documents", label: "Phê duyệt tài liệu & SOPs cấp cao", sublabel: "Sổ tay ATTP, Chính sách chất lượng (Điều 7.5)", icon: FileText, tone: "text-blue-600 bg-blue-50 hover:bg-blue-100/80 border-blue-200/60" },
-      { to: "/audits", label: "Kế hoạch ĐGNB & Báo cáo kết luận", sublabel: "Giám sát hiệu lực toàn diện hệ thống (Điều 9.2)", icon: GraduationCap, tone: "text-purple-600 bg-purple-50 hover:bg-purple-100/80 border-purple-200/60" },
-      { to: "/traceability", label: "Kích hoạt lệnh thu hồi sản phẩm", sublabel: "Quản lý tình huống khẩn cấp & Thu hồi (Điều 8.9.5)", icon: QrCode, tone: "text-rose-600 bg-rose-50 hover:bg-rose-100/80 border-rose-200/60" },
+      { to: "/dashboard", label: "Trung tâm điều hành & Xem xét lãnh đạo", sublabel: "Báo cáo KPI & Đánh giá toàn diện FSMS", icon: LayoutDashboard, tone: "text-emerald-600 bg-emerald-50 hover:bg-emerald-100/80 border-emerald-200/60" },
+      { to: "/documents", label: "Phê duyệt tài liệu & SOPs cấp cao", sublabel: "Sổ tay ATTP, Chính sách chất lượng", icon: FileText, tone: "text-blue-600 bg-blue-50 hover:bg-blue-100/80 border-blue-200/60" },
+      { to: "/audits", label: "Kế hoạch ĐGNB & Báo cáo kết luận", sublabel: "Giám sát hiệu lực toàn diện hệ thống", icon: GraduationCap, tone: "text-purple-600 bg-purple-50 hover:bg-purple-100/80 border-purple-200/60" },
+      { to: "/traceability", label: "Kích hoạt lệnh thu hồi sản phẩm", sublabel: "Quản lý tình huống khẩn cấp & Thu hồi", icon: QrCode, tone: "text-rose-600 bg-rose-50 hover:bg-rose-100/80 border-rose-200/60" },
     ];
   }
-  // 2. Quản Trị Hệ Thống (Admin)
+  // 2. Quản Trị Hệ Thống
   if (["admin"].includes(r)) {
     return [
-      { to: "/organization", label: "Cơ cấu tổ chức & Quản lý người dùng", sublabel: "Phân quyền RBAC, phòng ban & tài khoản (Điều 5.3)", icon: Building2, tone: "text-purple-600 bg-purple-50 hover:bg-purple-100/80 border-purple-200/60" },
+      { to: "/organization", label: "Cơ cấu tổ chức & Quản lý người dùng", sublabel: "Phân quyền RBAC, phòng ban & tài khoản", icon: Building2, tone: "text-purple-600 bg-purple-50 hover:bg-purple-100/80 border-purple-200/60" },
       { to: "/builder", label: "Trình thiết kế biểu mẫu & Lưu đồ", sublabel: "Tùy biến Form điện tử & Workflow hệ thống", icon: Layers, tone: "text-amber-600 bg-amber-50 hover:bg-amber-100/80 border-amber-200/60" },
       { to: "/dashboard", label: "Tổng quan dữ liệu & Giám sát hệ thống", sublabel: "Bảng điều hành quản trị tập trung", icon: LayoutDashboard, tone: "text-emerald-600 bg-emerald-50 hover:bg-emerald-100/80 border-emerald-200/60" },
-      { to: "/documents", label: "Quản trị danh mục tài liệu & SOPs", sublabel: "Phân cấp & lưu trữ hồ sơ tài liệu (Điều 7.5)", icon: FileText, tone: "text-blue-600 bg-blue-50 hover:bg-blue-100/80 border-blue-200/60" },
+      { to: "/documents", label: "Quản trị danh mục tài liệu & SOPs", sublabel: "Phân cấp & lưu trữ hồ sơ tài liệu", icon: FileText, tone: "text-blue-600 bg-blue-50 hover:bg-blue-100/80 border-blue-200/60" },
     ];
   }
-  // 3. Ban QLCL & ATTP / Đội Trưởng HACCP (QA/QC)
-  if (["qa_qc_manager", "iso_manager"].includes(r)) {
+  // 3. Ban QLCL & ATTP / Đội Trưởng HACCP
+  if (["qa", "qc", "qa_qc_manager", "iso_manager"].includes(r)) {
     return [
-      { to: "/haccp", label: "Kế hoạch HACCP & Điểm kiểm soát CCP", sublabel: "Phân tích mối nguy & Giám sát tới hạn (Điều 8.5)", icon: ShieldAlert, tone: "text-rose-600 bg-rose-50 hover:bg-rose-100/80 border-rose-200/60" },
-      { to: "/capa", label: "Xử lý sự cố & Phê duyệt CAPA", sublabel: "Khắc phục & Ngăn ngừa nguyên nhân gốc (Điều 10.2)", icon: AlertTriangle, tone: "text-amber-600 bg-amber-50 hover:bg-amber-100/80 border-amber-200/60" },
-      { to: "/audits", label: "Đánh giá nội bộ & Khóa đào tạo ATTP", sublabel: "Kế hoạch ĐGNB & Năng lực nhân sự (Điều 9.2)", icon: GraduationCap, tone: "text-blue-600 bg-blue-50 hover:bg-blue-100/80 border-blue-200/60" },
-      { to: "/purchasing", label: "Đánh giá nhà cung cấp ASL & IQC", sublabel: "Kiểm định nguyên vật liệu tiếp nhận (Điều 7.1.6)", icon: ShoppingCart, tone: "text-emerald-600 bg-emerald-50 hover:bg-emerald-100/80 border-emerald-200/60" },
+      { to: "/haccp", label: "Kế hoạch HACCP & Điểm kiểm soát CCP", sublabel: "Phân tích mối nguy & Giám sát tới hạn", icon: ShieldAlert, tone: "text-rose-600 bg-rose-50 hover:bg-rose-100/80 border-rose-200/60" },
+      { to: "/capa", label: "Xử lý sự cố & Phê duyệt CAPA", sublabel: "Khắc phục & Ngăn ngừa nguyên nhân gốc", icon: AlertTriangle, tone: "text-amber-600 bg-amber-50 hover:bg-amber-100/80 border-amber-200/60" },
+      { to: "/audits", label: "Đánh giá nội bộ & Khóa đào tạo ATTP", sublabel: "Kế hoạch ĐGNB & Năng lực nhân sự", icon: GraduationCap, tone: "text-blue-600 bg-blue-50 hover:bg-blue-100/80 border-blue-200/60" },
+      { to: "/purchasing", label: "Đánh giá nhà cung cấp ASL & IQC", sublabel: "Kiểm định nguyên vật liệu tiếp nhận", icon: ShoppingCart, tone: "text-emerald-600 bg-emerald-50 hover:bg-emerald-100/80 border-emerald-200/60" },
+    ];
+  }
+  // 3.5 Phòng Mua Hàng & Cung Ứng
+  if (["purchasing", "pur"].includes(r)) {
+    return [
+      { to: "/purchasing", label: "Đánh giá nhà cung ứng & ASL", sublabel: "Kiểm soát nhà cung cấp bên ngoài", icon: ShoppingCart, tone: "text-emerald-600 bg-emerald-50 hover:bg-emerald-100/80 border-emerald-200/60" },
+      { to: "/inventory", label: "Tra cứu nguyên liệu & Tồn kho FEFO", sublabel: "Theo dõi định mức vật tư và xuất nhập kho", icon: Package, tone: "text-blue-600 bg-blue-50 hover:bg-blue-100/80 border-blue-200/60" },
+      { to: "/documents", label: "Quy trình mua hàng & Tiêu chuẩn vật tư", sublabel: "Tra cứu SOP tiếp nhận & tiêu chuẩn nguyên liệu", icon: FileText, tone: "text-purple-600 bg-purple-50 hover:bg-purple-100/80 border-purple-200/60" },
+      { to: "/capa", label: "Báo cáo sự không phù hợp NC", sublabel: "Phản ánh nguyên vật liệu không đạt chuẩn IQC", icon: AlertTriangle, tone: "text-amber-600 bg-amber-50 hover:bg-amber-100/80 border-amber-200/60" },
     ];
   }
   // 4. Phòng Sản Xuất
   if (["production"].includes(r)) {
     return [
-      { to: "/haccp", label: "Ghi nhận đo đạc điểm CCP theo ca", sublabel: "Nhập thông số giám sát nhiệt độ, thời gian (Điều 8.5)", icon: Flame, tone: "text-rose-600 bg-rose-50 hover:bg-rose-100/80 border-rose-200/60" },
-      { to: "/prp", label: "Checklist vệ sinh nhà xưởng PRP/GMP", sublabel: "Vệ sinh thiết bị, cá nhân & nhà xưởng (Điều 8.2)", icon: ClipboardCheck, tone: "text-emerald-600 bg-emerald-50 hover:bg-emerald-100/80 border-emerald-200/60" },
+      { to: "/haccp", label: "Ghi nhận đo đạc điểm CCP theo ca", sublabel: "Nhập thông số giám sát nhiệt độ, thời gian", icon: Flame, tone: "text-rose-600 bg-rose-50 hover:bg-rose-100/80 border-rose-200/60" },
+      { to: "/prp", label: "Checklist vệ sinh nhà xưởng PRP/GMP", sublabel: "Vệ sinh thiết bị, cá nhân & nhà xưởng", icon: ClipboardCheck, tone: "text-emerald-600 bg-emerald-50 hover:bg-emerald-100/80 border-emerald-200/60" },
       { to: "/inventory", label: "Quản lý mẻ sản xuất & Biệt trữ", sublabel: "Theo dõi tiến độ sản xuất & khóa lô khi có sự cố", icon: Package, tone: "text-blue-600 bg-blue-50 hover:bg-blue-100/80 border-blue-200/60" },
-      { to: "/capa", label: "Báo cáo sự không phù hợp NC", sublabel: "Khai báo sự cố phát sinh tại dây chuyền (Điều 10.2)", icon: AlertTriangle, tone: "text-amber-600 bg-amber-50 hover:bg-amber-100/80 border-amber-200/60" },
+      { to: "/capa", label: "Báo cáo sự không phù hợp NC", sublabel: "Khai báo sự cố phát sinh tại dây chuyền", icon: AlertTriangle, tone: "text-amber-600 bg-amber-50 hover:bg-amber-100/80 border-amber-200/60" },
     ];
   }
-  // 5. Phòng Cơ Điện & Thiết Bị
-  if (["maintenance", "equipment"].includes(r)) {
+  // 5. Phòng Cơ Điện & Bảo Trì
+  if (["maintenance", "maint"].includes(r)) {
     return [
-      { to: "/equipment", label: "Danh mục máy móc & Lịch bảo trì", sublabel: "Kế hoạch bảo dưỡng định kỳ 30 ngày (Điều 7.1.3)", icon: Wrench, tone: "text-amber-600 bg-amber-50 hover:bg-amber-100/80 border-amber-200/60" },
-      { to: "/equipment", label: "Lịch hiệu chuẩn thiết bị đo lường", sublabel: "Kiểm định nhiệt kế, cân, cảm biến CCP (Điều 7.1.5)", icon: CheckCircle2, tone: "text-emerald-600 bg-emerald-50 hover:bg-emerald-100/80 border-emerald-200/60" },
-      { to: "/documents", label: "Quy trình vận hành chuẩn máy móc (SOP)", sublabel: "Hướng dẫn bảo dưỡng & an toàn cơ điện", icon: FileText, tone: "text-blue-600 bg-blue-50 hover:bg-blue-100/80 border-blue-200/60" },
+      { to: "/equipment", label: "Kiểm tra thiết bị & Kế hoạch bảo trì PM", sublabel: "Lập lịch bảo trì & cảnh báo hiệu chuẩn", icon: Wrench, tone: "text-amber-600 bg-amber-50 hover:bg-amber-100/80 border-amber-200/60" },
+      { to: "/equipment", label: "Nhật ký hiệu chuẩn thiết bị đo", sublabel: "Theo dõi tem kiểm định nhiệt kế, cân", icon: Wrench, tone: "text-blue-600 bg-blue-50 hover:bg-blue-100/80 border-blue-200/60" },
+      { to: "/emergency", label: "Phương án ứng phó sự cố máy móc & PCCC", sublabel: "Quy trình xử lý mất điện, hỏng lạnh", icon: Siren, tone: "text-rose-600 bg-rose-50 hover:bg-rose-100/80 border-rose-200/60" },
+      { to: "/capa", label: "Báo cáo sự không phù hợp NC", sublabel: "Sự cố hỏng hóc thiết bị ảnh hưởng ATTP", icon: AlertTriangle, tone: "text-purple-600 bg-purple-50 hover:bg-purple-100/80 border-purple-200/60" },
     ];
   }
-  // 6. Phòng Kinh Doanh & Kho
-  if (["sales_logistics", "sales", "warehouse"].includes(r)) {
+  // 6. Bộ phận Kho Vận & Logistics
+  if (["warehouse", "logistics", "wh"].includes(r)) {
     return [
-      { to: "/inventory", label: "Xuất - Nhập kho & Tồn kho FEFO", sublabel: "Kiểm soát hạn dùng & nhiệt độ kho lạnh (Điều 8.2.4)", icon: Package, tone: "text-blue-600 bg-blue-50 hover:bg-blue-100/80 border-blue-200/60" },
-      { to: "/inventory", label: "Quản lý mẫu lưu đối chứng 24h/48h", sublabel: "Lưu giữ mẫu phục vụ kiểm nghiệm & truy xuất", icon: CheckCircle2, tone: "text-purple-600 bg-purple-50 hover:bg-purple-100/80 border-purple-200/60" },
-      { to: "/traceability", label: "Truy xuất nguồn gốc 1 chạm", sublabel: "Tra cứu chuỗi cung ứng & mô phỏng thu hồi (Điều 8.3)", icon: QrCode, tone: "text-emerald-600 bg-emerald-50 hover:bg-emerald-100/80 border-emerald-200/60" },
-      { to: "/purchasing", label: "Tiếp nhận nguyên vật liệu IQC", sublabel: "Kiểm tra COA & biên bản giao nhận", icon: ShoppingCart, tone: "text-amber-600 bg-amber-50 hover:bg-amber-100/80 border-amber-200/60" },
+      { to: "/inventory", label: "Quản lý tồn kho theo nguyên tắc FEFO", sublabel: "Kiểm soát hạn sử dụng & xuất trước", icon: Package, tone: "text-blue-600 bg-blue-50 hover:bg-blue-100/80 border-blue-200/60" },
+      { to: "/inventory", label: "Hồ sơ mẫu lưu đối chứng", sublabel: "Theo dõi tủ mẫu & thời hạn lưu trữ", icon: Package, tone: "text-purple-600 bg-purple-50 hover:bg-purple-100/80 border-purple-200/60" },
+      { to: "/inventory", label: "Kiểm tra phương tiện vận chuyển PTVC", sublabel: "Biểu mẫu kiểm tra thùng xe trước bốc xếp", icon: Truck, tone: "text-emerald-600 bg-emerald-50 hover:bg-emerald-100/80 border-emerald-200/60" },
+      { to: "/inventory", label: "Biên bản tiêu hủy thực phẩm không phù hợp", sublabel: "Lập biên bản hội đồng 3 bên", icon: AlertTriangle, tone: "text-rose-600 bg-rose-50 hover:bg-rose-100/80 border-rose-200/60" },
     ];
   }
   // 7. Phòng Hành Chính - Kế Toán
   if (["hr_accounting", "admin_acct"].includes(r)) {
     return [
-      { to: "/audits", label: "Hồ sơ đào tạo & Sát hạch ATTP", sublabel: "Chứng chỉ nhân sự & đánh giá năng lực (Điều 7.2)", icon: GraduationCap, tone: "text-blue-600 bg-blue-50 hover:bg-blue-100/80 border-blue-200/60" },
-      { to: "/audits", label: "Khai báo sức khỏe nhân sự đầu ca", sublabel: "Kiểm soát dịch bệnh & đình chỉ ca nhiễm khuẩn (Điều 8.2)", icon: UserCheck, tone: "text-emerald-600 bg-emerald-50 hover:bg-emerald-100/80 border-emerald-200/60" },
-      { to: "/organization", label: "Cơ cấu tổ chức & Nhân sự", sublabel: "Sơ đồ phòng ban & danh sách người dùng (Điều 5.3)", icon: Building2, tone: "text-purple-600 bg-purple-50 hover:bg-purple-100/80 border-purple-200/60" },
+      { to: "/audits", label: "Hồ sơ đào tạo & Sát hạch ATTP", sublabel: "Chứng chỉ nhân sự & đánh giá năng lực", icon: GraduationCap, tone: "text-blue-600 bg-blue-50 hover:bg-blue-100/80 border-blue-200/60" },
+      { to: "/audits", label: "Khai báo sức khỏe nhân sự đầu ca", sublabel: "Kiểm soát dịch bệnh & đình chỉ ca nhiễm khuẩn", icon: UserCheck, tone: "text-emerald-600 bg-emerald-50 hover:bg-emerald-100/80 border-emerald-200/60" },
+      { to: "/organization", label: "Cơ cấu tổ chức & Nhân sự", sublabel: "Sơ đồ phòng ban & danh sách người dùng", icon: Building2, tone: "text-purple-600 bg-purple-50 hover:bg-purple-100/80 border-purple-200/60" },
     ];
   }
-  // 8. Cán Bộ Nhân Viên (Staff) / Người dùng mới (User)
+  // 8. Cán Bộ Nhân Viên
   return [
-    { to: "/documents", label: "Tra cứu tài liệu & SOPs ban hành", sublabel: "Xem chính sách, quy trình áp dụng tại vị trí (Điều 7.5)", icon: FileText, tone: "text-blue-600 bg-blue-50 hover:bg-blue-100/80 border-blue-200/60" },
-    { to: "/capa", label: "Báo cáo sự không phù hợp NC", sublabel: "Đề xuất cải tiến & phản ánh sự cố ATTP (Điều 10.2)", icon: AlertTriangle, tone: "text-amber-600 bg-amber-50 hover:bg-amber-100/80 border-amber-200/60" },
-    { to: "/audits", label: "Khai báo sức khỏe ca làm việc", sublabel: "Khai báo thân nhiệt & tình trạng sức khỏe cá nhân (Điều 8.2)", icon: UserCheck, tone: "text-emerald-600 bg-emerald-50 hover:bg-emerald-100/80 border-emerald-200/60" },
+    { to: "/documents", label: "Tra cứu tài liệu & SOPs ban hành", sublabel: "Xem chính sách, quy trình áp dụng tại vị trí", icon: FileText, tone: "text-blue-600 bg-blue-50 hover:bg-blue-100/80 border-blue-200/60" },
+    { to: "/capa", label: "Báo cáo sự không phù hợp NC", sublabel: "Đề xuất cải tiến & phản ánh sự cố ATTP", icon: AlertTriangle, tone: "text-amber-600 bg-amber-50 hover:bg-amber-100/80 border-amber-200/60" },
+    { to: "/audits", label: "Khai báo sức khỏe ca làm việc", sublabel: "Khai báo thân nhiệt & tình trạng sức khỏe cá nhân", icon: UserCheck, tone: "text-emerald-600 bg-emerald-50 hover:bg-emerald-100/80 border-emerald-200/60" },
   ];
 }
 
@@ -132,7 +143,7 @@ const NAV = [
   { to: "/traceability", label: "Truy xuất 1 Chạm", icon: QrCode, module: "traceability" as ModuleKey },
   { to: "/purchasing", label: "Nhà cung cấp & IQC", icon: ShoppingCart, module: "purchasing" as ModuleKey },
   { to: "/emergency", label: "Ứng phó khẩn cấp", icon: Siren, module: "emergency" as ModuleKey },
-  { to: "/change-management", label: "Quản lý thay đổi (6.3)", icon: GitCompare, module: "change_management" as ModuleKey },
+  { to: "/change-management", label: "Quản lý thay đổi", icon: GitCompare, module: "change_management" as ModuleKey },
   { to: "/builder", label: "Biểu mẫu & Lưu đồ", icon: Layers, module: "builder" as ModuleKey },
 ] as const;
 
@@ -198,38 +209,9 @@ export function AppShell({ children, module }: { children: ReactNode; module?: M
           setUnreadCount(res.data.length);
         }
       } catch {
-        // Fallback default alerts nếu backend khởi động lần đầu
-        const fallbackAlerts: ExecutiveAlert[] = [
-          {
-            alert_id: "NC-MOCK-1",
-            category: "CAPA",
-            severity: "CRITICAL",
-            title: "Sự cố NC-2026-003: Dị vật kim loại phát hiện tại Line Đóng gói",
-            description: "Cần thẩm tra nguyên nhân gốc rễ 5-Why và hành động khắc phục CAPA.",
-            action_url: "/capa",
-            timestamp: "Hôm nay",
-          },
-          {
-            alert_id: "CCP-MOCK-2",
-            category: "CCP",
-            severity: "WARNING",
-            title: "Giám sát CCP-02: Nhiệt độ thanh trùng tiệt khuẩn tiệm cận ngưỡng 85°C",
-            description: "Cảnh báo ca sản xuất kiểm tra cảm biến nhiệt độ lò hấp.",
-            action_url: "/haccp",
-            timestamp: "10 phút trước",
-          },
-          {
-            alert_id: "AUDIT-MOCK-3",
-            category: "AUDIT",
-            severity: "INFO",
-            title: "Kế hoạch ĐGNB Định kỳ Q1/2026 sắp diễn ra tại Phân xưởng Chế biến",
-            description: "Đoàn đánh giá nội bộ chuẩn bị danh mục kiểm tra Checklist Điều 9.2.",
-            action_url: "/audits",
-            timestamp: "Hôm qua",
-          },
-        ];
-        setAlerts(fallbackAlerts);
-        setUnreadCount(fallbackAlerts.length);
+        // Không sử dụng mock alert - để mảng rỗng nếu chưa có thông báo từ CSDL
+        setAlerts([]);
+        setUnreadCount(0);
       }
     };
 
@@ -367,14 +349,23 @@ export function AppShell({ children, module }: { children: ReactNode; module?: M
           })}
         </nav>
         <div className="border-t p-3">
-          <div className="rounded-lg bg-primary/5 p-3 text-xs">
-            <div className="flex items-center gap-1.5 font-semibold text-primary">
-              <Sparkles className="h-3.5 w-3.5 shrink-0" /> AI Assistant
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new CustomEvent("open-ai-chat"))}
+            className="w-full text-left rounded-xl bg-gradient-to-br from-primary/10 via-primary/5 to-emerald-500/10 hover:from-primary/15 hover:to-emerald-500/15 border border-primary/20 p-3 text-xs transition cursor-pointer group shadow-xs hover:shadow-sm"
+          >
+            <div className="flex items-center justify-between font-semibold text-primary">
+              <span className="flex items-center gap-1.5">
+                <Sparkles className="h-3.5 w-3.5 shrink-0 text-emerald-600 animate-pulse" /> Trợ lý AI
+              </span>
+              <span className="text-[10px] bg-emerald-600 text-white px-2 py-0.5 rounded-full font-medium shadow-xs group-hover:scale-105 transition">
+                Mở chat
+              </span>
             </div>
-            <p className="mt-1 text-muted-foreground">
+            <p className="mt-1 text-muted-foreground line-clamp-2 text-[11px]">
               Trợ lý AI sẵn sàng hỗ trợ nghiệp vụ ISO 22000.
             </p>
-          </div>
+          </button>
         </div>
       </aside>
 
@@ -446,6 +437,16 @@ export function AppShell({ children, module }: { children: ReactNode; module?: M
             </nav>
 
             <div className="border-t p-3 space-y-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  window.dispatchEvent(new CustomEvent("open-ai-chat"));
+                }}
+                className="flex w-full items-center justify-center gap-2 rounded-lg border border-primary/20 bg-primary/10 py-2 text-xs font-semibold text-primary hover:bg-primary/20 transition"
+              >
+                <Sparkles className="h-3.5 w-3.5 text-emerald-600 animate-pulse" /> Mở Trợ lý AI
+              </button>
               <button
                 onClick={logout}
                 className="flex w-full items-center justify-center gap-2 rounded-lg border border-destructive/30 bg-destructive/5 py-2 text-xs font-medium text-destructive hover:bg-destructive/10"
@@ -590,6 +591,17 @@ export function AppShell({ children, module }: { children: ReactNode; module?: M
               </PopoverContent>
             </Popover>
 
+            {/* AI ASSISTANT QUICK TRIGGER IN HEADER */}
+            <button
+              type="button"
+              onClick={() => window.dispatchEvent(new CustomEvent("open-ai-chat"))}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-emerald-500/30 bg-emerald-50/90 hover:bg-emerald-100 text-emerald-800 transition text-xs font-semibold shadow-xs"
+              title="Mở Trợ lý AI ISO 22000"
+            >
+              <Sparkles className="h-3.5 w-3.5 text-emerald-600 animate-pulse" />
+              <span className="hidden sm:inline">Trợ lý AI</span>
+            </button>
+
             {/* USER PROFILE POPOVER */}
             <Popover open={userPopoverOpen} onOpenChange={setUserPopoverOpen}>
               <PopoverTrigger asChild>
@@ -719,7 +731,7 @@ export function AppShell({ children, module }: { children: ReactNode; module?: M
           </div>
         </header>
 
-        <main className="flex-1 p-3 sm:p-6 max-w-full overflow-x-hidden">
+        <main className="flex-1 p-3 sm:p-6 pb-28 sm:pb-36 max-w-full overflow-x-hidden">
           {denied ? (
             <div className="mx-auto mt-10 max-w-md rounded-2xl border bg-card p-6 sm:p-8 text-center">
               <div className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-destructive/10 text-destructive">

@@ -28,17 +28,20 @@ import {
   User,
   Check,
   TrendingUp,
+  BookOpen,
 } from "lucide-react";
 import api from "@/lib/api";
 import { toast } from "sonner";
 import { WorkflowBuilder, type WorkflowTemplateData } from "@/components/builder/WorkflowBuilder";
 import { useDepartments } from "@/lib/departments";
+import { EmptyState } from "@/components/EmptyState";
+import { ModuleGuideModal } from "@/components/ModuleGuideModal";
 
 export const Route = createFileRoute("/capa")({
   head: () => ({
     meta: [
-      { title: "CAPA & Xử Lý Sự Không Phù Hợp – WCERT ISO 22000:2018" },
-      { name: "description", content: "Hệ thống quản lý sự không phù hợp (NC), phân tích 5-Why, sơ đồ xương cá Ishikawa và thẩm tra hiệu lực CAPA theo ISO 22000 Điều khoản 8.9 & 10.1." },
+      { title: "CAPA & Xử Lý Sự Không Phù Hợp – WCERT FSMS" },
+      { name: "description", content: "Hệ thống quản lý sự không phù hợp (NC), phân tích 5-Why, sơ đồ xương cá Ishikawa và thẩm tra hiệu lực CAPA." },
       { property: "og:title", content: "CAPA & Xử Lý Sự Không Phù Hợp – WCERT ISO 22000:2018" },
       { property: "og:description", content: "Quy trình 5 bước CAPA chuẩn ISO 22000 với Trợ lý AI phân tích nguyên nhân gốc rễ và thẩm tra sau 30 ngày." },
     ],
@@ -175,6 +178,7 @@ function CAPAManagementPage() {
 
   const [showWorkflowModal, setShowWorkflowModal] = useState(false);
   const [workflowTemplate, setWorkflowTemplate] = useState<WorkflowTemplateData | null>(null);
+  const [showGuide, setShowGuide] = useState(false);
 
   // AI Studio State
   const [aiSelectedNCId, setAiSelectedNCId] = useState<string>("");
@@ -234,7 +238,7 @@ function CAPAManagementPage() {
         setWorkflowTemplate({
           module: "CAPA",
           code: "WF-CAPA-5STEPS",
-          title: "Quy Trình Xử Lý Sự Không Phù Hợp & Khắc Phục CAPA (ISO 8.9 & 10.1)",
+          title: "Quy Trình Xử Lý Sự Không Phù Hợp & Khắc Phục CAPA",
           description: "Chu trình 5 bước xử lý triệt để sự không phù hợp: Nhận diện & Báo cáo -> Cách ly sản phẩm -> Phân tích 5-Why -> Triển khai khắc phục -> Thẩm tra hiệu lực.",
           version: "1.0",
           nodes: [
@@ -256,17 +260,6 @@ function CAPAManagementPage() {
       setShowWorkflowModal(true);
     } catch (err) {
       toast.error("Không thể tải lưu đồ quy trình CAPA");
-    }
-  };
-
-  // Seed sample data
-  const handleSeedDefaults = async () => {
-    try {
-      const res = await api.post("/capa/seed-defaults");
-      toast.success(res.data.message || "Đã nạp 5 kịch bản mẫu thành công!");
-      fetchData();
-    } catch (err: any) {
-      toast.error("Lỗi nạp dữ liệu mẫu: " + (err.response?.data?.detail || err.message));
     }
   };
 
@@ -484,7 +477,7 @@ function CAPAManagementPage() {
               Sự Không Phù Hợp & Khắc Phục (CAPA)
             </h1>
             <span className="px-3 py-1 text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 rounded-full">
-              ISO 22000:2018 (8.9 & 10.1)
+              ISO 22000:2018
             </span>
           </div>
           <p className="text-slate-600 text-sm mt-1.5 font-normal">
@@ -496,21 +489,21 @@ function CAPAManagementPage() {
           <Button
             variant="outline"
             size="sm"
-            onClick={handleOpenWorkflow}
-            className="border-purple-300 text-purple-800 bg-purple-50 hover:bg-purple-100 flex items-center gap-2 font-semibold text-sm h-10 px-4 shadow-xs"
+            onClick={() => setShowGuide(true)}
+            className="border-emerald-300 text-emerald-800 bg-emerald-50 hover:bg-emerald-100 flex items-center gap-1.5 text-sm h-10 px-3.5 shadow-xs font-semibold"
           >
-            <GitFork className="h-4 w-4 text-purple-600" />
-            <span>Lưu Đồ Quy Trình CAPA (5 Bước)</span>
+            <BookOpen className="h-4 w-4 text-emerald-600" />
+            <span>Hướng Dẫn Nghiệp Vụ</span>
           </Button>
 
           <Button
             variant="outline"
             size="sm"
-            onClick={handleSeedDefaults}
-            className="border-slate-300 text-slate-700 hover:bg-slate-100 flex items-center gap-1.5 text-sm h-10 px-3.5"
+            onClick={handleOpenWorkflow}
+            className="border-purple-300 text-purple-800 bg-purple-50 hover:bg-purple-100 flex items-center gap-2 font-semibold text-sm h-10 px-4 shadow-xs"
           >
-            <RefreshCw className="h-4 w-4 text-slate-500" />
-            <span>Nạp 5 Ca Mẫu</span>
+            <GitFork className="h-4 w-4 text-purple-600" />
+            <span>Lưu Đồ Quy Trình CAPA</span>
           </Button>
 
           <Button
@@ -528,7 +521,7 @@ function CAPAManagementPage() {
       </div>
 
       <AIBadge>
-        <b>Trợ lý AI CAPA Studio:</b> Tự động truy vết nguyên nhân gốc rễ bằng phương pháp <b>5-Why</b> hoặc <b>Sơ đồ xương cá Ishikawa 5M+1E</b> · Đề xuất hành động khắc phục tức thì (8.9.2), ngăn ngừa tái diễn (8.9.3) và thiết lập cơ chế thẩm tra sau 30 ngày.
+        <b>Trợ lý AI CAPA Studio:</b> Tự động truy vết nguyên nhân gốc rễ bằng phương pháp <b>5-Why</b> hoặc <b>Sơ đồ xương cá Ishikawa 5M+1E</b> · Đề xuất hành động khắc phục tức thì, ngăn ngừa tái diễn và thiết lập cơ chế thẩm tra sau 30 ngày.
       </AIBadge>
 
       {/* ==================== 4 KPI STATS CARDS ==================== */}
@@ -704,11 +697,23 @@ function CAPAManagementPage() {
           {/* NC Table */}
           {loading ? (
             <div className="text-center py-16 text-slate-500 text-sm font-medium">Đang tải danh sách sự không phù hợp...</div>
+          ) : ncs.length === 0 ? (
+            <EmptyState
+              icon={AlertTriangle}
+              title="Chưa có dữ liệu sự không phù hợp (NC)"
+              description="Khi phát sinh sự cố tại hiện trường sản xuất, kho bãi hoặc kết quả kiểm nghiệm không đạt, hãy tạo phiếu ghi nhận NC mới để tiến hành cô lập lô hàng và khắc phục tức thì."
+              actionLabel="+ Báo cáo sự cố NC mới"
+              onAction={() => {
+                setEditingNC(null);
+                setShowNCModal(true);
+              }}
+              onOpenGuide={() => setShowGuide(true)}
+            />
           ) : filteredNCs.length === 0 ? (
             <div className="text-center py-16 bg-slate-50 rounded-2xl border border-dashed border-slate-300">
               <CheckCircle2 className="h-12 w-12 text-emerald-500 mx-auto mb-2.5 opacity-60" />
               <p className="text-slate-800 font-bold text-base">Không tìm thấy sự không phù hợp nào</p>
-              <p className="text-slate-500 text-sm mt-1">Hệ thống đang vận hành an toàn hoặc chưa có dữ liệu lọc phù hợp.</p>
+              <p className="text-slate-500 text-sm mt-1">Không có sự cố nào phù hợp với bộ lọc tìm kiếm hiện tại.</p>
             </div>
           ) : (
             <div className="overflow-x-auto rounded-xl border border-slate-200 shadow-xs">
@@ -719,7 +724,7 @@ function CAPAManagementPage() {
                     <th className="py-4 px-4 min-w-[280px]">Tiêu Đề & Vị Trí Xảy Ra</th>
                     <th className="py-4 px-4 min-w-[200px]">Nguồn Phát Sinh</th>
                     <th className="py-4 px-4 min-w-[170px]">Mức Độ Rủi Ro</th>
-                    <th className="py-4 px-4 min-w-[340px]">Khắc Phục Tức Thì (ISO 8.9.2)</th>
+                    <th className="py-4 px-4 min-w-[340px]">Khắc Phục Tức Thì</th>
                     <th className="py-4 px-4 min-w-[180px]">Lô Hàng Ảnh Hưởng</th>
                     <th className="py-4 px-4 min-w-[150px]">Trạng Thái</th>
                     <th className="py-4 px-4 text-right min-w-[220px]">Thao Tác</th>
@@ -852,7 +857,21 @@ function CAPAManagementPage() {
             <span className="text-xs font-semibold text-slate-500">Tổng cộng {capas.length} kế hoạch CAPA</span>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          {capas.length === 0 ? (
+            <EmptyState
+              icon={FileText}
+              title="Chưa có hồ sơ kế hoạch CAPA"
+              description="Sau khi nhận diện sự không phù hợp, hãy lập kế hoạch hành động khắc phục & phòng ngừa (CAPA) tương ứng để phân tích nguyên nhân gốc rễ và chỉ định nhân sự phụ trách."
+              actionLabel="+ Lập kế hoạch CAPA mới"
+              onAction={() => {
+                setSelectedNCForCAPA(null);
+                setEditingCAPA(null);
+                setShowCAPAModal(true);
+              }}
+              onOpenGuide={() => setShowGuide(true)}
+            />
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
             {capas.map((c) => (
               <div
                 key={c.capa_id}
@@ -962,8 +981,9 @@ function CAPAManagementPage() {
               </div>
             ))}
           </div>
-        </div>
-      )}
+        )}
+      </div>
+    )}
 
       {/* ==================== TAB 3: AI 5-WHY & FISHBONE STUDIO ==================== */}
       {activeTab === "ai_studio" && (
@@ -1204,7 +1224,7 @@ function CAPAManagementPage() {
                 {/* 1. Containment */}
                 <div className="bg-amber-50/80 p-4 rounded-xl border border-amber-200 space-y-2">
                   <span className="font-bold text-amber-900 text-sm flex items-center gap-1.5">
-                    <AlertTriangle className="h-4 w-4 text-amber-600" /> Khắc phục tức thì (8.9.2)
+                    <AlertTriangle className="h-4 w-4 text-amber-600" /> Khắc phục tức thì
                   </span>
                   <ul className="list-disc pl-4 space-y-1.5 text-slate-800 font-medium">
                     {aiSuggestResult.immediate_containment.map((act: string, idx: number) => (
@@ -1216,7 +1236,7 @@ function CAPAManagementPage() {
                 {/* 2. Corrective */}
                 <div className="bg-emerald-50/80 p-4 rounded-xl border border-emerald-200 space-y-2">
                   <span className="font-bold text-emerald-900 text-sm flex items-center gap-1.5">
-                    <CheckCircle2 className="h-4 w-4 text-emerald-600" /> Hành động khắc phục (8.9.3)
+                    <CheckCircle2 className="h-4 w-4 text-emerald-600" /> Hành động khắc phục
                   </span>
                   <ul className="list-disc pl-4 space-y-1.5 text-slate-800 font-medium">
                     {aiSuggestResult.corrective_actions.map((act: string, idx: number) => (
@@ -1228,7 +1248,7 @@ function CAPAManagementPage() {
                 {/* 3. Preventive */}
                 <div className="bg-blue-50/80 p-4 rounded-xl border border-blue-200 space-y-2">
                   <span className="font-bold text-blue-900 text-sm flex items-center gap-1.5">
-                    <ShieldCheck className="h-4 w-4 text-blue-600" /> Phòng ngừa tái diễn (10.1)
+                    <ShieldCheck className="h-4 w-4 text-blue-600" /> Phòng ngừa tái diễn
                   </span>
                   <ul className="list-disc pl-4 space-y-1.5 text-slate-800 font-medium">
                     {aiSuggestResult.preventive_actions.map((act: string, idx: number) => (
@@ -1256,12 +1276,26 @@ function CAPAManagementPage() {
             <div>
               <h3 className="font-extrabold text-slate-900 text-base">Thẩm Tra Hiệu Lực Sau 15 - 30 Ngày & Đóng Hồ Sơ NC</h3>
               <p className="text-slate-600 text-sm mt-0.5">
-                Theo ISO 22000 Điều khoản 10.1: Phải xem xét và thẩm tra bằng chứng thực tế xác nhận sự cố không còn tái diễn trước khi chính thức đóng phiếu.
+                Xem xét và thẩm tra bằng chứng thực tế xác nhận sự cố không còn tái diễn trước khi chính thức đóng phiếu.
               </p>
             </div>
           </div>
 
-          <div className="space-y-3.5">
+          {capas.filter((c) => c.status === "PENDING_VERIFICATION" || c.verification_status === "PENDING_VERIFY" || c.status === "COMPLETED").length === 0 ? (
+            <EmptyState
+              icon={ShieldCheck}
+              title="Chưa có hồ sơ CAPA chờ thẩm tra"
+              description="Các hành động khắc phục sau khi triển khai hoàn tất sẽ được chuyển sang danh sách chờ thẩm tra hiệu lực thực tế (15 - 30 ngày) trước khi chính thức đóng hồ sơ NC."
+              actionLabel="+ Lập kế hoạch CAPA mới"
+              onAction={() => {
+                setSelectedNCForCAPA(null);
+                setEditingCAPA(null);
+                setShowCAPAModal(true);
+              }}
+              onOpenGuide={() => setShowGuide(true)}
+            />
+          ) : (
+            <div className="space-y-3.5">
             {capas
               .filter((c) => c.status === "PENDING_VERIFICATION" || c.verification_status === "PENDING_VERIFY" || c.status === "COMPLETED")
               .map((c) => (
@@ -1315,7 +1349,8 @@ function CAPAManagementPage() {
                   </div>
                 </div>
               ))}
-          </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -1422,7 +1457,7 @@ function CAPAManagementPage() {
 
               <div>
                 <label className="block font-semibold text-slate-700 mb-1">
-                  Biện Pháp Khắc Phục / Cô Lập Tức Thì (ISO 8.9.2) *
+                  Biện Pháp Khắc Phục / Cô Lập Tức Thì *
                 </label>
                 <Textarea
                   name="immediate_action"
@@ -1668,7 +1703,7 @@ function CAPAManagementPage() {
             <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-emerald-50">
               <h3 className="font-bold text-emerald-900 text-sm flex items-center gap-2">
                 <ShieldCheck className="h-4 w-4 text-emerald-700" />
-                Thẩm Tra Hiệu Lực CAPA Sau 30 Ngày (ISO 10.1)
+                Thẩm Tra Hiệu Lực CAPA Sau 30 Ngày
               </h3>
               <button onClick={() => setShowVerifyModal(false)} className="text-slate-400 hover:text-slate-600">
                 <X className="h-5 w-5" />
@@ -1772,7 +1807,7 @@ function CAPAManagementPage() {
                         PHIẾU XỬ LÝ SỰ KHÔNG PHÙ HỢP & CAPA
                       </h2>
                       <div className="text-[10px] text-slate-600 mt-0.5">
-                        (Tuân thủ Điều khoản 8.9 & 10.1 - ISO 22000:2018)
+                        (Hệ Thống Quản Lý An Toàn Thực Phẩm - ISO 22000:2018)
                       </div>
                     </div>
                     <div className="col-span-1 p-2 text-[10px] text-left space-y-0.5 pl-3">
@@ -1838,7 +1873,7 @@ function CAPAManagementPage() {
                 {/* Section 4: Verification */}
                 <div className="space-y-2 border border-slate-400 p-3.5 rounded">
                   <h4 className="font-bold text-slate-900 uppercase text-[11px] bg-slate-100 p-1.5 -m-3.5 mb-2 border-b border-slate-400">
-                    IV. THẨM TRA HIỆU LỰC SAU 30 NGÀY & KẾT LUẬN ĐÓNG PHIẾU (VERIFICATION - 10.1)
+                    IV. THẨM TRA HIỆU LỰC SAU 30 NGÀY & KẾT LUẬN ĐÓNG PHIẾU (VERIFICATION)
                   </h4>
                   <div className="text-[11px] space-y-1.5">
                     <div className="flex items-center justify-between">
@@ -1902,6 +1937,13 @@ function CAPAManagementPage() {
           </div>
         </div>
       )}
+
+      {/* Module Guide Modal */}
+      <ModuleGuideModal
+        module="capa"
+        isOpen={showGuide}
+        onClose={() => setShowGuide(false)}
+      />
     </div>
   );
 }

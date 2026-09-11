@@ -27,10 +27,13 @@ import {
   Users,
   Activity,
   AlertCircle,
+  BookOpen,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { EmptyState } from "@/components/EmptyState";
+import { ModuleGuideModal } from "@/components/ModuleGuideModal";
 import api from "@/lib/api";
 import { printHtml } from "@/lib/print";
 import { useDepartments } from "@/lib/departments";
@@ -205,7 +208,7 @@ function ExecutiveDashboard() {
   // Biểu mẫu tạo mới mục tiêu chất lượng
   const [newObjCode, setNewObjCode] = useState("");
   const [newObjMetric, setNewObjMetric] = useState("");
-  const [newObjClause, setNewObjClause] = useState("Điều 6.2");
+  const [newObjClause, setNewObjClause] = useState("Mục tiêu ATTP & Vận hành");
   const [newObjDept, setNewObjDept] = useState("Phòng Sản xuất & Chế biến");
   const [newObjTarget, setNewObjTarget] = useState(100.0);
   const [newObjActual, setNewObjActual] = useState(0.0);
@@ -245,20 +248,11 @@ function ExecutiveDashboard() {
     }
   };
 
+  const [showGuide, setShowGuide] = useState(false);
+
   useEffect(() => {
     loadData();
   }, []);
-
-  const handleSeedDefaults = async () => {
-    try {
-      await api.post("/dashboard/seed-defaults");
-      await loadData();
-      toast.success("Đã khởi tạo thành công dữ liệu thực hành mẫu Mục tiêu chất lượng và Biên bản họp Lãnh đạo!");
-    } catch (err) {
-      console.error("Lỗi khi khởi tạo dữ liệu mẫu:", err);
-      toast.error("Lỗi khi khởi tạo dữ liệu.");
-    }
-  };
 
   const handleCreateObjective = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -463,7 +457,7 @@ function ExecutiveDashboard() {
     </tr>
   </table>
 
-  <div class="section-title">1. TỔNG HỢP 6 NHÓM ĐẦU VÀO XEM XÉT (ĐIỀU KHOẢN 9.3.2)</div>
+  <div class="section-title">1. TỔNG HỢP 6 NHÓM ĐẦU VÀO XEM XÉT</div>
   <table class="data-table">
     <thead>
       <tr>
@@ -511,7 +505,7 @@ function ExecutiveDashboard() {
     ${review.meeting_minutes}
   </div>
 
-  <div class="section-title">3. NGHỊ QUYẾT & QUYẾT ĐỊNH ĐẦU RA (ĐIỀU KHOẢN 9.3.3)</div>
+  <div class="section-title">3. NGHỊ QUYẾT & QUYẾT ĐỊNH ĐẦU RA</div>
   <table class="data-table">
     <thead>
       <tr>
@@ -569,12 +563,17 @@ function ExecutiveDashboard() {
       {/* Header & Main Actions */}
       <div className="flex flex-col gap-3 sm:gap-4 md:flex-row md:items-center md:justify-between">
         <PageHeader
-          title="Trung Tâm Điều Hành An Toàn Thực Phẩm Toàn Diện (ISO 22000:2018)"
-          description="Bảng điều khiển chiến lược tích hợp 8 phân hệ nghiệp vụ · Đánh giá mức độ tuân thủ FSMS · Xem xét của Lãnh đạo (Điều 9.3) · Mục tiêu chất lượng & ATTP (Điều 6.2)"
+          title="Trung Tâm Điều Hành An Toàn Thực Phẩm Toàn Diện"
+          description="Bảng điều khiển chiến lược tích hợp 8 phân hệ nghiệp vụ · Đánh giá mức độ tuân thủ FSMS · Xem xét của Lãnh đạo · Mục tiêu chất lượng & ATTP"
         />
         <div className="flex flex-wrap items-center gap-2">
-          <Button variant="outline" size="sm" onClick={handleSeedDefaults} className="gap-1.5 text-xs w-full sm:w-auto">
-            <RefreshCw className="h-3.5 w-3.5" /> Dữ Liệu Thực Hành Mẫu
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowGuide(true)}
+            className="gap-1.5 text-xs w-full sm:w-auto text-primary border-primary/30 hover:bg-primary/5"
+          >
+            <BookOpen className="h-3.5 w-3.5" /> Hướng Dẫn Nghiệp Vụ
           </Button>
           <Button variant="outline" size="sm" onClick={() => setShowWorkflowModal(true)} className="gap-1.5 text-xs w-full sm:w-auto">
             <Workflow className="h-3.5 w-3.5 text-primary" /> Lưu Đồ Quy Trình Xem Xét
@@ -601,23 +600,43 @@ function ExecutiveDashboard() {
         <div className="rounded-2xl border bg-card/90 p-4 shadow-sm backdrop-blur transition hover:shadow-md">
           <div className="flex items-center justify-between">
             <span className="text-[11px] sm:text-xs font-semibold text-muted-foreground uppercase tracking-wider">Chỉ Số Tuân Thủ FSMS</span>
-            <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] sm:text-[11px] font-bold text-emerald-600">
-              {stats?.health_level === "EXCELLENT" ? "XUẤT SẮC" : stats?.health_level === "GOOD" ? "TỐT" : "CẦN LƯU Ý"}
+            <span className={`rounded-full px-2 py-0.5 text-[10px] sm:text-[11px] font-bold ${
+              stats?.health_level === "EXCELLENT"
+                ? "bg-emerald-500/10 text-emerald-600"
+                : stats?.health_level === "GOOD"
+                ? "bg-primary/10 text-primary"
+                : stats?.health_level === "PENDING_DATA" || (stats?.overall_health_score ?? 0) === 0
+                ? "bg-muted text-muted-foreground"
+                : "bg-amber-500/10 text-amber-600"
+            }`}>
+              {stats?.health_level === "EXCELLENT"
+                ? "XUẤT SẮC"
+                : stats?.health_level === "GOOD"
+                ? "TỐT"
+                : stats?.health_level === "PENDING_DATA" || (stats?.overall_health_score ?? 0) === 0
+                ? "CHƯA ĐÁNH GIÁ"
+                : "CẦN LƯU Ý"}
             </span>
           </div>
           <div className="mt-3 flex items-baseline gap-2">
             <span className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
-              {stats?.overall_health_score ?? 81.1}%
+              {stats?.overall_health_score ?? 0}%
             </span>
-            <span className="text-xs text-emerald-600 font-medium flex items-center">
-              <TrendingUp className="h-3 w-3 mr-0.5" /> +2.4%
-            </span>
+            {(stats?.overall_health_score ?? 0) > 0 ? (
+              <span className="text-xs text-emerald-600 font-medium flex items-center">
+                <TrendingUp className="h-3 w-3 mr-0.5" /> Đang vận hành
+              </span>
+            ) : (
+              <span className="text-xs text-muted-foreground font-medium">
+                Chưa có dữ liệu
+              </span>
+            )}
           </div>
           <div className="mt-1.5 text-[11px] sm:text-xs text-muted-foreground">Tích hợp dữ liệu 8 phân hệ</div>
           <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
             <div
               className="h-full bg-gradient-to-r from-emerald-500 to-teal-400"
-              style={{ width: `${stats?.overall_health_score ?? 81.1}%` }}
+              style={{ width: `${stats?.overall_health_score ?? 0}%` }}
             />
           </div>
         </div>
@@ -625,88 +644,88 @@ function ExecutiveDashboard() {
         {/* Card 2: HACCP & CCP Control */}
         <div className="rounded-2xl border bg-card/90 p-4 shadow-sm backdrop-blur transition hover:shadow-md">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] sm:text-xs font-semibold text-muted-foreground uppercase tracking-wider">Kiểm Soát Điểm CCP (Điều 8.5)</span>
+            <span className="text-[11px] sm:text-xs font-semibold text-muted-foreground uppercase tracking-wider">Kiểm Soát Điểm CCP</span>
             <div className="grid h-7 w-7 place-items-center rounded-lg bg-primary/10 text-primary">
               <ShieldCheck className="h-4 w-4" />
             </div>
           </div>
           <div className="mt-3 flex items-baseline gap-2">
             <span className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
-              {stats?.haccp_ccp.in_control_rate ?? 100}%
+              {stats?.haccp_ccp.in_control_rate ?? 0}%
             </span>
             <span className="text-xs text-muted-foreground">An toàn</span>
           </div>
           <div className="mt-1.5 text-[11px] sm:text-xs text-muted-foreground">
-            {stats?.haccp_ccp.total_ccps ?? 4} điểm CCP · {stats?.haccp_ccp.critical_deviations ?? 0} sai lệch
+            {stats?.haccp_ccp.total_ccps ?? 0} điểm CCP · {stats?.haccp_ccp.critical_deviations ?? 0} sai lệch
           </div>
           <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
-            <div className="h-full bg-primary" style={{ width: `${stats?.haccp_ccp.in_control_rate ?? 100}%` }} />
+            <div className="h-full bg-primary" style={{ width: `${stats?.haccp_ccp.in_control_rate ?? 0}%` }} />
           </div>
         </div>
 
         {/* Card 3: CAPA & NC Effectiveness */}
         <div className="rounded-2xl border bg-card/90 p-4 shadow-sm backdrop-blur transition hover:shadow-md">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] sm:text-xs font-semibold text-muted-foreground uppercase tracking-wider">Hiệu Lực Khắc Phục CAPA (Điều 10.2)</span>
+            <span className="text-[11px] sm:text-xs font-semibold text-muted-foreground uppercase tracking-wider">Hiệu Lực Khắc Phục CAPA</span>
             <div className="grid h-7 w-7 place-items-center rounded-lg bg-amber-500/10 text-amber-600">
               <Award className="h-4 w-4" />
             </div>
           </div>
           <div className="mt-3 flex items-baseline gap-2">
             <span className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
-              {stats?.capa_nc.effectiveness_rate ?? 100}%
+              {stats?.capa_nc.effectiveness_rate ?? 0}%
             </span>
             <span className="text-xs text-muted-foreground">Thẩm tra</span>
           </div>
           <div className="mt-1.5 text-[11px] sm:text-xs text-muted-foreground">
-            {stats?.capa_nc.total_capas ?? 5} phiếu khắc phục đã đóng
+            {stats?.capa_nc.total_capas ?? 0} phiếu khắc phục
           </div>
           <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
-            <div className="h-full bg-amber-500" style={{ width: `${stats?.capa_nc.effectiveness_rate ?? 100}%` }} />
+            <div className="h-full bg-amber-500" style={{ width: `${stats?.capa_nc.effectiveness_rate ?? 0}%` }} />
           </div>
         </div>
 
         {/* Card 4: PRP Hygiene Compliance */}
         <div className="rounded-2xl border bg-card/90 p-4 shadow-sm backdrop-blur transition hover:shadow-md">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] sm:text-xs font-semibold text-muted-foreground uppercase tracking-wider">Vệ Sinh Nhà Xưởng PRP (Điều 8.2)</span>
+            <span className="text-[11px] sm:text-xs font-semibold text-muted-foreground uppercase tracking-wider">Vệ Sinh Nhà Xưởng PRP</span>
             <div className="grid h-7 w-7 place-items-center rounded-lg bg-emerald-500/10 text-emerald-600">
               <ClipboardCheck className="h-4 w-4" />
             </div>
           </div>
           <div className="mt-3 flex items-baseline gap-2">
             <span className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
-              {stats?.prp_hygiene.compliance_rate ?? 96.5}%
+              {stats?.prp_hygiene.compliance_rate ?? 0}%
             </span>
             <span className="text-xs text-muted-foreground">GMP/SSOP</span>
           </div>
           <div className="mt-1.5 text-[11px] sm:text-xs text-muted-foreground">
-            {stats?.prp_hygiene.total_prps ?? 6} chương trình giám sát ca
+            {stats?.prp_hygiene.total_prps ?? 0} chương trình giám sát
           </div>
           <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
-            <div className="h-full bg-emerald-500" style={{ width: `${stats?.prp_hygiene.compliance_rate ?? 96.5}%` }} />
+            <div className="h-full bg-emerald-500" style={{ width: `${stats?.prp_hygiene.compliance_rate ?? 0}%` }} />
           </div>
         </div>
 
         {/* Card 5: Training & Health Compliance */}
         <div className="rounded-2xl border bg-card/90 p-4 shadow-sm backdrop-blur transition hover:shadow-md">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] sm:text-xs font-semibold text-muted-foreground uppercase tracking-wider">Năng Lực Nhân Sự (Điều 7.2)</span>
+            <span className="text-[11px] sm:text-xs font-semibold text-muted-foreground uppercase tracking-wider">Năng Lực Nhân Sự</span>
             <div className="grid h-7 w-7 place-items-center rounded-lg bg-sky-500/10 text-sky-600">
               <Users className="h-4 w-4" />
             </div>
           </div>
           <div className="mt-3 flex items-baseline gap-2">
             <span className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
-              {stats?.audit_training_health.training_pass_rate ?? 90.9}%
+              {stats?.audit_training_health.training_pass_rate ?? 0}%
             </span>
             <span className="text-xs text-muted-foreground">Sát hạch</span>
           </div>
           <div className="mt-1.5 text-[11px] sm:text-xs text-muted-foreground">
-            {stats?.audit_training_health.total_learners ?? 11} nhân sự · 100% đạt vệ sinh
+            {stats?.audit_training_health.total_learners ?? 0} nhân sự đã đánh giá
           </div>
           <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
-            <div className="h-full bg-sky-500" style={{ width: `${stats?.audit_training_health.training_pass_rate ?? 90.9}%` }} />
+            <div className="h-full bg-sky-500" style={{ width: `${stats?.audit_training_health.training_pass_rate ?? 0}%` }} />
           </div>
         </div>
       </div>
@@ -731,7 +750,7 @@ function ExecutiveDashboard() {
               : "border-transparent text-muted-foreground hover:text-foreground"
           }`}
         >
-          <Target className="h-4 w-4" /> Mục Tiêu Chất Lượng & ATTP (Điều 6.2)
+          <Target className="h-4 w-4" /> Mục Tiêu Chất Lượng & ATTP
           <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] sm:text-xs">{objectives.length}</span>
         </button>
         <button
@@ -742,7 +761,7 @@ function ExecutiveDashboard() {
               : "border-transparent text-muted-foreground hover:text-foreground"
           }`}
         >
-          <Calendar className="h-4 w-4" /> Xem Xét Của Lãnh Đạo (Điều 9.3)
+          <Calendar className="h-4 w-4" /> Xem Xét Của Lãnh Đạo
           <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] sm:text-xs">{reviews.length}</span>
         </button>
         <button
@@ -805,32 +824,32 @@ function ExecutiveDashboard() {
                 {/* Chi tiết từng trụ cột */}
                 <div className="space-y-2 text-xs">
                   <div className="flex items-center justify-between border-b pb-1">
-                    <span className="font-medium text-muted-foreground">1. Bối cảnh & Lãnh đạo (Điều 4 & 5)</span>
-                    <span className="font-bold text-emerald-600">94.0%</span>
+                    <span className="font-medium text-muted-foreground">1. Bối cảnh & Lãnh đạo</span>
+                    <span className="font-bold text-emerald-600">{stats?.radar_pillars.context_leadership ?? 0}%</span>
                   </div>
                   <div className="flex items-center justify-between border-b pb-1">
-                    <span className="font-medium text-muted-foreground">2. Kế hoạch & Điểm CCP (Điều 6 & 8.5)</span>
-                    <span className="font-bold text-emerald-600">{stats?.radar_pillars.planning_haccp ?? 100}%</span>
+                    <span className="font-medium text-muted-foreground">2. Kế hoạch & Điểm CCP</span>
+                    <span className="font-bold text-emerald-600">{stats?.radar_pillars.planning_haccp ?? 0}%</span>
                   </div>
                   <div className="flex items-center justify-between border-b pb-1">
-                    <span className="font-medium text-muted-foreground">3. Nguồn lực & Đào tạo (Điều 7)</span>
-                    <span className="font-bold text-emerald-600">{stats?.radar_pillars.support_training ?? 95.5}%</span>
+                    <span className="font-medium text-muted-foreground">3. Nguồn lực & Đào tạo</span>
+                    <span className="font-bold text-emerald-600">{stats?.radar_pillars.support_training ?? 0}%</span>
                   </div>
                   <div className="flex items-center justify-between border-b pb-1">
-                    <span className="font-medium text-muted-foreground">4. Vận hành & Vệ sinh PRP (Điều 8)</span>
-                    <span className="font-bold text-emerald-600">{stats?.radar_pillars.operation_prp ?? 83.3}%</span>
+                    <span className="font-medium text-muted-foreground">4. Vận hành & Vệ sinh PRP</span>
+                    <span className="font-bold text-emerald-600">{stats?.radar_pillars.operation_prp ?? 0}%</span>
                   </div>
                   <div className="flex items-center justify-between border-b pb-1">
-                    <span className="font-medium text-muted-foreground">5. Đánh giá hiệu năng (Điều 9)</span>
-                    <span className="font-bold text-amber-600">{stats?.radar_pillars.performance_audit ?? 55.6}%</span>
+                    <span className="font-medium text-muted-foreground">5. Đánh giá hiệu năng</span>
+                    <span className="font-bold text-amber-600">{stats?.radar_pillars.performance_audit ?? 0}%</span>
                   </div>
                   <div className="flex items-center justify-between border-b pb-1">
-                    <span className="font-medium text-muted-foreground">6. Cải tiến & Khắc phục CAPA (Điều 10)</span>
-                    <span className="font-bold text-amber-600">{stats?.radar_pillars.improvement_capa ?? 60.0}%</span>
+                    <span className="font-medium text-muted-foreground">6. Cải tiến & Khắc phục CAPA</span>
+                    <span className="font-bold text-amber-600">{stats?.radar_pillars.improvement_capa ?? 0}%</span>
                   </div>
                   <div className="flex items-center justify-between pb-1">
                     <span className="font-medium text-muted-foreground">7. Chuỗi cung ứng & Kho hàng</span>
-                    <span className="font-bold text-emerald-600">{stats?.radar_pillars.supply_traceability ?? 71.4}%</span>
+                    <span className="font-bold text-emerald-600">{stats?.radar_pillars.supply_traceability ?? 0}%</span>
                   </div>
                 </div>
               </div>
@@ -893,272 +912,293 @@ function ExecutiveDashboard() {
             <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 md:grid-cols-4">
               <div className="rounded-xl border bg-card p-3 shadow-sm">
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span>1. Tài liệu & Quy trình (Điều 7.5)</span>
+                  <span>1. Tài liệu & Quy trình</span>
                   <FileText className="h-3.5 w-3.5 text-primary" />
                 </div>
-                <div className="mt-2 text-lg font-bold">{stats?.documents.approved_documents ?? 9} / {stats?.documents.total_documents ?? 21}</div>
+                <div className="mt-2 text-lg font-bold">{stats?.documents.approved_documents ?? 0} / {stats?.documents.total_documents ?? 0}</div>
                 <div className="text-[11px] text-muted-foreground">Tài liệu đã ban hành</div>
               </div>
 
               <div className="rounded-xl border bg-card p-3 shadow-sm">
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span>2. Mua hàng & Tiếp nhận (Điều 7.1.6)</span>
+                  <span>2. Mua hàng & Tiếp nhận</span>
                   <Truck className="h-3.5 w-3.5 text-sky-600" />
                 </div>
-                <div className="mt-2 text-lg font-bold">{stats?.purchasing_iqc.lot_pass_rate ?? 71.4}%</div>
-                <div className="text-[11px] text-muted-foreground">{stats?.purchasing_iqc.total_suppliers ?? 8} Nhà cung cấp</div>
+                <div className="mt-2 text-lg font-bold">{stats?.purchasing_iqc.lot_pass_rate ?? 0}%</div>
+                <div className="text-[11px] text-muted-foreground">{stats?.purchasing_iqc.total_suppliers ?? 0} Nhà cung cấp</div>
               </div>
 
               <div className="rounded-xl border bg-card p-3 shadow-sm">
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span>3. Kế hoạch HACCP & Điểm CCP (Điều 8.5)</span>
+                  <span>3. Kế hoạch HACCP & Điểm CCP</span>
                   <Flame className="h-3.5 w-3.5 text-rose-600" />
                 </div>
-                <div className="mt-2 text-lg font-bold">{stats?.haccp_ccp.in_control_rate ?? 100}%</div>
-                <div className="text-[11px] text-muted-foreground">{stats?.haccp_ccp.total_ccps ?? 4} Điểm CCP an toàn</div>
+                <div className="mt-2 text-lg font-bold">{stats?.haccp_ccp.in_control_rate ?? 0}%</div>
+                <div className="text-[11px] text-muted-foreground">{stats?.haccp_ccp.total_ccps ?? 0} Điểm CCP an toàn</div>
               </div>
 
               <div className="rounded-xl border bg-card p-3 shadow-sm">
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span>4. Chương trình PRP (Điều 8.2)</span>
+                  <span>4. Chương trình PRP</span>
                   <ClipboardCheck className="h-3.5 w-3.5 text-emerald-600" />
                 </div>
-                <div className="mt-2 text-lg font-bold">{stats?.prp_hygiene.compliance_rate ?? 83.3}%</div>
-                <div className="text-[11px] text-muted-foreground">{stats?.prp_hygiene.total_prps ?? 6} Quy trình GMP/SSOP</div>
+                <div className="mt-2 text-lg font-bold">{stats?.prp_hygiene.compliance_rate ?? 0}%</div>
+                <div className="text-[11px] text-muted-foreground">{stats?.prp_hygiene.total_prps ?? 0} Quy trình GMP/SSOP</div>
               </div>
 
               <div className="rounded-xl border bg-card p-3 shadow-sm">
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span>5. Thiết bị & Đo lường (Điều 7.1.5)</span>
+                  <span>5. Thiết bị & Đo lường</span>
                   <Sliders className="h-3.5 w-3.5 text-indigo-600" />
                 </div>
-                <div className="mt-2 text-lg font-bold">{stats?.equipment_calibration.calibration_pass_rate ?? 100}%</div>
-                <div className="text-[11px] text-muted-foreground">{stats?.equipment_calibration.total_equipment ?? 7} Thiết bị kiểm định</div>
+                <div className="mt-2 text-lg font-bold">{stats?.equipment_calibration.calibration_pass_rate ?? 0}%</div>
+                <div className="text-[11px] text-muted-foreground">{stats?.equipment_calibration.total_equipment ?? 0} Thiết bị kiểm định</div>
               </div>
 
               <div className="rounded-xl border bg-card p-3 shadow-sm">
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span>6. Kho hàng & Truy xuất (Điều 8.3)</span>
+                  <span>6. Kho hàng & Truy xuất</span>
                   <Search className="h-3.5 w-3.5 text-amber-600" />
                 </div>
-                <div className="mt-2 text-lg font-bold">{stats?.inventory_traceability.total_batches ?? 1} Lô SX</div>
+                <div className="mt-2 text-lg font-bold">{stats?.inventory_traceability.total_batches ?? 0} Lô SX</div>
                 <div className="text-[11px] text-muted-foreground">Xuất nhập tồn theo hạn dùng</div>
               </div>
 
               <div className="rounded-xl border bg-card p-3 shadow-sm">
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span>7. Sự cố & Khắc phục CAPA (Điều 10.2)</span>
+                  <span>7. Sự cố & Khắc phục CAPA</span>
                   <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
                 </div>
-                <div className="mt-2 text-lg font-bold">{stats?.capa_nc.effectiveness_rate ?? 60.0}%</div>
-                <div className="text-[11px] text-muted-foreground">{stats?.capa_nc.total_capas ?? 5} Phiếu khắc phục</div>
+                <div className="mt-2 text-lg font-bold">{stats?.capa_nc.effectiveness_rate ?? 0}%</div>
+                <div className="text-[11px] text-muted-foreground">{stats?.capa_nc.total_capas ?? 0} Phiếu khắc phục</div>
               </div>
 
               <div className="rounded-xl border bg-card p-3 shadow-sm">
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span>8. Đánh giá nội bộ & Đào tạo (Điều 9.2)</span>
+                  <span>8. Đánh giá nội bộ & Đào tạo</span>
                   <Users className="h-3.5 w-3.5 text-teal-600" />
                 </div>
-                <div className="mt-2 text-lg font-bold">{stats?.audit_training_health.training_pass_rate ?? 90.9}%</div>
-                <div className="text-[11px] text-muted-foreground">{stats?.audit_training_health.total_audits ?? 3} Đợt đánh giá</div>
+                <div className="mt-2 text-lg font-bold">{stats?.audit_training_health.training_pass_rate ?? 0}%</div>
+                <div className="text-[11px] text-muted-foreground">{stats?.audit_training_health.total_audits ?? 0} Đợt đánh giá</div>
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* ==================== TAB 2: MỤC TIÊU CHẤT LƯỢNG & ATTP (ĐIỀU 6.2) ==================== */}
+      {/* ==================== TAB 2: MỤC TIÊU CHẤT LƯỢNG & ATTP ==================== */}
       {activeTab === "objectives" && (
         <div className="space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-muted/40 p-4 rounded-xl border">
             <div>
               <h3 className="font-bold text-foreground text-sm">Mục Tiêu An Toàn Thực Phẩm & Chất Lượng Năm 2026</h3>
-              <p className="text-xs text-muted-foreground">Theo dõi và đo lường định lượng các chỉ tiêu chất lượng theo Điều khoản 6.2</p>
+              <p className="text-xs text-muted-foreground">Theo dõi và đo lường định lượng các chỉ tiêu chất lượng</p>
             </div>
             <Button size="sm" onClick={() => setShowAddObjectiveModal(true)} className="gap-1.5 text-xs w-full sm:w-auto">
               <Plus className="h-3.5 w-3.5" /> Thêm Mục Tiêu Mới
             </Button>
           </div>
 
-          <div className="overflow-x-auto rounded-xl border bg-card shadow-sm -mx-3 sm:mx-0">
-            <table className="w-full text-left text-xs min-w-[700px]">
-              <thead className="bg-muted/60 text-muted-foreground font-semibold border-b">
-                <tr>
-                  <th className="py-3 px-4">Mã Chỉ Tiêu</th>
-                  <th className="py-3 px-4">Tên Chỉ Tiêu Chất Lượng & ATTP</th>
-                  <th className="py-3 px-4">Căn Cứ</th>
-                  <th className="py-3 px-4">Phòng Ban Chủ Trì</th>
-                  <th className="py-3 px-4 text-center">Kế Hoạch</th>
-                  <th className="py-3 px-4 text-center">Thực Tế</th>
-                  <th className="py-3 px-4 text-center">Tiến Độ</th>
-                  <th className="py-3 px-4 text-center">Trạng Thái</th>
-                  <th className="py-3 px-4">Người Phụ Trách</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {objectives.map((obj) => {
-                  const progressPct = obj.target_value > 0 ? Math.min(100, Math.round((obj.actual_value / obj.target_value) * 100)) : 100;
-                  return (
-                    <tr key={obj.objective_id} className="hover:bg-muted/20 transition">
-                      <td className="py-3 px-4 font-bold text-primary">{obj.objective_code}</td>
-                      <td className="py-3 px-4 font-medium max-w-xs">
-                        <div>{obj.metric_name}</div>
-                        {obj.action_plan && (
-                          <div className="text-[11px] text-muted-foreground mt-0.5 italic">
-                            Biện pháp: {obj.action_plan}
+          {objectives.length === 0 ? (
+            <EmptyState
+              icon={Target}
+              title="Chưa có mục tiêu chất lượng & ATTP"
+              description="Thiết lập các chỉ tiêu chất lượng định lượng, phân công phòng ban chịu trách nhiệm và định kỳ giám sát tiến độ thực hiện."
+              actionLabel="+ Thêm Mục Tiêu Mới"
+              onAction={() => setShowAddObjectiveModal(true)}
+              onOpenGuide={() => setShowGuide(true)}
+            />
+          ) : (
+            <div className="overflow-x-auto rounded-xl border bg-card shadow-sm -mx-3 sm:mx-0">
+              <table className="w-full text-left text-xs min-w-[700px]">
+                <thead className="bg-muted/60 text-muted-foreground font-semibold border-b">
+                  <tr>
+                    <th className="py-3 px-4">Mã Chỉ Tiêu</th>
+                    <th className="py-3 px-4">Tên Chỉ Tiêu Chất Lượng & ATTP</th>
+                    <th className="py-3 px-4">Căn Cứ</th>
+                    <th className="py-3 px-4">Phòng Ban Chủ Trì</th>
+                    <th className="py-3 px-4 text-center">Kế Hoạch</th>
+                    <th className="py-3 px-4 text-center">Thực Tế</th>
+                    <th className="py-3 px-4 text-center">Tiến Độ</th>
+                    <th className="py-3 px-4 text-center">Trạng Thái</th>
+                    <th className="py-3 px-4">Người Phụ Trách</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {objectives.map((obj) => {
+                    const progressPct = obj.target_value > 0 ? Math.min(100, Math.round((obj.actual_value / obj.target_value) * 100)) : 100;
+                    return (
+                      <tr key={obj.objective_id} className="hover:bg-muted/20 transition">
+                        <td className="py-3 px-4 font-bold text-primary">{obj.objective_code}</td>
+                        <td className="py-3 px-4 font-medium max-w-xs">
+                          <div>{obj.metric_name}</div>
+                          {obj.action_plan && (
+                            <div className="text-[11px] text-muted-foreground mt-0.5 italic">
+                              Biện pháp: {obj.action_plan}
+                            </div>
+                          )}
+                        </td>
+                        <td className="py-3 px-4 text-muted-foreground font-mono">{obj.clause_reference}</td>
+                        <td className="py-3 px-4">{obj.department}</td>
+                        <td className="py-3 px-4 text-center font-bold">{obj.target_value} {obj.unit}</td>
+                        <td className="py-3 px-4 text-center font-bold text-emerald-600">{obj.actual_value} {obj.unit}</td>
+                        <td className="py-3 px-4 text-center">
+                          <div className="w-20 mx-auto">
+                            <div className="text-[10px] text-muted-foreground font-semibold mb-1">{progressPct}%</div>
+                            <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+                              <div
+                                className={`h-full ${
+                                  progressPct >= 100 ? "bg-emerald-500" : progressPct >= 75 ? "bg-primary" : "bg-amber-500"
+                                }`}
+                                style={{ width: `${progressPct}%` }}
+                              />
+                            </div>
                           </div>
-                        )}
-                      </td>
-                      <td className="py-3 px-4 text-muted-foreground font-mono">{obj.clause_reference}</td>
-                      <td className="py-3 px-4">{obj.department}</td>
-                      <td className="py-3 px-4 text-center font-bold">{obj.target_value} {obj.unit}</td>
-                      <td className="py-3 px-4 text-center font-bold text-emerald-600">{obj.actual_value} {obj.unit}</td>
-                      <td className="py-3 px-4 text-center">
-                        <div className="w-20 mx-auto">
-                          <div className="text-[10px] text-muted-foreground font-semibold mb-1">{progressPct}%</div>
-                          <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
-                            <div
-                              className={`h-full ${
-                                progressPct >= 100 ? "bg-emerald-500" : progressPct >= 75 ? "bg-primary" : "bg-amber-500"
-                              }`}
-                              style={{ width: `${progressPct}%` }}
-                            />
-                          </div>
-                        </div>
-                      </td>
-                      <td className="py-3 px-4 text-center">
-                        <span
-                          className={`inline-block rounded-full px-2.5 py-0.5 text-[11px] font-bold ${
-                            obj.status === "ACHIEVED"
-                              ? "bg-emerald-500/10 text-emerald-600"
-                              : obj.status === "ON_TRACK"
-                              ? "bg-primary/10 text-primary"
-                              : "bg-amber-500/10 text-amber-600"
-                          }`}
-                        >
-                          {obj.status === "ACHIEVED" ? "ĐẠT MỤC TIÊU" : obj.status === "ON_TRACK" ? "ĐANG THỰC HIỆN" : "CẦN CHÚ Ý"}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4 text-muted-foreground">{obj.responsible_person}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                        </td>
+                        <td className="py-3 px-4 text-center">
+                          <span
+                            className={`inline-block rounded-full px-2.5 py-0.5 text-[11px] font-bold ${
+                              obj.status === "ACHIEVED"
+                                ? "bg-emerald-500/10 text-emerald-600"
+                                : obj.status === "ON_TRACK"
+                                ? "bg-primary/10 text-primary"
+                                : "bg-amber-500/10 text-amber-600"
+                            }`}
+                          >
+                            {obj.status === "ACHIEVED" ? "ĐẠT MỤC TIÊU" : obj.status === "ON_TRACK" ? "ĐANG THỰC HIỆN" : "CẦN CHÚ Ý"}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 text-muted-foreground">{obj.responsible_person}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       )}
 
-      {/* ==================== TAB 3: XEM XÉT CỦA LÃNH ĐẠO (ĐIỀU 9.3) ==================== */}
+      {/* ==================== TAB 3: XEM XÉT CỦA LÃNH ĐẠO ==================== */}
       {activeTab === "reviews" && (
-        <div className="grid gap-4 sm:gap-6 grid-cols-1 lg:grid-cols-3">
-          {/* Trái: Danh sách các kỳ họp */}
-          <div className="rounded-2xl border bg-card p-4 shadow-sm space-y-3">
-            <div className="flex items-center justify-between">
-              <h3 className="font-bold text-foreground text-sm">Các Kỳ Họp Xem Xét</h3>
-              <Button size="sm" variant="outline" onClick={() => setShowAddReviewModal(true)} className="gap-1 text-xs">
-                <Plus className="h-3 w-3" /> Lập Biên Bản
-              </Button>
-            </div>
-
-            <div className="space-y-2">
-              {reviews.map((rev) => (
-                <div
-                  key={rev.review_id}
-                  onClick={() => setSelectedReview(rev)}
-                  className={`cursor-pointer rounded-xl border p-3 text-xs transition ${
-                    selectedReview?.review_id === rev.review_id
-                      ? "border-primary bg-primary/5 shadow-sm"
-                      : "hover:bg-muted/40"
-                  }`}
-                >
-                  <div className="flex items-center justify-between font-bold">
-                    <span className="text-primary">{rev.review_code}</span>
-                    <Badge variant="outline" className="text-[10px] bg-emerald-500/10 text-emerald-600">
-                      {rev.status === "APPROVED" ? "ĐÃ PHÊ DUYỆT" : rev.status}
-                    </Badge>
-                  </div>
-                  <div className="mt-1 font-semibold text-foreground">{rev.title}</div>
-                  <div className="mt-1 text-[11px] text-muted-foreground">Ngày họp: {rev.meeting_date}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Phải: Chi tiết biên bản và 6 đầu vào */}
-          {selectedReview && (
-            <div className="rounded-2xl border bg-card p-4 sm:p-5 lg:col-span-2 shadow-sm space-y-4 sm:space-y-5">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b pb-4">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <Badge className="bg-primary">{selectedReview.review_code}</Badge>
-                    <h3 className="font-bold text-foreground text-sm sm:text-base">{selectedReview.title}</h3>
-                  </div>
-                  <div className="mt-1 text-xs text-muted-foreground">
-                    Chủ trì: <b>{selectedReview.chairperson_name}</b> · Thư ký: <b>{selectedReview.secretary_name}</b> · Ngày: <b>{selectedReview.meeting_date}</b>
-                  </div>
-                </div>
-                <Button
-                  size="sm"
-                  onClick={() => triggerPrintManagementReview(selectedReview)}
-                  className="gap-1.5 text-xs shadow-sm w-full sm:w-auto"
-                >
-                  <Printer className="h-3.5 w-3.5" /> In Biểu Mẫu BM-MR-01
+        reviews.length === 0 ? (
+          <EmptyState
+            icon={Calendar}
+            title="Chưa có biên bản xem xét của lãnh đạo"
+            description="Ban Giám Đốc chủ trì các cuộc họp định kỳ để đánh giá tính phù hợp, thỏa đáng và hiệu lực của hệ thống FSMS, đồng thời ban hành các nghị quyết chỉ đạo."
+            actionLabel="+ Lập Biên Bản Xem Xét"
+            onAction={() => setShowAddReviewModal(true)}
+            onOpenGuide={() => setShowGuide(true)}
+          />
+        ) : (
+          <div className="grid gap-4 sm:gap-6 grid-cols-1 lg:grid-cols-3">
+            {/* Trái: Danh sách các kỳ họp */}
+            <div className="rounded-2xl border bg-card p-4 shadow-sm space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="font-bold text-foreground text-sm">Các Kỳ Họp Xem Xét</h3>
+                <Button size="sm" variant="outline" onClick={() => setShowAddReviewModal(true)} className="gap-1 text-xs">
+                  <Plus className="h-3 w-3" /> Lập Biên Bản
                 </Button>
               </div>
 
-              {/* 6 Nhóm đầu vào xem xét (Điều 9.3.2) */}
-              <div>
-                <h4 className="text-xs font-bold uppercase text-primary tracking-wider mb-2">
-                  Tổng Hợp 6 Nhóm Đầu Vào Xem Xét (Điều Khoản 9.3.2)
-                </h4>
-                <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 text-xs">
-                  <div className="rounded-lg border p-2.5 bg-muted/20">
-                    <div className="font-semibold text-foreground">1. Đánh giá nội bộ & Pháp lý:</div>
-                    <div className="text-muted-foreground mt-0.5">{selectedReview.scope_and_inputs?.audit_results || selectedReview.scope_and_inputs?.audit_summary}</div>
+              <div className="space-y-2">
+                {reviews.map((rev) => (
+                  <div
+                    key={rev.review_id}
+                    onClick={() => setSelectedReview(rev)}
+                    className={`cursor-pointer rounded-xl border p-3 text-xs transition ${
+                      selectedReview?.review_id === rev.review_id
+                        ? "border-primary bg-primary/5 shadow-sm"
+                        : "hover:bg-muted/40"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between font-bold">
+                      <span className="text-primary">{rev.review_code}</span>
+                      <Badge variant="outline" className="text-[10px] bg-emerald-500/10 text-emerald-600">
+                        {rev.status === "APPROVED" ? "ĐÃ PHÊ DUYỆT" : rev.status}
+                      </Badge>
+                    </div>
+                    <div className="mt-1 font-semibold text-foreground">{rev.title}</div>
+                    <div className="mt-1 text-[11px] text-muted-foreground">Ngày họp: {rev.meeting_date}</div>
                   </div>
-                  <div className="rounded-lg border p-2.5 bg-muted/20">
-                    <div className="font-semibold text-foreground">2. Phản hồi khách hàng:</div>
-                    <div className="text-muted-foreground mt-0.5">{selectedReview.scope_and_inputs?.customer_feedback}</div>
+                ))}
+              </div>
+            </div>
+
+            {/* Phải: Chi tiết biên bản và 6 đầu vào */}
+            {selectedReview && (
+              <div className="rounded-2xl border bg-card p-4 sm:p-5 lg:col-span-2 shadow-sm space-y-4 sm:space-y-5">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b pb-4">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <Badge className="bg-primary">{selectedReview.review_code}</Badge>
+                      <h3 className="font-bold text-foreground text-sm sm:text-base">{selectedReview.title}</h3>
+                    </div>
+                    <div className="mt-1 text-xs text-muted-foreground">
+                      Chủ trì: <b>{selectedReview.chairperson_name}</b> · Thư ký: <b>{selectedReview.secretary_name}</b> · Ngày: <b>{selectedReview.meeting_date}</b>
+                    </div>
                   </div>
-                  <div className="rounded-lg border p-2.5 bg-muted/20">
-                    <div className="font-semibold text-foreground">3. Hiệu năng điểm CCP & Vệ sinh PRP:</div>
-                    <div className="text-muted-foreground mt-0.5">{selectedReview.scope_and_inputs?.ccp_prp_status || selectedReview.scope_and_inputs?.ccp_prp_performance}</div>
-                  </div>
-                  <div className="rounded-lg border p-2.5 bg-muted/20">
-                    <div className="font-semibold text-foreground">4. Hiệu lực hành động khắc phục:</div>
-                    <div className="text-muted-foreground mt-0.5">{selectedReview.scope_and_inputs?.capa_effectiveness}</div>
-                  </div>
-                  <div className="rounded-lg border p-2.5 bg-muted/20">
-                    <div className="font-semibold text-foreground">5. Nhà cung cấp & Tiếp nhận nguyên liệu:</div>
-                    <div className="text-muted-foreground mt-0.5">{selectedReview.scope_and_inputs?.supplier_performance || selectedReview.scope_and_inputs?.supplier_status}</div>
-                  </div>
-                  <div className="rounded-lg border p-2.5 bg-muted/20">
-                    <div className="font-semibold text-foreground">6. Nguồn lực & Thay đổi bối cảnh:</div>
-                    <div className="text-muted-foreground mt-0.5">{selectedReview.scope_and_inputs?.resource_needs || selectedReview.scope_and_inputs?.resource_adequacy}</div>
+                  <Button
+                    size="sm"
+                    onClick={() => triggerPrintManagementReview(selectedReview)}
+                    className="gap-1.5 text-xs shadow-sm w-full sm:w-auto"
+                  >
+                    <Printer className="h-3.5 w-3.5" /> In Biểu Mẫu BM-MR-01
+                  </Button>
+                </div>
+
+                {/* 6 Nhóm đầu vào xem xét */}
+                <div>
+                  <h4 className="text-xs font-bold uppercase text-primary tracking-wider mb-2">
+                    Tổng Hợp 6 Nhóm Đầu Vào Xem Xét
+                  </h4>
+                  <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 text-xs">
+                    <div className="rounded-lg border p-2.5 bg-muted/20">
+                      <div className="font-semibold text-foreground">1. Đánh giá nội bộ & Pháp lý:</div>
+                      <div className="text-muted-foreground mt-0.5">{selectedReview.scope_and_inputs?.audit_results || selectedReview.scope_and_inputs?.audit_summary}</div>
+                    </div>
+                    <div className="rounded-lg border p-2.5 bg-muted/20">
+                      <div className="font-semibold text-foreground">2. Phản hồi khách hàng:</div>
+                      <div className="text-muted-foreground mt-0.5">{selectedReview.scope_and_inputs?.customer_feedback}</div>
+                    </div>
+                    <div className="rounded-lg border p-2.5 bg-muted/20">
+                      <div className="font-semibold text-foreground">3. Hiệu năng điểm CCP & Vệ sinh PRP:</div>
+                      <div className="text-muted-foreground mt-0.5">{selectedReview.scope_and_inputs?.ccp_prp_status || selectedReview.scope_and_inputs?.ccp_prp_performance}</div>
+                    </div>
+                    <div className="rounded-lg border p-2.5 bg-muted/20">
+                      <div className="font-semibold text-foreground">4. Hiệu lực hành động khắc phục:</div>
+                      <div className="text-muted-foreground mt-0.5">{selectedReview.scope_and_inputs?.capa_effectiveness}</div>
+                    </div>
+                    <div className="rounded-lg border p-2.5 bg-muted/20">
+                      <div className="font-semibold text-foreground">5. Nhà cung cấp & Tiếp nhận nguyên liệu:</div>
+                      <div className="text-muted-foreground mt-0.5">{selectedReview.scope_and_inputs?.supplier_performance || selectedReview.scope_and_inputs?.supplier_status}</div>
+                    </div>
+                    <div className="rounded-lg border p-2.5 bg-muted/20">
+                      <div className="font-semibold text-foreground">6. Nguồn lực & Thay đổi bối cảnh:</div>
+                      <div className="text-muted-foreground mt-0.5">{selectedReview.scope_and_inputs?.resource_needs || selectedReview.scope_and_inputs?.resource_adequacy}</div>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Nội dung biên bản */}
-              <div>
-                <h4 className="text-xs font-bold uppercase text-primary tracking-wider mb-2">Nội Dung Biên Bản Cuộc Họp</h4>
-                <div className="rounded-xl border p-3 text-xs leading-relaxed text-foreground bg-muted/10 whitespace-pre-line">
-                  {selectedReview.meeting_minutes}
+                {/* Nội dung biên bản */}
+                <div>
+                  <h4 className="text-xs font-bold uppercase text-primary tracking-wider mb-2">Nội Dung Biên Bản Cuộc Họp</h4>
+                  <div className="rounded-xl border p-3 text-xs leading-relaxed text-foreground bg-muted/10 whitespace-pre-line">
+                    {selectedReview.meeting_minutes}
+                  </div>
                 </div>
-              </div>
 
-              {/* Nghị quyết & Quyết định đầu ra (Điều 9.3.3) */}
-              <div>
-                <h4 className="text-xs font-bold uppercase text-primary tracking-wider mb-2">
-                  Nghị Quyết & Quyết Định Đầu Ra (Điều Khoản 9.3.3)
-                </h4>
-                <div className="overflow-x-auto rounded-xl border -mx-3 sm:mx-0">
-                  <table className="w-full text-left text-xs min-w-[500px]">
-                    <thead className="bg-muted/50 text-muted-foreground border-b">
-                      <tr>
-                        <th className="py-2.5 px-3">Quyết định / Kế hoạch cải tiến</th>
-                        <th className="py-2.5 px-3">Phụ trách</th>
+                {/* Nghị quyết & Quyết định đầu ra */}
+                <div>
+                  <h4 className="text-xs font-bold uppercase text-primary tracking-wider mb-2">
+                    Nghị Quyết & Quyết Định Đầu Ra
+                  </h4>
+                  <div className="overflow-x-auto rounded-xl border -mx-3 sm:mx-0">
+                    <table className="w-full text-left text-xs min-w-[500px]">
+                      <thead className="bg-muted/50 text-muted-foreground border-b">
+                        <tr>
+                          <th className="py-2.5 px-3">Quyết định / Kế hoạch cải tiến</th>
+                          <th className="py-2.5 px-3">Phụ trách</th>
                         <th className="py-2.5 px-3">Hạn chót</th>
                         <th className="py-2.5 px-3">Nguồn lực</th>
                         <th className="py-2.5 px-3 text-center">Trạng thái</th>
@@ -1185,7 +1225,7 @@ function ExecutiveDashboard() {
             </div>
           )}
         </div>
-      )}
+      ))}
 
       {/* ==================== TAB 4: TRỢ LÝ TRÍ TUỆ NHÂN TẠO ATTP ==================== */}
       {activeTab === "ai_studio" && (
@@ -1379,8 +1419,8 @@ function ExecutiveDashboard() {
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <div>
-                  <label className="font-semibold">Điều Khoản Tiêu Chuẩn</label>
-                  <Input placeholder="Điều 6.2 / Điều 8.2" value={newObjClause} onChange={(e) => setNewObjClause(e.target.value)} className="mt-1 text-xs" />
+                  <label className="font-semibold">Căn Cứ Tiêu Chuẩn</label>
+                  <Input placeholder="Mục tiêu ATTP / Kiểm soát vận hành" value={newObjClause} onChange={(e) => setNewObjClause(e.target.value)} className="mt-1 text-xs" />
                 </div>
                 <div>
                   <label className="font-semibold">Phòng Ban Chủ Trì</label>
@@ -1491,7 +1531,7 @@ function ExecutiveDashboard() {
             <div className="flex items-center justify-between border-b pb-3">
               <div className="flex items-center gap-2">
                 <Workflow className="h-5 w-5 text-primary shrink-0" />
-                <h3 className="font-bold text-foreground text-sm">Lưu Đồ Quy Trình Xem Xét Của Lãnh Đạo (Điều 9.3)</h3>
+                <h3 className="font-bold text-foreground text-sm">Lưu Đồ Quy Trình Xem Xét Của Lãnh Đạo</h3>
               </div>
               <button onClick={() => setShowWorkflowModal(false)} className="text-muted-foreground hover:text-foreground">
                 <X className="h-4 w-4" />
@@ -1502,7 +1542,7 @@ function ExecutiveDashboard() {
               <div className="rounded-xl border p-3 bg-muted/20 space-y-1">
                 <div className="flex items-center justify-between font-bold text-primary">
                   <span>BƯỚC 1: THU THẬP 6 ĐẦU VÀO</span>
-                  <Badge variant="outline" className="text-[10px]">Điều 9.3.2</Badge>
+                  <Badge variant="outline" className="text-[10px]">Đầu Vào</Badge>
                 </div>
                 <p className="text-muted-foreground leading-relaxed">Trưởng ban ISO tổng hợp kết quả ĐGNB, CAPA, điểm CCP/PRP, ý kiến khách hàng và nhà cung ứng.</p>
               </div>
@@ -1518,7 +1558,7 @@ function ExecutiveDashboard() {
               <div className="rounded-xl border p-3 bg-muted/20 space-y-1">
                 <div className="flex items-center justify-between font-bold text-primary">
                   <span>BƯỚC 3: RA NGHỊ QUYẾT ĐẦU RA</span>
-                  <Badge variant="outline" className="text-[10px]">Điều 9.3.3</Badge>
+                  <Badge variant="outline" className="text-[10px]">Đầu Ra</Badge>
                 </div>
                 <p className="text-muted-foreground leading-relaxed">Phê duyệt quyết định cải tiến hệ thống, phân bổ ngân sách và nguồn lực thiết bị kiểm nghiệm.</p>
               </div>
@@ -1538,6 +1578,13 @@ function ExecutiveDashboard() {
           </div>
         </div>
       )}
+
+      {/* Cửa sổ hướng dẫn nghiệp vụ chuẩn mực */}
+      <ModuleGuideModal
+        module="dashboard"
+        isOpen={showGuide}
+        onClose={() => setShowGuide(false)}
+      />
     </div>
   );
 }

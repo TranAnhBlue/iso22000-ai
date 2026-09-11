@@ -35,13 +35,16 @@ import {
   Eye,
   X,
   Calendar,
+  BookOpen,
 } from "lucide-react";
+import { EmptyState } from "@/components/EmptyState";
+import { ModuleGuideModal } from "@/components/ModuleGuideModal";
 
 export const Route = createFileRoute("/emergency")({
   head: () => ({
     meta: [
-      { title: "Ứng phó khẩn cấp (Điều 8.4) – WCERT FSMS" },
-      { name: "description", content: "Chuẩn bị và ứng phó tình huống khẩn cấp, sự cố an toàn thực phẩm theo ISO 22000:2018." },
+      { title: "Ứng phó khẩn cấp – WCERT FSMS" },
+      { name: "description", content: "Chuẩn bị và ứng phó tình huống khẩn cấp, sự cố an toàn thực phẩm." },
     ],
   }),
   component: () => (
@@ -222,6 +225,7 @@ function EmergencyPage() {
   });
 
   const [viewDetailModal, setViewDetailModal] = useState<any>(null);
+  const [showGuide, setShowGuide] = useState(false);
 
   // Fetch all initial data
   const fetchData = async () => {
@@ -730,10 +734,18 @@ function EmergencyPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Ứng phó tình huống khẩn cấp & Sự cố (Điều 8.4)"
+        title="Ứng phó tình huống khẩn cấp & Sự cố"
         description="Hệ thống chuẩn bị kịch bản 7+2 nhóm rủi ro, phân công đầu mối liên lạc tức thì và kiểm soát diễn tập định kỳ theo ISO 22000:2018."
         actions={
           <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowGuide(true)}
+              className="gap-1.5 text-primary border-primary/30 hover:bg-primary/5"
+            >
+              <BookOpen className="h-4 w-4" /> Hướng dẫn nghiệp vụ
+            </Button>
             <Button variant="outline" size="sm" onClick={fetchData} disabled={loading} className="gap-2">
               <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
               Làm mới
@@ -909,73 +921,84 @@ function EmergencyPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredContacts.map((c, idx) => (
-              <div
-                key={c.contact_id || c.id || `contact-${idx}`}
-                className="p-4 rounded-xl border border-slate-200 bg-white hover:border-emerald-300 transition-shadow hover:shadow-md flex flex-col justify-between"
-              >
-                <div>
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <span
-                        className={`inline-block text-[11px] font-bold px-2 py-0.5 rounded-sm uppercase mb-1.5 ${
-                          c.contact_type === "INTERNAL"
-                            ? "bg-blue-50 text-blue-700 border border-blue-200"
-                            : "bg-rose-50 text-rose-700 border border-rose-200"
-                        }`}
-                      >
-                        {c.contact_type === "INTERNAL" ? "Nội bộ nhà máy" : "Cứu trợ ngoại vi"}
-                      </span>
-                      <h4 className="font-bold text-base text-slate-900">{c.name}</h4>
-                      <p className="text-xs font-semibold text-emerald-700">{c.organization_or_role || c.role_title}</p>
-                      {c.department && <p className="text-xs text-slate-500 mt-0.5">{c.department}</p>}
+          {filteredContacts.length === 0 ? (
+            <EmptyState
+              icon={PhoneCall}
+              title="Chưa có đầu mối liên hệ khẩn cấp"
+              description="Thiết lập danh bạ liên lạc đội ứng phó nội bộ nhà máy và các cơ quan cứu trợ ngoại viện (PCCC, cấp cứu 115, công an, bệnh viện)."
+              actionLabel={canEdit ? "+ Thêm Đầu Mối Liên Hệ" : undefined}
+              onAction={canEdit ? openNewContact : undefined}
+              onOpenGuide={() => setShowGuide(true)}
+            />
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredContacts.map((c, idx) => (
+                <div
+                  key={c.contact_id || c.id || `contact-${idx}`}
+                  className="p-4 rounded-xl border border-slate-200 bg-white hover:border-emerald-300 transition-shadow hover:shadow-md flex flex-col justify-between"
+                >
+                  <div>
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <span
+                          className={`inline-block text-[11px] font-bold px-2 py-0.5 rounded-sm uppercase mb-1.5 ${
+                            c.contact_type === "INTERNAL"
+                              ? "bg-blue-50 text-blue-700 border border-blue-200"
+                              : "bg-rose-50 text-rose-700 border border-rose-200"
+                          }`}
+                        >
+                          {c.contact_type === "INTERNAL" ? "Nội bộ nhà máy" : "Cứu trợ ngoại vi"}
+                        </span>
+                        <h4 className="font-bold text-base text-slate-900">{c.name}</h4>
+                        <p className="text-xs font-semibold text-emerald-700">{c.organization_or_role || c.role_title}</p>
+                        {c.department && <p className="text-xs text-slate-500 mt-0.5">{c.department}</p>}
+                      </div>
+                      {(c.priority_order ?? c.priority_level) === 1 && (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-700 border border-red-200">
+                          Ưu tiên 1
+                        </span>
+                      )}
                     </div>
-                    {(c.priority_order ?? c.priority_level) === 1 && (
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-700 border border-red-200">
-                        Ưu tiên 1
-                      </span>
-                    )}
+
+                    <div className="mt-4 pt-3 border-t border-slate-100 space-y-1.5 text-xs text-slate-600">
+                      {(c.address || c.location) && (
+                        <div className="flex items-center gap-1.5">
+                          <Building2 className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                          <span>{c.address || c.location}</span>
+                        </div>
+                      )}
+                      {c.notes && (
+                        <div className="text-[11px] text-slate-500 italic">
+                          {c.notes}
+                        </div>
+                      )}
+                    </div>
                   </div>
 
-                  <div className="mt-4 pt-3 border-t border-slate-100 space-y-1.5 text-xs text-slate-600">
-                    {(c.address || c.location) && (
-                      <div className="flex items-center gap-1.5">
-                        <Building2 className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-                        <span>{c.address || c.location}</span>
-                      </div>
-                    )}
-                    {c.notes && (
-                      <div className="text-[11px] text-slate-500 italic">
-                        {c.notes}
+                  <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
+                    <a
+                      href={`tel:${c.phone || c.phone_primary}`}
+                      className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold text-sm transition-colors"
+                    >
+                      <PhoneCall className="h-4 w-4" />
+                      <span>{c.phone || c.phone_primary}</span>
+                    </a>
+
+                    {canEdit && (
+                      <div className="flex items-center gap-1">
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:text-slate-900" onClick={() => openEditContact(c)}>
+                          <Edit2 className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-500 hover:text-rose-700" onClick={() => handleDeleteContact(c.contact_id || c.id)}>
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
                       </div>
                     )}
                   </div>
                 </div>
-
-                <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
-                  <a
-                    href={`tel:${c.phone || c.phone_primary}`}
-                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold text-sm transition-colors"
-                  >
-                    <PhoneCall className="h-4 w-4" />
-                    <span>{c.phone || c.phone_primary}</span>
-                  </a>
-
-                  {canEdit && (
-                    <div className="flex items-center gap-1">
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:text-slate-900" onClick={() => openEditContact(c)}>
-                        <Edit2 className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-500 hover:text-rose-700" onClick={() => handleDeleteContact(c.contact_id || c.id)}>
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -997,109 +1020,120 @@ function EmergencyPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {filteredProcedures.map((p, idx) => {
-              const meta = SCENARIO_LABELS[p.scenario_type] || {
-                label: p.scenario_type,
-                icon: AlertTriangle,
-                color: "text-slate-600 bg-slate-50 border-slate-200",
-              };
-              const IconComp = meta.icon;
+          {filteredProcedures.length === 0 ? (
+            <EmptyState
+              icon={ShieldAlert}
+              title="Chưa có kịch bản ứng phó sự cố"
+              description="Soạn thảo các quy trình thao tác chuẩn SOP ứng phó 7 nhóm sự cố ATTP và 2 nhóm rủi ro an ninh sinh học."
+              actionLabel={canEdit ? "+ Soạn Kịch Bản Ứng Phó" : undefined}
+              onAction={canEdit ? openNewProcedure : undefined}
+              onOpenGuide={() => setShowGuide(true)}
+            />
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              {filteredProcedures.map((p, idx) => {
+                const meta = SCENARIO_LABELS[p.scenario_type] || {
+                  label: p.scenario_type,
+                  icon: AlertTriangle,
+                  color: "text-slate-600 bg-slate-50 border-slate-200",
+                };
+                const IconComp = meta.icon;
 
-              return (
-                <div
-                  key={p.procedure_id || p.id || `proc-${idx}`}
-                  className="rounded-xl border border-slate-200 bg-white p-4 hover:border-slate-300 shadow-xs flex flex-col justify-between"
-                >
-                  <div>
-                    <div className="flex items-start justify-between gap-2">
-                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold border ${meta.color}`}>
-                        <IconComp className="h-3.5 w-3.5 shrink-0" />
-                        {meta.label}
-                      </span>
-                      {getRiskBadge(p.risk_score)}
-                    </div>
-
-                    <div className="mt-3">
-                      <div className="text-xs font-mono font-bold text-slate-400">{p.procedure_code || p.code}</div>
-                      <h4 className="font-bold text-base text-slate-900 mt-0.5">{p.title}</h4>
-                      {p.description && <p className="text-xs text-slate-600 mt-1 line-clamp-2">{p.description}</p>}
-                    </div>
-
-                    {/* Immediate Actions */}
-                    {p.immediate_actions && p.immediate_actions.length > 0 && (
-                      <div className="mt-3 p-2.5 rounded-lg bg-slate-50 border border-slate-100">
-                        <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1 mb-1.5">
-                          <Zap className="h-3.5 w-3.5 text-amber-500" /> Các bước hành động tức thì:
+                return (
+                  <div
+                    key={p.procedure_id || p.id || `proc-${idx}`}
+                    className="rounded-xl border border-slate-200 bg-white p-4 hover:border-slate-300 shadow-xs flex flex-col justify-between"
+                  >
+                    <div>
+                      <div className="flex items-start justify-between gap-2">
+                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold border ${meta.color}`}>
+                          <IconComp className="h-3.5 w-3.5 shrink-0" />
+                          {meta.label}
                         </span>
-                        <ul className="space-y-1 text-xs text-slate-700 list-disc list-inside">
-                          {p.immediate_actions.slice(0, 3).map((act: any, i: number) => {
-                            const label = typeof act === "string" 
-                              ? act 
-                              : `${act.step ? `Bước ${act.step}: ` : ""}${act.action || ""}${act.responsible ? ` (${act.responsible})` : ""}`;
-                            return (
-                              <li key={i} className="truncate" title={typeof act === "string" ? act : act.action}>
-                                {label}
-                              </li>
-                            );
-                          })}
-                          {p.immediate_actions.length > 3 && (
-                            <li className="text-slate-500 italic">+ {p.immediate_actions.length - 3} bước khác...</li>
-                          )}
-                        </ul>
+                        {getRiskBadge(p.risk_score)}
                       </div>
-                    )}
 
-                    {/* Food Safety Control */}
-                    {p.food_safety_controls && (
-                      <div className="mt-2.5 text-xs text-emerald-800 bg-emerald-50/70 p-2 rounded border border-emerald-200">
-                        <strong>Kiểm soát ATTP:</strong> {p.food_safety_controls}
+                      <div className="mt-3">
+                        <div className="text-xs font-mono font-bold text-slate-400">{p.procedure_code || p.code}</div>
+                        <h4 className="font-bold text-base text-slate-900 mt-0.5">{p.title}</h4>
+                        {p.description && <p className="text-xs text-slate-600 mt-1 line-clamp-2">{p.description}</p>}
                       </div>
-                    )}
-                  </div>
 
-                  <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-                    <div className="flex items-center gap-2">
-                      <span>L: <strong>{p.likelihood}</strong></span>
-                      <span>S: <strong>{p.severity}</strong></span>
-                      <span>Điểm: <strong>{p.risk_score}</strong></span>
-                    </div>
+                      {/* Immediate Actions */}
+                      {p.immediate_actions && p.immediate_actions.length > 0 && (
+                        <div className="mt-3 p-2.5 rounded-lg bg-slate-50 border border-slate-100">
+                          <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1 mb-1.5">
+                            <Zap className="h-3.5 w-3.5 text-amber-500" /> Các bước hành động tức thì:
+                          </span>
+                          <ul className="space-y-1 text-xs text-slate-700 list-disc list-inside">
+                            {p.immediate_actions.slice(0, 3).map((act: any, i: number) => {
+                              const label = typeof act === "string" 
+                                ? act 
+                                : `${act.step ? `Bước ${act.step}: ` : ""}${act.action || ""}${act.responsible ? ` (${act.responsible})` : ""}`;
+                              return (
+                                <li key={i} className="truncate" title={typeof act === "string" ? act : act.action}>
+                                  {label}
+                                </li>
+                              );
+                            })}
+                            {p.immediate_actions.length > 3 && (
+                              <li className="text-slate-500 italic">+ {p.immediate_actions.length - 3} bước khác...</li>
+                            )}
+                          </ul>
+                        </div>
+                      )}
 
-                    <div className="flex items-center gap-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 text-xs text-slate-600 hover:text-slate-900"
-                        onClick={() => setViewDetailModal(p)}
-                      >
-                        <Eye className="h-3.5 w-3.5 mr-1" /> Chi tiết
-                      </Button>
-                      {canEdit && (
-                        <>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 text-xs text-blue-600 hover:text-blue-800"
-                            onClick={() => openEditProcedure(p)}
-                          >
-                            <Edit2 className="h-3.5 w-3.5 mr-1" /> Sửa
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 text-xs text-rose-600 hover:text-rose-800"
-                            onClick={() => handleDeleteProcedure(p.procedure_id || p.id)}
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
-                        </>
+                      {/* Food Safety Control */}
+                      {p.food_safety_controls && (
+                        <div className="mt-2.5 text-xs text-emerald-800 bg-emerald-50/70 p-2 rounded border border-emerald-200">
+                          <strong>Kiểm soát ATTP:</strong> {p.food_safety_controls}
+                        </div>
                       )}
                     </div>
+
+                    <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+                      <div className="flex items-center gap-2">
+                        <span>L: <strong>{p.likelihood}</strong></span>
+                        <span>S: <strong>{p.severity}</strong></span>
+                        <span>Điểm: <strong>{p.risk_score}</strong></span>
+                      </div>
+
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 text-xs text-slate-600 hover:text-slate-900"
+                          onClick={() => setViewDetailModal(p)}
+                        >
+                          <Eye className="h-3.5 w-3.5 mr-1" /> Chi tiết
+                        </Button>
+                        {canEdit && (
+                          <>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 text-xs text-blue-600 hover:text-blue-800"
+                              onClick={() => openEditProcedure(p)}
+                            >
+                              <Edit2 className="h-3.5 w-3.5 mr-1" /> Sửa
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 text-xs text-rose-600 hover:text-rose-800"
+                              onClick={() => handleDeleteProcedure(p.procedure_id || p.id)}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 
@@ -1144,29 +1178,32 @@ function EmergencyPage() {
             </div>
           </div>
 
-          <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xs">
-            <table className="w-full text-left text-sm">
-              <thead className="bg-slate-50 text-xs font-semibold text-slate-600 border-b border-slate-200">
-                <tr>
-                  <th className="py-3 px-4">Mã hồ sơ</th>
-                  <th className="py-3 px-4">Loại tác nghiệp</th>
-                  <th className="py-3 px-4">Tiêu đề & Nhóm tình huống</th>
-                  <th className="py-3 px-4">Ngày diễn tập</th>
-                  <th className="py-3 px-4">Địa điểm & Nhân lực</th>
-                  <th className="py-3 px-4">TG phản ứng</th>
-                  <th className="py-3 px-4 text-center">Kết quả</th>
-                  <th className="py-3 px-4 text-right">Thao tác</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {filteredDrills.length === 0 ? (
+          {filteredDrills.length === 0 ? (
+            <EmptyState
+              icon={FileCheck2}
+              title="Chưa có nhật ký diễn tập hoặc sự cố"
+              description="Ghi nhận hồ sơ diễn tập phòng ngừa định kỳ hoặc báo cáo điều tra sự cố thực tế theo biểu mẫu BM-EMERGENCY-01."
+              actionLabel={canEdit ? "+ Ghi Nhận Diễn Tập / Sự Cố" : undefined}
+              onAction={canEdit ? openNewDrill : undefined}
+              onOpenGuide={() => setShowGuide(true)}
+            />
+          ) : (
+            <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xs">
+              <table className="w-full text-left text-sm">
+                <thead className="bg-slate-50 text-xs font-semibold text-slate-600 border-b border-slate-200">
                   <tr>
-                    <td colSpan={8} className="py-8 text-center text-slate-400">
-                      Chưa có biên bản diễn tập hoặc sự cố nào được ghi nhận.
-                    </td>
+                    <th className="py-3 px-4">Mã hồ sơ</th>
+                    <th className="py-3 px-4">Loại tác nghiệp</th>
+                    <th className="py-3 px-4">Tiêu đề & Nhóm tình huống</th>
+                    <th className="py-3 px-4">Ngày diễn tập</th>
+                    <th className="py-3 px-4">Địa điểm & Nhân lực</th>
+                    <th className="py-3 px-4">TG phản ứng</th>
+                    <th className="py-3 px-4 text-center">Kết quả</th>
+                    <th className="py-3 px-4 text-right">Thao tác</th>
                   </tr>
-                ) : (
-                  filteredDrills.map((d, idx) => {
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {filteredDrills.map((d, idx) => {
                     const meta = SCENARIO_LABELS[d.scenario_type] || { label: d.scenario_type };
                     const isActual = d.record_type === "ACTUAL_INCIDENT" || d.drill_type === "ACTUAL_INCIDENT";
                     const result = d.evaluation_result;
@@ -1251,11 +1288,11 @@ function EmergencyPage() {
                         </td>
                       </tr>
                     );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       )}
 
@@ -1790,6 +1827,13 @@ function EmergencyPage() {
           </div>
         </div>
       )}
+
+      {/* Module Guide Modal */}
+      <ModuleGuideModal
+        module="emergency"
+        isOpen={showGuide}
+        onClose={() => setShowGuide(false)}
+      />
     </div>
   );
 }

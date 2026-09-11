@@ -113,40 +113,7 @@ SEED_DOCUMENTS = [
 ]
 
 def ensure_seed_data(db: Session) -> None:
-    count = db.query(Document).count()
-    admin_user = db.query(User).filter(User.username == "admin").first()
-    admin_id = admin_user.user_id if admin_user else None
-
-    if count == 0:
-        for item in SEED_DOCUMENTS:
-            doc = Document(
-                doc_code=str(item["doc_code"]),
-                doc_title=str(item["doc_title"]),
-                doc_type=str(item["doc_type"]),
-                department=str(item.get("department") or "Ban QLCL & ATTP"),
-                standard=str(item.get("standard") or "ISO 22000:2018"),
-                current_version=str(item["current_version"]),
-                status=str(item["status"]),
-                effective_date=item.get("effective_date"),
-                file_url=str(item.get("file_url") or ""),
-                approved_by=admin_id
-            )
-            db.add(doc)
-        db.commit()
-    else:
-        existing_docs = db.query(Document).filter(Document.department.is_(None)).all()
-        if existing_docs:
-            for doc in existing_docs:
-                matching_seed = next((s for s in SEED_DOCUMENTS if s["doc_code"] == doc.doc_code), None)
-                if matching_seed:
-                    dept_val = str(matching_seed.get("department") or "Ban QLCL & ATTP")
-                    std_val = str(matching_seed.get("standard") or "ISO 22000:2018")
-                    doc.department = dept_val
-                    doc.standard = std_val
-                else:
-                    doc.department = "Ban QLCL & ATTP"
-                    doc.standard = "ISO 22000:2018"
-            db.commit()
+    return
 
 @router.get("", response_model=List[DocumentResponse])
 def get_documents(

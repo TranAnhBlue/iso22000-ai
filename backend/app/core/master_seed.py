@@ -435,17 +435,17 @@ def seed_all_system_data(db: Session):
         db.commit()
         print("[MASTER_SEED] Đã đồng bộ Danh mục Nhà cung cấp.")
 
-    # 8. MODULE SEEDERS (Gọi các hàm chuyên biệt)
-    seed_default_builders(db)
-    seed_haccp_data_if_empty(db)
-    seed_purchasing_data_if_empty(db)
-    seed_default_equipments_if_empty(db)
-    seed_emergency_data_if_empty(db)
-    seed_default_dashboard_data(db)
-    seed_default_audits(db)
-    seed_capa_defaults(db)
+    # 8. MODULE SEEDERS (Đã tắt theo yêu cầu để giữ CSDL sạch trắng tinh)
+    # seed_default_builders(db)
+    # seed_haccp_data_if_empty(db)
+    # seed_purchasing_data_if_empty(db)
+    # seed_default_equipments_if_empty(db)
+    # seed_emergency_data_if_empty(db)
+    # seed_default_dashboard_data(db)
+    # seed_default_audits(db)
+    # seed_capa_defaults(db)
 
-    print("[MASTER_SEED] ✅ ĐỒNG BỘ TOÀN BỘ CƠ SỞ DỮ LIỆU THÀNH CÔNG 100%!")
+    print("[MASTER_SEED] ✅ ĐỒNG BỘ NỀN TẢNG THÀNH CÔNG (Không nạp dữ liệu mẫu)!")
 
 
 if __name__ == "__main__":

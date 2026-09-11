@@ -7,7 +7,6 @@ import {
   Plus,
   FileText,
   Workflow,
-  Sparkles,
   Search,
   Filter,
   CheckCircle2,
@@ -24,6 +23,7 @@ import {
   Hash,
   Download,
   ListFilter,
+  BookOpen,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -34,6 +34,9 @@ import { WorkflowBuilder } from "@/components/builder/WorkflowBuilder";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import type { FormTemplateData, WorkflowTemplateData } from "@/components/builder/types";
 import { useModuleAccess } from "@/lib/rbac";
+import { EmptyState } from "@/components/EmptyState";
+import { ModuleGuideModal } from "@/components/ModuleGuideModal";
+import { WorkflowGuideModal } from "@/components/WorkflowGuideModal";
 
 export const Route = createFileRoute("/builder")({
   component: BuilderManagementPage,
@@ -43,6 +46,8 @@ function BuilderManagementPage() {
   const { canEdit, isAdmin } = useModuleAccess();
   const [activeTab, setActiveTab] = useState<"FORMS" | "WORKFLOWS" | "SUBMISSIONS">("FORMS");
   const [loading, setLoading] = useState(false);
+  const [showGuide, setShowGuide] = useState(false);
+  const [showWfGuide, setShowWfGuide] = useState(false);
 
   // Forms state
   const [forms, setForms] = useState<FormTemplateData[]>([]);
@@ -115,20 +120,6 @@ function BuilderManagementPage() {
     fetchSubmissions();
   }, []);
 
-  // Seed default templates
-  const handleSeedDefaults = async () => {
-    setLoading(true);
-    try {
-      const res = await api.post("/builders/seed-defaults");
-      toast.success(res.data.message || "Đã nạp mẫu biểu mẫu và quy trình chuẩn ISO!");
-      await fetchForms();
-      await fetchWorkflows();
-    } catch (err: any) {
-      toast.error("Lỗi khi nạp mẫu chuẩn ISO: " + (err.response?.data?.detail || err.message));
-    } finally {
-      setLoading(false);
-    }
-  };
 
   // Save Form Template
   const handleSaveForm = async (formData: FormTemplateData) => {
@@ -235,19 +226,16 @@ function BuilderManagementPage() {
           title="Trung Tâm Quản Lý Biểu Mẫu & Quy Trình Động"
           description="Tùy biến linh hoạt mọi biểu mẫu checklist kiểm tra, phiếu nghiệm thu IQC, nhật ký đo đạc CCP và thiết kế lưu đồ công đoạn tuần tự theo chuẩn ISO 22000:2018."
           actions={
-            canEdit ? (
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  onClick={handleSeedDefaults}
-                  disabled={loading}
-                  className="border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 text-xs font-semibold flex items-center gap-2"
-                >
-                  <Sparkles className="w-4 h-4 text-emerald-600" />
-                  Nạp Mẫu Biểu Mẫu Chuẩn ISO
-                </Button>
-              </div>
-            ) : undefined
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setShowGuide(true)}
+                className="border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 text-xs font-semibold flex items-center gap-2"
+              >
+                <BookOpen className="w-4 h-4 text-emerald-600" />
+                Hướng Dẫn Nghiệp Vụ
+              </Button>
+            </div>
           }
         />
 
@@ -348,13 +336,21 @@ function BuilderManagementPage() {
 
             {/* Forms Grid List */}
             {filteredForms.length === 0 ? (
-              <div className="text-center py-16 bg-white rounded-2xl border border-slate-200 text-slate-500 space-y-3 shadow-sm">
-                <FileText className="w-10 h-10 mx-auto text-slate-400" />
-                <div className="text-sm font-bold text-slate-700">Chưa có biểu mẫu nào phù hợp</div>
-                <p className="text-xs max-w-sm mx-auto text-slate-500">
-                  {canEdit ? "Bạn có thể bấm \"Nạp Mẫu Biểu Mẫu Chuẩn ISO\" ở góc trên hoặc \"Tạo Biểu Mẫu Mới\"." : "Hiện tại chưa có biểu mẫu nào được xuất bản."}
-                </p>
-              </div>
+              <EmptyState
+                icon={FileText}
+                title="Chưa có biểu mẫu nào"
+                description="Hệ thống chưa có biểu mẫu tùy chỉnh nào. Bạn có thể tạo biểu mẫu mới để bắt đầu số hóa quy trình kiểm tra."
+                actionLabel={canEdit ? "+ Tạo Biểu Mẫu Mới" : undefined}
+                onAction={
+                  canEdit
+                    ? () => {
+                        setEditingForm(null);
+                        setIsCreatingForm(true);
+                      }
+                    : undefined
+                }
+                onGuide={() => setShowGuide(true)}
+              />
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                 {filteredForms.map((f) => (
@@ -448,34 +444,77 @@ function BuilderManagementPage() {
                   className="bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-xs text-slate-800 focus:border-blue-600 focus:outline-none font-medium"
                 >
                   <option value="ALL">Tất cả phân hệ</option>
-                  <option value="HACCP_FLOW">Lưu đồ HACCP (ISO 8.5.1)</option>
-                  <option value="DOC_APPROVAL">Phê duyệt SOP (ISO 7.5)</option>
+                  <option value="HACCP_FLOW">Lưu đồ HACCP</option>
+                  <option value="DOC_APPROVAL">Phê duyệt SOP</option>
                   <option value="SUPPLIER_APPROVAL">Đánh giá NCC</option>
-                  <option value="CAPA_FLOW">Quy trình CAPA (ISO 8.9 & 10.1)</option>
+                  <option value="CAPA_FLOW">Quy trình CAPA</option>
                   <option value="AUDIT_FLOW">Đánh giá nội bộ</option>
                 </select>
               </div>
 
-              {canEdit && (
+              <div className="flex items-center gap-2 w-full sm:w-auto">
                 <Button
-                  onClick={() => {
-                    setEditingWf(null);
-                    setIsCreatingWf(true);
-                  }}
-                  className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-4 py-2 flex items-center gap-2 shadow-sm w-full sm:w-auto justify-center"
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowWfGuide(true)}
+                  className="border-blue-300 bg-blue-50 text-blue-800 hover:bg-blue-100 font-bold text-xs px-3.5 py-2 flex items-center gap-1.5 shadow-sm justify-center flex-1 sm:flex-none"
                 >
-                  <Plus className="w-4 h-4" />
-                  Tạo Lưu Đồ Quy Trình Mới
+                  <BookOpen className="w-4 h-4 text-blue-600" />
+                  Hướng Dẫn Quy Trình
                 </Button>
-              )}
+
+                {canEdit && (
+                  <Button
+                    onClick={() => {
+                      setEditingWf(null);
+                      setIsCreatingWf(true);
+                    }}
+                    className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-4 py-2 flex items-center gap-2 shadow-sm justify-center flex-1 sm:flex-none"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Tạo Quy Trình Mới
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            {/* Quick Guidance Tip Banner */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 rounded-2xl bg-gradient-to-r from-blue-50 via-indigo-50/50 to-blue-50 border border-blue-200 text-xs text-blue-900 shadow-sm">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-xl bg-blue-100 text-blue-700 shrink-0">
+                  <Workflow className="w-4 h-4" />
+                </div>
+                <div>
+                  <span className="font-bold">Quy Chuẩn Thiết Kế Lưu Đồ & Luồng Phê Duyệt FSMS:</span> Sử dụng 4 loại khối chuẩn hóa (Công đoạn sản xuất, Điểm rẽ nhánh, Điểm kiểm soát CCP/oPRP và Phê duyệt đa cấp). Đảm bảo sơ đồ có tính tuần tự liên tục và có thể thẩm tra xác nhận tại hiện trường nhà máy.
+                </div>
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setShowWfGuide(true)}
+                className="shrink-0 bg-white border-blue-300 text-blue-800 hover:bg-blue-100 text-xs font-bold"
+              >
+                Xem Hướng Dẫn Chi Tiết
+              </Button>
             </div>
 
             {/* Workflows Grid List */}
             {filteredWorkflows.length === 0 ? (
-              <div className="text-center py-16 bg-white rounded-2xl border border-slate-200 text-slate-500 space-y-3 shadow-sm">
-                <Workflow className="w-10 h-10 mx-auto text-slate-400" />
-                <div className="text-sm font-bold text-slate-700">Chưa có quy trình nào phù hợp</div>
-              </div>
+              <EmptyState
+                icon={Workflow}
+                title="Chưa có quy trình nào"
+                description="Hệ thống chưa có lưu đồ quy trình nào. Hãy tạo quy trình mới để thiết lập các công đoạn và điểm kiểm soát."
+                actionLabel={canEdit ? "+ Tạo Lưu Đồ Quy Trình Mới" : undefined}
+                onAction={
+                  canEdit
+                    ? () => {
+                        setEditingWf(null);
+                        setIsCreatingWf(true);
+                      }
+                    : undefined
+                }
+                onGuide={() => setShowGuide(true)}
+              />
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                 {filteredWorkflows.map((w) => {
@@ -574,9 +613,14 @@ function BuilderManagementPage() {
             </div>
 
             {submissions.length === 0 ? (
-              <div className="text-center py-16 bg-white rounded-2xl border border-slate-200 text-slate-500 shadow-sm">
-                Chưa có bản ghi nộp dữ liệu nào. Hãy thử bấm "Điền Thử Phiếu" ở Tab Biểu Mẫu!
-              </div>
+              <EmptyState
+                icon={FileText}
+                title="Chưa có bản ghi nộp dữ liệu"
+                description="Toàn bộ lịch sử checklist, phiếu kiểm tra và đo đạc CCP được nộp từ biểu mẫu động sẽ hiển thị tại đây."
+                actionLabel="Điền Thử Phiếu Tại Tab Biểu Mẫu"
+                onAction={() => setActiveTab("FORMS")}
+                onGuide={() => setShowGuide(true)}
+              />
             ) : (
               <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
                 <div className="overflow-x-auto">
@@ -823,6 +867,17 @@ function BuilderManagementPage() {
           description={`Bạn có chắc chắn muốn xóa quy trình "${deletingWfItem?.title}" khỏi hệ thống lưu đồ không?`}
           confirmLabel="Xóa quy trình"
           variant="destructive"
+        />
+        {/* Module Guide Modal */}
+        <ModuleGuideModal
+          module="builder"
+          isOpen={showGuide}
+          onClose={() => setShowGuide(false)}
+        />
+        {/* Workflow Guide Modal */}
+        <WorkflowGuideModal
+          isOpen={showWfGuide}
+          onClose={() => setShowWfGuide(false)}
         />
       </div>
     </AppShell>

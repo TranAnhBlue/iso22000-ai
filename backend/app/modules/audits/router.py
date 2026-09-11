@@ -957,7 +957,7 @@ def seed_default_audits(db: Session = Depends(get_db)):
             audited_dept="Phòng Sản Xuất & Chế Biến Thủy Sản",
             audited_lead_name="Nguyễn Văn An (Trưởng phòng Sản Xuất)",
             scope="Toàn bộ quy trình tiếp nhận nguyên liệu, sơ chế, hấp/tiệt trùng và cấp đông IQF.",
-            standard_clauses=["Clause 4", "Clause 7", "Clause 8.2 PRP", "Clause 8.5 HACCP", "Clause 8.9 CAPA"],
+            standard_clauses=["Bối cảnh & Lãnh đạo", "Nguồn lực hỗ trợ", "Kiểm soát vệ sinh PRP", "Kế hoạch HACCP", "Hành động khắc phục CAPA"],
             findings_summary="Hệ thống vận hành tốt, phát hiện 1 Minor NC tại khu vực sơ chế và 1 OFI về quản lý trực quan 5S.",
             conclusion="Hệ thống Quản lý An toàn Thực phẩm FSMS tại Xưởng Sản xuất đạt mức TUÂN THỦ TỐT, cho phép duy trì chứng chỉ ISO 22000:2018.",
             status="COMPLETED",
@@ -973,7 +973,7 @@ def seed_default_audits(db: Session = Depends(get_db)):
             audited_dept="Kho Nguyên Liệu & Phụ Gia",
             audited_lead_name="Nguyễn Văn Tài (Thủ Kho)",
             scope="Kiểm tra việc lưu trữ riêng biệt nguyên liệu dị nguyên (tôm, đậu phộng, mè) và kiểm soát nhãn phụ.",
-            standard_clauses=["Clause 8.2 PRP", "Clause 8.4 Mua hàng"],
+            standard_clauses=["Kiểm soát vệ sinh PRP", "Đánh giá nhà cung cấp"],
             findings_summary="Phát hiện bao bì mè rang đặt sát pallet bột mì, có nguy cơ nhiễm chéo dị nguyên.",
             conclusion="Cần khắc phục ngay việc phân vùng lưu trữ theo ma trận dị nguyên.",
             status="REPORTING",
@@ -989,7 +989,7 @@ def seed_default_audits(db: Session = Depends(get_db)):
             audited_dept="Toàn bộ các phòng ban trong Nhà máy",
             audited_lead_name="Trần Anh Bảo (Tổng Giám Đốc)",
             scope="Toàn bộ 10 điều khoản tiêu chuẩn ISO 22000:2018 và FSSC 22000 v6.",
-            standard_clauses=["Clause 4 đến Clause 10"],
+            standard_clauses=["Toàn diện các tiêu chuẩn FSMS"],
             status="PLANNED",
         )
         db.add_all([aud1, aud2, aud3])

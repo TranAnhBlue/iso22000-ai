@@ -61,33 +61,33 @@ def get_executive_overview_stats(db: Session = Depends(get_db)):
     total_docs = db.query(Document).count()
     approved_docs = db.query(Document).filter(Document.status == "APPROVED").count()
     pending_docs = db.query(Document).filter(Document.status == "PENDING_APPROVAL").count()
-    doc_approval_rate = round(approved_docs / total_docs * 100, 1) if total_docs > 0 else 100.0
+    doc_approval_rate = round(approved_docs / total_docs * 100, 1) if total_docs > 0 else 0.0
 
     # 2. Purchasing & IQC (Clause 7.1.6 & 8.2)
     total_suppliers = db.query(Supplier).count()
     high_risk_suppliers = db.query(Supplier).filter(Supplier.risk_level == "HIGH").count()
     total_lots = db.query(MaterialLot).count()
     approved_lots = db.query(MaterialLot).filter(MaterialLot.status == "APPROVED").count()
-    lot_pass_rate = round(approved_lots / total_lots * 100, 1) if total_lots > 0 else 100.0
+    lot_pass_rate = round(approved_lots / total_lots * 100, 1) if total_lots > 0 else 0.0
 
     # 3. HACCP & CCPs (Clause 8.5)
     total_ccps = db.query(CCPDefinition).count()
     total_monitoring_logs = db.query(CCPMonitoringLog).count()
     critical_deviations = db.query(CCPMonitoringLog).filter(CCPMonitoringLog.status == "CRITICAL").count()
     warning_logs = db.query(CCPMonitoringLog).filter(CCPMonitoringLog.status == "WARNING").count()
-    ccp_in_control_rate = round((total_monitoring_logs - critical_deviations) / total_monitoring_logs * 100, 1) if total_monitoring_logs > 0 else 100.0
+    ccp_in_control_rate = round((total_monitoring_logs - critical_deviations) / total_monitoring_logs * 100, 1) if total_monitoring_logs > 0 else 0.0
 
     # 4. PRP & Hygiene (Clause 8.2)
     total_prps = db.query(PRPProgram).count()
     prp_logs = db.query(PRPChecklistLog).all()
     compliant_prp_logs = sum(1 for p in prp_logs if p.status == "COMPLIANT")
-    prp_compliance_rate = round(compliant_prp_logs / len(prp_logs) * 100, 1) if len(prp_logs) > 0 else 96.5
+    prp_compliance_rate = round(compliant_prp_logs / len(prp_logs) * 100, 1) if len(prp_logs) > 0 else 0.0
 
     # 5. Equipment & Calibration (Clause 7.1.5)
     total_equipment = db.query(Equipment).count()
     calibrations = db.query(EquipmentCalibrationLog).all()
     passed_calibrations = sum(1 for c in calibrations if getattr(c, "status", "") == "PASSED" or getattr(c, "is_passed", True) is True)
-    calibration_pass_rate = round(passed_calibrations / len(calibrations) * 100, 1) if len(calibrations) > 0 else 100.0
+    calibration_pass_rate = round(passed_calibrations / len(calibrations) * 100, 1) if len(calibrations) > 0 else 0.0
     maintenance_due_count = db.query(Equipment).filter(Equipment.status == "MAINTENANCE_REQUIRED").count()
 
     # 6. Inventory & Traceability (Clause 8.3 & 8.9.5)
@@ -102,50 +102,59 @@ def get_executive_overview_stats(db: Session = Depends(get_db)):
     major_ncs = db.query(NonConformance).filter(NonConformance.severity == "MAJOR").count()
     total_capas = db.query(CAPARecord).count()
     verified_effective_capas = db.query(CAPARecord).filter(CAPARecord.verification_status == "EFFECTIVE").count()
-    capa_effective_rate = round(verified_effective_capas / total_capas * 100, 1) if total_capas > 0 else 100.0
+    capa_effective_rate = round(verified_effective_capas / total_capas * 100, 1) if total_capas > 0 else 0.0
 
     # 8. Audits, Training & Health (Clause 7.2, 9.2 & 8.2)
     total_audits = db.query(InternalAudit).count()
     findings = db.query(AuditFinding).all()
     conformity_findings = sum(1 for f in findings if f.result == "CONFORMITY")
-    audit_conformity_rate = round(conformity_findings / len(findings) * 100, 1) if len(findings) > 0 else 100.0
+    audit_conformity_rate = round(conformity_findings / len(findings) * 100, 1) if len(findings) > 0 else 0.0
     
     participants = db.query(TrainingParticipantRecord).all()
     passed_learners = sum(1 for p in participants if p.evaluation_result == "PASSED")
-    training_pass_rate = round(passed_learners / len(participants) * 100, 1) if len(participants) > 0 else 100.0
+    training_pass_rate = round(passed_learners / len(participants) * 100, 1) if len(participants) > 0 else 0.0
 
     health_records = db.query(HealthDeclarationRecord).all()
     today_suspended = sum(1 for h in health_records if h.cleared_for_shift == "SUSPENDED" and h.shift_date == date.today())
     today_cleared = sum(1 for h in health_records if h.cleared_for_shift == "CLEARED" and h.shift_date == date.today())
 
-    # Overall FSMS Health Score Index (Trọng số tích hợp 8 phân hệ)
-    overall_health_score = round(
-        0.20 * ccp_in_control_rate +
-        0.15 * prp_compliance_rate +
-        0.15 * audit_conformity_rate +
-        0.15 * capa_effective_rate +
-        0.10 * lot_pass_rate +
-        0.10 * calibration_pass_rate +
-        0.10 * training_pass_rate +
-        0.05 * (100.0 if pending_docs == 0 else 88.0),
-        1
-    )
-    overall_health_score = min(100.0, max(0.0, overall_health_score))
+    # Kiểm tra xem hệ thống có dữ liệu thực tế chưa
+    has_any_data = (total_docs > 0 or total_lots > 0 or total_monitoring_logs > 0 or 
+                    len(prp_logs) > 0 or total_equipment > 0 or total_ncs > 0 or 
+                    total_audits > 0 or len(participants) > 0)
 
-    if overall_health_score >= 90.0:
-        health_level = "EXCELLENT"
-    elif overall_health_score >= 80.0:
-        health_level = "GOOD"
-    elif overall_health_score >= 70.0:
-        health_level = "AT_RISK"
+    if not has_any_data:
+        overall_health_score = 0.0
+        health_level = "PENDING_DATA"
     else:
-        health_level = "CRITICAL"
+        # Overall FSMS Health Score Index (Trọng số tích hợp 8 phân hệ)
+        overall_health_score = round(
+            0.20 * ccp_in_control_rate +
+            0.15 * prp_compliance_rate +
+            0.15 * audit_conformity_rate +
+            0.15 * capa_effective_rate +
+            0.10 * lot_pass_rate +
+            0.10 * calibration_pass_rate +
+            0.10 * training_pass_rate +
+            0.05 * (100.0 if pending_docs == 0 else 88.0),
+            1
+        )
+        overall_health_score = min(100.0, max(0.0, overall_health_score))
+
+        if overall_health_score >= 90.0:
+            health_level = "EXCELLENT"
+        elif overall_health_score >= 80.0:
+            health_level = "GOOD"
+        elif overall_health_score >= 70.0:
+            health_level = "AT_RISK"
+        else:
+            health_level = "CRITICAL"
 
     # Radar 7 Pillars
     radar_pillars = RadarPillars(
-        context_leadership=94.0,
+        context_leadership=0.0 if not has_any_data else 94.0,
         planning_haccp=ccp_in_control_rate,
-        support_training=round((training_pass_rate + (100.0 if pending_docs == 0 else 88.0)) / 2, 1),
+        support_training=0.0 if not has_any_data else round((training_pass_rate + (100.0 if pending_docs == 0 else 88.0)) / 2, 1),
         operation_prp=prp_compliance_rate,
         performance_audit=audit_conformity_rate,
         improvement_capa=capa_effective_rate,
@@ -364,6 +373,9 @@ def get_executive_alerts(role: Optional[str] = None, db: Session = Depends(get_d
         return filtered if filtered else alerts[:4]
     elif user_role in ["hr_accounting", "admin_acct"]:
         filtered = [a for a in alerts if a.category in ["HEALTH", "AUDIT", "DOCUMENT"]]
+        return filtered if filtered else alerts[:4]
+    elif user_role in ["purchasing", "pur"]:
+        filtered = [a for a in alerts if a.category in ["SUPPLIER", "QUARANTINE", "CAPA"]]
         return filtered if filtered else alerts[:4]
 
     return alerts
@@ -623,21 +635,21 @@ def ai_audit_readiness_forecast(payload: AuditReadinessForecastRequest, db: Sess
 
     top_risks = [
         {
-            "clause": "Clause 8.5.4",
+            "clause": "Kiểm soát vận hành CCP",
             "risk_title": "Kiểm soát độ lệch CCP & Hồ sơ cô lập sản phẩm",
             "severity": "MEDIUM",
             "description": "Cần đảm bảo tất cả độ lệch nhiệt kế/máy dò kim loại đều có biên bản xử lý CAPA tương ứng.",
             "remediation": "Rà soát 100% nhật ký CCP mẻ sản xuất trong 90 ngày qua trước ngày đoàn chuyên gia vào đánh giá.",
         },
         {
-            "clause": "Clause 7.1.5",
+            "clause": "Hiệu chuẩn & Đo lường",
             "risk_title": "Tem kiểm định hiệu chuẩn thiết bị đo lường",
             "severity": "LOW",
             "description": "Đảm bảo khúc xạ kế và cân KCS có tem VILAS/QUATEST còn hiệu lực trên 30 ngày.",
             "remediation": "Đối chiếu bảng kiểm định thiết bị BM-HC-02 dán trực tiếp tại hiện trường phân xưởng.",
         },
         {
-            "clause": "Clause 8.2.4",
+            "clause": "Vệ sinh phân xưởng PRP",
             "risk_title": "Cách ly dị nguyên (Allergen) tại khu vực kho phụ gia",
             "severity": "LOW",
             "description": "Tránh xếp chồng pallet có thành phần mè/đậu nành trực tiếp cạnh bột mì nguyên chất.",
@@ -765,15 +777,15 @@ def ai_query_fsms_insights(payload: FSMSInsightsQueryRequest, db: Session = Depe
 
     if "ccp" in q_lower or "nhiệt độ" in q_lower or "tiệt trùng" in q_lower:
         answer = f"Hiện tại hệ thống đang giám sát chặt chẽ {total_ccps} điểm kiểm soát tới hạn CCP. Các điểm CCP tiệt trùng duy trì nhiệt độ tâm sản phẩm đạt trên 85°C và thời gian giữ nhiệt trên 15 phút. Trong 30 ngày qua không có sự cố vượt ngưỡng tới hạn nghiêm trọng nào."
-        citations = [{"module": "HACCP & CCP", "data": f"{total_ccps} CCPs active", "standard": "Clause 8.5.4"}]
+        citations = [{"module": "HACCP & CCP", "data": f"{total_ccps} CCPs active", "standard": "Kiểm soát kế hoạch HACCP"}]
         actions = ["Tiếp tục kiểm tra đối chiếu nhiệt kế điện tử định kỳ đầu ca", "Duy trì tự động ghi nhận nhật ký đo"]
     elif "nhà cung cấp" in q_lower or "ncc" in q_lower or "nguyên liệu" in q_lower:
         answer = f"Tổng số {total_suppliers} nhà cung cấp đã được phê duyệt trong danh mục. Hiện có {high_risk_suppliers} nhà cung cấp được xếp vào nhóm rủi ro cần kiểm tra COA tăng cường và thẩm tra trực tiếp cơ sở sơ chế."
-        citations = [{"module": "Purchasing & IQC", "data": f"{total_suppliers} suppliers, {high_risk_suppliers} high-risk", "standard": "Clause 7.1.6"}]
+        citations = [{"module": "Purchasing & IQC", "data": f"{total_suppliers} suppliers, {high_risk_suppliers} high-risk", "standard": "Kiểm soát nhà cung ứng"}]
         actions = ["Lên lịch thanh tra định kỳ nhà cung ứng nhóm B/C", "Yêu cầu cam kết không sử dụng chất cấm kháng sinh"]
     elif "capa" in q_lower or "nc" in q_lower or "lỗi" in q_lower or "khắc phục" in q_lower:
         answer = f"Hệ thống đã ghi nhận {total_ncs} sự cố không phù hợp và thiết lập {total_capas} kế hoạch CAPA tương ứng. 100% các kế hoạch CAPA đều được phân tích nguyên nhân gốc rễ 5-Why/Fishbone và thẩm tra đạt hiệu lực sau 30 ngày."
-        citations = [{"module": "CAPA & NC", "data": f"{total_ncs} NCs, {total_capas} CAPAs", "standard": "Clause 10.2"}]
+        citations = [{"module": "CAPA & NC", "data": f"{total_ncs} NCs, {total_capas} CAPAs", "standard": "Hành động khắc phục CAPA"}]
         actions = ["Duy trì quy trình thẩm tra độc lập bởi QA Lead", "Cập nhật bài học kinh nghiệm vào sổ tay quy trình"]
     else:
         answer = f"Hệ thống FSMS WCERT tích hợp 8 phân hệ hoạt động đồng bộ: {total_docs} tài liệu/SOP đã ban hành, {total_ccps} CCP kiểm soát tới hạn, {total_suppliers} nhà cung ứng IQC, {quarantined} lô hàng biệt trữ an toàn và {total_capas} kế hoạch CAPA đã đóng hiệu quả. Chỉ số sức khỏe FSMS Health Score Index đạt 93.8%."

@@ -28,16 +28,19 @@ import {
   Trash2,
   Check,
   Sparkles,
+  BookOpen,
 } from "lucide-react";
 import api from "@/lib/api";
 import { toast } from "sonner";
 import { printHtml } from "@/lib/print";
+import { EmptyState } from "@/components/EmptyState";
+import { ModuleGuideModal } from "@/components/ModuleGuideModal";
 
 export const Route = createFileRoute("/change-management")({
   head: () => ({
     meta: [
       { title: "Quản Lý Hoạch Định Sự Thay Đổi – WCERT ISO 22000:2018" },
-      { name: "description", content: "Hệ thống quản lý và đánh giá tác động của mọi sự thay đổi tới kế hoạch HACCP, PRP và an toàn thực phẩm theo ISO 22000:2018 Điều khoản 6.3." },
+      { name: "description", content: "Hệ thống quản lý và đánh giá tác động của mọi sự thay đổi tới kế hoạch HACCP, PRP và an toàn thực phẩm theo ISO 22000:2018." },
     ],
   }),
   component: () => (
@@ -112,6 +115,7 @@ function ChangeManagementPage() {
     high_impact: 0,
   });
   const [loading, setLoading] = useState(true);
+  const [showGuide, setShowGuide] = useState(false);
 
   // Filters
   const [search, setSearch] = useState("");
@@ -241,7 +245,7 @@ function ChangeManagementPage() {
     }
   };
 
-  // IN BIỂU MẪU BM-CHANGE-01 (ISO 22000 Clause 6.3)
+  // IN BIỂU MẪU BM-CHANGE-01 (Quản lý thay đổi FSMS)
   const handlePrint = (r: ChangeRequestItem) => {
     const html = `
       <div style="font-family: 'Times New Roman', serif; font-size: 11pt; line-height: 1.4; color: #111; max-width: 800px; margin: 0 auto; padding: 20px;">
@@ -253,7 +257,7 @@ function ChangeManagementPage() {
             </td>
             <td style="width: 50%; text-align: center; border: 1px solid #333; padding: 8px;">
               <strong style="font-size: 13pt; text-transform: uppercase;">PHIẾU YÊU CẦU & ĐÁNH GIÁ SỰ THAY ĐỔI</strong><br/>
-              <span style="font-size: 10pt; font-weight: bold;">(Căn cứ Điều khoản 6.3 Tiêu chuẩn ISO 22000:2018)</span>
+              <span style="font-size: 10pt; font-weight: bold;">Tiêu chuẩn ISO 22000:2018</span>
             </td>
             <td style="width: 25%; border: 1px solid #333; padding: 8px; font-size: 9.5pt;">
               Biểu mẫu: <strong>BM-CHANGE-01</strong><br/>
@@ -389,9 +393,18 @@ function ChangeManagementPage() {
       {/* HEADER */}
       <PageHeader
         title="Quản Lý Hoạch Định Sự Thay Đổi"
-        description="Đánh giá và kiểm soát tác động của mọi sự thay đổi tới kế hoạch HACCP, PRP và an toàn thực phẩm theo ISO 22000:2018 Điều khoản 6.3"
+        description="Đánh giá và kiểm soát tác động của mọi sự thay đổi tới kế hoạch HACCP, PRP và an toàn thực phẩm theo ISO 22000:2018."
         actions={
           <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowGuide(true)}
+              className="border-emerald-300 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 flex items-center gap-1.5 font-bold text-xs"
+            >
+              <BookOpen className="h-4 w-4 text-emerald-600" />
+              <span>Hướng Dẫn Nghiệp Vụ</span>
+            </Button>
             <Button
               onClick={() => setCreateModalOpen(true)}
               className="gap-1.5 bg-primary text-primary-foreground shadow-sm"
@@ -415,7 +428,7 @@ function ChangeManagementPage() {
           <div className="mt-2 text-2xl font-bold text-foreground">{stats.total}</div>
           <div className="mt-1 text-xs text-muted-foreground flex items-center gap-1">
             <TrendingUp className="h-3 w-3 text-emerald-500" />
-            <span>Tuân thủ Điều khoản 6.3</span>
+            <span>Tuân thủ Tiêu Chuẩn</span>
           </div>
         </div>
 
@@ -495,7 +508,17 @@ function ChangeManagementPage() {
       </div>
 
       {/* TABLE */}
-      <div className="overflow-x-auto rounded-xl border border-border bg-card shadow-sm">
+      {requests.length === 0 ? (
+        <EmptyState
+          icon={GitCompare}
+          title="Chưa có phiếu yêu cầu thay đổi nào"
+          description="Thiết lập quy trình hoạch định sự thay đổi, đánh giá tác động tới kế hoạch HACCP, PRP và an toàn thực phẩm."
+          actionLabel="+ Lập Phiếu Thay Đổi Mới"
+          onAction={() => setCreateModalOpen(true)}
+          onGuide={() => setShowGuide(true)}
+        />
+      ) : (
+        <div className="overflow-x-auto rounded-xl border border-border bg-card shadow-sm">
         <table className="w-full text-left text-sm">
           <thead className="border-b border-border bg-muted/40 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             <tr>
@@ -618,6 +641,7 @@ function ChangeManagementPage() {
           </tbody>
         </table>
       </div>
+      )}
 
       {/* MODAL: CREATE CHANGE REQUEST */}
       {createModalOpen && (
@@ -630,7 +654,7 @@ function ChangeManagementPage() {
                   Lập Phiếu Yêu Cầu Thay Đổi (BM-CHANGE-01)
                 </h3>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Đánh giá có hệ thống mọi thay đổi theo Điều khoản 6.3 Tiêu chuẩn ISO 22000:2018
+                  Đánh giá có hệ thống mọi thay đổi theo Tiêu chuẩn ISO 22000:2018
                 </p>
               </div>
               <button
@@ -862,7 +886,7 @@ function ChangeManagementPage() {
               <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-3">
                 <h4 className="text-xs font-bold text-primary flex items-center gap-1.5">
                   <Sparkles className="h-3.5 w-3.5" />
-                  Quy Trình Xử Lý & Chuyển Trạng Thái (Clause 6.3 Workflow)
+                  Quy Trình Xử Lý & Chuyển Trạng Thái (Luồng Quản Lý Thay Đổi)
                 </h4>
                 <div className="flex flex-wrap gap-2">
                   {selectedCR.review_status === "DRAFT" && (
@@ -934,6 +958,13 @@ function ChangeManagementPage() {
           </div>
         </div>
       )}
+
+      {/* Module Guide Modal */}
+      <ModuleGuideModal
+        module="change-management"
+        isOpen={showGuide}
+        onClose={() => setShowGuide(false)}
+      />
     </div>
   );
 }

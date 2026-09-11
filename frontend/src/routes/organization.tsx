@@ -28,18 +28,21 @@ import {
   ShieldCheck,
   Award,
   Phone,
+  BookOpen,
 } from "lucide-react";
 import api from "@/lib/api";
 import { toast } from "sonner";
 import { DEFAULT_DEPARTMENTS } from "@/lib/departments";
 import { useModuleAccess } from "@/lib/rbac";
 import { printHtml } from "@/lib/print";
+import { EmptyState } from "@/components/EmptyState";
+import { ModuleGuideModal } from "@/components/ModuleGuideModal";
 
 export const Route = createFileRoute("/organization")({
   head: () => ({
     meta: [
-      { title: "Bối cảnh, Tổ chức & Trao đổi thông tin (Điều 4, 5.3, 6.1 & 7.4) – WCERT FSMS" },
-      { name: "description", content: "Quản lý bối cảnh tổ chức, Đội ATTP (Điều 5.3 & QĐ 02), các bên quan tâm (4.2), rủi ro FSMS (6.1) và sổ nhật ký trao đổi thông tin ATTP (7.4)." },
+      { title: "Bối cảnh, Tổ chức & Trao đổi thông tin – WCERT FSMS" },
+      { name: "description", content: "Quản lý bối cảnh tổ chức, Đội ATTP, các bên quan tâm, rủi ro FSMS và sổ nhật ký trao đổi thông tin ATTP." },
     ],
   }),
   component: () => (
@@ -195,6 +198,7 @@ function Org() {
   });
 
   // Food Safety Team Filter & Modals
+  const [showGuide, setShowGuide] = useState(false);
   const [fstSearch, setFstSearch] = useState("");
   const [fstRoleFilter, setFstRoleFilter] = useState<"ALL" | "Đội trưởng" | "Đội phó" | "Thư ký" | "Đội viên">("ALL");
   const [fstModalOpen, setFstModalOpen] = useState(false);
@@ -567,7 +571,7 @@ function Org() {
     }
   };
 
-  // HANDLERS TRAO ĐỔI THÔNG TIN ATTP (CLAUSE 7.4)
+  // HANDLERS TRAO ĐỔI THÔNG TIN ATTP
   const openNewComm = () => {
     setEditingComm(null);
     const codeNum = communications.length + 1;
@@ -649,7 +653,7 @@ function Org() {
     }
   };
 
-  // HANDLERS ĐỘI AN TOÀN THỰC PHẨM (CLAUSE 5.3 & QĐ 02)
+  // HANDLERS ĐỘI AN TOÀN THỰC PHẨM (QĐ 02)
   const openNewFst = () => {
     setEditingFst(null);
     setFstForm({
@@ -841,7 +845,7 @@ function Org() {
     printHtml(html);
   };
 
-  // IN SỔ NHẬT KÝ TRAO ĐỔI THÔNG TIN ATTP (CLAUSE 7.4 - BM-COMM-01)
+  // IN SỔ NHẬT KÝ TRAO ĐỔI THÔNG TIN ATTP (BM-COMM-01)
   const handlePrintCommunications = () => {
     const html = `
       <div style="font-family: 'Times New Roman', serif; font-size: 11pt; line-height: 1.4; color: #111; padding: 20px;">
@@ -1111,10 +1115,19 @@ function Org() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Bối cảnh, Tổ chức & Trao đổi thông tin (Điều 4, 5.3, 6.1 & 7.4)"
-        description="Quản lý bối cảnh tổ chức, Đội ATTP (Điều 5.3 & QĐ 02), các bên quan tâm (4.2), rủi ro FSMS (6.1) và sổ nhật ký trao đổi thông tin ATTP (7.4)."
+        title="Bối cảnh, Tổ chức & Trao đổi thông tin"
+        description="Quản lý bối cảnh tổ chức, Đội ATTP, các bên quan tâm, rủi ro FSMS và sổ nhật ký trao đổi thông tin ATTP."
         actions={
           <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowGuide(true)}
+              className="gap-2 border-emerald-300 text-emerald-700 hover:bg-emerald-50 bg-emerald-50/50"
+            >
+              <BookOpen className="h-4 w-4" />
+              Hướng Dẫn Nghiệp Vụ
+            </Button>
             <Button variant="outline" size="sm" onClick={fetchData} disabled={loading} className="gap-2">
               <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
               Làm mới
@@ -1182,19 +1195,19 @@ function Org() {
         <Kpi
           icon={<ShieldCheck className="h-5 w-5" />}
           v={String(fstMembers.filter((m) => m.status === "ACTIVE").length)}
-          l="Đội ATTP (Điều 5.3)"
+          l="Đội ATTP"
           sub={`QĐ 02/QĐ-ATTP-2026 · ${fstMembers.filter((m) => m.role === "Đội trưởng").length} Đội trưởng`}
         />
         <Kpi
           icon={<Globe className="h-5 w-5" />}
           v={String(contextStats.total_parties)}
-          l="Các bên quan tâm (4.2)"
+          l="Các bên quan tâm"
           sub={`${contextStats.internal_parties} nội bộ · ${contextStats.external_parties} bên ngoài`}
         />
         <Kpi
           icon={<MessageSquare className="h-5 w-5" />}
           v={String(communications.length)}
-          l="Trao đổi thông tin (7.4)"
+          l="Trao đổi thông tin"
           sub={`${communications.filter((c) => c.status === "OPEN").length} đang mở · ${communications.filter((c) => c.action_required).length} cần xử lý`}
         />
       </div>
@@ -1233,7 +1246,7 @@ function Org() {
             }`}
           >
             <ShieldCheck className="h-4 w-4 shrink-0" />
-            Đội ATTP (Điều 5.3)
+            Đội ATTP
           </button>
           <button
             onClick={() => setActiveTab("parties")}
@@ -1244,7 +1257,7 @@ function Org() {
             }`}
           >
             <Globe className="h-4 w-4 shrink-0" />
-            Bên quan tâm (Điều 4.2)
+            Bên quan tâm
           </button>
           <button
             onClick={() => setActiveTab("risks")}
@@ -1255,7 +1268,7 @@ function Org() {
             }`}
           >
             <Target className="h-4 w-4 shrink-0" />
-            Rủi ro bối cảnh (Điều 6.1)
+            Rủi ro bối cảnh
           </button>
           <button
             onClick={() => setActiveTab("communications")}
@@ -1266,7 +1279,7 @@ function Org() {
             }`}
           >
             <MessageSquare className="h-4 w-4 shrink-0" />
-            Trao đổi thông tin (Điều 7.4)
+            Trao đổi thông tin
           </button>
         </div>
       </div>
@@ -1345,7 +1358,7 @@ function Org() {
         </div>
       )}
 
-      {/* TAB: FOOD SAFETY TEAM (CLAUSE 5.3 & QĐ 02) */}
+      {/* TAB: FOOD SAFETY TEAM (QĐ 02) */}
       {activeTab === "food_safety_team" && (
         <div className="space-y-4">
           {/* Decision header banner */}
@@ -1362,7 +1375,7 @@ function Org() {
                   Đội An Toàn Thực Phẩm FSMS (Food Safety Team)
                 </h3>
                 <p className="text-xs text-slate-600 mt-0.5">
-                  Căn cứ Điều 5.3 Tiêu chuẩn ISO 22000:2018 và Quyết định số 02 của Giám đốc. Đội gồm 3 nhóm vai trò chính thức: <b>Đội trưởng</b>, <b>Thư ký</b>, và <b>Đội viên</b>.
+                  Căn cứ Quyết định số 02 của Ban Giám Đốc. Đội gồm 3 nhóm vai trò chính thức: <b>Đội trưởng</b>, <b>Thư ký</b>, và <b>Đội viên</b>.
                 </p>
               </div>
               <div className="flex items-center gap-2 shrink-0">
@@ -1404,95 +1417,106 @@ function Org() {
             </div>
           </div>
 
-          {/* Members Table */}
-          <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xs">
-            <table className="w-full text-left text-sm">
-              <thead className="bg-slate-50 text-xs font-semibold text-slate-600 border-b border-slate-200">
-                <tr>
-                  <th className="py-3 px-4 w-12 text-center">STT</th>
-                  <th className="py-3 px-4">Họ và tên</th>
-                  <th className="py-3 px-4 text-center">Vai trò trong Đội</th>
-                  <th className="py-3 px-4">Chức vụ & Phòng ban</th>
-                  <th className="py-3 px-4">Trình độ / Năng lực</th>
-                  <th className="py-3 px-4">Phân công nhiệm vụ chính</th>
-                  <th className="py-3 px-4">Liên hệ</th>
-                  <th className="py-3 px-4 text-center">Trạng thái</th>
-                  <th className="py-3 px-4 text-right">Thao tác</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {fstMembers
-                  .filter((m) => {
-                    const matchSearch =
-                      !fstSearch ||
-                      m.full_name.toLowerCase().includes(fstSearch.toLowerCase()) ||
-                      m.department.toLowerCase().includes(fstSearch.toLowerCase()) ||
-                      (m.responsibilities && m.responsibilities.toLowerCase().includes(fstSearch.toLowerCase()));
-                    const matchRole = fstRoleFilter === "ALL" || m.role === fstRoleFilter;
-                    return matchSearch && matchRole;
-                  })
-                  .map((m, idx) => (
-                    <tr key={m.id} className="hover:bg-slate-50/80 transition">
-                      <td className="py-3 px-4 text-center text-xs text-slate-500">{idx + 1}</td>
-                      <td className="py-3 px-4 font-semibold text-slate-900">{m.full_name}</td>
-                      <td className="py-3 px-4 text-center">
-                        <span
-                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border ${
-                            m.role === "Đội trưởng"
-                              ? "bg-rose-100 text-rose-800 border-rose-200"
-                              : m.role === "Đội phó"
-                              ? "bg-amber-100 text-amber-800 border-amber-200"
-                              : m.role === "Thư ký"
-                              ? "bg-purple-100 text-purple-800 border-purple-200"
-                              : "bg-blue-100 text-blue-800 border-blue-200"
-                          }`}
-                        >
-                          {m.role}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className="font-medium text-slate-800">{m.job_title}</div>
-                        <div className="text-xs text-slate-500">{m.department}</div>
-                      </td>
-                      <td className="py-3 px-4 text-xs text-slate-600">{m.qualification || "--"}</td>
-                      <td className="py-3 px-4 text-xs text-slate-700 max-w-xs">{m.responsibilities || "--"}</td>
-                      <td className="py-3 px-4 text-xs text-slate-500">
-                        {m.phone && <div>📞 {m.phone}</div>}
-                        {m.email && <div>✉️ {m.email}</div>}
-                        {!m.phone && !m.email && "--"}
-                      </td>
-                      <td className="py-3 px-4 text-center">
-                        <span
-                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${
-                            m.status === "ACTIVE"
-                              ? "bg-emerald-100 text-emerald-800 border border-emerald-200"
-                              : "bg-slate-100 text-slate-600 border border-slate-200"
-                          }`}
-                        >
-                          {m.status === "ACTIVE" ? "Đang công tác" : "Miễn nhiệm"}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4 text-right">
-                        {canEdit && (
-                          <div className="flex items-center justify-end gap-1">
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-600" onClick={() => openEditFst(m)}>
-                              <Edit2 className="h-3.5 w-3.5" />
-                            </Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-600" onClick={() => handleDeleteFst(m.id)}>
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </Button>
-                          </div>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-              </tbody>
-            </table>
-          </div>
+          {fstMembers.length === 0 ? (
+            <EmptyState
+              icon={ShieldCheck}
+              title="Chưa có thành viên Đội ATTP nào"
+              description="Hệ thống chưa ghi nhận danh sách thành viên Đội An toàn thực phẩm theo Quyết định số 02. Hãy bắt đầu bổ nhiệm Đội trưởng và các thành viên phụ trách."
+              actionLabel="+ Thêm thành viên Đội ATTP"
+              onAction={openNewFst}
+              onOpenGuide={() => setShowGuide(true)}
+            />
+          ) : (
+            /* Members Table */
+            <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xs">
+              <table className="w-full text-left text-sm">
+                <thead className="bg-slate-50 text-xs font-semibold text-slate-600 border-b border-slate-200">
+                  <tr>
+                    <th className="py-3 px-4 w-12 text-center">STT</th>
+                    <th className="py-3 px-4">Họ và tên</th>
+                    <th className="py-3 px-4 text-center">Vai trò trong Đội</th>
+                    <th className="py-3 px-4">Chức vụ & Phòng ban</th>
+                    <th className="py-3 px-4">Trình độ / Năng lực</th>
+                    <th className="py-3 px-4">Phân công nhiệm vụ chính</th>
+                    <th className="py-3 px-4">Liên hệ</th>
+                    <th className="py-3 px-4 text-center">Trạng thái</th>
+                    <th className="py-3 px-4 text-right">Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {fstMembers
+                    .filter((m) => {
+                      const matchSearch =
+                        !fstSearch ||
+                        m.full_name.toLowerCase().includes(fstSearch.toLowerCase()) ||
+                        m.department.toLowerCase().includes(fstSearch.toLowerCase()) ||
+                        (m.responsibilities && m.responsibilities.toLowerCase().includes(fstSearch.toLowerCase()));
+                      const matchRole = fstRoleFilter === "ALL" || m.role === fstRoleFilter;
+                      return matchSearch && matchRole;
+                    })
+                    .map((m, idx) => (
+                      <tr key={m.id} className="hover:bg-slate-50/80 transition">
+                        <td className="py-3 px-4 text-center text-xs text-slate-500">{idx + 1}</td>
+                        <td className="py-3 px-4 font-semibold text-slate-900">{m.full_name}</td>
+                        <td className="py-3 px-4 text-center">
+                          <span
+                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border ${
+                              m.role === "Đội trưởng"
+                                ? "bg-rose-100 text-rose-800 border-rose-200"
+                                : m.role === "Đội phó"
+                                ? "bg-amber-100 text-amber-800 border-amber-200"
+                                : m.role === "Thư ký"
+                                ? "bg-purple-100 text-purple-800 border-purple-200"
+                                : "bg-blue-100 text-blue-800 border-blue-200"
+                            }`}
+                          >
+                            {m.role}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4">
+                          <div className="font-medium text-slate-800">{m.job_title}</div>
+                          <div className="text-xs text-slate-500">{m.department}</div>
+                        </td>
+                        <td className="py-3 px-4 text-xs text-slate-600">{m.qualification || "--"}</td>
+                        <td className="py-3 px-4 text-xs text-slate-700 max-w-xs">{m.responsibilities || "--"}</td>
+                        <td className="py-3 px-4 text-xs text-slate-500">
+                          {m.phone && <div>📞 {m.phone}</div>}
+                          {m.email && <div>✉️ {m.email}</div>}
+                          {!m.phone && !m.email && "--"}
+                        </td>
+                        <td className="py-3 px-4 text-center">
+                          <span
+                            className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${
+                              m.status === "ACTIVE"
+                                ? "bg-emerald-100 text-emerald-800 border border-emerald-200"
+                                : "bg-slate-100 text-slate-600 border border-slate-200"
+                            }`}
+                          >
+                            {m.status === "ACTIVE" ? "Đang công tác" : "Miễn nhiệm"}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 text-right">
+                          {canEdit && (
+                            <div className="flex items-center justify-end gap-1">
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-600" onClick={() => openEditFst(m)}>
+                                <Edit2 className="h-3.5 w-3.5" />
+                              </Button>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-600" onClick={() => handleDeleteFst(m.id)}>
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       )}
 
-      {/* TAB 4: INTERESTED PARTIES (CLAUSE 4.2) */}
+      {/* TAB 4: INTERESTED PARTIES */}
       {activeTab === "parties" && (
         <div className="space-y-4">
           <div className="flex flex-col sm:flex-row gap-3 items-center justify-between bg-slate-50 p-3 rounded-lg border border-slate-200">
@@ -1533,75 +1557,86 @@ function Org() {
             </div>
           </div>
 
-          <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xs">
-            <table className="w-full text-left text-sm">
-              <thead className="bg-slate-50 text-xs font-semibold text-slate-600 border-b border-slate-200">
-                <tr>
-                  <th className="py-3 px-4">Tên bên quan tâm</th>
-                  <th className="py-3 px-4">Phân loại</th>
-                  <th className="py-3 px-4">Nhu cầu & Kỳ vọng ATTP</th>
-                  <th className="py-3 px-4">Yêu cầu luật định liên quan</th>
-                  <th className="py-3 px-4">Phương pháp & Tần suất</th>
-                  <th className="py-3 px-4">Phụ trách</th>
-                  <th className="py-3 px-4 text-right">Thao tác</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {parties
-                  .filter((p) => {
-                    const matchesType = partyTypeFilter === "ALL" || p.party_type === partyTypeFilter;
-                    const q = searchQuery.toLowerCase();
-                    const matchesQ =
-                      !searchQuery ||
-                      p.party_name.toLowerCase().includes(q) ||
-                      p.needs_and_expectations.toLowerCase().includes(q) ||
-                      (p.statutory_requirements && p.statutory_requirements.toLowerCase().includes(q));
-                    return matchesType && matchesQ;
-                  })
-                  .map((p) => (
-                    <tr key={p.id} className="hover:bg-slate-50/70">
-                      <td className="py-3 px-4 font-bold text-slate-900 max-w-xs">{p.party_name}</td>
-                      <td className="py-3 px-4">
-                        <span
-                          className={`inline-block px-2 py-0.5 rounded text-[11px] font-bold uppercase ${
-                            p.party_type === "INTERNAL"
-                              ? "bg-blue-50 text-blue-700 border border-blue-200"
-                              : "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                          }`}
-                        >
-                          {p.party_type === "INTERNAL" ? "Nội bộ" : "Bên ngoài"}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4 text-xs text-slate-700 max-w-sm">{p.needs_and_expectations}</td>
-                      <td className="py-3 px-4 text-xs text-slate-600 font-mono max-w-xs">
-                        {p.statutory_requirements || "--"}
-                      </td>
-                      <td className="py-3 px-4 text-xs text-slate-600">
-                        <div>{p.monitoring_method || "--"}</div>
-                        <span className="text-[11px] font-semibold text-emerald-700">({p.review_frequency})</span>
-                      </td>
-                      <td className="py-3 px-4 text-xs font-semibold text-slate-700">{p.responsible_role}</td>
-                      <td className="py-3 px-4 text-right">
-                        {canEdit && (
-                          <div className="flex items-center justify-end gap-1">
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-600" onClick={() => openEditParty(p)}>
-                              <Edit2 className="h-3.5 w-3.5" />
-                            </Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-600" onClick={() => handleDeleteParty(p.id)}>
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </Button>
-                          </div>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-              </tbody>
-            </table>
-          </div>
+          {parties.length === 0 ? (
+            <EmptyState
+              icon={Globe}
+              title="Chưa có bên quan tâm nào"
+              description="Chưa xác định danh sách các bên quan tâm nội bộ và bên ngoài (khách hàng, cơ quan nhà nước, nhà cung cấp) cùng kỳ vọng và luật định tương ứng."
+              actionLabel="+ Thêm bên quan tâm mới"
+              onAction={openNewParty}
+              onOpenGuide={() => setShowGuide(true)}
+            />
+          ) : (
+            <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xs">
+              <table className="w-full text-left text-sm">
+                <thead className="bg-slate-50 text-xs font-semibold text-slate-600 border-b border-slate-200">
+                  <tr>
+                    <th className="py-3 px-4">Tên bên quan tâm</th>
+                    <th className="py-3 px-4">Phân loại</th>
+                    <th className="py-3 px-4">Nhu cầu & Kỳ vọng ATTP</th>
+                    <th className="py-3 px-4">Yêu cầu luật định liên quan</th>
+                    <th className="py-3 px-4">Phương pháp & Tần suất</th>
+                    <th className="py-3 px-4">Phụ trách</th>
+                    <th className="py-3 px-4 text-right">Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {parties
+                    .filter((p) => {
+                      const matchesType = partyTypeFilter === "ALL" || p.party_type === partyTypeFilter;
+                      const q = searchQuery.toLowerCase();
+                      const matchesQ =
+                        !searchQuery ||
+                        p.party_name.toLowerCase().includes(q) ||
+                        p.needs_and_expectations.toLowerCase().includes(q) ||
+                        (p.statutory_requirements && p.statutory_requirements.toLowerCase().includes(q));
+                      return matchesType && matchesQ;
+                    })
+                    .map((p) => (
+                      <tr key={p.id} className="hover:bg-slate-50/70">
+                        <td className="py-3 px-4 font-bold text-slate-900 max-w-xs">{p.party_name}</td>
+                        <td className="py-3 px-4">
+                          <span
+                            className={`inline-block px-2 py-0.5 rounded text-[11px] font-bold uppercase ${
+                              p.party_type === "INTERNAL"
+                                ? "bg-blue-50 text-blue-700 border border-blue-200"
+                                : "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                            }`}
+                          >
+                            {p.party_type === "INTERNAL" ? "Nội bộ" : "Bên ngoài"}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 text-xs text-slate-700 max-w-sm">{p.needs_and_expectations}</td>
+                        <td className="py-3 px-4 text-xs text-slate-600 font-mono max-w-xs">
+                          {p.statutory_requirements || "--"}
+                        </td>
+                        <td className="py-3 px-4 text-xs text-slate-600">
+                          <div>{p.monitoring_method || "--"}</div>
+                          <span className="text-[11px] font-semibold text-emerald-700">({p.review_frequency})</span>
+                        </td>
+                        <td className="py-3 px-4 text-xs font-semibold text-slate-700">{p.responsible_role}</td>
+                        <td className="py-3 px-4 text-right">
+                          {canEdit && (
+                            <div className="flex items-center justify-end gap-1">
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-600" onClick={() => openEditParty(p)}>
+                                <Edit2 className="h-3.5 w-3.5" />
+                              </Button>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-600" onClick={() => handleDeleteParty(p.id)}>
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       )}
 
-      {/* TAB 4: CONTEXT RISKS (CLAUSE 4.1 & 6.1) */}
+      {/* TAB 5: CONTEXT RISKS */}
       {activeTab === "risks" && (
         <div className="space-y-4">
           <div className="flex flex-col sm:flex-row gap-3 items-center justify-between bg-slate-50 p-3 rounded-lg border border-slate-200">
@@ -1642,96 +1677,107 @@ function Org() {
             </div>
           </div>
 
-          <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xs">
-            <table className="w-full text-left text-sm">
-              <thead className="bg-slate-50 text-xs font-semibold text-slate-600 border-b border-slate-200">
-                <tr>
-                  <th className="py-3 px-3">Mã</th>
-                  <th className="py-3 px-3">Bối cảnh</th>
-                  <th className="py-3 px-3">Vấn đề & Rủi ro ATTP</th>
-                  <th className="py-3 px-3">Cơ hội cải tiến</th>
-                  <th className="py-3 px-3 text-center">Ma trận (L x S)</th>
-                  <th className="py-3 px-3">Chiến lược</th>
-                  <th className="py-3 px-3">Kế hoạch hành động kiểm soát</th>
-                  <th className="py-3 px-3 text-center">Rủi ro dư</th>
-                  <th className="py-3 px-3 text-right">Thao tác</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {risks
-                  .filter((r) => {
-                    const matchesCat = riskCategoryFilter === "ALL" || r.issue_category === riskCategoryFilter;
-                    const q = searchQuery.toLowerCase();
-                    const matchesQ =
-                      !searchQuery ||
-                      r.code.toLowerCase().includes(q) ||
-                      r.issue_description.toLowerCase().includes(q) ||
-                      r.risk_description.toLowerCase().includes(q) ||
-                      r.action_plan.toLowerCase().includes(q);
-                    return matchesCat && matchesQ;
-                  })
-                  .map((r) => (
-                    <tr key={r.id} className="hover:bg-slate-50/70">
-                      <td className="py-3 px-3 font-mono font-bold text-slate-800">{r.code}</td>
-                      <td className="py-3 px-3">
-                        <span
-                          className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-bold uppercase ${
-                            r.issue_category === "INTERNAL"
-                              ? "bg-blue-50 text-blue-700 border border-blue-200"
-                              : "bg-purple-50 text-purple-700 border border-purple-200"
-                          }`}
-                        >
-                          {r.issue_category === "INTERNAL" ? "Nội bộ" : "Bên ngoài"}
-                        </span>
-                      </td>
-                      <td className="py-3 px-3 max-w-xs">
-                        <div className="font-semibold text-slate-900 text-xs">{r.issue_description}</div>
-                        <div className="text-xs text-rose-700 mt-0.5">Rủi ro: {r.risk_description}</div>
-                      </td>
-                      <td className="py-3 px-3 text-xs text-emerald-800 max-w-xs">{r.opportunity_description || "--"}</td>
-                      <td className="py-3 px-3 text-center">
-                        <div className="text-xs font-semibold">
-                          {r.likelihood} × {r.severity}
-                        </div>
-                        <div className="mt-0.5">{getContextRiskBadge(r.risk_score)}</div>
-                      </td>
-                      <td className="py-3 px-3 text-xs font-bold text-slate-700">{r.treatment_strategy}</td>
-                      <td className="py-3 px-3 text-xs text-slate-700 max-w-sm">
-                        <div>{r.action_plan}</div>
-                        <div className="text-[11px] text-slate-500 mt-0.5">
-                          Hạn: <strong>{r.target_date || "--"}</strong> · Phụ trách: <strong>{r.responsible_role}</strong>
-                        </div>
-                      </td>
-                      <td className="py-3 px-3 text-center text-xs">
-                        {r.residual_risk_score ? (
-                          <span className="font-bold text-emerald-700">
-                            {r.residual_likelihood}×{r.residual_severity} = {r.residual_risk_score}
+          {risks.length === 0 ? (
+            <EmptyState
+              icon={Target}
+              title="Chưa có rủi ro & cơ hội bối cảnh nào"
+              description="Chưa có bảng đánh giá rủi ro và cơ hội từ bối cảnh hoạt động. Hãy lập ma trận rủi ro L x S và kế hoạch hành động kiểm soát tương ứng."
+              actionLabel="+ Ghi nhận rủi ro bối cảnh"
+              onAction={openNewRisk}
+              onOpenGuide={() => setShowGuide(true)}
+            />
+          ) : (
+            <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xs">
+              <table className="w-full text-left text-sm">
+                <thead className="bg-slate-50 text-xs font-semibold text-slate-600 border-b border-slate-200">
+                  <tr>
+                    <th className="py-3 px-3">Mã</th>
+                    <th className="py-3 px-3">Bối cảnh</th>
+                    <th className="py-3 px-3">Vấn đề & Rủi ro ATTP</th>
+                    <th className="py-3 px-3">Cơ hội cải tiến</th>
+                    <th className="py-3 px-3 text-center">Ma trận (L x S)</th>
+                    <th className="py-3 px-3">Chiến lược</th>
+                    <th className="py-3 px-3">Kế hoạch hành động kiểm soát</th>
+                    <th className="py-3 px-3 text-center">Rủi ro dư</th>
+                    <th className="py-3 px-3 text-right">Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {risks
+                    .filter((r) => {
+                      const matchesCat = riskCategoryFilter === "ALL" || r.issue_category === riskCategoryFilter;
+                      const q = searchQuery.toLowerCase();
+                      const matchesQ =
+                        !searchQuery ||
+                        r.code.toLowerCase().includes(q) ||
+                        r.issue_description.toLowerCase().includes(q) ||
+                        r.risk_description.toLowerCase().includes(q) ||
+                        r.action_plan.toLowerCase().includes(q);
+                      return matchesCat && matchesQ;
+                    })
+                    .map((r) => (
+                      <tr key={r.id} className="hover:bg-slate-50/70">
+                        <td className="py-3 px-3 font-mono font-bold text-slate-800">{r.code}</td>
+                        <td className="py-3 px-3">
+                          <span
+                            className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-bold uppercase ${
+                              r.issue_category === "INTERNAL"
+                                ? "bg-blue-50 text-blue-700 border border-blue-200"
+                                : "bg-purple-50 text-purple-700 border border-purple-200"
+                            }`}
+                          >
+                            {r.issue_category === "INTERNAL" ? "Nội bộ" : "Bên ngoài"}
                           </span>
-                        ) : (
-                          "--"
-                        )}
-                      </td>
-                      <td className="py-3 px-3 text-right">
-                        {canEdit && (
-                          <div className="flex items-center justify-end gap-1">
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-600" onClick={() => openEditRisk(r)}>
-                              <Edit2 className="h-3.5 w-3.5" />
-                            </Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-600" onClick={() => handleDeleteRisk(r.id)}>
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </Button>
+                        </td>
+                        <td className="py-3 px-3 max-w-xs">
+                          <div className="font-semibold text-slate-900 text-xs">{r.issue_description}</div>
+                          <div className="text-xs text-rose-700 mt-0.5">Rủi ro: {r.risk_description}</div>
+                        </td>
+                        <td className="py-3 px-3 text-xs text-emerald-800 max-w-xs">{r.opportunity_description || "--"}</td>
+                        <td className="py-3 px-3 text-center">
+                          <div className="text-xs font-semibold">
+                            {r.likelihood} × {r.severity}
                           </div>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-              </tbody>
-            </table>
-          </div>
+                          <div className="mt-0.5">{getContextRiskBadge(r.risk_score)}</div>
+                        </td>
+                        <td className="py-3 px-3 text-xs font-bold text-slate-700">{r.treatment_strategy}</td>
+                        <td className="py-3 px-3 text-xs text-slate-700 max-w-sm">
+                          <div>{r.action_plan}</div>
+                          <div className="text-[11px] text-slate-500 mt-0.5">
+                            Hạn: <strong>{r.target_date || "--"}</strong> · Phụ trách: <strong>{r.responsible_role}</strong>
+                          </div>
+                        </td>
+                        <td className="py-3 px-3 text-center text-xs">
+                          {r.residual_risk_score ? (
+                            <span className="font-bold text-emerald-700">
+                              {r.residual_likelihood}×{r.residual_severity} = {r.residual_risk_score}
+                            </span>
+                          ) : (
+                            "--"
+                          )}
+                        </td>
+                        <td className="py-3 px-3 text-right">
+                          {canEdit && (
+                            <div className="flex items-center justify-end gap-1">
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-600" onClick={() => openEditRisk(r)}>
+                                <Edit2 className="h-3.5 w-3.5" />
+                              </Button>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-600" onClick={() => handleDeleteRisk(r.id)}>
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       )}
 
-      {/* TAB 6: COMMUNICATIONS LOG (CLAUSE 7.4) */}
+      {/* TAB 6: COMMUNICATIONS LOG */}
       {activeTab === "communications" && (
         <div className="space-y-4">
           <div className="flex flex-col sm:flex-row gap-3 items-center justify-between bg-slate-50 p-3 rounded-lg border border-slate-200">
@@ -1774,117 +1820,128 @@ function Org() {
             </div>
           </div>
 
-          <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xs">
-            <table className="w-full text-left text-sm">
-              <thead className="bg-slate-50 text-xs font-semibold text-slate-600 border-b border-slate-200">
-                <tr>
-                  <th className="py-3 px-4 w-12 text-center">STT</th>
-                  <th className="py-3 px-4">Mã & Ngày</th>
-                  <th className="py-3 px-4 text-center">Hướng / Phân loại</th>
-                  <th className="py-3 px-4">Tên đối tác & Liên hệ</th>
-                  <th className="py-3 px-4">Chủ đề & Nội dung</th>
-                  <th className="py-3 px-4 text-center">Hình thức</th>
-                  <th className="py-3 px-4">Phản hồi / Hành động</th>
-                  <th className="py-3 px-4 text-center">Trạng thái</th>
-                  <th className="py-3 px-4 text-right">Thao tác</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {communications
-                  .filter((c) => {
-                    const q = commSearch.toLowerCase();
-                    const matchQ =
-                      !commSearch ||
-                      c.comm_code.toLowerCase().includes(q) ||
-                      c.subject.toLowerCase().includes(q) ||
-                      c.party_name.toLowerCase().includes(q) ||
-                      c.content.toLowerCase().includes(q) ||
-                      (c.contact_person && c.contact_person.toLowerCase().includes(q));
-                    const matchDir = commDirectionFilter === "ALL" || c.direction === commDirectionFilter;
-                    const matchStatus = commStatusFilter === "ALL" || c.status === commStatusFilter;
-                    return matchQ && matchDir && matchStatus;
-                  })
-                  .map((c, idx) => (
-                    <tr key={c.id} className="hover:bg-slate-50/80 transition">
-                      <td className="py-3 px-4 text-center text-xs text-slate-500">{idx + 1}</td>
-                      <td className="py-3 px-4">
-                        <div className="font-mono font-bold text-slate-900 text-xs">{c.comm_code}</div>
-                        <div className="text-xs text-slate-500">{c.comm_date}</div>
-                      </td>
-                      <td className="py-3 px-4 text-center">
-                        <span
-                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold border ${
-                            c.direction === "INTERNAL"
-                              ? "bg-blue-50 text-blue-700 border-blue-200"
-                              : "bg-purple-50 text-purple-700 border-purple-200"
-                          }`}
-                        >
-                          {c.direction === "INTERNAL" ? "Nội bộ" : "Bên ngoài"}
-                        </span>
-                        <div className="text-[10px] text-slate-500 mt-0.5 uppercase font-medium">{c.party_type}</div>
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className="font-semibold text-slate-900">{c.party_name}</div>
-                        {(c.contact_person || c.contact_info) && (
-                          <div className="text-xs text-slate-500">
-                            {c.contact_person} {c.contact_info ? `(${c.contact_info})` : ""}
-                          </div>
-                        )}
-                      </td>
-                      <td className="py-3 px-4 max-w-xs">
-                        <div className="font-medium text-slate-900 text-xs">{c.subject}</div>
-                        <div className="text-xs text-slate-600 line-clamp-2 mt-0.5">{c.content}</div>
-                      </td>
-                      <td className="py-3 px-4 text-center text-xs font-medium text-slate-700">
-                        <span className="inline-block bg-slate-100 px-2 py-0.5 rounded border border-slate-200 text-[11px]">
-                          {c.method}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4 text-xs max-w-xs">
-                        {c.response_content ? (
-                          <div className="text-emerald-700">
-                            <span className="font-semibold">Phản hồi:</span> {c.response_content}
-                          </div>
-                        ) : (
-                          <span className="text-slate-400 italic">Chưa phản hồi</span>
-                        )}
-                        {c.action_required && (
-                          <div className="mt-1 text-rose-700 font-semibold flex items-center gap-1">
-                            <AlertTriangle className="h-3 w-3 inline" />
-                            {c.action_details || "Cần xử lý"}
-                          </div>
-                        )}
-                      </td>
-                      <td className="py-3 px-4 text-center">
-                        <span
-                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${
-                            c.status === "CLOSED"
-                              ? "bg-emerald-100 text-emerald-800 border border-emerald-200"
-                              : c.status === "IN_PROGRESS"
-                              ? "bg-amber-100 text-amber-800 border border-amber-200"
-                              : "bg-blue-100 text-blue-800 border border-blue-200"
-                          }`}
-                        >
-                          {c.status === "CLOSED" ? "Đã đóng" : c.status === "IN_PROGRESS" ? "Đang xử lý" : "Mở"}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4 text-right">
-                        {canEdit && (
-                          <div className="flex items-center justify-end gap-1">
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-600" onClick={() => openEditComm(c)}>
-                              <Edit2 className="h-3.5 w-3.5" />
-                            </Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-600" onClick={() => handleDeleteComm(c.id)}>
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </Button>
-                          </div>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-              </tbody>
-            </table>
-          </div>
+          {communications.length === 0 ? (
+            <EmptyState
+              icon={MessageSquare}
+              title="Chưa có nhật ký trao đổi thông tin nào"
+              description="Chưa ghi nhận nội dung trao đổi thông tin ATTP nội bộ hoặc bên ngoài. Hãy lập nhật ký lưu vết các thông tin trao đổi quan trọng."
+              actionLabel="+ Thêm trao đổi thông tin"
+              onAction={openNewComm}
+              onOpenGuide={() => setShowGuide(true)}
+            />
+          ) : (
+            <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xs">
+              <table className="w-full text-left text-sm">
+                <thead className="bg-slate-50 text-xs font-semibold text-slate-600 border-b border-slate-200">
+                  <tr>
+                    <th className="py-3 px-4 w-12 text-center">STT</th>
+                    <th className="py-3 px-4">Mã & Ngày</th>
+                    <th className="py-3 px-4 text-center">Hướng / Phân loại</th>
+                    <th className="py-3 px-4">Tên đối tác & Liên hệ</th>
+                    <th className="py-3 px-4">Chủ đề & Nội dung</th>
+                    <th className="py-3 px-4 text-center">Hình thức</th>
+                    <th className="py-3 px-4">Phản hồi / Hành động</th>
+                    <th className="py-3 px-4 text-center">Trạng thái</th>
+                    <th className="py-3 px-4 text-right">Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {communications
+                    .filter((c) => {
+                      const q = commSearch.toLowerCase();
+                      const matchQ =
+                        !commSearch ||
+                        c.comm_code.toLowerCase().includes(q) ||
+                        c.subject.toLowerCase().includes(q) ||
+                        c.party_name.toLowerCase().includes(q) ||
+                        c.content.toLowerCase().includes(q) ||
+                        (c.contact_person && c.contact_person.toLowerCase().includes(q));
+                      const matchDir = commDirectionFilter === "ALL" || c.direction === commDirectionFilter;
+                      const matchStatus = commStatusFilter === "ALL" || c.status === commStatusFilter;
+                      return matchQ && matchDir && matchStatus;
+                    })
+                    .map((c, idx) => (
+                      <tr key={c.id} className="hover:bg-slate-50/80 transition">
+                        <td className="py-3 px-4 text-center text-xs text-slate-500">{idx + 1}</td>
+                        <td className="py-3 px-4">
+                          <div className="font-mono font-bold text-slate-900 text-xs">{c.comm_code}</div>
+                          <div className="text-xs text-slate-500">{c.comm_date}</div>
+                        </td>
+                        <td className="py-3 px-4 text-center">
+                          <span
+                            className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold border ${
+                              c.direction === "INTERNAL"
+                                ? "bg-blue-50 text-blue-700 border-blue-200"
+                                : "bg-purple-50 text-purple-700 border-purple-200"
+                            }`}
+                          >
+                            {c.direction === "INTERNAL" ? "Nội bộ" : "Bên ngoài"}
+                          </span>
+                          <div className="text-[10px] text-slate-500 mt-0.5 uppercase font-medium">{c.party_type}</div>
+                        </td>
+                        <td className="py-3 px-4">
+                          <div className="font-semibold text-slate-900">{c.party_name}</div>
+                          {(c.contact_person || c.contact_info) && (
+                            <div className="text-xs text-slate-500">
+                              {c.contact_person} {c.contact_info ? `(${c.contact_info})` : ""}
+                            </div>
+                          )}
+                        </td>
+                        <td className="py-3 px-4 max-w-xs">
+                          <div className="font-medium text-slate-900 text-xs">{c.subject}</div>
+                          <div className="text-xs text-slate-600 line-clamp-2 mt-0.5">{c.content}</div>
+                        </td>
+                        <td className="py-3 px-4 text-center text-xs font-medium text-slate-700">
+                          <span className="inline-block bg-slate-100 px-2 py-0.5 rounded border border-slate-200 text-[11px]">
+                            {c.method}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 text-xs max-w-xs">
+                          {c.response_content ? (
+                            <div className="text-emerald-700">
+                              <span className="font-semibold">Phản hồi:</span> {c.response_content}
+                            </div>
+                          ) : (
+                            <span className="text-slate-400 italic">Chưa phản hồi</span>
+                          )}
+                          {c.action_required && (
+                            <div className="mt-1 text-rose-700 font-semibold flex items-center gap-1">
+                              <AlertTriangle className="h-3 w-3 inline" />
+                              {c.action_details || "Cần xử lý"}
+                            </div>
+                          )}
+                        </td>
+                        <td className="py-3 px-4 text-center">
+                          <span
+                            className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${
+                              c.status === "CLOSED"
+                                ? "bg-emerald-100 text-emerald-800 border border-emerald-200"
+                                : c.status === "IN_PROGRESS"
+                                ? "bg-amber-100 text-amber-800 border border-amber-200"
+                                : "bg-blue-100 text-blue-800 border border-blue-200"
+                            }`}
+                          >
+                            {c.status === "CLOSED" ? "Đã đóng" : c.status === "IN_PROGRESS" ? "Đang xử lý" : "Mở"}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 text-right">
+                          {canEdit && (
+                            <div className="flex items-center justify-end gap-1">
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-600" onClick={() => openEditComm(c)}>
+                                <Edit2 className="h-3.5 w-3.5" />
+                              </Button>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-600" onClick={() => handleDeleteComm(c.id)}>
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       )}
 
@@ -1894,7 +1951,7 @@ function Org() {
           <div className="bg-white rounded-xl shadow-xl max-w-lg w-full p-6 space-y-4">
             <div className="flex items-center justify-between border-b pb-3">
               <h3 className="font-bold text-lg text-slate-900">
-                {editingParty ? "Cập nhật bên quan tâm (Điều 4.2)" : "Thêm bên quan tâm mới"}
+                {editingParty ? "Cập nhật bên quan tâm" : "Thêm bên quan tâm mới"}
               </h3>
               <button onClick={() => setPartyModalOpen(false)} className="text-slate-400 hover:text-slate-600">
                 <X className="h-5 w-5" />
@@ -1997,7 +2054,7 @@ function Org() {
           <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b pb-3">
               <h3 className="font-bold text-lg text-slate-900">
-                {editingRisk ? "Cập nhật rủi ro bối cảnh" : "Ghi nhận rủi ro & cơ hội bối cảnh mới (Điều 6.1)"}
+                {editingRisk ? "Cập nhật rủi ro bối cảnh" : "Ghi nhận rủi ro & cơ hội bối cảnh mới"}
               </h3>
               <button onClick={() => setRiskModalOpen(false)} className="text-slate-400 hover:text-slate-600">
                 <X className="h-5 w-5" />
@@ -2196,7 +2253,7 @@ function Org() {
           <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b pb-3">
               <h3 className="font-bold text-lg text-slate-900">
-                {editingComm ? "Cập nhật trao đổi thông tin ATTP" : "Ghi nhận trao đổi thông tin ATTP mới (Điều 7.4)"}
+                {editingComm ? "Cập nhật trao đổi thông tin ATTP" : "Ghi nhận trao đổi thông tin ATTP mới"}
               </h3>
               <button onClick={() => setCommModalOpen(false)} className="text-slate-400 hover:text-slate-600">
                 <X className="h-5 w-5" />
@@ -2410,7 +2467,7 @@ function Org() {
             <div className="flex items-center justify-between border-b pb-3">
               <div>
                 <h3 className="font-bold text-lg text-slate-900">
-                  {editingFst ? "Cập nhật thành viên Đội ATTP" : "Bổ nhiệm thành viên Đội ATTP (Điều 5.3)"}
+                  {editingFst ? "Cập nhật thành viên Đội ATTP" : "Bổ nhiệm thành viên Đội ATTP"}
                 </h3>
                 <p className="text-xs text-slate-500">Căn cứ Quyết định 02/QĐ-ATTP-2026</p>
               </div>
@@ -2548,6 +2605,12 @@ function Org() {
           </div>
         </div>
       )}
+
+      <ModuleGuideModal
+        module="organization"
+        isOpen={showGuide}
+        onClose={() => setShowGuide(false)}
+      />
     </div>
   );
 }

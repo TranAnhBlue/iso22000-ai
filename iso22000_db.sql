@@ -1,717 +1,1098 @@
--- 1. Bật extension UUID
+-- ============================================================================
+-- WCERT ISO 22000:2018 - FOOD SAFETY MANAGEMENT SYSTEM (FSMS)
+-- CƠ SỞ DỮ LIỆU POSTGRESQL CHUẨN HÓA TOÀN DIỆN (49 BẢNG NGHIỆP VỤ)
+-- ============================================================================
+
+-- 1. Bật các extension cần thiết cho UUID và mã hóa mật khẩu
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
--- 2. Phân quyền động (Dynamic RBAC)
-CREATE TABLE roles (
-    role_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    role_code VARCHAR(50) UNIQUE NOT NULL,
-    role_name VARCHAR(100) NOT NULL,
-    description TEXT
-);
+-- ============================================================================
+-- 2. PHÂN HỆ: RBAC & NGƯỜI DÙNG
+-- ============================================================================
 
-CREATE TABLE permissions (
-    permission_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    permission_code VARCHAR(100) UNIQUE NOT NULL,
-    module VARCHAR(50) NOT NULL,
-    description TEXT
-);
-
-CREATE TABLE role_permissions (
-    role_id UUID REFERENCES roles(role_id) ON DELETE CASCADE,
-    permission_id UUID REFERENCES permissions(permission_id) ON DELETE CASCADE,
-    PRIMARY KEY (role_id, permission_id)
-);
-
-CREATE TABLE users (
-    user_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    username VARCHAR(50) UNIQUE NOT NULL,
-    password_hash VARCHAR(255) NOT NULL,
-    full_name VARCHAR(100) NOT NULL,
-    department VARCHAR(100),
-    email VARCHAR(100),
-    phone VARCHAR(20),
-    is_active BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE user_roles (
-    user_id UUID REFERENCES users(user_id) ON DELETE CASCADE,
-    role_id UUID REFERENCES roles(role_id) ON DELETE CASCADE,
-    PRIMARY KEY (user_id, role_id)
-);
-
--- 3. File attachments, Audit logs & Notifications
-CREATE TABLE file_attachments (
-    attachment_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    file_name VARCHAR(255) NOT NULL,
-    file_url TEXT NOT NULL,
-    file_type VARCHAR(50) NOT NULL,
-    file_size_bytes BIGINT NOT NULL,
-    entity_type VARCHAR(50) NOT NULL,
-    entity_id UUID NOT NULL,
-    uploaded_by UUID REFERENCES users(user_id),
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE audit_logs (
-    log_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID REFERENCES users(user_id),
-    action VARCHAR(50) NOT NULL,
-    table_name VARCHAR(50) NOT NULL,
-    record_id UUID NOT NULL,
-    old_values JSONB,
-    new_values JSONB,
-    ip_address VARCHAR(45),
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE notifications (
-    notification_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID REFERENCES users(user_id) ON DELETE CASCADE,
-    title VARCHAR(255) NOT NULL,
-    content TEXT NOT NULL,
-    type VARCHAR(50) NOT NULL,
-    link_url TEXT,
-    is_read BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-);
-
--- 4. Luồng 7: Kiểm soát tài liệu (DMS)
-CREATE TABLE documents (
-    document_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    doc_code VARCHAR(50) UNIQUE NOT NULL,
-    doc_title VARCHAR(255) NOT NULL,
-    doc_type VARCHAR(50) NOT NULL,
-    department VARCHAR(100),
-    standard VARCHAR(100) DEFAULT 'ISO 22000:2018',
-    current_version VARCHAR(20) DEFAULT '1.0' NOT NULL,
-    status VARCHAR(30) DEFAULT 'DRAFT',
-    content TEXT,
-    file_url TEXT,
-    approved_by UUID REFERENCES users(user_id),
-    effective_date DATE,
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-);
-
--- 5. Luồng 1: Nhà cung cấp & Nguyên liệu (IQC)
-CREATE TABLE suppliers (
-    supplier_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    supplier_code VARCHAR(50) UNIQUE NOT NULL,
-    supplier_name VARCHAR(255) NOT NULL,
-    contact_info JSONB,
-    rating_score NUMERIC(5,2) DEFAULT 100.0,
-    status VARCHAR(30) DEFAULT 'APPROVED',
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE material_lots (
-    material_lot_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    lot_number VARCHAR(100) UNIQUE NOT NULL,
-    supplier_id UUID REFERENCES suppliers(supplier_id),
-    material_name VARCHAR(255) NOT NULL,
-    received_date DATE NOT NULL,
-    quantity NUMERIC(12,2) NOT NULL,
-    unit VARCHAR(20) NOT NULL,
-    coa_file_url TEXT,
-    created_by UUID REFERENCES users(user_id),
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE iqc_inspections (
-    inspection_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    inspection_code VARCHAR(50) UNIQUE NOT NULL,
-    material_lot_id UUID REFERENCES material_lots(material_lot_id) ON DELETE CASCADE,
-    inspector_id UUID REFERENCES users(user_id) ON DELETE SET NULL,
-    sensory_check BOOLEAN DEFAULT TRUE,
-    packaging_check BOOLEAN DEFAULT TRUE,
-    temperature_c NUMERIC(5,2),
-    moisture_content NUMERIC(5,2),
-    mycotoxin_check BOOLEAN DEFAULT TRUE,
-    allergen_check BOOLEAN DEFAULT FALSE,
-    coa_compliance BOOLEAN DEFAULT TRUE,
-    defect_rate_percent NUMERIC(5,2) DEFAULT 0.0,
-    impurity_percent NUMERIC(5,2) DEFAULT 0.0,
-    size_uniformity_check BOOLEAN DEFAULT TRUE,
-    vehicle_cleanliness_check BOOLEAN DEFAULT TRUE,
-    delivery_vehicle_plate VARCHAR(30),
-    driver_name VARCHAR(100),
-    inspection_details JSONB,
-    status VARCHAR(30) NOT NULL,
-    notes TEXT,
-    inspected_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-);
-
--- 6. Luồng 2: Sản xuất & Giám sát CCP/OPRP
-CREATE TABLE ccp_definitions (
-    ccp_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    ccp_code VARCHAR(50) UNIQUE NOT NULL,
-    name VARCHAR(255) NOT NULL,
-    process_step VARCHAR(100) NOT NULL,
-    hazard_description TEXT NOT NULL,
-    critical_limit JSONB NOT NULL,
-    monitoring_frequency VARCHAR(100) NOT NULL
-);
-
-CREATE TABLE production_batches (
-    batch_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    batch_number VARCHAR(100) UNIQUE NOT NULL,
-    product_name VARCHAR(255) NOT NULL,
-    start_time TIMESTAMPTZ NOT NULL,
-    end_time TIMESTAMPTZ,
-    status VARCHAR(30) DEFAULT 'IN_PROGRESS',
-    created_by UUID REFERENCES users(user_id)
-);
-
-CREATE TABLE batch_material_usage (
-    usage_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    batch_id UUID REFERENCES production_batches(batch_id),
-    material_lot_id UUID REFERENCES material_lots(material_lot_id),
-    quantity_used NUMERIC(12,2) NOT NULL,
-    unit VARCHAR(20) NOT NULL,
-    recorded_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE ccp_monitoring_logs (
-    log_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    batch_id UUID REFERENCES production_batches(batch_id),
-    ccp_id UUID REFERENCES ccp_definitions(ccp_id),
-    checked_by UUID REFERENCES users(user_id),
-    test_time TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    measured_values JSONB NOT NULL,
-    is_critical_limit_exceeded BOOLEAN DEFAULT FALSE,
-    deviation_action TEXT
-);
-
-CREATE TABLE equipment_maintenance (
-    equipment_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    equipment_code VARCHAR(50) UNIQUE NOT NULL,
-    equipment_name VARCHAR(255) NOT NULL,
-    calibration_due_date DATE,
-    calibration_status VARCHAR(30) DEFAULT 'VALID',
-    last_maintenance_date DATE,
-    managed_by UUID REFERENCES users(user_id),
-    notes TEXT
-);
-
--- 7. Luồng 3 & 4: Kho, Truy xuất & Giao nhận
-CREATE TABLE warehouse_inventory (
-    inventory_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    batch_id UUID REFERENCES production_batches(batch_id),
-    qr_code VARCHAR(255) UNIQUE NOT NULL,
-    mfg_date DATE NOT NULL,
-    exp_date DATE NOT NULL,
-    quantity NUMERIC(12,2) NOT NULL,
-    location_bin VARCHAR(50) NOT NULL,
-    status VARCHAR(30) DEFAULT 'AVAILABLE'
-);
-
-CREATE TABLE retained_samples (
-    sample_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    batch_id UUID REFERENCES production_batches(batch_id),
-    sample_code VARCHAR(100) UNIQUE NOT NULL,
-    storage_location VARCHAR(100) NOT NULL,
-    sample_date DATE NOT NULL,
-    expiry_date DATE NOT NULL,
-    status VARCHAR(30) DEFAULT 'STORED'
-);
-
-CREATE TABLE order_dispatches (
-    dispatch_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    order_number VARCHAR(100) NOT NULL,
-    customer_name VARCHAR(255) NOT NULL,
-    batch_id UUID REFERENCES production_batches(batch_id),
-    quantity_dispatched NUMERIC(12,2) NOT NULL,
-    vehicle_check_status BOOLEAN DEFAULT TRUE,
-    dispatched_by UUID REFERENCES users(user_id),
-    dispatched_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-);
-
--- 8. Luồng 5: Sự KPH, CAPA & Audit nội bộ
-CREATE TABLE non_conformances (
-    nc_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    nc_number VARCHAR(50) UNIQUE NOT NULL,
-    source VARCHAR(50) NOT NULL,
-    severity VARCHAR(20) NOT NULL,
-    description TEXT NOT NULL,
-    related_batch_id UUID REFERENCES production_batches(batch_id),
-    reported_by UUID REFERENCES users(user_id),
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE capa_records (
-    capa_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    nc_id UUID REFERENCES non_conformances(nc_id),
-    root_cause_analysis TEXT,
-    corrective_action TEXT NOT NULL,
-    preventive_action TEXT,
-    assigned_to UUID REFERENCES users(user_id),
-    due_date DATE NOT NULL,
-    completion_date DATE,
-    verified_by UUID REFERENCES users(user_id),
-    verification_result TEXT,
-    status VARCHAR(30) DEFAULT 'OPEN'
-);
-
-CREATE TABLE internal_audits (
-    audit_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    audit_plan_code VARCHAR(50) UNIQUE NOT NULL,
-    audit_date DATE NOT NULL,
-    lead_auditor_id UUID REFERENCES users(user_id),
-    scope TEXT NOT NULL,
-    findings_summary TEXT,
-    status VARCHAR(30) DEFAULT 'PLANNED'
-);
-
-CREATE TABLE prp_inspection_items (
-    item_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    audit_id UUID REFERENCES internal_audits(audit_id),
-    category VARCHAR(100) NOT NULL,
-    checklist_question TEXT NOT NULL,
-    is_compliant BOOLEAN DEFAULT TRUE,
-    finding_note TEXT
-);
-
--- 9. Luồng 6: Đào tạo & Khai báo sức khỏe
-CREATE TABLE training_records (
-    training_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    course_name VARCHAR(255) NOT NULL,
-    trainer VARCHAR(100),
-    training_date DATE NOT NULL,
-    participants JSONB NOT NULL,
-    managed_by UUID REFERENCES users(user_id),
-    assessment_result VARCHAR(50)
-);
-
-CREATE TABLE health_declarations (
-    declaration_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID REFERENCES users(user_id),
-    shift_date DATE NOT NULL,
-    has_infectious_disease BOOLEAN DEFAULT FALSE,
-    has_open_wound BOOLEAN DEFAULT FALSE,
-    is_cleared_for_shift BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-);
-
--- 10. Luồng 8: Xem xét lãnh đạo & Mục tiêu chất lượng
-CREATE TABLE quality_objectives (
-    objective_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    target_year INT NOT NULL,
-    metric_name VARCHAR(255) NOT NULL,
-    target_value NUMERIC(10,2) NOT NULL,
-    actual_value NUMERIC(10,2),
-    responsible_user_id UUID REFERENCES users(user_id),
-    status VARCHAR(30) DEFAULT 'ON_TRACK'
-);
-
-CREATE TABLE management_reviews (
-    review_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    meeting_date DATE NOT NULL,
-    chairperson_id UUID REFERENCES users(user_id),
-    meeting_minutes TEXT NOT NULL,
-    decisions_and_actions JSONB,
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-);
-
--- 11. Bổ sung: Kế hoạch HACCP (HACCP Plans) & Quy trình công đoạn
-CREATE TABLE IF NOT EXISTS haccp_plans (
-    plan_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    plan_code VARCHAR(50) UNIQUE NOT NULL,
-    plan_name VARCHAR(255) NOT NULL,
-    product_line VARCHAR(100) DEFAULT 'Chế biến Thủy hải sản' NOT NULL,
-    version VARCHAR(20) DEFAULT '1.0' NOT NULL,
-    team_leader VARCHAR(100) DEFAULT 'Trưởng ban HACCP / QA' NOT NULL,
-    approved_by VARCHAR(100) DEFAULT 'Giám đốc Nhà máy',
-    effective_date DATE DEFAULT CURRENT_DATE,
-    scope_description TEXT,
-    status VARCHAR(30) DEFAULT 'ACTIVE' NOT NULL,
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE IF NOT EXISTS process_steps (
-    step_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    plan_id UUID REFERENCES haccp_plans(plan_id) ON DELETE SET NULL,
-    step_number INT NOT NULL,
-    step_name VARCHAR(255) NOT NULL,
-    product_line VARCHAR(100) DEFAULT 'Chế biến Thủy hải sản' NOT NULL,
-    description TEXT,
-    is_ccp_or_oprp BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-);
-
--- 12. Bổ sung: Trình tạo Biểu mẫu Động (Dynamic Form Builder) & Kết quả Gửi mẫu
-CREATE TABLE IF NOT EXISTS dynamic_form_templates (
-    template_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    module VARCHAR(50) NOT NULL, -- HACCP, PRP, IQC, SUPPLIER_AUDIT, EQUIPMENT, CAPA, INTERNAL_AUDIT, GENERAL
-    code VARCHAR(50) UNIQUE NOT NULL,
-    title VARCHAR(255) NOT NULL,
-    description TEXT,
-    version VARCHAR(20) DEFAULT '1.0' NOT NULL,
-    fields JSONB NOT NULL,
-    status VARCHAR(30) DEFAULT 'ACTIVE' NOT NULL,
-    created_by UUID REFERENCES users(user_id) ON DELETE SET NULL,
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE IF NOT EXISTS dynamic_form_submissions (
-    submission_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    template_id UUID REFERENCES dynamic_form_templates(template_id) ON DELETE CASCADE,
-    reference_id VARCHAR(100),
-    reference_type VARCHAR(50),
-    submitted_by UUID REFERENCES users(user_id) ON DELETE SET NULL,
-    submitted_by_name VARCHAR(100),
-    form_data JSONB NOT NULL,
-    score NUMERIC(5,2),
-    status VARCHAR(30) DEFAULT 'COMPLETED' NOT NULL,
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-);
-
--- 13. Bổ sung: Trình thiết kế Quy trình Động (Dynamic Workflow Builder) & Tiến trình Thực thi
-CREATE TABLE IF NOT EXISTS dynamic_workflow_templates (
-    workflow_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    module VARCHAR(50) NOT NULL, -- HACCP_FLOW, DOC_APPROVAL, SUPPLIER_APPROVAL, CAPA_FLOW, AUDIT_FLOW, GENERAL
-    code VARCHAR(50) UNIQUE NOT NULL,
-    title VARCHAR(255) NOT NULL,
-    description TEXT,
-    version VARCHAR(20) DEFAULT '1.0' NOT NULL,
-    nodes JSONB NOT NULL,
-    edges JSONB NOT NULL,
-    status VARCHAR(30) DEFAULT 'ACTIVE' NOT NULL,
-    created_by UUID REFERENCES users(user_id) ON DELETE SET NULL,
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE IF NOT EXISTS workflow_instances (
-    instance_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    workflow_id UUID REFERENCES dynamic_workflow_templates(workflow_id) ON DELETE CASCADE,
-    reference_id VARCHAR(100),
-    reference_type VARCHAR(50),
-    current_node_id VARCHAR(50) NOT NULL,
-    history JSONB DEFAULT '[]'::jsonb,
-    status VARCHAR(30) DEFAULT 'IN_PROGRESS' NOT NULL,
-    started_by UUID REFERENCES users(user_id) ON DELETE SET NULL,
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-);
-
--- 10. Bảng Danh Mục Phòng Ban Chuẩn Hóa (Departments)
+-- Bảng: departments
 CREATE TABLE IF NOT EXISTS departments (
-    dept_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    dept_code VARCHAR(50) UNIQUE NOT NULL,
-    dept_name VARCHAR(100) UNIQUE NOT NULL,
-    description TEXT,
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+	dept_id UUID DEFAULT gen_random_uuid() NOT NULL, 
+	dept_code VARCHAR(50) NOT NULL, 
+	dept_name VARCHAR(100) NOT NULL, 
+	description TEXT, 
+	created_at TIMESTAMP WITH TIME ZONE DEFAULT now(), 
+	PRIMARY KEY (dept_id), 
+	UNIQUE (dept_code), 
+	UNIQUE (dept_name)
 );
 
--- Nạp sẵn 7 Phòng ban Chuẩn hóa của Nhà máy chế biến thực phẩm ISO 22000:2018
-INSERT INTO departments (dept_code, dept_name, description) VALUES
-('DEPT-BGD', 'Ban Giám đốc', 'Ban Giám đốc & Ban Lãnh đạo điều hành nhà máy'),
-('DEPT-QLCL', 'Ban QLCL & ATTP', 'Ban Quản lý Chất lượng, Đội HACCP & An toàn thực phẩm'),
-('DEPT-SX', 'Phòng Sản xuất', 'Bộ phận chế biến, điều hành các dây chuyền sản xuất & GMP'),
-('DEPT-KDK', 'Phòng Kinh doanh & Kho', 'Bộ phận kinh doanh, kho lạnh FEFO & logistics chuỗi cung ứng'),
-('DEPT-TB', 'Phòng Thiết bị', 'Bộ phận cơ điện, bảo trì bảo dưỡng máy móc & hiệu chuẩn'),
-('DEPT-HCKT', 'Phòng Hành chính - Kế toán', 'Bộ phận nhân sự, tiền lương, đào tạo ATTP & y tế sức khỏe'),
-('DEPT-IT', 'Quản trị hệ thống', 'Bộ phận CNTT, bảo mật hệ thống dữ liệu số & quản trị phần mềm')
-ON CONFLICT (dept_name) DO NOTHING;
+-- Bảng: roles
+CREATE TABLE IF NOT EXISTS roles (
+	role_id UUID DEFAULT gen_random_uuid() NOT NULL, 
+	role_code VARCHAR(50) NOT NULL, 
+	role_name VARCHAR(100) NOT NULL, 
+	description TEXT, 
+	PRIMARY KEY (role_id), 
+	UNIQUE (role_code)
+);
 
--- Nạp sẵn 8 Vai trò (Roles) chuẩn vào hệ thống
-INSERT INTO roles (role_code, role_name, description) VALUES
-('admin', 'Quản trị hệ thống', 'Toàn quyền cấu hình, RBAC, audit log'),
-('management', 'Ban Giám đốc', 'Phê duyệt tài liệu, xem xét lãnh đạo, duyệt thu hồi'),
-('qa_qc_manager', 'Ban QLCL & ATTP', 'Quản lý HACCP, PRP, CAPA, đánh giá nội bộ'),
-('production', 'Phòng Sản xuất', 'Thực hiện GMP, ghi nhận CCP, tạo mẻ sản xuất'),
-('hr_accounting', 'Phòng Hành chính - Kế toán', 'Quản lý nhân sự, đào tạo, hồ sơ sức khỏe'),
-('sales_logistics', 'Phòng Kinh doanh & Kho', 'Quản lý kho FEFO, giao hàng, truy xuất nguồn gốc'),
-('maintenance', 'Phòng Thiết bị', 'Bảo trì máy móc, hiệu chuẩn thiết bị đo'),
-('staff', 'Cán bộ nhân viên', 'Tra cứu quy trình, xem lịch đào tạo, báo cáo NC'),
-('user', 'Người dùng chưa phân quyền', 'Tài khoản mới đăng ký, chờ quản trị viên cấp quyền')
-ON CONFLICT (role_code) DO NOTHING;
+-- Bảng: users
+CREATE TABLE IF NOT EXISTS users (
+	user_id UUID DEFAULT gen_random_uuid() NOT NULL, 
+	username VARCHAR(50) NOT NULL, 
+	password_hash VARCHAR(255) NOT NULL, 
+	full_name VARCHAR(100) NOT NULL, 
+	department VARCHAR(100), 
+	email VARCHAR(100), 
+	phone VARCHAR(20), 
+	is_active BOOLEAN NOT NULL, 
+	created_at TIMESTAMP WITH TIME ZONE DEFAULT now(), 
+	PRIMARY KEY (user_id), 
+	UNIQUE (username)
+);
 
--- Tạo tài khoản admin mặc định (password: 123456)
-INSERT INTO users (user_id, username, password_hash, full_name, department, email, is_active)
-VALUES (
+-- Bảng: user_roles
+CREATE TABLE IF NOT EXISTS user_roles (
+	user_id UUID NOT NULL, 
+	role_id UUID NOT NULL, 
+	PRIMARY KEY (user_id, role_id), 
+	FOREIGN KEY(user_id) REFERENCES users (user_id) ON DELETE CASCADE, 
+	FOREIGN KEY(role_id) REFERENCES roles (role_id) ON DELETE CASCADE
+);
+
+-- ============================================================================
+-- 3. PHÂN HỆ: HỆ THỐNG TÀI LIỆU VĂN BẢN (DMS)
+-- ============================================================================
+
+-- Bảng: documents
+CREATE TABLE IF NOT EXISTS documents (
+	document_id UUID DEFAULT gen_random_uuid() NOT NULL, 
+	doc_code VARCHAR(50) NOT NULL, 
+	doc_title VARCHAR(255) NOT NULL, 
+	doc_type VARCHAR(50) NOT NULL, 
+	current_version VARCHAR(20) NOT NULL, 
+	status VARCHAR(30) NOT NULL, 
+	department VARCHAR(100), 
+	standard VARCHAR(100), 
+	content TEXT, 
+	file_url TEXT, 
+	approved_by UUID, 
+	effective_date DATE, 
+	created_at TIMESTAMP WITH TIME ZONE DEFAULT now(), 
+	PRIMARY KEY (document_id), 
+	UNIQUE (doc_code), 
+	FOREIGN KEY(approved_by) REFERENCES users (user_id)
+);
+
+-- ============================================================================
+-- 4. PHÂN HỆ: QUẢN LÝ THAY ĐỔI HỆ THỐNG FSMS
+-- ============================================================================
+
+-- Bảng: change_requests
+CREATE TABLE IF NOT EXISTS change_requests (
+	change_id UUID DEFAULT gen_random_uuid() NOT NULL, 
+	change_code VARCHAR(50) NOT NULL, 
+	title VARCHAR(255) NOT NULL, 
+	change_type VARCHAR(50) NOT NULL, 
+	description TEXT NOT NULL, 
+	reason TEXT NOT NULL, 
+	impact_assessment JSONB NOT NULL, 
+	proposed_by_name VARCHAR(100) NOT NULL, 
+	proposed_date DATE NOT NULL, 
+	review_status VARCHAR(30) NOT NULL, 
+	approved_by_name VARCHAR(100), 
+	approval_date DATE, 
+	implementation_plan TEXT, 
+	implementation_date DATE, 
+	verification_result TEXT, 
+	verified_by_name VARCHAR(100), 
+	related_ccp_ids JSONB, 
+	related_document_ids JSONB, 
+	created_at TIMESTAMP WITH TIME ZONE DEFAULT now(), 
+	PRIMARY KEY (change_id), 
+	UNIQUE (change_code)
+);
+
+-- ============================================================================
+-- 5. PHÂN HỆ: SỰ KHÔNG PHÙ HỢP (NC) & HÀNH ĐỘNG KHẮC PHỤC (CAPA)
+-- ============================================================================
+
+-- Bảng: non_conformances
+CREATE TABLE IF NOT EXISTS non_conformances (
+	nc_id UUID DEFAULT gen_random_uuid() NOT NULL, 
+	nc_number VARCHAR(50) NOT NULL, 
+	title VARCHAR(255) NOT NULL, 
+	source VARCHAR(50) NOT NULL, 
+	severity VARCHAR(20) NOT NULL, 
+	occurred_date DATE NOT NULL, 
+	occurred_location VARCHAR(150), 
+	description TEXT NOT NULL, 
+	immediate_action TEXT, 
+	affected_lot_number VARCHAR(100), 
+	affected_quantity VARCHAR(100), 
+	reported_by UUID, 
+	reported_by_name VARCHAR(150), 
+	status VARCHAR(30), 
+	created_at TIMESTAMP WITH TIME ZONE, 
+	updated_at TIMESTAMP WITH TIME ZONE, 
+	PRIMARY KEY (nc_id), 
+	UNIQUE (nc_number), 
+	FOREIGN KEY(reported_by) REFERENCES users (user_id)
+);
+
+-- Bảng: capa_records
+CREATE TABLE IF NOT EXISTS capa_records (
+	capa_id UUID DEFAULT gen_random_uuid() NOT NULL, 
+	capa_number VARCHAR(50) NOT NULL, 
+	nc_id UUID NOT NULL, 
+	title VARCHAR(255) NOT NULL, 
+	root_cause_method VARCHAR(50), 
+	root_cause_analysis JSONB, 
+	root_cause_summary TEXT, 
+	corrective_action TEXT NOT NULL, 
+	preventive_action TEXT, 
+	assigned_to UUID, 
+	assigned_to_name VARCHAR(150), 
+	assigned_dept VARCHAR(150), 
+	target_date DATE NOT NULL, 
+	completed_date DATE, 
+	verified_by UUID, 
+	verified_by_name VARCHAR(150), 
+	verification_date DATE, 
+	verification_result TEXT, 
+	verification_status VARCHAR(30), 
+	status VARCHAR(30), 
+	evidence_urls JSONB, 
+	created_at TIMESTAMP WITH TIME ZONE, 
+	updated_at TIMESTAMP WITH TIME ZONE, 
+	PRIMARY KEY (capa_id), 
+	UNIQUE (capa_number), 
+	FOREIGN KEY(nc_id) REFERENCES non_conformances (nc_id) ON DELETE CASCADE, 
+	FOREIGN KEY(assigned_to) REFERENCES users (user_id), 
+	FOREIGN KEY(verified_by) REFERENCES users (user_id)
+);
+
+-- ============================================================================
+-- 6. PHÂN HỆ: TỔ CHỨC & BỐI CẢNH DOANH NGHIỆP
+-- ============================================================================
+
+-- Bảng: interested_parties
+CREATE TABLE IF NOT EXISTS interested_parties (
+	id SERIAL NOT NULL, 
+	party_name VARCHAR(255) NOT NULL, 
+	party_type VARCHAR(50) NOT NULL, 
+	needs_and_expectations TEXT NOT NULL, 
+	statutory_requirements TEXT, 
+	monitoring_method TEXT, 
+	review_frequency VARCHAR(100), 
+	responsible_role VARCHAR(150), 
+	status VARCHAR(50), 
+	created_at TIMESTAMP WITH TIME ZONE DEFAULT now(), 
+	updated_at TIMESTAMP WITH TIME ZONE, 
+	PRIMARY KEY (id)
+);
+
+-- Bảng: context_risks
+CREATE TABLE IF NOT EXISTS context_risks (
+	id SERIAL NOT NULL, 
+	code VARCHAR(50) NOT NULL, 
+	issue_category VARCHAR(50) NOT NULL, 
+	issue_description TEXT NOT NULL, 
+	interested_party_id INTEGER, 
+	risk_description TEXT NOT NULL, 
+	opportunity_description TEXT, 
+	likelihood INTEGER NOT NULL, 
+	severity INTEGER NOT NULL, 
+	risk_score INTEGER NOT NULL, 
+	treatment_strategy VARCHAR(50), 
+	action_plan TEXT NOT NULL, 
+	responsible_role VARCHAR(150), 
+	target_date DATE, 
+	status VARCHAR(50), 
+	residual_likelihood INTEGER, 
+	residual_severity INTEGER, 
+	residual_risk_score INTEGER, 
+	created_at TIMESTAMP WITH TIME ZONE DEFAULT now(), 
+	updated_at TIMESTAMP WITH TIME ZONE, 
+	PRIMARY KEY (id), 
+	FOREIGN KEY(interested_party_id) REFERENCES interested_parties (id) ON DELETE SET NULL
+);
+
+-- Bảng: food_safety_team_members
+CREATE TABLE IF NOT EXISTS food_safety_team_members (
+	member_id UUID DEFAULT gen_random_uuid() NOT NULL, 
+	user_id UUID, 
+	member_name VARCHAR(100) NOT NULL, 
+	role_in_team VARCHAR(50) NOT NULL, 
+	department VARCHAR(100) NOT NULL, 
+	current_position VARCHAR(100) NOT NULL, 
+	qualification_and_training TEXT, 
+	responsibility_description TEXT NOT NULL, 
+	appointment_decision_code VARCHAR(50) NOT NULL, 
+	appointment_date DATE NOT NULL, 
+	status VARCHAR(30) NOT NULL, 
+	created_at TIMESTAMP WITH TIME ZONE DEFAULT now(), 
+	PRIMARY KEY (member_id), 
+	FOREIGN KEY(user_id) REFERENCES users (user_id) ON DELETE SET NULL
+);
+
+-- Bảng: communications_log
+CREATE TABLE IF NOT EXISTS communications_log (
+	comm_id UUID DEFAULT gen_random_uuid() NOT NULL, 
+	comm_code VARCHAR(50) NOT NULL, 
+	direction VARCHAR(20) NOT NULL, 
+	party_type VARCHAR(30) NOT NULL, 
+	party_name VARCHAR(255) NOT NULL, 
+	subject VARCHAR(255) NOT NULL, 
+	content TEXT NOT NULL, 
+	communication_date DATE NOT NULL, 
+	method VARCHAR(30) NOT NULL, 
+	responsible_person VARCHAR(100) NOT NULL, 
+	related_nc_id UUID, 
+	attachment_url VARCHAR(500), 
+	status VARCHAR(30) NOT NULL, 
+	created_at TIMESTAMP WITH TIME ZONE DEFAULT now(), 
+	PRIMARY KEY (comm_id), 
+	FOREIGN KEY(related_nc_id) REFERENCES non_conformances (nc_id) ON DELETE SET NULL
+);
+
+-- ============================================================================
+-- 7. PHÂN HỆ: QUẢN LÝ MUA HÀNG, ĐÁNH GIÁ NHÀ CUNG CẤP & KIỂM TRA IQC
+-- ============================================================================
+
+-- Bảng: suppliers
+CREATE TABLE IF NOT EXISTS suppliers (
+	supplier_id UUID DEFAULT gen_random_uuid() NOT NULL, 
+	supplier_code VARCHAR(50) NOT NULL, 
+	supplier_name VARCHAR(255) NOT NULL, 
+	contact_info JSONB, 
+	category VARCHAR(100), 
+	certifications JSONB, 
+	rating_score NUMERIC(5, 2) NOT NULL, 
+	status VARCHAR(30) NOT NULL, 
+	risk_level VARCHAR(30), 
+	evaluation_notes TEXT, 
+	evaluation_date DATE, 
+	created_at TIMESTAMP WITH TIME ZONE DEFAULT now(), 
+	PRIMARY KEY (supplier_id), 
+	UNIQUE (supplier_code)
+);
+
+-- Bảng: material_lots
+CREATE TABLE IF NOT EXISTS material_lots (
+	material_lot_id UUID DEFAULT gen_random_uuid() NOT NULL, 
+	lot_number VARCHAR(100) NOT NULL, 
+	supplier_id UUID, 
+	material_name VARCHAR(255) NOT NULL, 
+	material_category VARCHAR(100), 
+	received_date DATE NOT NULL, 
+	mfg_date DATE, 
+	exp_date DATE, 
+	quantity NUMERIC(12, 2) NOT NULL, 
+	unit VARCHAR(20) NOT NULL, 
+	storage_condition VARCHAR(100), 
+	coa_file_url TEXT, 
+	status VARCHAR(30) NOT NULL, 
+	created_by UUID, 
+	created_at TIMESTAMP WITH TIME ZONE DEFAULT now(), 
+	PRIMARY KEY (material_lot_id), 
+	UNIQUE (lot_number), 
+	FOREIGN KEY(supplier_id) REFERENCES suppliers (supplier_id) ON DELETE SET NULL, 
+	FOREIGN KEY(created_by) REFERENCES users (user_id) ON DELETE SET NULL
+);
+
+-- Bảng: iqc_inspections
+CREATE TABLE IF NOT EXISTS iqc_inspections (
+	inspection_id UUID DEFAULT gen_random_uuid() NOT NULL, 
+	inspection_code VARCHAR(50) NOT NULL, 
+	material_lot_id UUID, 
+	inspector_id UUID, 
+	sensory_check BOOLEAN NOT NULL, 
+	packaging_check BOOLEAN NOT NULL, 
+	temperature_c NUMERIC(5, 2), 
+	moisture_content NUMERIC(5, 2), 
+	mycotoxin_check BOOLEAN NOT NULL, 
+	allergen_check BOOLEAN NOT NULL, 
+	coa_compliance BOOLEAN NOT NULL, 
+	defect_rate_percent NUMERIC(5, 2), 
+	impurity_percent NUMERIC(5, 2), 
+	size_uniformity_check BOOLEAN NOT NULL, 
+	vehicle_cleanliness_check BOOLEAN NOT NULL, 
+	delivery_vehicle_plate VARCHAR(30), 
+	driver_name VARCHAR(100), 
+	inspection_details JSONB, 
+	status VARCHAR(30) NOT NULL, 
+	notes TEXT, 
+	inspected_at TIMESTAMP WITH TIME ZONE DEFAULT now(), 
+	PRIMARY KEY (inspection_id), 
+	UNIQUE (inspection_code), 
+	FOREIGN KEY(material_lot_id) REFERENCES material_lots (material_lot_id) ON DELETE CASCADE, 
+	FOREIGN KEY(inspector_id) REFERENCES users (user_id) ON DELETE SET NULL
+);
+
+-- Bảng: supplier_evaluation_plans
+CREATE TABLE IF NOT EXISTS supplier_evaluation_plans (
+	id SERIAL NOT NULL, 
+	plan_code VARCHAR(50) NOT NULL, 
+	year INTEGER NOT NULL, 
+	title VARCHAR(255) NOT NULL, 
+	department VARCHAR(100) NOT NULL, 
+	scope TEXT, 
+	approved_by VARCHAR(100), 
+	approval_status VARCHAR(30) NOT NULL, 
+	created_at TIMESTAMP WITH TIME ZONE DEFAULT now(), 
+	PRIMARY KEY (id), 
+	UNIQUE (plan_code)
+);
+
+-- Bảng: supplier_evaluations
+CREATE TABLE IF NOT EXISTS supplier_evaluations (
+	id SERIAL NOT NULL, 
+	evaluation_code VARCHAR(50) NOT NULL, 
+	plan_id INTEGER, 
+	supplier_id UUID NOT NULL, 
+	criteria_type VARCHAR(50) NOT NULL, 
+	evaluation_date DATE NOT NULL, 
+	evaluator_name VARCHAR(100) NOT NULL, 
+	audit_type VARCHAR(50) NOT NULL, 
+	criteria_scores JSONB NOT NULL, 
+	total_score NUMERIC(5, 2) NOT NULL, 
+	grade VARCHAR(10) NOT NULL, 
+	conclusion VARCHAR(50) NOT NULL, 
+	corrective_actions TEXT, 
+	approved_by VARCHAR(100), 
+	created_at TIMESTAMP WITH TIME ZONE DEFAULT now(), 
+	PRIMARY KEY (id), 
+	UNIQUE (evaluation_code), 
+	FOREIGN KEY(plan_id) REFERENCES supplier_evaluation_plans (id) ON DELETE SET NULL, 
+	FOREIGN KEY(supplier_id) REFERENCES suppliers (supplier_id) ON DELETE CASCADE
+);
+
+-- ============================================================================
+-- 8. PHÂN HỆ: KẾ HOẠCH HACCP, LƯU ĐỒ CÔNG ĐOẠN & ĐIỂM KIỂM SOÁT TỚI HẠN CCP
+-- ============================================================================
+
+-- Bảng: haccp_plans
+CREATE TABLE IF NOT EXISTS haccp_plans (
+	plan_id UUID DEFAULT gen_random_uuid() NOT NULL, 
+	plan_code VARCHAR(50) NOT NULL, 
+	plan_name VARCHAR(255) NOT NULL, 
+	product_line VARCHAR(100) NOT NULL, 
+	version VARCHAR(20) NOT NULL, 
+	team_leader VARCHAR(100) NOT NULL, 
+	approved_by VARCHAR(100), 
+	effective_date DATE NOT NULL, 
+	scope_description TEXT, 
+	status VARCHAR(30) NOT NULL, 
+	created_at TIMESTAMP WITH TIME ZONE DEFAULT now(), 
+	PRIMARY KEY (plan_id), 
+	UNIQUE (plan_code)
+);
+
+-- Bảng: process_steps
+CREATE TABLE IF NOT EXISTS process_steps (
+	step_id UUID DEFAULT gen_random_uuid() NOT NULL, 
+	plan_id UUID, 
+	step_number INTEGER NOT NULL, 
+	step_name VARCHAR(255) NOT NULL, 
+	product_line VARCHAR(100) NOT NULL, 
+	description TEXT, 
+	is_ccp_or_oprp BOOLEAN NOT NULL, 
+	created_at TIMESTAMP WITH TIME ZONE DEFAULT now(), 
+	PRIMARY KEY (step_id), 
+	FOREIGN KEY(plan_id) REFERENCES haccp_plans (plan_id) ON DELETE SET NULL
+);
+
+-- Bảng: hazard_analyses
+CREATE TABLE IF NOT EXISTS hazard_analyses (
+	hazard_id UUID DEFAULT gen_random_uuid() NOT NULL, 
+	step_id UUID NOT NULL, 
+	hazard_type VARCHAR(50) NOT NULL, 
+	hazard_name VARCHAR(255) NOT NULL, 
+	potential_consequence TEXT, 
+	likelihood INTEGER NOT NULL, 
+	severity INTEGER NOT NULL, 
+	risk_score INTEGER NOT NULL, 
+	is_significant BOOLEAN NOT NULL, 
+	control_measure TEXT NOT NULL, 
+	q1 VARCHAR(20), 
+	q2 VARCHAR(20), 
+	q3 VARCHAR(20), 
+	q4 VARCHAR(20), 
+	classification VARCHAR(30) NOT NULL, 
+	notes TEXT, 
+	created_at TIMESTAMP WITH TIME ZONE DEFAULT now(), 
+	PRIMARY KEY (hazard_id), 
+	FOREIGN KEY(step_id) REFERENCES process_steps (step_id) ON DELETE CASCADE
+);
+
+-- Bảng: ccp_definitions
+CREATE TABLE IF NOT EXISTS ccp_definitions (
+	ccp_id UUID DEFAULT gen_random_uuid() NOT NULL, 
+	ccp_code VARCHAR(50) NOT NULL, 
+	name VARCHAR(255) NOT NULL, 
+	process_step_id UUID, 
+	hazard_description TEXT NOT NULL, 
+	critical_limit JSONB NOT NULL, 
+	monitoring_frequency VARCHAR(100) NOT NULL, 
+	monitoring_method TEXT NOT NULL, 
+	corrective_action_plan TEXT NOT NULL, 
+	responsible_role VARCHAR(100) NOT NULL, 
+	status VARCHAR(30) NOT NULL, 
+	created_at TIMESTAMP WITH TIME ZONE DEFAULT now(), 
+	PRIMARY KEY (ccp_id), 
+	UNIQUE (ccp_code), 
+	FOREIGN KEY(process_step_id) REFERENCES process_steps (step_id) ON DELETE SET NULL
+);
+
+-- Bảng: ccp_monitoring_logs
+CREATE TABLE IF NOT EXISTS ccp_monitoring_logs (
+	log_id UUID DEFAULT gen_random_uuid() NOT NULL, 
+	ccp_id UUID NOT NULL, 
+	batch_number VARCHAR(100) NOT NULL, 
+	checked_by UUID, 
+	test_time TIMESTAMP WITH TIME ZONE DEFAULT now(), 
+	measured_value NUMERIC(8, 2) NOT NULL, 
+	unit VARCHAR(20) NOT NULL, 
+	measured_details JSONB, 
+	is_critical_limit_exceeded BOOLEAN NOT NULL, 
+	status VARCHAR(30) NOT NULL, 
+	deviation_action TEXT, 
+	verification_status VARCHAR(30) NOT NULL, 
+	verified_by UUID, 
+	notes TEXT, 
+	created_at TIMESTAMP WITH TIME ZONE DEFAULT now(), 
+	PRIMARY KEY (log_id), 
+	FOREIGN KEY(ccp_id) REFERENCES ccp_definitions (ccp_id) ON DELETE CASCADE, 
+	FOREIGN KEY(checked_by) REFERENCES users (user_id) ON DELETE SET NULL, 
+	FOREIGN KEY(verified_by) REFERENCES users (user_id) ON DELETE SET NULL
+);
+
+-- Bảng: haccp_plan_reviews
+CREATE TABLE IF NOT EXISTS haccp_plan_reviews (
+	review_id UUID DEFAULT gen_random_uuid() NOT NULL, 
+	review_code VARCHAR(50) NOT NULL, 
+	plan_id UUID NOT NULL, 
+	review_date DATE NOT NULL, 
+	review_type VARCHAR(50) NOT NULL, 
+	triggered_by_change_id UUID, 
+	reviewed_by_name VARCHAR(100) NOT NULL, 
+	scope_of_review TEXT NOT NULL, 
+	findings TEXT NOT NULL, 
+	changes_required BOOLEAN NOT NULL, 
+	plan_version_before VARCHAR(20) NOT NULL, 
+	plan_version_after VARCHAR(20) NOT NULL, 
+	approval_status VARCHAR(30) NOT NULL, 
+	approved_by_name VARCHAR(100), 
+	created_at TIMESTAMP WITH TIME ZONE DEFAULT now(), 
+	PRIMARY KEY (review_id), 
+	UNIQUE (review_code), 
+	FOREIGN KEY(plan_id) REFERENCES haccp_plans (plan_id) ON DELETE CASCADE, 
+	FOREIGN KEY(triggered_by_change_id) REFERENCES change_requests (change_id) ON DELETE SET NULL
+);
+
+-- ============================================================================
+-- 9. PHÂN HỆ: CHƯƠNG TRÌNH TIÊN QUYẾT PRP & CHECKLIST GIÁM SÁT
+-- ============================================================================
+
+-- Bảng: prp_programs
+CREATE TABLE IF NOT EXISTS prp_programs (
+	program_id UUID DEFAULT gen_random_uuid() NOT NULL, 
+	program_code VARCHAR(50) NOT NULL, 
+	program_name VARCHAR(255) NOT NULL, 
+	"group" VARCHAR(50) NOT NULL, 
+	scope VARCHAR(255), 
+	frequency VARCHAR(50) NOT NULL, 
+	responsible_dept VARCHAR(100) NOT NULL, 
+	status VARCHAR(30) NOT NULL, 
+	description TEXT, 
+	created_at TIMESTAMP WITH TIME ZONE DEFAULT now(), 
+	PRIMARY KEY (program_id), 
+	UNIQUE (program_code)
+);
+
+-- Bảng: prp_checklist_logs
+CREATE TABLE IF NOT EXISTS prp_checklist_logs (
+	check_id UUID DEFAULT gen_random_uuid() NOT NULL, 
+	program_id UUID NOT NULL, 
+	shift_name VARCHAR(50) NOT NULL, 
+	check_date DATE NOT NULL, 
+	check_time VARCHAR(20), 
+	checked_by UUID, 
+	items_checked JSONB NOT NULL, 
+	compliance_rate NUMERIC(5, 2) NOT NULL, 
+	status VARCHAR(30) NOT NULL, 
+	finding_notes TEXT, 
+	corrective_action TEXT, 
+	created_at TIMESTAMP WITH TIME ZONE DEFAULT now(), 
+	PRIMARY KEY (check_id), 
+	FOREIGN KEY(program_id) REFERENCES prp_programs (program_id) ON DELETE CASCADE, 
+	FOREIGN KEY(checked_by) REFERENCES users (user_id) ON DELETE SET NULL
+);
+
+-- ============================================================================
+-- 10. PHÂN HỆ: QUẢN LÝ THIẾT BỊ, BẢO TRÌ PHÒNG NGỪA & HIỆU CHUẨN
+-- ============================================================================
+
+-- Bảng: equipments
+CREATE TABLE IF NOT EXISTS equipments (
+	equipment_id UUID DEFAULT gen_random_uuid() NOT NULL, 
+	equipment_code VARCHAR(50) NOT NULL, 
+	equipment_name VARCHAR(255) NOT NULL, 
+	category VARCHAR(50), 
+	model VARCHAR(100), 
+	serial_number VARCHAR(100), 
+	manufacturer VARCHAR(150), 
+	installation_location VARCHAR(150), 
+	installation_date DATE, 
+	criticality_level VARCHAR(30), 
+	status VARCHAR(30), 
+	calibration_frequency_months INTEGER, 
+	last_calibration_date DATE, 
+	next_calibration_due DATE, 
+	calibration_status VARCHAR(30), 
+	maintenance_frequency_days INTEGER, 
+	last_maintenance_date DATE, 
+	next_maintenance_due DATE, 
+	managed_by UUID, 
+	specifications JSONB, 
+	notes TEXT, 
+	created_at TIMESTAMP WITH TIME ZONE, 
+	PRIMARY KEY (equipment_id), 
+	UNIQUE (equipment_code), 
+	FOREIGN KEY(managed_by) REFERENCES users (user_id)
+);
+
+-- Bảng: equipment_calibration_logs
+CREATE TABLE IF NOT EXISTS equipment_calibration_logs (
+	calibration_id UUID DEFAULT gen_random_uuid() NOT NULL, 
+	equipment_id UUID NOT NULL, 
+	calibration_code VARCHAR(50) NOT NULL, 
+	calibration_type VARCHAR(50), 
+	calibration_date DATE NOT NULL, 
+	expiry_date DATE NOT NULL, 
+	agency_name VARCHAR(255), 
+	certificate_number VARCHAR(100), 
+	standard_applied VARCHAR(100), 
+	measured_deviation NUMERIC(8, 4), 
+	allowable_tolerance NUMERIC(8, 4), 
+	is_passed BOOLEAN, 
+	status VARCHAR(30), 
+	certificate_file_url VARCHAR(500), 
+	calibrated_by UUID, 
+	calibrator_name VARCHAR(150), 
+	notes TEXT, 
+	created_at TIMESTAMP WITH TIME ZONE, 
+	PRIMARY KEY (calibration_id), 
+	FOREIGN KEY(equipment_id) REFERENCES equipments (equipment_id) ON DELETE CASCADE, 
+	UNIQUE (calibration_code), 
+	FOREIGN KEY(calibrated_by) REFERENCES users (user_id)
+);
+
+-- Bảng: equipment_maintenance_logs
+CREATE TABLE IF NOT EXISTS equipment_maintenance_logs (
+	maintenance_id UUID DEFAULT gen_random_uuid() NOT NULL, 
+	equipment_id UUID NOT NULL, 
+	maintenance_code VARCHAR(50) NOT NULL, 
+	maintenance_type VARCHAR(50), 
+	maintenance_date DATE NOT NULL, 
+	performed_by UUID, 
+	performer_name VARCHAR(150), 
+	tasks_performed JSONB, 
+	parts_replaced JSONB, 
+	food_grade_lubricant_used BOOLEAN, 
+	hygiene_sanitation_after_maint BOOLEAN, 
+	cost NUMERIC(12, 2), 
+	result_status VARCHAR(30), 
+	notes TEXT, 
+	created_at TIMESTAMP WITH TIME ZONE, 
+	PRIMARY KEY (maintenance_id), 
+	FOREIGN KEY(equipment_id) REFERENCES equipments (equipment_id) ON DELETE CASCADE, 
+	UNIQUE (maintenance_code), 
+	FOREIGN KEY(performed_by) REFERENCES users (user_id)
+);
+
+-- ============================================================================
+-- 11. PHÂN HỆ: QUẢN LÝ SẢN XUẤT, KHO THÔNG MINH FEFO & MẪU LƯU ĐỐI CHỨNG
+-- ============================================================================
+
+-- Bảng: production_batches
+CREATE TABLE IF NOT EXISTS production_batches (
+	batch_id UUID DEFAULT gen_random_uuid() NOT NULL, 
+	batch_number VARCHAR(100) NOT NULL, 
+	product_name VARCHAR(255) NOT NULL, 
+	product_code VARCHAR(50), 
+	production_line VARCHAR(100), 
+	shift VARCHAR(50), 
+	planned_quantity NUMERIC(12, 2) NOT NULL, 
+	actual_quantity NUMERIC(12, 2) NOT NULL, 
+	unit VARCHAR(20) NOT NULL, 
+	start_time TIMESTAMP WITH TIME ZONE NOT NULL, 
+	end_time TIMESTAMP WITH TIME ZONE, 
+	status VARCHAR(30) NOT NULL, 
+	qc_inspector VARCHAR(100), 
+	notes TEXT, 
+	created_by UUID, 
+	created_at TIMESTAMP WITH TIME ZONE DEFAULT now(), 
+	PRIMARY KEY (batch_id), 
+	UNIQUE (batch_number), 
+	FOREIGN KEY(created_by) REFERENCES users (user_id) ON DELETE SET NULL
+);
+
+-- Bảng: batch_material_usage
+CREATE TABLE IF NOT EXISTS batch_material_usage (
+	usage_id UUID DEFAULT gen_random_uuid() NOT NULL, 
+	batch_id UUID NOT NULL, 
+	material_lot_id UUID, 
+	material_name VARCHAR(255) NOT NULL, 
+	lot_number VARCHAR(100) NOT NULL, 
+	quantity_used NUMERIC(12, 2) NOT NULL, 
+	unit VARCHAR(20) NOT NULL, 
+	recorded_at TIMESTAMP WITH TIME ZONE DEFAULT now(), 
+	PRIMARY KEY (usage_id), 
+	FOREIGN KEY(batch_id) REFERENCES production_batches (batch_id) ON DELETE CASCADE, 
+	FOREIGN KEY(material_lot_id) REFERENCES material_lots (material_lot_id) ON DELETE SET NULL
+);
+
+-- Bảng: warehouse_inventory
+CREATE TABLE IF NOT EXISTS warehouse_inventory (
+	inventory_id UUID DEFAULT gen_random_uuid() NOT NULL, 
+	item_code VARCHAR(50) NOT NULL, 
+	item_name VARCHAR(255) NOT NULL, 
+	category VARCHAR(50) NOT NULL, 
+	lot_number VARCHAR(100) NOT NULL, 
+	batch_id UUID, 
+	qr_code VARCHAR(255) NOT NULL, 
+	quantity NUMERIC(12, 2) NOT NULL, 
+	unit VARCHAR(20) NOT NULL, 
+	min_stock_level NUMERIC(12, 2) NOT NULL, 
+	mfg_date DATE NOT NULL, 
+	exp_date DATE NOT NULL, 
+	warehouse_type VARCHAR(50) NOT NULL, 
+	location_bin VARCHAR(50) NOT NULL, 
+	temperature_c NUMERIC(5, 2), 
+	status VARCHAR(30) NOT NULL, 
+	notes TEXT, 
+	created_at TIMESTAMP WITH TIME ZONE DEFAULT now(), 
+	updated_at TIMESTAMP WITH TIME ZONE DEFAULT now(), 
+	PRIMARY KEY (inventory_id), 
+	FOREIGN KEY(batch_id) REFERENCES production_batches (batch_id) ON DELETE SET NULL, 
+	UNIQUE (qr_code)
+);
+
+-- Bảng: order_dispatches
+CREATE TABLE IF NOT EXISTS order_dispatches (
+	dispatch_id UUID DEFAULT gen_random_uuid() NOT NULL, 
+	dispatch_code VARCHAR(100) NOT NULL, 
+	order_number VARCHAR(100) NOT NULL, 
+	customer_name VARCHAR(255) NOT NULL, 
+	customer_phone VARCHAR(50), 
+	destination_address VARCHAR(255), 
+	batch_id UUID, 
+	batch_number VARCHAR(100) NOT NULL, 
+	product_name VARCHAR(255) NOT NULL, 
+	quantity_dispatched NUMERIC(12, 2) NOT NULL, 
+	unit VARCHAR(20) NOT NULL, 
+	vehicle_number VARCHAR(50), 
+	vehicle_temp_c NUMERIC(5, 2), 
+	vehicle_check_status BOOLEAN NOT NULL, 
+	status VARCHAR(30) NOT NULL, 
+	dispatched_by UUID, 
+	dispatched_at TIMESTAMP WITH TIME ZONE DEFAULT now(), 
+	notes TEXT, 
+	PRIMARY KEY (dispatch_id), 
+	UNIQUE (dispatch_code), 
+	FOREIGN KEY(batch_id) REFERENCES production_batches (batch_id) ON DELETE SET NULL, 
+	FOREIGN KEY(dispatched_by) REFERENCES users (user_id) ON DELETE SET NULL
+);
+
+-- Bảng: vehicle_inspections
+CREATE TABLE IF NOT EXISTS vehicle_inspections (
+	id SERIAL NOT NULL, 
+	inspection_code VARCHAR(50) NOT NULL, 
+	inspection_date TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL, 
+	order_dispatch_id UUID, 
+	vehicle_plate VARCHAR(50) NOT NULL, 
+	driver_name VARCHAR(100) NOT NULL, 
+	driver_phone VARCHAR(50), 
+	transport_company VARCHAR(255), 
+	valid_registration_check BOOLEAN NOT NULL, 
+	cargo_integrity_check BOOLEAN NOT NULL, 
+	clean_dry_check BOOLEAN NOT NULL, 
+	no_odor_check BOOLEAN NOT NULL, 
+	pest_free_check BOOLEAN NOT NULL, 
+	inspection_result VARCHAR(30) NOT NULL, 
+	inspector_name VARCHAR(100) NOT NULL, 
+	notes TEXT, 
+	created_at TIMESTAMP WITH TIME ZONE DEFAULT now(), 
+	PRIMARY KEY (id), 
+	FOREIGN KEY(order_dispatch_id) REFERENCES order_dispatches (dispatch_id) ON DELETE SET NULL
+);
+
+-- Bảng: retained_samples
+CREATE TABLE IF NOT EXISTS retained_samples (
+	sample_id UUID DEFAULT gen_random_uuid() NOT NULL, 
+	sample_code VARCHAR(100) NOT NULL, 
+	batch_id UUID, 
+	batch_number VARCHAR(100) NOT NULL, 
+	product_name VARCHAR(255) NOT NULL, 
+	sample_weight_g NUMERIC(8, 2) NOT NULL, 
+	storage_cabinet VARCHAR(100) NOT NULL, 
+	storage_location VARCHAR(100), 
+	storage_temperature_c NUMERIC(5, 2), 
+	sample_date DATE NOT NULL, 
+	expiry_date DATE NOT NULL, 
+	sampled_by VARCHAR(100) NOT NULL, 
+	test_result VARCHAR(30) NOT NULL, 
+	test_details JSONB, 
+	status VARCHAR(30) NOT NULL, 
+	disposed_date DATE, 
+	disposed_by VARCHAR(100), 
+	notes TEXT, 
+	created_at TIMESTAMP WITH TIME ZONE DEFAULT now(), 
+	PRIMARY KEY (sample_id), 
+	UNIQUE (sample_code), 
+	FOREIGN KEY(batch_id) REFERENCES production_batches (batch_id) ON DELETE SET NULL
+);
+
+-- Bảng: disposal_records
+CREATE TABLE IF NOT EXISTS disposal_records (
+	id SERIAL NOT NULL, 
+	record_code VARCHAR(50) NOT NULL, 
+	disposal_date DATE NOT NULL, 
+	batch_id UUID, 
+	batch_number VARCHAR(100) NOT NULL, 
+	product_name VARCHAR(255) NOT NULL, 
+	quantity NUMERIC(12, 2) NOT NULL, 
+	unit VARCHAR(50) NOT NULL, 
+	reason TEXT NOT NULL, 
+	disposal_method VARCHAR(100) NOT NULL, 
+	disposal_location VARCHAR(255), 
+	witness_council TEXT, 
+	status VARCHAR(50) NOT NULL, 
+	approved_by VARCHAR(100), 
+	notes TEXT, 
+	created_at TIMESTAMP WITH TIME ZONE DEFAULT now(), 
+	PRIMARY KEY (id), 
+	FOREIGN KEY(batch_id) REFERENCES production_batches (batch_id) ON DELETE SET NULL
+);
+
+-- ============================================================================
+-- 12. PHÂN HỆ: ĐÁNH GIÁ NỘI BỘ, ĐÀO TẠO NHÂN SỰ & HỒ SƠ SỨC KHỎE
+-- ============================================================================
+
+-- Bảng: training_courses
+CREATE TABLE IF NOT EXISTS training_courses (
+	course_id UUID DEFAULT uuid_generate_v4() NOT NULL, 
+	course_code VARCHAR(50) NOT NULL, 
+	title VARCHAR(255) NOT NULL, 
+	category VARCHAR(50) NOT NULL, 
+	trainer_name VARCHAR(100) NOT NULL, 
+	training_type VARCHAR(50) NOT NULL, 
+	schedule_date DATE NOT NULL, 
+	duration_hours NUMERIC(4, 1) NOT NULL, 
+	target_dept VARCHAR(100) NOT NULL, 
+	content_summary TEXT, 
+	status VARCHAR(50) NOT NULL, 
+	created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL, 
+	PRIMARY KEY (course_id)
+);
+
+-- Bảng: training_participant_records
+CREATE TABLE IF NOT EXISTS training_participant_records (
+	participant_id UUID DEFAULT uuid_generate_v4() NOT NULL, 
+	course_id UUID NOT NULL, 
+	employee_code VARCHAR(50) NOT NULL, 
+	employee_name VARCHAR(100) NOT NULL, 
+	department VARCHAR(100) NOT NULL, 
+	position VARCHAR(100), 
+	attendance_status VARCHAR(50) NOT NULL, 
+	pre_test_score NUMERIC(5, 1), 
+	post_test_score NUMERIC(5, 1), 
+	evaluation_result VARCHAR(50) NOT NULL, 
+	certificate_issued BOOLEAN NOT NULL, 
+	notes TEXT, 
+	created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL, 
+	PRIMARY KEY (participant_id), 
+	FOREIGN KEY(course_id) REFERENCES training_courses (course_id) ON DELETE CASCADE
+);
+
+-- Bảng: health_declaration_records
+CREATE TABLE IF NOT EXISTS health_declaration_records (
+	declaration_id UUID DEFAULT uuid_generate_v4() NOT NULL, 
+	employee_code VARCHAR(50) NOT NULL, 
+	employee_name VARCHAR(100) NOT NULL, 
+	department VARCHAR(100) NOT NULL, 
+	shift_date DATE NOT NULL, 
+	shift_name VARCHAR(50) NOT NULL, 
+	symptoms JSONB NOT NULL, 
+	body_temperature NUMERIC(4, 1) NOT NULL, 
+	personal_hygiene_check JSONB NOT NULL, 
+	cleared_for_shift VARCHAR(50) NOT NULL, 
+	supervisor_name VARCHAR(100) NOT NULL, 
+	notes TEXT, 
+	created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL, 
+	PRIMARY KEY (declaration_id)
+);
+
+-- Bảng: internal_audits
+CREATE TABLE IF NOT EXISTS internal_audits (
+	audit_id UUID DEFAULT uuid_generate_v4() NOT NULL, 
+	audit_code VARCHAR(50) NOT NULL, 
+	title VARCHAR(255) NOT NULL, 
+	audit_type VARCHAR(50) NOT NULL, 
+	start_date DATE NOT NULL, 
+	end_date DATE NOT NULL, 
+	lead_auditor_name VARCHAR(100) NOT NULL, 
+	lead_auditor_id UUID, 
+	auditor_team JSONB, 
+	audited_dept VARCHAR(100) NOT NULL, 
+	audited_lead_name VARCHAR(100), 
+	scope TEXT NOT NULL, 
+	standard_clauses JSONB, 
+	findings_summary TEXT, 
+	conclusion TEXT, 
+	status VARCHAR(50) NOT NULL, 
+	created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL, 
+	PRIMARY KEY (audit_id), 
+	FOREIGN KEY(lead_auditor_id) REFERENCES users (user_id) ON DELETE SET NULL
+);
+
+-- Bảng: audit_findings
+CREATE TABLE IF NOT EXISTS audit_findings (
+	finding_id UUID DEFAULT uuid_generate_v4() NOT NULL, 
+	audit_id UUID NOT NULL, 
+	clause_number VARCHAR(50) NOT NULL, 
+	clause_title VARCHAR(255) NOT NULL, 
+	department VARCHAR(100) NOT NULL, 
+	question TEXT NOT NULL, 
+	evidence_reviewed TEXT, 
+	result VARCHAR(50) NOT NULL, 
+	finding_notes TEXT, 
+	linked_nc_id UUID, 
+	created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL, 
+	PRIMARY KEY (finding_id), 
+	FOREIGN KEY(audit_id) REFERENCES internal_audits (audit_id) ON DELETE CASCADE, 
+	FOREIGN KEY(linked_nc_id) REFERENCES non_conformances (nc_id) ON DELETE SET NULL
+);
+
+-- ============================================================================
+-- 13. PHÂN HỆ: DASHBOARD ĐIỀU HÀNH, MỤC TIÊU & XEM XÉT LÃNH ĐẠO
+-- ============================================================================
+
+-- Bảng: quality_objectives
+CREATE TABLE IF NOT EXISTS quality_objectives (
+	objective_id UUID DEFAULT gen_random_uuid() NOT NULL, 
+	objective_code VARCHAR(50) NOT NULL, 
+	metric_name VARCHAR(255) NOT NULL, 
+	clause_reference VARCHAR(50) NOT NULL, 
+	department VARCHAR(100) NOT NULL, 
+	target_year INTEGER NOT NULL, 
+	target_value FLOAT NOT NULL, 
+	actual_value FLOAT NOT NULL, 
+	unit VARCHAR(30) NOT NULL, 
+	status VARCHAR(30) NOT NULL, 
+	action_plan TEXT, 
+	responsible_person VARCHAR(100) NOT NULL, 
+	created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL, 
+	updated_at TIMESTAMP WITHOUT TIME ZONE NOT NULL, 
+	PRIMARY KEY (objective_id)
+);
+
+-- Bảng: management_reviews
+CREATE TABLE IF NOT EXISTS management_reviews (
+	review_id UUID DEFAULT gen_random_uuid() NOT NULL, 
+	review_code VARCHAR(50) NOT NULL, 
+	title VARCHAR(255) NOT NULL, 
+	meeting_date DATE NOT NULL, 
+	chairperson_name VARCHAR(100) NOT NULL, 
+	secretary_name VARCHAR(100) NOT NULL, 
+	participants JSON NOT NULL, 
+	scope_and_inputs JSON NOT NULL, 
+	meeting_minutes TEXT NOT NULL, 
+	decisions_and_actions JSON NOT NULL, 
+	status VARCHAR(30) NOT NULL, 
+	created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL, 
+	updated_at TIMESTAMP WITHOUT TIME ZONE NOT NULL, 
+	PRIMARY KEY (review_id)
+);
+
+-- ============================================================================
+-- 14. PHÂN HỆ: CHUẨN BỊ & ỨNG PHÓ TÌNH HUỐNG KHẨN CẤP
+-- ============================================================================
+
+-- Bảng: emergency_contacts
+CREATE TABLE IF NOT EXISTS emergency_contacts (
+	contact_id UUID DEFAULT gen_random_uuid() NOT NULL, 
+	name VARCHAR(255) NOT NULL, 
+	organization_or_role VARCHAR(255) NOT NULL, 
+	phone VARCHAR(50) NOT NULL, 
+	phone_alt VARCHAR(50), 
+	email VARCHAR(100), 
+	contact_type VARCHAR(30) NOT NULL, 
+	priority_order INTEGER NOT NULL, 
+	address VARCHAR(255), 
+	notes TEXT, 
+	is_active BOOLEAN NOT NULL, 
+	created_at TIMESTAMP WITH TIME ZONE DEFAULT now(), 
+	PRIMARY KEY (contact_id)
+);
+
+-- Bảng: emergency_procedures
+CREATE TABLE IF NOT EXISTS emergency_procedures (
+	procedure_id UUID DEFAULT gen_random_uuid() NOT NULL, 
+	procedure_code VARCHAR(50) NOT NULL, 
+	title VARCHAR(255) NOT NULL, 
+	scenario_type VARCHAR(50) NOT NULL, 
+	likelihood INTEGER NOT NULL, 
+	severity INTEGER NOT NULL, 
+	risk_score INTEGER NOT NULL, 
+	risk_level VARCHAR(30) NOT NULL, 
+	immediate_actions JSONB, 
+	responsible_team VARCHAR(100) NOT NULL, 
+	equipment_needed TEXT, 
+	version VARCHAR(20) NOT NULL, 
+	status VARCHAR(30) NOT NULL, 
+	created_at TIMESTAMP WITH TIME ZONE DEFAULT now(), 
+	updated_at TIMESTAMP WITH TIME ZONE DEFAULT now(), 
+	PRIMARY KEY (procedure_id), 
+	UNIQUE (procedure_code)
+);
+
+-- Bảng: emergency_drills
+CREATE TABLE IF NOT EXISTS emergency_drills (
+	drill_id UUID DEFAULT gen_random_uuid() NOT NULL, 
+	drill_code VARCHAR(50) NOT NULL, 
+	title VARCHAR(255) NOT NULL, 
+	record_type VARCHAR(30) NOT NULL, 
+	scenario_type VARCHAR(50) NOT NULL, 
+	drill_date DATE NOT NULL, 
+	location VARCHAR(255) NOT NULL, 
+	participants_count INTEGER NOT NULL, 
+	drill_leader VARCHAR(100) NOT NULL, 
+	scenario_description TEXT, 
+	response_time_minutes INTEGER, 
+	evaluation_result VARCHAR(30) NOT NULL, 
+	corrective_actions_needed TEXT, 
+	notes TEXT, 
+	created_at TIMESTAMP WITH TIME ZONE DEFAULT now(), 
+	PRIMARY KEY (drill_id), 
+	UNIQUE (drill_code)
+);
+
+-- ============================================================================
+-- 15. PHÂN HỆ: THIẾT KẾ BIỂU MẪU ĐỘNG & LƯU ĐỒ QUY TRÌNH DUYỆT
+-- ============================================================================
+
+-- Bảng: dynamic_form_templates
+CREATE TABLE IF NOT EXISTS dynamic_form_templates (
+	template_id UUID DEFAULT gen_random_uuid() NOT NULL, 
+	module VARCHAR(50) NOT NULL, 
+	code VARCHAR(50) NOT NULL, 
+	title VARCHAR(255) NOT NULL, 
+	description TEXT, 
+	version VARCHAR(20) NOT NULL, 
+	fields JSONB NOT NULL, 
+	status VARCHAR(30) NOT NULL, 
+	created_by UUID, 
+	created_at TIMESTAMP WITH TIME ZONE DEFAULT now(), 
+	updated_at TIMESTAMP WITH TIME ZONE DEFAULT now(), 
+	PRIMARY KEY (template_id), 
+	UNIQUE (code), 
+	FOREIGN KEY(created_by) REFERENCES users (user_id) ON DELETE SET NULL
+);
+
+-- Bảng: dynamic_workflow_templates
+CREATE TABLE IF NOT EXISTS dynamic_workflow_templates (
+	workflow_id UUID DEFAULT gen_random_uuid() NOT NULL, 
+	module VARCHAR(50) NOT NULL, 
+	code VARCHAR(50) NOT NULL, 
+	title VARCHAR(255) NOT NULL, 
+	description TEXT, 
+	version VARCHAR(20) NOT NULL, 
+	nodes JSONB NOT NULL, 
+	edges JSONB NOT NULL, 
+	status VARCHAR(30) NOT NULL, 
+	created_by UUID, 
+	created_at TIMESTAMP WITH TIME ZONE DEFAULT now(), 
+	updated_at TIMESTAMP WITH TIME ZONE DEFAULT now(), 
+	PRIMARY KEY (workflow_id), 
+	UNIQUE (code), 
+	FOREIGN KEY(created_by) REFERENCES users (user_id) ON DELETE SET NULL
+);
+
+-- Bảng: workflow_instances
+CREATE TABLE IF NOT EXISTS workflow_instances (
+	instance_id UUID DEFAULT gen_random_uuid() NOT NULL, 
+	workflow_id UUID NOT NULL, 
+	reference_id VARCHAR(100), 
+	reference_type VARCHAR(50), 
+	current_node_id VARCHAR(50) NOT NULL, 
+	history JSONB NOT NULL, 
+	status VARCHAR(30) NOT NULL, 
+	started_by UUID, 
+	created_at TIMESTAMP WITH TIME ZONE DEFAULT now(), 
+	updated_at TIMESTAMP WITH TIME ZONE DEFAULT now(), 
+	PRIMARY KEY (instance_id), 
+	FOREIGN KEY(workflow_id) REFERENCES dynamic_workflow_templates (workflow_id) ON DELETE CASCADE, 
+	FOREIGN KEY(started_by) REFERENCES users (user_id) ON DELETE SET NULL
+);
+
+-- Bảng: dynamic_form_submissions
+CREATE TABLE IF NOT EXISTS dynamic_form_submissions (
+	submission_id UUID DEFAULT gen_random_uuid() NOT NULL, 
+	template_id UUID NOT NULL, 
+	reference_id VARCHAR(100), 
+	reference_type VARCHAR(50), 
+	submitted_by UUID, 
+	submitted_by_name VARCHAR(100), 
+	form_data JSONB NOT NULL, 
+	score NUMERIC(5, 2), 
+	status VARCHAR(30) NOT NULL, 
+	created_at TIMESTAMP WITH TIME ZONE DEFAULT now(), 
+	PRIMARY KEY (submission_id), 
+	FOREIGN KEY(template_id) REFERENCES dynamic_form_templates (template_id) ON DELETE CASCADE, 
+	FOREIGN KEY(submitted_by) REFERENCES users (user_id) ON DELETE SET NULL
+);
+
+-- ============================================================================
+-- 16. DỮ LIỆU NỀN TẢNG KHỞI TẠO HỆ THỐNG (BẢO LƯU RBAC, PHÒNG BAN & ADMIN)
+-- ============================================================================
+
+-- Danh mục 7 Phòng ban tiêu chuẩn nhà máy chế biến thực phẩm
+INSERT INTO departments (dept_id, dept_code, dept_name, description) VALUES
+('b0000000-0000-0000-0000-000000000001', 'DEPT-BGD', 'Ban Giám đốc', 'Ban Giám đốc & Ban Lãnh đạo điều hành nhà máy'),
+('b0000000-0000-0000-0000-000000000002', 'DEPT-QLCL', 'Ban QLCL & ATTP', 'Ban Quản lý Chất lượng, Đội HACCP & An toàn thực phẩm'),
+('b0000000-0000-0000-0000-000000000003', 'DEPT-SX', 'Phòng Sản xuất', 'Bộ phận chế biến, điều hành các dây chuyền sản xuất & GMP'),
+('b0000000-0000-0000-0000-000000000004', 'DEPT-KDK', 'Phòng Kinh doanh & Kho', 'Bộ phận kinh doanh, kho lạnh FEFO & logistics chuỗi cung ứng'),
+('b0000000-0000-0000-0000-000000000005', 'DEPT-TB', 'Phòng Thiết bị', 'Bộ phận cơ điện, bảo trì bảo dưỡng máy móc & hiệu chuẩn'),
+('b0000000-0000-0000-0000-000000000006', 'DEPT-HCKT', 'Phòng Hành chính - Kế toán', 'Bộ phận nhân sự, tiền lương, đào tạo ATTP & y tế sức khỏe'),
+('b0000000-0000-0000-0000-000000000007', 'DEPT-IT', 'Quản trị hệ thống', 'Bộ phận CNTT, bảo mật hệ thống dữ liệu số & quản trị phần mềm')
+ON CONFLICT (dept_name) DO UPDATE SET dept_code = EXCLUDED.dept_code, description = EXCLUDED.description;
+
+-- Danh mục 6 Vai trò hệ thống tiêu chuẩn (RBAC)
+INSERT INTO roles (role_id, role_code, role_name, description) VALUES
+('c0000000-0000-0000-0000-000000000001', 'admin', 'Quản trị hệ thống', 'Toàn quyền cấu hình, quản trị người dùng, RBAC, phân quyền và nhật ký hệ thống'),
+('c0000000-0000-0000-0000-000000000002', 'management', 'Ban Giám đốc', 'Phê duyệt chính sách, ký duyệt xem xét lãnh đạo, thẩm tra kế hoạch thu hồi'),
+('c0000000-0000-0000-0000-000000000003', 'qa_qc_manager', 'Ban QLCL & ATTP', 'Quản lý HACCP, chương trình PRP, thẩm tra hiệu lực CAPA, đánh giá nội bộ'),
+('c0000000-0000-0000-0000-000000000004', 'production', 'Phòng Sản xuất', 'Thực thi GMP, giám sát đo đạc CCP theo ca, lập mẻ sản xuất'),
+('c0000000-0000-0000-0000-000000000005', 'staff', 'Cán bộ nhân viên', 'Tra cứu tài liệu quy trình, thực hiện checklist vệ sinh, báo cáo sự không phù hợp'),
+('c0000000-0000-0000-0000-000000000006', 'user', 'Người dùng mới', 'Tài khoản mới đăng ký, chờ phân quyền truy cập')
+ON CONFLICT (role_code) DO UPDATE SET role_name = EXCLUDED.role_name, description = EXCLUDED.description;
+
+-- Tài khoản Quản trị viên hệ thống mặc định (Tên đăng nhập: admin / Mật khẩu: 123456)
+INSERT INTO users (user_id, username, password_hash, full_name, department, email, phone, is_active) VALUES
+(
     'a0000000-0000-0000-0000-000000000001',
     'admin',
     '$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQmG6FeE6.gJ2I5v.cE8.',
     'Quản trị viên hệ thống',
     'Quản trị hệ thống',
     'admin@wcert.vn',
+    '0901234567',
     TRUE
 )
-ON CONFLICT (username) DO NOTHING;
+ON CONFLICT (username) DO UPDATE SET full_name = EXCLUDED.full_name, is_active = EXCLUDED.is_active;
 
--- Gán quyền admin cho tài khoản admin
+-- Gán quyền Quản trị tối cao (admin) cho tài khoản admin
 INSERT INTO user_roles (user_id, role_id)
-SELECT 'a0000000-0000-0000-0000-000000000001', role_id 
+SELECT 'a0000000-0000-0000-0000-000000000001', role_id
 FROM roles WHERE role_code = 'admin'
-ON CONFLICT DO NOTHING;
-
--- 11. Luồng 13: Chuẩn bị & Ứng phó tình huống khẩn cấp (ISO 22000:2018 Clause 8.4)
-CREATE TABLE IF NOT EXISTS emergency_contacts (
-    contact_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    name VARCHAR(255) NOT NULL,
-    organization_or_role VARCHAR(255) NOT NULL,
-    phone VARCHAR(50) NOT NULL,
-    phone_alt VARCHAR(50),
-    email VARCHAR(100),
-    contact_type VARCHAR(30) DEFAULT 'INTERNAL' NOT NULL,
-    priority_order INTEGER DEFAULT 1 NOT NULL,
-    address VARCHAR(255),
-    notes TEXT,
-    is_active BOOLEAN DEFAULT TRUE NOT NULL,
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE IF NOT EXISTS emergency_procedures (
-    procedure_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    procedure_code VARCHAR(50) UNIQUE NOT NULL,
-    title VARCHAR(255) NOT NULL,
-    scenario_type VARCHAR(50) NOT NULL,
-    likelihood INTEGER DEFAULT 2 NOT NULL,
-    severity INTEGER DEFAULT 3 NOT NULL,
-    risk_score INTEGER DEFAULT 6 NOT NULL,
-    risk_level VARCHAR(30) DEFAULT 'MEDIUM' NOT NULL,
-    immediate_actions JSONB,
-    responsible_team VARCHAR(100) DEFAULT 'Đội Ứng phó Khẩn cấp & PCCC' NOT NULL,
-    equipment_needed TEXT,
-    version VARCHAR(20) DEFAULT '1.0' NOT NULL,
-    status VARCHAR(30) DEFAULT 'ACTIVE' NOT NULL,
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE IF NOT EXISTS emergency_drills (
-    drill_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    drill_code VARCHAR(50) UNIQUE NOT NULL,
-    title VARCHAR(255) NOT NULL,
-    record_type VARCHAR(30) DEFAULT 'PLANNED_DRILL' NOT NULL,
-    scenario_type VARCHAR(50) NOT NULL,
-    drill_date DATE NOT NULL,
-    location VARCHAR(255) NOT NULL,
-    participants_count INTEGER DEFAULT 10 NOT NULL,
-    drill_leader VARCHAR(100) NOT NULL,
-    scenario_description TEXT,
-    response_time_minutes INTEGER,
-    evaluation_result VARCHAR(30) DEFAULT 'SATISFACTORY' NOT NULL,
-    corrective_actions_needed TEXT,
-    notes TEXT,
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-);
-
--- 17. Bối cảnh tổ chức & Quản lý rủi ro (Điều 4 & 6.1 ISO 22000:2018)
-CREATE TABLE IF NOT EXISTS interested_parties (
-    id SERIAL PRIMARY KEY,
-    party_name VARCHAR(255) NOT NULL,
-    party_type VARCHAR(50) DEFAULT 'EXTERNAL' NOT NULL,
-    needs_and_expectations TEXT NOT NULL,
-    statutory_requirements TEXT,
-    monitoring_method TEXT,
-    review_frequency VARCHAR(100) DEFAULT 'Hàng năm',
-    responsible_role VARCHAR(150) DEFAULT 'Ban QLCL & ATTP',
-    status VARCHAR(50) DEFAULT 'ACTIVE',
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE IF NOT EXISTS context_risks (
-    id SERIAL PRIMARY KEY,
-    code VARCHAR(50) UNIQUE NOT NULL,
-    issue_category VARCHAR(50) DEFAULT 'EXTERNAL' NOT NULL,
-    issue_description TEXT NOT NULL,
-    interested_party_id INTEGER REFERENCES interested_parties(id) ON DELETE SET NULL,
-    risk_description TEXT NOT NULL,
-    opportunity_description TEXT,
-    likelihood INTEGER DEFAULT 2 NOT NULL,
-    severity INTEGER DEFAULT 3 NOT NULL,
-    risk_score INTEGER DEFAULT 6 NOT NULL,
-    treatment_strategy VARCHAR(50) DEFAULT 'MITIGATE' NOT NULL,
-    action_plan TEXT NOT NULL,
-    responsible_role VARCHAR(150) DEFAULT 'Ban QLCL & ATTP',
-    target_date DATE,
-    status VARCHAR(50) DEFAULT 'TREATING' NOT NULL,
-    residual_likelihood INTEGER,
-    residual_severity INTEGER,
-    residual_risk_score INTEGER,
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-);
-
--- 18. Logistics & Kiểm soát Kho (BM01-PTVC & BM02-HỦY HÀNG)
-CREATE TABLE IF NOT EXISTS vehicle_inspections (
-    id SERIAL PRIMARY KEY,
-    inspection_code VARCHAR(50) UNIQUE NOT NULL,
-    inspection_date TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    order_dispatch_id UUID REFERENCES order_dispatches(dispatch_id) ON DELETE SET NULL,
-    vehicle_plate VARCHAR(50) NOT NULL,
-    driver_name VARCHAR(100) NOT NULL,
-    driver_phone VARCHAR(50),
-    transport_company VARCHAR(255) DEFAULT 'Đội xe Công ty',
-    valid_registration_check BOOLEAN DEFAULT TRUE NOT NULL,
-    cargo_integrity_check BOOLEAN DEFAULT TRUE NOT NULL,
-    clean_dry_check BOOLEAN DEFAULT TRUE NOT NULL,
-    no_odor_check BOOLEAN DEFAULT TRUE NOT NULL,
-    pest_free_check BOOLEAN DEFAULT TRUE NOT NULL,
-    inspection_result VARCHAR(30) DEFAULT 'PASS' NOT NULL,
-    inspector_name VARCHAR(100) DEFAULT 'Thủ kho xuất hàng' NOT NULL,
-    notes TEXT,
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE IF NOT EXISTS disposal_records (
-    id SERIAL PRIMARY KEY,
-    record_code VARCHAR(50) UNIQUE NOT NULL,
-    disposal_date DATE NOT NULL,
-    batch_id UUID REFERENCES production_batches(batch_id) ON DELETE SET NULL,
-    batch_number VARCHAR(100) NOT NULL,
-    product_name VARCHAR(255) NOT NULL,
-    quantity NUMERIC(12, 2) NOT NULL,
-    unit VARCHAR(50) DEFAULT 'kg' NOT NULL,
-    reason TEXT NOT NULL,
-    disposal_method VARCHAR(100) DEFAULT 'Tiêu hủy nhiệt và chôn lấp hợp vệ sinh' NOT NULL,
-    disposal_location VARCHAR(255) DEFAULT 'Khu xử lý chất thải Nhà máy',
-    witness_council TEXT DEFAULT '1. Đơn vị thực hiện hủy hàng; 2. Phòng Quản lý Chất lượng (P.QLCL); 3. Phòng ban đề xuất hủy hàng',
-    status VARCHAR(50) DEFAULT 'DISPOSED' NOT NULL,
-    approved_by VARCHAR(100) DEFAULT 'Giám Đốc Nhà Máy',
-    notes TEXT,
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-);
-
--- 19. Đánh Giá Nhà Cung Cấp Nâng Cao (BM02-KHĐGNCC, BM03, BM03-TS, BM04)
-CREATE TABLE IF NOT EXISTS supplier_evaluation_plans (
-    id SERIAL PRIMARY KEY,
-    plan_code VARCHAR(50) UNIQUE NOT NULL,
-    year INT NOT NULL,
-    title VARCHAR(255) NOT NULL,
-    department VARCHAR(100) DEFAULT 'Phòng Đảm Bảo Chất Lượng (QA)' NOT NULL,
-    scope TEXT,
-    approved_by VARCHAR(100),
-    approval_status VARCHAR(30) DEFAULT 'APPROVED' NOT NULL,
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE IF NOT EXISTS supplier_evaluations (
-    id SERIAL PRIMARY KEY,
-    evaluation_code VARCHAR(50) UNIQUE NOT NULL,
-    plan_id INT REFERENCES supplier_evaluation_plans(id) ON DELETE SET NULL,
-    supplier_id UUID REFERENCES suppliers(supplier_id) ON DELETE CASCADE NOT NULL,
-    criteria_type VARCHAR(50) NOT NULL,
-    evaluation_date DATE NOT NULL,
-    evaluator_name VARCHAR(100) NOT NULL,
-    audit_type VARCHAR(50) DEFAULT 'PERIODIC' NOT NULL,
-    criteria_scores JSONB NOT NULL,
-    total_score NUMERIC(5, 2) NOT NULL,
-    grade VARCHAR(10) NOT NULL,
-    conclusion VARCHAR(50) NOT NULL,
-    corrective_actions TEXT,
-    approved_by VARCHAR(100),
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-);
-
--- ============================================================================
--- PHẦN B & C: HOÀN THIỆN THEO CHUẨN ISO 22000:2018 & TÀI LIỆU CÔNG TY
--- ============================================================================
-
--- 20. Hoạch định sự thay đổi hệ thống FSMS (ISO 22000:2018 Điều 6.3)
-CREATE TABLE IF NOT EXISTS change_requests (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    request_code VARCHAR(50) UNIQUE NOT NULL,
-    title VARCHAR(255) NOT NULL,
-    change_type VARCHAR(50) NOT NULL, -- RAW_MATERIAL, PROCESS_TECH, EQUIPMENT_FACILITY, PACKAGING_LABEL, REGULATORY, PERSONNEL, OTHER
-    reason TEXT NOT NULL,
-    description TEXT NOT NULL,
-    scope TEXT NOT NULL,
-    proposer VARCHAR(100) NOT NULL,
-    proposal_date DATE NOT NULL,
-    target_completion_date DATE,
-    impact_level VARCHAR(30) DEFAULT 'MEDIUM' NOT NULL, -- LOW, MEDIUM, HIGH, CRITICAL
-    impact_assessment TEXT,
-    haccp_impact_required BOOLEAN DEFAULT FALSE,
-    prp_impact_required BOOLEAN DEFAULT FALSE,
-    emergency_impact_required BOOLEAN DEFAULT FALSE,
-    action_plan JSONB,
-    verification_method TEXT,
-    verification_result TEXT,
-    verified_by VARCHAR(100),
-    verification_date DATE,
-    status VARCHAR(50) DEFAULT 'SUBMITTED' NOT NULL, -- DRAFT, SUBMITTED, REVIEWED, APPROVED, IN_PROGRESS, VERIFIED, CLOSED, REJECTED
-    approved_by VARCHAR(100),
-    approval_date DATE,
-    notes TEXT,
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-);
-
--- 21. Sổ nhật ký trao đổi thông tin ATTP nội bộ & bên ngoài (ISO 22000:2018 Điều 7.4)
-CREATE TABLE IF NOT EXISTS communications_log (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    comm_code VARCHAR(50) UNIQUE NOT NULL,
-    comm_type VARCHAR(20) NOT NULL, -- INTERNAL, EXTERNAL
-    channel VARCHAR(50) NOT NULL, -- MEETING, MEMO, EMAIL, DISPATCH, HOTLINE, AUDIT, NOTICE, OTHER
-    direction VARCHAR(20) DEFAULT 'INBOUND' NOT NULL, -- INBOUND, OUTBOUND, INTERNAL
-    comm_date DATE NOT NULL,
-    sender VARCHAR(255) NOT NULL,
-    sender_type VARCHAR(50) NOT NULL, -- CUSTOMER, AUTHORITY, SUPPLIER, EMPLOYEE, MANAGEMENT, CONTRACTOR, OTHER
-    recipient VARCHAR(255) NOT NULL,
-    subject VARCHAR(255) NOT NULL,
-    content_summary TEXT NOT NULL,
-    urgency VARCHAR(30) DEFAULT 'NORMAL' NOT NULL, -- LOW, NORMAL, HIGH, URGENT
-    related_module VARCHAR(50), -- HACCP, PRP, RECALL, COMPLAINT, GENERAL
-    action_required TEXT,
-    assigned_to VARCHAR(100),
-    response_deadline DATE,
-    response_content TEXT,
-    response_date DATE,
-    status VARCHAR(50) DEFAULT 'RECEIVED' NOT NULL, -- RECEIVED, PROCESSING, RESPONDED, CLOSED
-    recorded_by VARCHAR(100) NOT NULL,
-    notes TEXT,
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-);
-
--- 22. Đội An toàn thực phẩm chính thức (ISO 22000:2018 Điều 5.3 & QĐ 02 Thành lập đội ATTP)
-CREATE TABLE IF NOT EXISTS food_safety_team_members (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    decision_number VARCHAR(100) NOT NULL,
-    member_name VARCHAR(150) NOT NULL,
-    fst_role VARCHAR(50) NOT NULL, -- TEAM_LEADER (Đội trưởng), SECRETARY (Thư ký), MEMBER (Đội viên)
-    company_position VARCHAR(150) NOT NULL,
-    department VARCHAR(100) NOT NULL,
-    education_qualification VARCHAR(255),
-    training_certificates JSONB,
-    years_of_experience NUMERIC(4, 1),
-    assigned_responsibilities TEXT NOT NULL,
-    deputy_for VARCHAR(150),
-    is_active BOOLEAN DEFAULT TRUE NOT NULL,
-    appointment_date DATE NOT NULL,
-    phone VARCHAR(50),
-    email VARCHAR(100),
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-);
-
--- 23. Thẩm tra định kỳ kế hoạch HACCP tổng thể (ISO 22000:2018 Điều 8.6 & 8.8)
-CREATE TABLE IF NOT EXISTS haccp_plan_reviews (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    review_code VARCHAR(50) UNIQUE NOT NULL,
-    plan_id UUID REFERENCES haccp_plans(plan_id) ON DELETE CASCADE,
-    review_date DATE NOT NULL,
-    review_type VARCHAR(50) DEFAULT 'PERIODIC' NOT NULL, -- PERIODIC, POST_CHANGE, INCIDENT_TRIGGERED, ANNUAL
-    change_request_id UUID REFERENCES change_requests(id) ON DELETE SET NULL,
-    scope_and_objective TEXT NOT NULL,
-    reviewers TEXT NOT NULL,
-    ccp_audit_summary TEXT,
-    prp_audit_summary TEXT,
-    hazard_analysis_validity BOOLEAN DEFAULT TRUE NOT NULL,
-    monitoring_records_adequate BOOLEAN DEFAULT TRUE NOT NULL,
-    corrective_actions_effective BOOLEAN DEFAULT TRUE NOT NULL,
-    findings TEXT NOT NULL,
-    required_actions TEXT NOT NULL,
-    conclusion VARCHAR(50) DEFAULT 'COMPLIANT' NOT NULL, -- COMPLIANT, NEEDS_UPDATE, CRITICAL_DEFICIENCY
-    approved_by VARCHAR(100),
-    approval_date DATE,
-    status VARCHAR(50) DEFAULT 'APPROVED' NOT NULL, -- DRAFT, PENDING_APPROVAL, APPROVED, REJECTED
-    notes TEXT,
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-);
+ON CONFLICT (user_id, role_id) DO NOTHING;

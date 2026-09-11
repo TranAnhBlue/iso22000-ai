@@ -3,9 +3,13 @@ export type Role =
   | "admin"
   | "management"
   | "executive"
+  | "qa"
+  | "qc"
   | "qa_qc_manager"
   | "iso_manager"
   | "production"
+  | "purchasing"
+  | "warehouse"
   | "hr_accounting"
   | "admin_acct"
   | "sales_logistics"
@@ -24,11 +28,14 @@ export interface RoleInfo {
 export const ROLES: RoleInfo[] = [
   { id: "admin", name: "Quản trị hệ thống", description: "Toàn quyền cấu hình, RBAC, audit log", department: "Quản trị hệ thống" },
   { id: "management", name: "Ban Giám đốc", description: "Phê duyệt tài liệu, xem xét lãnh đạo", department: "Ban Giám đốc" },
-  { id: "qa_qc_manager", name: "Ban QLCL & ATTP", description: "Quản lý HACCP, PRP, CAPA, đánh giá nội bộ", department: "Ban QLCL & ATTP" },
-  { id: "production", name: "Phòng Sản xuất", description: "Thực hiện GMP, ghi nhận CCP, biểu mẫu sản xuất", department: "Phòng Sản xuất" },
+  { id: "qa", name: "Ban Quản lý Chất lượng (QA/QC)", description: "Quản lý HACCP, PRP, CAPA, đánh giá nội bộ", department: "Ban Quản lý Chất lượng (QA/QC)" },
+  { id: "qa_qc_manager", name: "Ban Quản lý Chất lượng (QA/QC)", description: "Quản lý HACCP, PRP, CAPA, đánh giá nội bộ", department: "Ban Quản lý Chất lượng (QA/QC)" },
+  { id: "production", name: "Phòng Sản xuất", description: "Thực hiện GMP, ghi nhận CCP, biểu mẫu sản xuất", department: "Phòng Sản xuất & Chế biến" },
+  { id: "purchasing", name: "Phòng Mua Hàng & Cung Ứng", description: "Quản lý nhà cung ứng ASL, đánh giá NCC, lô nguyên liệu", department: "Phòng Mua Hàng & Cung Ứng" },
+  { id: "warehouse", name: "Bộ phận Kho Vận & Logistics", description: "Quản lý kho lạnh FEFO, PTVC, xuất nhập kho", department: "Bộ phận Kho Vận & Logistics" },
+  { id: "maintenance", name: "Phòng Thiết bị", description: "Bảo trì, hiệu chuẩn thiết bị", department: "Phòng Thiết bị" },
   { id: "hr_accounting", name: "Phòng Hành chính - Kế toán", description: "Quản lý nhân sự, đào tạo, hợp đồng", department: "Phòng Hành chính - Kế toán" },
   { id: "sales_logistics", name: "Phòng Kinh doanh & Kho", description: "Quản lý khách hàng, kho FEFO, truy xuất", department: "Phòng Kinh doanh & Kho" },
-  { id: "maintenance", name: "Phòng Thiết bị", description: "Bảo trì, hiệu chuẩn thiết bị", department: "Phòng Thiết bị" },
   { id: "staff", name: "Cán bộ nhân viên", description: "Tra cứu tài liệu, đào tạo, báo cáo NC", department: "Toàn công ty" },
 ];
 
@@ -72,8 +79,39 @@ export function clearSession() {
   localStorage.removeItem(TOKEN_KEY);
 }
 
-export function roleLabel(r: string): string {
-  const normalized = r.toLowerCase();
+export function roleLabel(r: string | undefined): string {
+  if (!r) return "Chưa phân quyền";
+  const normalized = r.toLowerCase().trim();
+  if (normalized === "qa" || normalized === "qc" || normalized === "qa_qc_manager" || normalized === "iso_manager") {
+    return "Ban Quản lý Chất lượng (QA/QC)";
+  }
+  if (normalized === "purchasing" || normalized === "pur") {
+    return "Phòng Mua Hàng & Cung Ứng";
+  }
+  if (normalized === "warehouse") {
+    return "Bộ phận Kho Vận & Logistics";
+  }
+  if (normalized === "production") {
+    return "Phòng Sản xuất & Chế biến";
+  }
+  if (normalized === "maintenance" || normalized === "equipment") {
+    return "Phòng Cơ điện & Bảo trì";
+  }
+  if (normalized === "management" || normalized === "executive") {
+    return "Ban Giám đốc";
+  }
+  if (normalized === "admin") {
+    return "Quản trị hệ thống";
+  }
+  if (normalized === "hr_accounting" || normalized === "admin_acct") {
+    return "Phòng Hành chính - Kế toán";
+  }
+  if (normalized === "sales_logistics" || normalized === "sales") {
+    return "Phòng Kinh doanh & Kho";
+  }
+  if (normalized === "staff" || normalized === "user") {
+    return "Cán bộ nhân viên";
+  }
   const found = ROLES.find((x) => x.id.toLowerCase() === normalized);
   return found?.name ?? r;
 }
@@ -190,6 +228,38 @@ export const PERMISSIONS: Record<string, Record<ModuleKey, Access>> = {
   },
 
   // 3. Ban QLCL & ATTP / Đội Trưởng HACCP (Chuyên môn kỹ thuật ATTP, HACCP, PRP, CAPA, ĐGNB, NCC)
+  qa: {
+    dashboard: "view",      // Xem dashboard chất lượng & cảnh báo
+    organization: "view",   // Xem cơ cấu tổ chức
+    documents: "edit",      // Soạn thảo & quản lý hệ thống SOP 5 cấp
+    audits: "edit",         // Lập kế hoạch ĐGNB & quản lý đào tạo
+    haccp: "edit",          // Phân tích mối nguy & thiết lập điểm CCP
+    prp: "edit",            // Thiết lập chương trình PRP & thẩm tra vệ sinh
+    capa: "edit",           // Phê duyệt CAPA & điều tra nguyên nhân gốc
+    equipment: "view",      // Thẩm tra sai số kiểm định thiết bị đo CCP
+    inventory: "view",      // Kiểm tra mẫu lưu đối chứng 24h/48h
+    traceability: "edit",   // Diễn tập thu hồi sản phẩm 4h
+    purchasing: "edit",     // Thẩm định nhà cung cấp ASL & kiểm định IQC
+    emergency: "edit",      // Điều 8.4: Chủ trì lập kịch bản và diễn tập khẩn cấp
+    change_management: "edit", // Điều 6.3: Chủ trì đánh giá tác động thay đổi FSMS
+    builder: "view",        // Xem biểu mẫu hệ thống
+  },
+  qc: {
+    dashboard: "view",
+    organization: "view",
+    documents: "edit",
+    audits: "edit",
+    haccp: "edit",
+    prp: "edit",
+    capa: "edit",
+    equipment: "view",
+    inventory: "view",
+    traceability: "edit",
+    purchasing: "edit",
+    emergency: "edit",
+    change_management: "edit",
+    builder: "view",
+  },
   qa_qc_manager: {
     dashboard: "view",      // Xem dashboard chất lượng & cảnh báo
     organization: "view",   // Xem cơ cấu tổ chức
@@ -325,6 +395,40 @@ export const PERMISSIONS: Record<string, Record<ModuleKey, Access>> = {
     builder: "none",
   },
 
+  // 6.2 Phòng Mua Hàng & Cung Ứng (Đánh giá NCC ASL, lô nguyên vật liệu IQC, kiểm soát nhà cung cấp Điều 7.1.6)
+  purchasing: {
+    dashboard: "none",      // Bảo mật: Không xem dashboard chiến lược/tài chính BGĐ
+    organization: "none",   // Không xem tổ chức nhân sự
+    documents: "view",      // Tra cứu SOP tiếp nhận & tiêu chuẩn nguyên vật liệu
+    audits: "none",         // Không quản lý audit
+    haccp: "none",          // Không can thiệp CCP
+    prp: "view",            // Quy chuẩn bảo quản & vệ sinh tiếp nhận hàng
+    capa: "edit",           // Báo cáo sự không phù hợp NC đối với NCC, nguyên liệu lỗi
+    equipment: "none",
+    inventory: "view",      // Tra cứu tồn kho để đối chiếu kế hoạch mua hàng
+    traceability: "view",   // Xem mã lô nguyên vật liệu đầu vào
+    purchasing: "edit",     // Quản lý danh bạ nhà cung cấp ASL, đánh giá NCC
+    emergency: "view",      // Xem kịch bản ứng phó sự cố chuỗi cung ứng
+    change_management: "view",
+    builder: "none",
+  },
+  pur: {
+    dashboard: "none",
+    organization: "none",
+    documents: "view",
+    audits: "none",
+    haccp: "none",
+    prp: "view",
+    capa: "edit",
+    equipment: "none",
+    inventory: "view",
+    traceability: "view",
+    purchasing: "edit",
+    emergency: "view",
+    change_management: "view",
+    builder: "none",
+  },
+
   // 7. Phòng Hành Chính - Kế Toán (Hồ sơ đào tạo nhân sự, khám sức khỏe & khai báo y tế)
   hr_accounting: {
     dashboard: "none",      // Bảo mật: Không xem dashboard kỹ thuật/chất lượng
@@ -380,11 +484,13 @@ export const PERMISSIONS: Record<string, Record<ModuleKey, Access>> = {
 
 export function getDefaultRouteForRole(role: string | undefined): string {
   if (!role) return "/";
-  const r = role.toLowerCase();
+  const r = role.toLowerCase().trim();
   switch (r) {
     case "admin":
     case "management":
     case "executive":
+    case "qa":
+    case "qc":
     case "qa_qc_manager":
     case "iso_manager":
       return "/dashboard";
@@ -393,6 +499,9 @@ export function getDefaultRouteForRole(role: string | undefined): string {
     case "maintenance":
     case "equipment":
       return "/equipment";
+    case "purchasing":
+    case "pur":
+      return "/purchasing";
     case "sales_logistics":
     case "sales":
     case "warehouse":
@@ -409,8 +518,23 @@ export function getDefaultRouteForRole(role: string | undefined): string {
 
 export function accessFor(role: string | undefined, module: ModuleKey): Access {
   if (!role) return "none";
-  const normalized = role.toLowerCase();
-  return PERMISSIONS[normalized]?.[module] ?? "none";
+  const r = role.toLowerCase().trim();
+  let normalized = r;
+  if (["qa", "qc", "iso_manager"].includes(r)) {
+    normalized = "qa_qc_manager";
+  } else if (["pur"].includes(r)) {
+    normalized = "purchasing";
+  } else if (["executive"].includes(r)) {
+    normalized = "management";
+  } else if (["equipment"].includes(r)) {
+    normalized = "maintenance";
+  } else if (["sales"].includes(r)) {
+    normalized = "sales_logistics";
+  } else if (["admin_acct"].includes(r)) {
+    normalized = "hr_accounting";
+  }
+
+  return PERMISSIONS[normalized]?.[module] ?? PERMISSIONS[r]?.[module] ?? "none";
 }
 
 export function canView(role: string | undefined, module: ModuleKey) {

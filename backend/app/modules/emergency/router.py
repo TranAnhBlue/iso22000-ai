@@ -21,13 +21,12 @@ from app.modules.emergency.schemas import (
     EmergencyStatsResponse,
 )
 
-router = APIRouter(tags=["Emergency Preparedness & Response (Clause 8.4)"])
+router = APIRouter(tags=["Emergency Preparedness & Response"])
 
 
 # ==================== SEED DATA HELPER ====================
 def seed_emergency_data_if_empty(db: Session):
-    if db.query(EmergencyContact).first() is not None:
-        return
+    return
 
     # 1. Seed Contacts
     contacts_seed = [

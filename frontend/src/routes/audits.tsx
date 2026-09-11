@@ -59,12 +59,14 @@ import logoImg from "/logo.png";
 import { printHtml } from "@/lib/print";
 import { WorkflowBuilder, type WorkflowTemplateData } from "@/components/builder/WorkflowBuilder";
 import { useDepartments } from "@/lib/departments";
+import { EmptyState } from "@/components/EmptyState";
+import { ModuleGuideModal } from "@/components/ModuleGuideModal";
 
 export const Route = createFileRoute("/audits")({
   head: () => ({
     meta: [
       { title: "Đánh Giá Nội Bộ, Đào Tạo & Khai Báo Sức Khỏe – WCERT ISO 22000:2018" },
-      { name: "description", content: "Hệ thống quản lý đánh giá nội bộ (Điều 9.2), ma trận đào tạo nhân sự (Điều 7.2) và sổ khai báo sức khỏe ca (Điều 8.2 PRP) chuẩn ISO 22000:2018." },
+      { name: "description", content: "Hệ thống quản lý đánh giá nội bộ, ma trận đào tạo nhân sự và sổ khai báo sức khỏe ca chuẩn ISO 22000:2018." },
       { property: "og:title", content: "Đánh Giá Nội Bộ, Đào Tạo & Khai Báo Sức Khỏe – WCERT ISO 22000:2018" },
       { property: "og:description", content: "Số hóa quy trình ĐGNB, đào tạo sát hạch nhân sự và kiểm soát vệ sinh sức khỏe công nhân trước ca với Trợ lý AI." },
     ],
@@ -202,6 +204,7 @@ interface AuditStats {
 function AuditManagementPage() {
   const { departments } = useDepartments();
   const [activeTab, setActiveTab] = useState<"audits" | "training" | "health" | "ai_studio">("audits");
+  const [showGuide, setShowGuide] = useState(false);
   const [stats, setStats] = useState<AuditStats>({
     total_audits: 0,
     completed_audits: 0,
@@ -412,17 +415,6 @@ function AuditManagementPage() {
     return matchSearch && matchStatus;
   });
 
-  // Seed sample data
-  const handleSeedDefaults = async () => {
-    try {
-      const res = await api.post("/audits/seed-defaults");
-      toast.success(res.data.message || "Đã nạp dữ liệu mẫu ĐGNB & Đào tạo thành công!");
-      fetchData();
-    } catch (err: any) {
-      toast.error("Lỗi nạp dữ liệu mẫu: " + (err.response?.data?.detail || err.message));
-    }
-  };
-
   // Convert Finding to NC
   const handleConvertToNC = async (findingId: string) => {
     try {
@@ -440,14 +432,14 @@ function AuditManagementPage() {
     setWorkflowTemplate({
       module: "INTERNAL_AUDIT",
       code: "WF-AUDIT-4STEPS",
-      title: "Quy Trình 4 Bước Đánh Giá Nội Bộ ISO 22000:2018 (Điều 9.2)",
+      title: "Quy Trình 4 Bước Đánh Giá Nội Bộ",
       description: "Quy trình chuẩn mực đánh giá độc lập: Lập kế hoạch & Chuẩn bị Checklist -> Đánh giá tại hiện trường -> Lập báo cáo phát hiện -> Thẩm tra khắc phục CAPA.",
       version: "1.0",
       nodes: [
         { id: "a_1", type: "process", label: "1. Lập Kế Hoạch & Soạn Checklist", role: "Ban QLCL & ATTP", description: "Xác định phạm vi, chuẩn mực áp dụng và phân công đánh giá chéo.", is_ccp: false, step_number: 1 },
         { id: "a_2", type: "process", label: "2. Thực Hiện Đánh Giá Tại Chỗ", role: "Ban QLCL & ATTP", description: "Phỏng vấn nhân sự, kiểm tra hồ sơ ghi chép và quan sát hiện trường sản xuất.", is_ccp: false, step_number: 2 },
         { id: "a_3", type: "approval", label: "3. Họp Tổng Kết & Báo Cáo Phát Hiện", role: "Ban Giám đốc", description: "Thống nhất phân loại lỗi (Conformity / Major NC / Minor NC / OFI) và ký biên bản.", is_ccp: false, step_number: 3 },
-        { id: "a_4", type: "process", label: "4. Theo Dõi & Thẩm Tra Khắc Phục CAPA", role: "Ban QLCL & ATTP", description: "Giám sát các hành động khắc phục phòng ngừa 10.1 và đóng hồ sơ sau 30 ngày.", is_ccp: false, step_number: 4 },
+        { id: "a_4", type: "process", label: "4. Theo Dõi & Thẩm Tra Khắc Phục CAPA", role: "Ban QLCL & ATTP", description: "Giám sát các hành động khắc phục phòng ngừa và đóng hồ sơ sau 30 ngày.", is_ccp: false, step_number: 4 },
       ],
       edges: [
         { id: "ea1_2", source: "a_1", target: "a_2", label: "Triển khai đánh giá" },
@@ -580,7 +572,7 @@ function AuditManagementPage() {
             <td class="title-box">
               <div style="font-size: 11px; font-weight: bold; color: #334155;">CÔNG TY CỔ PHẦN CHẾ BIẾN THỰC PHẨM WCERT</div>
               <div class="title-main">BÁO CÁO ĐÁNH GIÁ NỘI BỘ FSMS</div>
-              <div style="font-size: 11px; font-style: italic; color: #475569; margin-top: 2px;">Tiêu chuẩn ISO 22000:2018 (Điều khoản 9.2)</div>
+              <div style="font-size: 11px; font-style: italic; color: #475569; margin-top: 2px;">Tiêu chuẩn ISO 22000:2018</div>
             </td>
             <td class="meta-box">
               <b>Mã Biểu Mẫu:</b> BM-AUDIT-01<br/>
@@ -719,7 +711,7 @@ function AuditManagementPage() {
             <td class="title-box">
               <div style="font-size: 11px; font-weight: bold; color: #334155;">CÔNG TY CỔ PHẦN CHẾ BIẾN THỰC PHẨM WCERT</div>
               <div class="title-main">BIÊN BẢN ĐÁNH GIÁ ĐÀO TẠO NĂNG LỰC</div>
-              <div style="font-size: 11px; font-style: italic; color: #475569; margin-top: 2px;">Tiêu chuẩn ISO 22000:2018 (Điều khoản 7.2 & 7.3)</div>
+              <div style="font-size: 11px; font-style: italic; color: #475569; margin-top: 2px;">Tiêu chuẩn ISO 22000:2018</div>
             </td>
             <td class="meta-box">
               <b>Mã Biểu Mẫu:</b> BM-TRAIN-02<br/>
@@ -925,16 +917,16 @@ function AuditManagementPage() {
       {/* ==================== PAGE HEADER ==================== */}
       <PageHeader
         title="Đánh Giá Nội Bộ, Đào Tạo & Khai Báo Sức Khỏe"
-        description="Số hóa toàn diện Chương trình Đánh giá nội bộ ISO 22000 (Điều 9.2), Ma trận đào tạo sát hạch nhân sự (Điều 7.2) và Sổ khai báo sức khỏe ca (Điều 8.2 PRP)."
+        description="Số hóa toàn diện Chương trình Đánh giá nội bộ ISO 22000, Ma trận đào tạo sát hạch nhân sự và Sổ khai báo sức khỏe ca."
         actions={
           <div className="flex flex-wrap items-center gap-2">
             <Button
-              onClick={handleSeedDefaults}
+              onClick={() => setShowGuide(true)}
               variant="outline"
               size="sm"
-              className="border-primary/30 text-primary hover:bg-primary/10 font-bold text-xs"
+              className="border-emerald-300 text-emerald-700 bg-emerald-50/50 hover:bg-emerald-100 font-bold text-xs"
             >
-              <RefreshCw className="h-4 w-4 mr-1.5" /> Nạp Dữ Liệu Mẫu
+              <BookOpen className="h-4 w-4 mr-1.5" /> Hướng Dẫn Nghiệp Vụ
             </Button>
             <Button
               onClick={handleOpenWorkflow}
@@ -1015,7 +1007,7 @@ function AuditManagementPage() {
         {/* KPI 1 */}
         <div className="bg-card rounded-2xl border p-5 shadow-sm hover:shadow-md transition-all relative overflow-hidden">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Đánh Giá Nội Bộ (9.2)</span>
+            <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Đánh Giá Nội Bộ</span>
             <div className="p-2.5 rounded-xl bg-blue-500/10 text-blue-600 border border-blue-200">
               <ClipboardCheck className="h-5 w-5" />
             </div>
@@ -1058,7 +1050,7 @@ function AuditManagementPage() {
         {/* KPI 3 */}
         <div className="bg-card rounded-2xl border p-5 shadow-sm hover:shadow-md transition-all relative overflow-hidden">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Đào Tạo & Năng Lực (Điều 7.2)</span>
+            <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Đào Tạo & Năng Lực</span>
             <div className="p-2.5 rounded-xl bg-purple-500/10 text-purple-600 border border-purple-200">
               <GraduationCap className="h-5 w-5" />
             </div>
@@ -1078,7 +1070,7 @@ function AuditManagementPage() {
         {/* KPI 4 */}
         <div className="bg-card rounded-2xl border p-5 shadow-sm hover:shadow-md transition-all relative overflow-hidden">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Sức Khỏe Trước Ca (Điều 8.2)</span>
+            <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Sức Khỏe Trước Ca</span>
             <div className={`p-2.5 rounded-xl border ${stats.today_suspended_count > 0 ? "bg-rose-500/10 text-rose-600 border-rose-200" : "bg-emerald-500/10 text-emerald-600 border-emerald-200"}`}>
               <HeartPulse className="h-5 w-5" />
             </div>
@@ -1188,7 +1180,34 @@ function AuditManagementPage() {
           </div>
 
           {/* 2-Column Layout: Audit Campaigns List (Left) & Findings Checklist (Right) */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          {audits.length === 0 ? (
+            <EmptyState
+              icon={ClipboardCheck}
+              title="Chưa có đợt đánh giá nội bộ nào"
+              description="Lập kế hoạch đánh giá nội bộ định kỳ để kiểm tra sự tuân thủ các quy trình an toàn thực phẩm."
+              actionLabel="+ Lập Đợt Đánh Giá Mới"
+              onAction={() => {
+                setEditingAudit(null);
+                setAuditForm({
+                  audit_code: `IA-2026-0${audits.length + 1}`,
+                  title: "Đợt đánh giá nội bộ định kỳ",
+                  audit_type: "PERIODIC",
+                  start_date: new Date().toISOString().split("T")[0],
+                  end_date: new Date().toISOString().split("T")[0],
+                  lead_auditor_name: "ThS. Nguyễn Văn An",
+                  audited_dept: departments[0] || "Phòng Sản Xuất & Chế Biến",
+                  audited_lead_name: "Quản Đốc Xưởng",
+                  scope: "Toàn bộ chu trình từ tiếp nhận nguyên liệu đến lưu kho thành phẩm.",
+                  findings_summary: "",
+                  conclusion: "",
+                  status: "PLANNED",
+                });
+                setShowAuditModal(true);
+              }}
+              onGuide={() => setShowGuide(true)}
+            />
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
             {/* Left Column: Campaigns List */}
             <div className="lg:col-span-5 space-y-4">
               <div className="flex items-center justify-between">
@@ -1408,6 +1427,7 @@ function AuditManagementPage() {
               )}
             </div>
           </div>
+          )}
         </div>
       )}
 
@@ -1442,7 +1462,31 @@ function AuditManagementPage() {
           </div>
 
           {/* 2-Column Layout: Course Cards (Left) & Participants Table (Right) */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          {courses.length === 0 ? (
+            <EmptyState
+              icon={GraduationCap}
+              title="Chưa có khóa đào tạo nào"
+              description="Xây dựng kế hoạch và tổ chức các khóa đào tạo ATTP, HACCP, GMP cho nhân sự định kỳ."
+              actionLabel="+ Tạo Khóa Đào Tạo Mới"
+              onAction={() => {
+                setCourseForm({
+                  course_code: `TR-2026-0${courses.length + 1}`,
+                  title: "",
+                  category: "HACCP_CCP",
+                  trainer_name: "ThS. Nguyễn Văn An",
+                  training_type: "INTERNAL",
+                  schedule_date: new Date().toISOString().split("T")[0],
+                  duration_hours: 4.0,
+                  target_dept: departments[0] || "Phòng Sản Xuất & QA",
+                  content_summary: "",
+                  status: "PLANNED",
+                });
+                setShowCourseModal(true);
+              }}
+              onGuide={() => setShowGuide(true)}
+            />
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
             {/* Left Column: Courses List */}
             <div className="lg:col-span-5 space-y-4">
               <h3 className="text-sm font-black text-slate-900 flex items-center gap-2">
@@ -1620,6 +1664,7 @@ function AuditManagementPage() {
               )}
             </div>
           </div>
+          )}
         </div>
       )}
 
@@ -1661,7 +1706,43 @@ function AuditManagementPage() {
           </div>
 
           {/* Health Declarations Table */}
-          <div className="bg-card rounded-2xl border shadow-sm overflow-hidden">
+          {healthLogs.length === 0 ? (
+            <EmptyState
+              icon={HeartPulse}
+              title="Chưa có bản ghi khai báo sức khỏe nào"
+              description="Thực hiện kiểm tra thân nhiệt, triệu chứng lâm sàng và vệ sinh cá nhân trước ca làm việc."
+              actionLabel="+ Khai Báo Sức Khỏe Ca"
+              onAction={() => {
+                setHealthForm({
+                  employee_code: `NV-0${healthLogs.length + 101}`,
+                  employee_name: "",
+                  department: departments[0] || "Xưởng Sản Xuất",
+                  shift_date: new Date().toISOString().split("T")[0],
+                  shift_name: "Ca Sáng",
+                  body_temperature: 36.5,
+                  symptoms: {
+                    fever: false,
+                    cough: false,
+                    diarrhea: false,
+                    vomiting: false,
+                    open_wound: false,
+                    skin_infection: false,
+                  },
+                  personal_hygiene_check: {
+                    nails_trimmed: true,
+                    jewelry_removed: true,
+                    clean_uniform: true,
+                  },
+                  cleared_for_shift: "CLEARED",
+                  supervisor_name: "Y tế Ca trực",
+                  notes: "",
+                });
+                setShowHealthModal(true);
+              }}
+              onGuide={() => setShowGuide(true)}
+            />
+          ) : (
+            <div className="bg-card rounded-2xl border shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-xs text-left border-collapse min-w-[950px]">
                 <thead>
@@ -1749,6 +1830,7 @@ function AuditManagementPage() {
               </table>
             </div>
           </div>
+          )}
         </div>
       )}
 
@@ -1970,7 +2052,7 @@ function AuditManagementPage() {
       <Dialog open={showAuditModal} onOpenChange={setShowAuditModal}>
         <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Lập Kế Hoạch Đánh Giá Nội Bộ ISO 22000 (Điều 9.2)</DialogTitle>
+            <DialogTitle>Lập Kế Hoạch Đánh Giá Nội Bộ ISO 22000</DialogTitle>
           </DialogHeader>
           <form
             onSubmit={async (e) => {
@@ -2196,7 +2278,7 @@ function AuditManagementPage() {
       <Dialog open={showCourseModal} onOpenChange={setShowCourseModal}>
         <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Thêm Khóa Đào Tạo Nhân Sự Mới (Điều 7.2)</DialogTitle>
+            <DialogTitle>Thêm Khóa Đào Tạo Nhân Sự Mới</DialogTitle>
           </DialogHeader>
           <form
             onSubmit={async (e) => {
@@ -2413,7 +2495,7 @@ function AuditManagementPage() {
       <Dialog open={showHealthModal} onOpenChange={setShowHealthModal}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Khai Báo Sức Khỏe & Vệ Sinh Cá Nhân Trước Ca (Điều 8.2)</DialogTitle>
+            <DialogTitle>Khai Báo Sức Khỏe & Vệ Sinh Cá Nhân Trước Ca</DialogTitle>
           </DialogHeader>
           <form
             onSubmit={async (e) => {
@@ -2907,6 +2989,13 @@ function AuditManagementPage() {
           </div>
         </div>
       )}
+
+      {/* ==================== MODAL: MODULE GUIDE ==================== */}
+      <ModuleGuideModal
+        module="audits"
+        isOpen={showGuide}
+        onClose={() => setShowGuide(false)}
+      />
     </div>
   );
 }
