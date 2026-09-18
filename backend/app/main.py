@@ -33,21 +33,14 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:8080",
-        "http://127.0.0.1:8080",
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-    ],
-    allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1|.*\.vercel\.app)(:[0-9]+)?$",
+    allow_origin_regex=r"^https?://.*$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
     expose_headers=["*"],
 )
 
+# Các router chuẩn tiền tố /api/v1
 app.include_router(auth.router, prefix="/api/v1")
 app.include_router(organization.router, prefix="/api/v1")
 app.include_router(documents.router, prefix="/api/v1")
@@ -63,6 +56,18 @@ app.include_router(dashboard.router, prefix="/api/v1/dashboard", tags=["Executiv
 app.include_router(emergency.router, prefix="/api/v1/emergency", tags=["Emergency Preparedness & Response"])
 app.include_router(builder.router, prefix="/api/v1")
 
+# Router dự phòng trực tiếp nếu Frontend gọi /auth/login hoặc /auth/departments
+app.include_router(auth.router, prefix="", tags=["Authentication Direct Fallback"])
+
 @app.get("/")
 def root():
-    return {"message": "WCERT ISO 22000 Backend API is running"}
+    return {
+        "status": "online",
+        "app": "WCERT ISO 22000 FSMS Backend API",
+        "version": "1.0.0",
+        "docs": "/docs",
+    }
+
+@app.get("/health")
+def health():
+    return {"status": "healthy"}
