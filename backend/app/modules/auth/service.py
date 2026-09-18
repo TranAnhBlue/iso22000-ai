@@ -6,25 +6,38 @@ from app.modules.auth.models import User, Role, Department
 from app.modules.auth.schemas import UserRegisterRequest, UserLoginRequest, TokenResponse, DepartmentOption
 
 def get_department_options(db: Session) -> List[DepartmentOption]:
-    depts = db.query(Department).order_by(Department.dept_name.asc()).all()
-    if not depts:
-        roles = db.query(Role).filter(
-            Role.role_code.notin_(["user", "USER", "staff", "STAFF"])
-        ).order_by(Role.role_name.asc()).all()
+    try:
+        depts = db.query(Department).order_by(Department.dept_name.asc()).all()
+        if not depts:
+            roles = db.query(Role).filter(
+                Role.role_code.notin_(["user", "USER", "staff", "STAFF"])
+            ).order_by(Role.role_name.asc()).all()
+            return [
+                DepartmentOption(
+                    role_code=str(r.role_code),
+                    role_name=str(r.role_name),
+                    description=str(r.description) if r.description else None
+                ) for r in roles
+            ]
         return [
             DepartmentOption(
-                role_code=str(r.role_code),
-                role_name=str(r.role_name),
-                description=str(r.description) if r.description else None
-            ) for r in roles
+                role_code=str(d.dept_code),
+                role_name=str(d.dept_name),
+                description=str(d.description) if d.description else None
+            ) for d in depts
         ]
-    return [
-        DepartmentOption(
-            role_code=str(d.dept_code),
-            role_name=str(d.dept_name),
-            description=str(d.description) if d.description else None
-        ) for d in depts
-    ]
+    except Exception:
+        # Fallback danh sách 7 phòng ban chuẩn khi DB đang kết nối hoặc lỗi DNS
+        fallback = [
+            ("BGĐ", "Ban Giám đốc"),
+            ("QAQC", "Ban QLCL & ATTP"),
+            ("PROD", "Phòng Sản xuất"),
+            ("SALES", "Phòng Kinh doanh & Kho"),
+            ("EQUIP", "Phòng Thiết bị"),
+            ("HR_ACC", "Phòng Hành chính - Kế toán"),
+            ("SYS_ADMIN", "Quản trị hệ thống"),
+        ]
+        return [DepartmentOption(role_code=c, role_name=n) for c, n in fallback]
 
 def register_user(db: Session, payload: UserRegisterRequest) -> TokenResponse:
     existing_user = db.query(User).filter(User.username == payload.username).first()
@@ -64,7 +77,13 @@ def register_user(db: Session, payload: UserRegisterRequest) -> TokenResponse:
     )
 
 def authenticate_user(db: Session, payload: UserLoginRequest) -> TokenResponse:
-    user = db.query(User).filter(User.username == payload.username).first()
+    try:
+        user = db.query(User).filter(User.username == payload.username).first()
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Máy chủ cơ sở dữ liệu Supabase chưa sẵn sàng hoặc sai DATABASE_URL trên Render. Vui lòng kiểm tra lại kết nối database.",
+        )
 
     if not user and payload.username == "admin":
         role_admin = db.query(Role).filter((Role.role_code == "admin") | (Role.role_code == "ADMIN")).first()
