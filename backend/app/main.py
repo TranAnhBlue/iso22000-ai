@@ -36,6 +36,15 @@ from fastapi.requests import Request
 
 app.add_middleware(
     CORSMiddleware,
+    allow_origins=[
+        "http://localhost:8080",
+        "http://127.0.0.1:8080",
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "https://iso22000-ai.vercel.app",
+    ],
     allow_origin_regex=r"^https?://.*$",
     allow_credentials=True,
     allow_methods=["*"],
@@ -76,7 +85,7 @@ app.include_router(builder.router, prefix="/api/v1")
 # Router dự phòng trực tiếp nếu Frontend gọi /auth/login hoặc /auth/departments
 app.include_router(auth.router, prefix="", tags=["Authentication Direct Fallback"])
 
-@app.get("/")
+@app.api_route("/", methods=["GET", "HEAD"])
 def root():
     return {
         "status": "online",
@@ -85,6 +94,6 @@ def root():
         "docs": "/docs",
     }
 
-@app.get("/health")
+@app.api_route("/health", methods=["GET", "HEAD"])
 def health():
     return {"status": "healthy"}
