@@ -7,3 +7,6 @@ site-package-path = ["backend/venv/lib/python3.12/site-packages"]
 venvPath = "backend"
 venv = "venv"
 extraPaths = ["backend", "backend/venv/lib/python3.12/site-packages"]
+
+[tool.vercel]
+entrypoint = "backend.app.main:app"
