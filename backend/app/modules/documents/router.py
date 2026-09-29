@@ -4,6 +4,7 @@ from typing import List, Optional
 from uuid import UUID
 from datetime import date
 from app.core.database import get_db
+from app.core.dependencies import require_roles
 from app.modules.documents.models import Document
 from app.modules.auth.models import User
 from app.modules.documents.schemas import DocumentCreate, DocumentUpdate, DocumentResponse
@@ -153,7 +154,11 @@ def get_document_by_id(document_id: UUID, db: Session = Depends(get_db)):
     return DocumentResponse.model_validate(doc)
 
 @router.post("", response_model=DocumentResponse, status_code=status.HTTP_201_CREATED)
-def create_document(doc_in: DocumentCreate, db: Session = Depends(get_db)):
+def create_document(
+    doc_in: DocumentCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "fst_leader", "doc_controller", "management")),
+):
     """Tạo mới tài liệu / SOP"""
     existing = db.query(Document).filter(Document.doc_code == doc_in.doc_code).first()
     if existing:
@@ -185,7 +190,8 @@ def create_document(doc_in: DocumentCreate, db: Session = Depends(get_db)):
 def update_document(
     document_id: UUID,
     doc_in: DocumentUpdate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "fst_leader", "doc_controller", "management")),
 ):
     """Cập nhật / Phê duyệt tài liệu"""
     doc = db.query(Document).filter(Document.document_id == document_id).first()
@@ -228,7 +234,11 @@ def update_document(
     return DocumentResponse.model_validate(doc)
 
 @router.delete("/{document_id}")
-def delete_document(document_id: UUID, db: Session = Depends(get_db)):
+def delete_document(
+    document_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "doc_controller")),
+):
     """Xoá tài liệu"""
     doc = db.query(Document).filter(Document.document_id == document_id).first()
     if not doc:

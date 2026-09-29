@@ -157,7 +157,7 @@ def get_departments(db: Session = Depends(get_db)):
     return results
 
 @router.post("/departments", response_model=DepartmentOut, status_code=status.HTTP_201_CREATED)
-def create_department(payload: DepartmentCreate, db: Session = Depends(get_db)):
+def create_department(payload: DepartmentCreate, db: Session = Depends(get_db), _user: User = Depends(require_roles("admin"))):
     """Tạo mới phòng ban"""
     dept_code = payload.role_code or f"DEPT-{payload.name.upper().replace(' ', '_')}"
     existing = db.query(Department).filter(
@@ -178,7 +178,7 @@ def create_department(payload: DepartmentCreate, db: Session = Depends(get_db)):
     return format_dept_out(new_dept, count=0)
 
 @router.put("/departments/{dept_id}", response_model=DepartmentOut)
-def update_department(dept_id: str, payload: DepartmentUpdate, db: Session = Depends(get_db)):
+def update_department(dept_id: str, payload: DepartmentUpdate, db: Session = Depends(get_db), _user: User = Depends(require_roles("admin"))):
     """Cập nhật thông tin phòng ban"""
     dept = db.query(Department).filter(Department.dept_id == dept_id).first()
     if not dept:
@@ -200,7 +200,7 @@ def update_department(dept_id: str, payload: DepartmentUpdate, db: Session = Dep
     return format_dept_out(dept, count=int(count))
 
 @router.delete("/departments/{dept_id}")
-def delete_department(dept_id: str, db: Session = Depends(get_db)):
+def delete_department(dept_id: str, db: Session = Depends(get_db), _user: User = Depends(require_roles("admin"))):
     """Xóa phòng ban"""
     dept = db.query(Department).filter(Department.dept_id == dept_id).first()
     if not dept:
@@ -242,7 +242,7 @@ def get_interested_parties(
     return [format_party_out(p) for p in parties]
 
 @router.post("/interested-parties", response_model=InterestedPartyResponse, status_code=status.HTTP_201_CREATED)
-def create_interested_party(payload: InterestedPartyCreate, db: Session = Depends(get_db)):
+def create_interested_party(payload: InterestedPartyCreate, db: Session = Depends(get_db), _user: User = Depends(require_roles("admin", "qa", "fst_leader"))):
     """Thêm mới bên quan tâm và nhu cầu kỳ vọng ATTP"""
     party = InterestedParty(
         party_name=payload.party_name,
@@ -260,7 +260,7 @@ def create_interested_party(payload: InterestedPartyCreate, db: Session = Depend
     return format_party_out(party)
 
 @router.put("/interested-parties/{party_id}", response_model=InterestedPartyResponse)
-def update_interested_party(party_id: int, payload: InterestedPartyUpdate, db: Session = Depends(get_db)):
+def update_interested_party(party_id: int, payload: InterestedPartyUpdate, db: Session = Depends(get_db), _user: User = Depends(require_roles("admin", "qa", "fst_leader"))):
     """Cập nhật bên quan tâm"""
     party = db.query(InterestedParty).filter(InterestedParty.id == party_id).first()
     if not party:
@@ -274,7 +274,7 @@ def update_interested_party(party_id: int, payload: InterestedPartyUpdate, db: S
     return format_party_out(party)
 
 @router.delete("/interested-parties/{party_id}")
-def delete_interested_party(party_id: int, db: Session = Depends(get_db)):
+def delete_interested_party(party_id: int, db: Session = Depends(get_db), _user: User = Depends(require_roles("admin", "qa", "fst_leader"))):
     """Xóa bên quan tâm"""
     party = db.query(InterestedParty).filter(InterestedParty.id == party_id).first()
     if not party:
@@ -328,7 +328,7 @@ def get_context_risks(
     return [format_risk_out(r) for r in risks]
 
 @router.post("/context-risks", response_model=ContextRiskResponse, status_code=status.HTTP_201_CREATED)
-def create_context_risk(payload: ContextRiskCreate, db: Session = Depends(get_db)):
+def create_context_risk(payload: ContextRiskCreate, db: Session = Depends(get_db), _user: User = Depends(require_roles("admin", "qa", "fst_leader"))):
     """Tạo mới rủi ro/cơ hội bối cảnh tổ chức"""
     existing = db.query(ContextRisk).filter(ContextRisk.code == payload.code).first()
     if existing:
@@ -374,7 +374,7 @@ def create_context_risk(payload: ContextRiskCreate, db: Session = Depends(get_db
     return format_risk_out(risk)
 
 @router.put("/context-risks/{risk_id}", response_model=ContextRiskResponse)
-def update_context_risk(risk_id: int, payload: ContextRiskUpdate, db: Session = Depends(get_db)):
+def update_context_risk(risk_id: int, payload: ContextRiskUpdate, db: Session = Depends(get_db), _user: User = Depends(require_roles("admin", "qa", "fst_leader"))):
     """Cập nhật thông tin rủi ro/cơ hội bối cảnh"""
     risk = db.query(ContextRisk).filter(ContextRisk.id == risk_id).first()
     if not risk:
@@ -408,7 +408,7 @@ def update_context_risk(risk_id: int, payload: ContextRiskUpdate, db: Session = 
     return format_risk_out(risk)
 
 @router.delete("/context-risks/{risk_id}")
-def delete_context_risk(risk_id: int, db: Session = Depends(get_db)):
+def delete_context_risk(risk_id: int, db: Session = Depends(get_db), _user: User = Depends(require_roles("admin", "qa", "fst_leader"))):
     """Xóa rủi ro bối cảnh"""
     risk = db.query(ContextRisk).filter(ContextRisk.id == risk_id).first()
     if not risk:
@@ -484,7 +484,7 @@ def get_communications(
     return [format_comm_out(c) for c in comms]
 
 @router.post("/communications", response_model=CommunicationLogResponse, status_code=status.HTTP_201_CREATED)
-def create_communication(payload: CommunicationLogCreate, db: Session = Depends(get_db)):
+def create_communication(payload: CommunicationLogCreate, db: Session = Depends(get_db), _user: User = Depends(require_roles("admin", "qa", "fst_leader", "manager"))):
     code = payload.comm_code
     if not code:
         year = payload.communication_date.year if payload.communication_date else datetime.now().year
@@ -511,7 +511,7 @@ def create_communication(payload: CommunicationLogCreate, db: Session = Depends(
     return format_comm_out(comm)
 
 @router.put("/communications/{comm_id}", response_model=CommunicationLogResponse)
-def update_communication(comm_id: uuid.UUID, payload: CommunicationLogUpdate, db: Session = Depends(get_db)):
+def update_communication(comm_id: uuid.UUID, payload: CommunicationLogUpdate, db: Session = Depends(get_db), _user: User = Depends(require_roles("admin", "qa", "fst_leader", "manager"))):
     comm = db.query(CommunicationLog).filter(CommunicationLog.comm_id == comm_id).first()
     if not comm:
         raise HTTPException(status_code=404, detail="Không tìm thấy nhật ký trao đổi thông tin")
@@ -524,7 +524,7 @@ def update_communication(comm_id: uuid.UUID, payload: CommunicationLogUpdate, db
     return format_comm_out(comm)
 
 @router.delete("/communications/{comm_id}")
-def delete_communication(comm_id: uuid.UUID, db: Session = Depends(get_db)):
+def delete_communication(comm_id: uuid.UUID, db: Session = Depends(get_db), _user: User = Depends(require_roles("admin", "qa", "fst_leader", "manager"))):
     comm = db.query(CommunicationLog).filter(CommunicationLog.comm_id == comm_id).first()
     if not comm:
         raise HTTPException(status_code=404, detail="Không tìm thấy nhật ký trao đổi thông tin")
@@ -582,7 +582,7 @@ def get_food_safety_team(
     return [format_fst_out(m) for m in members]
 
 @router.post("/food-safety-team", response_model=FoodSafetyTeamMemberResponse, status_code=status.HTTP_201_CREATED)
-def create_food_safety_team_member(payload: FoodSafetyTeamMemberCreate, db: Session = Depends(get_db)):
+def create_food_safety_team_member(payload: FoodSafetyTeamMemberCreate, db: Session = Depends(get_db), _user: User = Depends(require_roles("admin", "qa", "fst_leader"))):
     role_raw = payload.role_in_team or payload.role or "MEMBER"
     role_reverse_map = {
         "Đội trưởng": "TEAM_LEADER",
@@ -623,7 +623,7 @@ def create_food_safety_team_member(payload: FoodSafetyTeamMemberCreate, db: Sess
 
 @router.put("/food-safety-team/{member_id}", response_model=FoodSafetyTeamMemberResponse)
 def update_food_safety_team_member(
-    member_id: uuid.UUID, payload: FoodSafetyTeamMemberUpdate, db: Session = Depends(get_db)
+    member_id: uuid.UUID, payload: FoodSafetyTeamMemberUpdate, db: Session = Depends(get_db), _user: User = Depends(require_roles("admin", "qa", "fst_leader"))
 ):
     member = db.query(FoodSafetyTeamMember).filter(FoodSafetyTeamMember.member_id == member_id).first()
     if not member:
@@ -675,7 +675,7 @@ def update_food_safety_team_member(
     return format_fst_out(member)
 
 @router.delete("/food-safety-team/{member_id}")
-def delete_food_safety_team_member(member_id: uuid.UUID, db: Session = Depends(get_db)):
+def delete_food_safety_team_member(member_id: uuid.UUID, db: Session = Depends(get_db), _user: User = Depends(require_roles("admin", "qa", "fst_leader"))):
     member = db.query(FoodSafetyTeamMember).filter(FoodSafetyTeamMember.member_id == member_id).first()
     if not member:
         raise HTTPException(status_code=404, detail="Không tìm thấy thành viên đội ATTP")

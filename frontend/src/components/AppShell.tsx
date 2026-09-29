@@ -213,15 +213,25 @@ export function AppShell({ children, module }: { children: ReactNode; module?: M
     if (!session) return;
     const fetchAlerts = async () => {
       try {
-        const res = await api.get<ExecutiveAlert[]>(`/dashboard/executive-alerts?role=${encodeURIComponent(session.role)}`);
-        if (Array.isArray(res.data)) {
-          setAlerts(res.data);
-          const readIds = getReadAlertIds();
-          const unread = res.data.filter((a) => !readIds.has(a.alert_id || a.title)).length;
+        const [alertsRes, readIdsRes] = await Promise.allSettled([
+          api.get<ExecutiveAlert[]>(`/dashboard/executive-alerts?role=${encodeURIComponent(session.role)}`),
+          api.get<string[]>("/dashboard/alerts/read-ids"),
+        ]);
+
+        const localReadIds = getReadAlertIds();
+        if (readIdsRes.status === "fulfilled" && Array.isArray(readIdsRes.value.data)) {
+          readIdsRes.value.data.forEach((id) => localReadIds.add(id));
+          try {
+            localStorage.setItem("wcert.read_alerts", JSON.stringify(Array.from(localReadIds)));
+          } catch {}
+        }
+
+        if (alertsRes.status === "fulfilled" && Array.isArray(alertsRes.value.data)) {
+          setAlerts(alertsRes.value.data);
+          const unread = alertsRes.value.data.filter((a) => !localReadIds.has(a.alert_id || a.title)).length;
           setUnreadCount(unread);
         }
       } catch {
-        // Không sử dụng mock alert - để mảng rỗng nếu chưa có thông báo từ CSDL
         setAlerts([]);
         setUnreadCount(0);
       }
@@ -251,14 +261,33 @@ export function AppShell({ children, module }: { children: ReactNode; module?: M
     navigate({ to: "/" });
   };
 
-  const handleMarkAllRead = () => {
+  const handleMarkSingleRead = async (alertId: string) => {
+    const existing = getReadAlertIds();
+    existing.add(alertId);
+    try {
+      localStorage.setItem("wcert.read_alerts", JSON.stringify(Array.from(existing)));
+    } catch {}
+    setUnreadCount((prev) => Math.max(0, prev - 1));
+    try {
+      await api.post("/dashboard/alerts/mark-read", { alert_id: alertId });
+    } catch (e) {
+      console.warn("Could not sync single alert read status to server:", e);
+    }
+  };
+
+  const handleMarkAllRead = async () => {
     const allIds = alerts.map((a) => a.alert_id || a.title);
     const existing = getReadAlertIds();
-    allIds.forEach(id => existing.add(id));
+    allIds.forEach((id) => existing.add(id));
     try {
       localStorage.setItem("wcert.read_alerts", JSON.stringify(Array.from(existing)));
     } catch {}
     setUnreadCount(0);
+    try {
+      await api.post("/dashboard/alerts/mark-read", { alert_ids: allIds });
+    } catch (e) {
+      console.warn("Could not sync mark-all-read status to server:", e);
+    }
     toast.success("Đã đánh dấu tất cả thông báo là đã đọc.");
   };
 
@@ -548,7 +577,10 @@ export function AppShell({ children, module }: { children: ReactNode; module?: M
                       <Link
                         key={a.alert_id}
                         to={a.action_url || "/dashboard"}
-                        onClick={() => setNotifPopoverOpen(false)}
+                        onClick={() => {
+                          handleMarkSingleRead(a.alert_id || a.title);
+                          setNotifPopoverOpen(false);
+                        }}
                         className="block p-3.5 hover:bg-slate-50 transition-colors group text-left"
                       >
                         <div className="flex items-start gap-2.5">

@@ -6,6 +6,8 @@ from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import desc, func, or_, and_
 
 from app.core.database import get_db
+from app.core.dependencies import require_roles
+from app.modules.auth.models import User
 from app.modules.inventory.models import (
     ProductionBatch,
     BatchMaterialUsage,
@@ -220,7 +222,11 @@ def update_inventory_item(inventory_id: uuid.UUID, item_in: WarehouseInventoryUp
 
 
 @router.delete("/stock/{inventory_id}", status_code=status.HTTP_200_OK)
-def delete_inventory_item(inventory_id: uuid.UUID, db: Session = Depends(get_db)):
+def delete_inventory_item(
+    inventory_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "warehouse", "qa")),
+):
     item = db.query(WarehouseInventory).filter(WarehouseInventory.inventory_id == inventory_id).first()
     if not item:
         raise HTTPException(status_code=404, detail="Không tìm thấy mục tồn kho này")
@@ -312,7 +318,11 @@ def update_retained_sample(sample_id: uuid.UUID, sample_in: RetainedSampleUpdate
 
 
 @router.delete("/samples/{sample_id}", status_code=status.HTTP_200_OK)
-def delete_retained_sample(sample_id: uuid.UUID, db: Session = Depends(get_db)):
+def delete_retained_sample(
+    sample_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qc", "qa")),
+):
     sample = db.query(RetainedSample).filter(RetainedSample.sample_id == sample_id).first()
     if not sample:
         raise HTTPException(status_code=404, detail="Không tìm thấy mẫu lưu này")
@@ -733,7 +743,11 @@ def get_disposal_records(
     return [format_disposal_record(d) for d in records]
 
 @router.post("/disposal-records", response_model=DisposalRecordResponse, status_code=status.HTTP_201_CREATED)
-def create_disposal_record(payload: DisposalRecordCreate, db: Session = Depends(get_db)):
+def create_disposal_record(
+    payload: DisposalRecordCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "fst_leader", "warehouse")),
+):
     """Tạo mới biên bản tiêu hủy hàng (BM02-HỦY HÀNG)"""
     existing = db.query(DisposalRecord).filter(DisposalRecord.record_code == payload.record_code).first()
     if existing:
@@ -761,7 +775,12 @@ def create_disposal_record(payload: DisposalRecordCreate, db: Session = Depends(
     return format_disposal_record(record)
 
 @router.put("/disposal-records/{record_id}", response_model=DisposalRecordResponse)
-def update_disposal_record(record_id: int, payload: DisposalRecordUpdate, db: Session = Depends(get_db)):
+def update_disposal_record(
+    record_id: int,
+    payload: DisposalRecordUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "fst_leader", "warehouse")),
+):
     """Cập nhật biên bản tiêu hủy hàng"""
     record = db.query(DisposalRecord).filter(DisposalRecord.id == record_id).first()
     if not record:
@@ -775,7 +794,11 @@ def update_disposal_record(record_id: int, payload: DisposalRecordUpdate, db: Se
     return format_disposal_record(record)
 
 @router.delete("/disposal-records/{record_id}")
-def delete_disposal_record(record_id: int, db: Session = Depends(get_db)):
+def delete_disposal_record(
+    record_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "fst_leader", "warehouse")),
+):
     """Xóa biên bản tiêu hủy hàng"""
     record = db.query(DisposalRecord).filter(DisposalRecord.id == record_id).first()
     if not record:

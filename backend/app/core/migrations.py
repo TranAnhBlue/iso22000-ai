@@ -334,6 +334,14 @@ MIGRATION_STATEMENTS = [
         approved_by_name VARCHAR(100) DEFAULT 'Đội trưởng Đội ATTP',
         created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
     );
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS user_read_alerts (
+        user_id UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+        alert_id VARCHAR(100) NOT NULL,
+        read_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (user_id, alert_id)
+    );
     """
 ]
 

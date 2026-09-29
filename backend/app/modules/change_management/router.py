@@ -6,6 +6,8 @@ import uuid
 from datetime import datetime, date
 
 from app.core.database import get_db
+from app.core.dependencies import require_roles
+from app.modules.auth.models import User
 from app.modules.change_management.models import ChangeRequest
 from app.modules.change_management.schemas import (
     ChangeRequestCreate,
@@ -110,6 +112,7 @@ def update_change_request(
     change_id: uuid.UUID,
     payload: ChangeRequestUpdate,
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "fst_leader", "management", "manager")),
 ):
     cr = db.query(ChangeRequest).filter(ChangeRequest.change_id == change_id).first()
     if not cr:
@@ -127,6 +130,7 @@ def update_change_request_status(
     change_id: uuid.UUID,
     payload: ChangeRequestStatusUpdate,
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "fst_leader", "management", "manager")),
 ):
     cr = db.query(ChangeRequest).filter(ChangeRequest.change_id == change_id).first()
     if not cr:
@@ -146,7 +150,11 @@ def update_change_request_status(
     return format_change_request(cr)
 
 @router.delete("/requests/{change_id}")
-def delete_change_request(change_id: uuid.UUID, db: Session = Depends(get_db)):
+def delete_change_request(
+    change_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "fst_leader", "management")),
+):
     cr = db.query(ChangeRequest).filter(ChangeRequest.change_id == change_id).first()
     if not cr:
         raise HTTPException(status_code=404, detail="Không tìm thấy phiếu yêu cầu thay đổi")

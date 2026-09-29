@@ -1,6 +1,8 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends, Request
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
+from app.core.dependencies import get_current_user
 from app.modules import (
     auth,
     organization,
@@ -85,24 +87,25 @@ async def global_exception_handler(request: Request, exc: Exception):
         },
     )
 
-# Các router chuẩn tiền tố /api/v1
+# Router xác thực công khai (login, register, departments)
 app.include_router(auth.router, prefix="/api/v1")
-app.include_router(organization.router, prefix="/api/v1")
-app.include_router(documents.router, prefix="/api/v1")
-app.include_router(purchasing.router, prefix="/api/v1")
-app.include_router(haccp.router, prefix="/api/v1")
-app.include_router(change_management.router, prefix="/api/v1/change-management", tags=["Change Management"])
-app.include_router(equipment.router, prefix="/api/v1/equipment", tags=["Equipment & Maintenance"])
-app.include_router(inventory.router, prefix="/api/v1/inventory", tags=["Warehouse & Inventory FEFO"])
-app.include_router(traceability.router, prefix="/api/v1/traceability", tags=["Traceability & Mock Recall"])
-app.include_router(capa.router, prefix="/api/v1/capa", tags=["CAPA & Non-Conformance"])
-app.include_router(audits.router, prefix="/api/v1/audits", tags=["Internal Audit, Training & Health"])
-app.include_router(dashboard.router, prefix="/api/v1/dashboard", tags=["Executive Dashboard & Management Review"])
-app.include_router(emergency.router, prefix="/api/v1/emergency", tags=["Emergency Preparedness & Response"])
-app.include_router(builder.router, prefix="/api/v1")
-
-# Router dự phòng trực tiếp nếu Frontend gọi /auth/login hoặc /auth/departments
 app.include_router(auth.router, prefix="", tags=["Authentication Direct Fallback"])
+
+# Áp dụng xác thực mặc định (JWT Bearer Token) cho toàn bộ 240 endpoint nghiệp vụ /api/v1
+default_auth = [Depends(get_current_user)]
+app.include_router(organization.router, prefix="/api/v1", dependencies=default_auth)
+app.include_router(documents.router, prefix="/api/v1", dependencies=default_auth)
+app.include_router(purchasing.router, prefix="/api/v1", dependencies=default_auth)
+app.include_router(haccp.router, prefix="/api/v1", dependencies=default_auth)
+app.include_router(change_management.router, prefix="/api/v1/change-management", tags=["Change Management"], dependencies=default_auth)
+app.include_router(equipment.router, prefix="/api/v1/equipment", tags=["Equipment & Maintenance"], dependencies=default_auth)
+app.include_router(inventory.router, prefix="/api/v1/inventory", tags=["Warehouse & Inventory FEFO"], dependencies=default_auth)
+app.include_router(traceability.router, prefix="/api/v1/traceability", tags=["Traceability & Mock Recall"], dependencies=default_auth)
+app.include_router(capa.router, prefix="/api/v1/capa", tags=["CAPA & Non-Conformance"], dependencies=default_auth)
+app.include_router(audits.router, prefix="/api/v1/audits", tags=["Internal Audit, Training & Health"], dependencies=default_auth)
+app.include_router(dashboard.router, prefix="/api/v1/dashboard", tags=["Executive Dashboard & Management Review"], dependencies=default_auth)
+app.include_router(emergency.router, prefix="/api/v1/emergency", tags=["Emergency Preparedness & Response"], dependencies=default_auth)
+app.include_router(builder.router, prefix="/api/v1", dependencies=default_auth)
 
 @app.api_route("/", methods=["GET", "HEAD"])
 def root():

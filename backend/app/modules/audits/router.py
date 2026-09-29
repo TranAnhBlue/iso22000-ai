@@ -6,6 +6,8 @@ from sqlalchemy.orm import Session
 from sqlalchemy import desc, func, and_
 
 from app.core.database import get_db
+from app.core.dependencies import require_roles
+from app.modules.auth.models import User
 from app.modules.audits.models import (
     InternalAudit,
     AuditFinding,
@@ -141,7 +143,11 @@ def list_internal_audits(
 
 
 @router.post("/audits", response_model=InternalAuditOut)
-def create_internal_audit(payload: InternalAuditCreate, db: Session = Depends(get_db)):
+def create_internal_audit(
+    payload: InternalAuditCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "fst_leader", "auditor")),
+):
     existing = db.query(InternalAudit).filter(InternalAudit.audit_code == payload.audit_code).first()
     if existing:
         raise HTTPException(status_code=400, detail=f"Mã đợt đánh giá {payload.audit_code} đã tồn tại!")
@@ -225,7 +231,12 @@ def get_internal_audit(audit_id: uuid.UUID, db: Session = Depends(get_db)):
 
 
 @router.put("/audits/{audit_id}", response_model=InternalAuditOut)
-def update_internal_audit(audit_id: uuid.UUID, payload: InternalAuditUpdate, db: Session = Depends(get_db)):
+def update_internal_audit(
+    audit_id: uuid.UUID,
+    payload: InternalAuditUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "fst_leader", "auditor")),
+):
     audit = db.query(InternalAudit).filter(InternalAudit.audit_id == audit_id).first()
     if not audit:
         raise HTTPException(status_code=404, detail="Không tìm thấy đợt đánh giá!")
@@ -264,7 +275,11 @@ def update_internal_audit(audit_id: uuid.UUID, payload: InternalAuditUpdate, db:
 
 
 @router.delete("/audits/{audit_id}")
-def delete_internal_audit(audit_id: uuid.UUID, db: Session = Depends(get_db)):
+def delete_internal_audit(
+    audit_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "fst_leader", "auditor")),
+):
     audit = db.query(InternalAudit).filter(InternalAudit.audit_id == audit_id).first()
     if not audit:
         raise HTTPException(status_code=404, detail="Không tìm thấy đợt đánh giá!")
@@ -303,7 +318,12 @@ def list_audit_findings(audit_id: uuid.UUID, db: Session = Depends(get_db)):
 
 
 @router.post("/audits/{audit_id}/findings", response_model=AuditFindingOut)
-def create_audit_finding(audit_id: uuid.UUID, payload: AuditFindingCreate, db: Session = Depends(get_db)):
+def create_audit_finding(
+    audit_id: uuid.UUID,
+    payload: AuditFindingCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "fst_leader", "auditor")),
+):
     audit = db.query(InternalAudit).filter(InternalAudit.audit_id == audit_id).first()
     if not audit:
         raise HTTPException(status_code=404, detail="Không tìm thấy đợt đánh giá!")
@@ -326,7 +346,12 @@ def create_audit_finding(audit_id: uuid.UUID, payload: AuditFindingCreate, db: S
 
 
 @router.put("/findings/{finding_id}", response_model=AuditFindingOut)
-def update_audit_finding(finding_id: uuid.UUID, payload: AuditFindingUpdate, db: Session = Depends(get_db)):
+def update_audit_finding(
+    finding_id: uuid.UUID,
+    payload: AuditFindingUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "fst_leader", "auditor")),
+):
     finding = db.query(AuditFinding).filter(AuditFinding.finding_id == finding_id).first()
     if not finding:
         raise HTTPException(status_code=404, detail="Không tìm thấy phát hiện đánh giá!")
@@ -359,7 +384,11 @@ def update_audit_finding(finding_id: uuid.UUID, payload: AuditFindingUpdate, db:
 
 
 @router.delete("/findings/{finding_id}")
-def delete_audit_finding(finding_id: uuid.UUID, db: Session = Depends(get_db)):
+def delete_audit_finding(
+    finding_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "fst_leader", "auditor")),
+):
     finding = db.query(AuditFinding).filter(AuditFinding.finding_id == finding_id).first()
     if not finding:
         raise HTTPException(status_code=404, detail="Không tìm thấy phát hiện đánh giá!")
@@ -370,7 +399,11 @@ def delete_audit_finding(finding_id: uuid.UUID, db: Session = Depends(get_db)):
 
 # ==================== 1-CLICK CONVERT FINDING TO NC IN CAPA ====================
 @router.post("/findings/{finding_id}/convert-to-nc")
-def convert_finding_to_nc(finding_id: uuid.UUID, db: Session = Depends(get_db)):
+def convert_finding_to_nc(
+    finding_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "fst_leader", "auditor")),
+):
     finding = db.query(AuditFinding).filter(AuditFinding.finding_id == finding_id).first()
     if not finding:
         raise HTTPException(status_code=404, detail="Không tìm thấy phát hiện đánh giá!")
@@ -940,7 +973,10 @@ def ai_scan_health_risk(payload: AIHealthRiskRequest, db: Session = Depends(get_
 
 # ==================== SEED DEFAULTS ====================
 @router.post("/seed-defaults")
-def seed_default_audits(db: Session = Depends(get_db)):
+def seed_default_audits(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin")),
+):
     # 1. Seed Internal Audits
     if db.query(InternalAudit).count() == 0:
         aud1 = InternalAudit(

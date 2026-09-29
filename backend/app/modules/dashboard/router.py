@@ -1,13 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from typing import List, Dict, Any, Optional
 from datetime import datetime, date, timedelta
 import uuid
 
 from app.core.database import get_db
-from app.core.dependencies import require_roles
+from app.core.dependencies import get_current_user, require_roles
 from app.modules.auth.models import User
-from app.modules.dashboard.models import QualityObjective, ManagementReview
+from app.modules.dashboard.models import QualityObjective, ManagementReview, UserReadAlert
 from app.modules.documents.models import Document
 from app.modules.purchasing.models import Supplier, MaterialLot, IQCInspection
 from app.modules.haccp.models import (
@@ -250,8 +251,48 @@ def get_executive_overview_stats(db: Session = Depends(get_db)):
 
 
 # ==================== 2. EXECUTIVE ALERTS HUB ====================
+class MarkAlertReadRequest(BaseModel):
+    alert_id: Optional[str] = None
+    alert_ids: Optional[List[str]] = None
+
+@router.get("/alerts/read-ids", response_model=List[str])
+def get_read_alert_ids(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Lấy danh sách các alert_id đã đọc của người dùng hiện tại từ CSDL."""
+    reads = db.query(UserReadAlert.alert_id).filter(UserReadAlert.user_id == current_user.user_id).all()
+    return [r[0] for r in reads]
+
+@router.post("/alerts/mark-read")
+def mark_alerts_read(
+    payload: MarkAlertReadRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Đánh dấu một hoặc nhiều thông báo cảnh báo là đã đọc cho người dùng hiện tại."""
+    ids_to_mark = []
+    if payload.alert_ids:
+        ids_to_mark.extend([i.strip() for i in payload.alert_ids if i and i.strip()])
+    if payload.alert_id and payload.alert_id.strip():
+        ids_to_mark.append(payload.alert_id.strip())
+
+    for a_id in set(ids_to_mark):
+        exists = db.query(UserReadAlert).filter(
+            UserReadAlert.user_id == current_user.user_id,
+            UserReadAlert.alert_id == a_id
+        ).first()
+        if not exists:
+            db.add(UserReadAlert(user_id=current_user.user_id, alert_id=a_id))
+    db.commit()
+    return {"message": "Đã cập nhật trạng thái đã đọc thành công", "count": len(ids_to_mark)}
+
 @router.get("/executive-alerts", response_model=List[ExecutiveAlertItem])
-def get_executive_alerts(role: Optional[str] = None, db: Session = Depends(get_db)):
+def get_executive_alerts(
+    role: Optional[str] = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     """
     Tổng hợp danh mục cảnh báo khẩn cấp realtime phân luồng thông minh theo từng Role nghiệp vụ.
     """
@@ -362,6 +403,13 @@ def get_executive_alerts(role: Optional[str] = None, db: Session = Depends(get_d
             action_url="/audits",
             timestamp=au.start_date.strftime("%d/%m/%Y") if au.start_date else "Kế hoạch",
         ))
+
+    # Cập nhật trạng thái đã đọc từ CSDL cho người dùng hiện tại
+    read_ids = set()
+    if current_user:
+        read_ids = {r[0] for r in db.query(UserReadAlert.alert_id).filter(UserReadAlert.user_id == current_user.user_id).all()}
+    for a in alerts:
+        a.is_read = a.alert_id in read_ids
 
     # Lọc thông minh theo Role nếu người dùng yêu cầu phân luồng
     if user_role in ["maintenance", "equipment"]:

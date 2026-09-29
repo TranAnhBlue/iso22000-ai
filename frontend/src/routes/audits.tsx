@@ -429,6 +429,22 @@ function AuditManagementPage() {
 
   // Open Workflow Studio
   const handleOpenWorkflow = async () => {
+    try {
+      const res = await api.get("/builders/workflows");
+      if (Array.isArray(res.data)) {
+        const existing = res.data.find(
+          (w: any) => w.code === "WF-AUDIT-4STEPS" || w.module === "INTERNAL_AUDIT"
+        );
+        if (existing) {
+          setWorkflowTemplate(existing);
+          setShowWorkflowModal(true);
+          return;
+        }
+      }
+    } catch (e) {
+      console.warn("Could not fetch remote audit workflow, fallback to default template", e);
+    }
+
     setWorkflowTemplate({
       module: "INTERNAL_AUDIT",
       code: "WF-AUDIT-4STEPS",

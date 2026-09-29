@@ -93,6 +93,7 @@ class ExecutiveAlertItem(BaseModel):
     description: str
     action_url: str
     timestamp: str
+    is_read: Optional[bool] = False
 
 
 class RadarPillars(BaseModel):

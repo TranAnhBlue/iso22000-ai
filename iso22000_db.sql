@@ -1052,6 +1052,15 @@ CREATE TABLE IF NOT EXISTS dynamic_form_submissions (
 	FOREIGN KEY(submitted_by) REFERENCES users (user_id) ON DELETE SET NULL
 );
 
+-- Bảng: user_read_alerts (Quản lý trạng thái đã đọc thông báo thời gian thực)
+CREATE TABLE IF NOT EXISTS user_read_alerts (
+	user_id UUID NOT NULL,
+	alert_id VARCHAR(100) NOT NULL,
+	read_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+	PRIMARY KEY (user_id, alert_id),
+	FOREIGN KEY(user_id) REFERENCES users (user_id) ON DELETE CASCADE
+);
+
 -- ============================================================================
 -- 16. DỮ LIỆU NỀN TẢNG KHỞI TẠO HỆ THỐNG (BẢO LƯU RBAC, PHÒNG BAN & ADMIN)
 -- ============================================================================

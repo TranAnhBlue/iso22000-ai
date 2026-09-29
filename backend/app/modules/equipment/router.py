@@ -6,6 +6,7 @@ from uuid import UUID
 from datetime import date, datetime, timedelta, timezone
 
 from app.core.database import get_db
+from app.core.dependencies import require_roles
 from app.modules.equipment.models import Equipment, EquipmentMaintenanceLog, EquipmentCalibrationLog
 from app.modules.auth.models import User
 from app.modules.equipment.schemas import (
@@ -652,7 +653,11 @@ def update_equipment(equipment_id: UUID, payload: EquipmentUpdate, db: Session =
 
 
 @router.delete("/equipments/{equipment_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_equipment(equipment_id: UUID, db: Session = Depends(get_db)):
+def delete_equipment(
+    equipment_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "maintenance", "technical", "engineering", "qa")),
+):
     eq = db.get(Equipment, equipment_id)
     if not eq:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy thiết bị")
@@ -816,7 +821,11 @@ def update_maintenance_log(maintenance_id: UUID, payload: EquipmentMaintenanceLo
 
 
 @router.delete("/maintenance-logs/{maintenance_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_maintenance_log(maintenance_id: UUID, db: Session = Depends(get_db)):
+def delete_maintenance_log(
+    maintenance_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "maintenance", "technical", "engineering", "qa")),
+):
     log = db.get(EquipmentMaintenanceLog, maintenance_id)
     if not log:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy phiếu bảo trì")
@@ -1015,7 +1024,11 @@ def update_calibration_log(calibration_id: UUID, payload: EquipmentCalibrationLo
 
 
 @router.delete("/calibration-logs/{calibration_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_calibration_log(calibration_id: UUID, db: Session = Depends(get_db)):
+def delete_calibration_log(
+    calibration_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "maintenance", "technical", "engineering", "qc", "qa")),
+):
     log = db.get(EquipmentCalibrationLog, calibration_id)
     if not log:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy phiếu hiệu chuẩn")

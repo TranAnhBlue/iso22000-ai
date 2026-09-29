@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import select, desc, func, and_, or_
 
 from app.core.database import get_db
-from app.core.dependencies import require_roles
+from app.core.dependencies import get_current_user, require_roles
 from app.modules.builder.models import (
     DynamicFormTemplate,
     DynamicFormSubmission,
@@ -27,6 +27,9 @@ from app.modules.builder.schemas import (
     WorkflowInstanceCreate,
     WorkflowInstanceAction,
     WorkflowInstanceResponse,
+    WorkflowNode,
+    WorkflowEdge,
+    validate_workflow_structure,
 )
 
 router = APIRouter(prefix="/builders", tags=["Dynamic Form & Workflow Builders"])
@@ -73,6 +76,25 @@ def format_wf_out(w: Any) -> DynamicWorkflowTemplateResponse:
         instance_count=inst_count,
     )
 
+
+def format_instance_out(inst: Any) -> WorkflowInstanceResponse:
+    wf = getattr(inst, "workflow", None)
+    return WorkflowInstanceResponse(
+        instance_id=inst.instance_id,
+        workflow_id=inst.workflow_id,
+        reference_id=inst.reference_id,
+        reference_type=inst.reference_type,
+        current_node_id=str(inst.current_node_id),
+        history=list(inst.history or []),
+        status=str(inst.status),
+        started_by=inst.started_by,
+        created_at=inst.created_at,
+        updated_at=inst.updated_at,
+        workflow_title=str(wf.title) if wf else None,
+        workflow_code=str(wf.code) if wf else None,
+    )
+
+
 # ==================== 1. FORM TEMPLATES CRUD ====================
 @router.get("/forms", response_model=List[DynamicFormTemplateResponse])
 def get_form_templates(
@@ -93,7 +115,7 @@ def get_form_template_by_id(template_id: UUID, db: Session = Depends(get_db)):
     return format_form_out(t)
 
 @router.post("/forms", response_model=DynamicFormTemplateResponse, status_code=status.HTTP_201_CREATED)
-def create_form_template(payload: DynamicFormTemplateCreate, db: Session = Depends(get_db)):
+def create_form_template(payload: DynamicFormTemplateCreate, db: Session = Depends(get_db), _user: User = Depends(require_roles("admin", "qa", "fst_leader"))):
     code_val = payload.code.strip()
     existing = db.scalar(select(DynamicFormTemplate).where(DynamicFormTemplate.code == code_val))
     if existing:
@@ -122,7 +144,7 @@ def create_form_template(payload: DynamicFormTemplateCreate, db: Session = Depen
     return format_form_out(new_t)
 
 @router.put("/forms/{template_id}", response_model=DynamicFormTemplateResponse)
-def update_form_template(template_id: UUID, payload: DynamicFormTemplateUpdate, db: Session = Depends(get_db)):
+def update_form_template(template_id: UUID, payload: DynamicFormTemplateUpdate, db: Session = Depends(get_db), _user: User = Depends(require_roles("admin", "qa", "fst_leader"))):
     t = db.get(DynamicFormTemplate, template_id)
     if not t:
         raise HTTPException(status_code=404, detail="Không tìm thấy biểu mẫu cần cập nhật")
@@ -151,7 +173,7 @@ def update_form_template(template_id: UUID, payload: DynamicFormTemplateUpdate, 
     return format_form_out(t)
 
 @router.delete("/forms/{template_id}", status_code=status.HTTP_200_OK)
-def delete_form_template(template_id: UUID, db: Session = Depends(get_db)):
+def delete_form_template(template_id: UUID, db: Session = Depends(get_db), _user: User = Depends(require_roles("admin", "qa", "fst_leader"))):
     t = db.get(DynamicFormTemplate, template_id)
     if not t:
         raise HTTPException(status_code=404, detail="Không tìm thấy biểu mẫu cần xóa")
@@ -195,7 +217,7 @@ def get_form_submissions(
     return out
 
 @router.post("/submissions", response_model=DynamicFormSubmissionResponse, status_code=status.HTTP_201_CREATED)
-def submit_form_data(payload: DynamicFormSubmissionCreate, db: Session = Depends(get_db)):
+def submit_form_data(payload: DynamicFormSubmissionCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     t = None
     target_tid = payload.template_id
     try:
@@ -227,7 +249,8 @@ def submit_form_data(payload: DynamicFormSubmissionCreate, db: Session = Depends
         template_id=t.template_id,
         reference_id=payload.reference_id,
         reference_type=payload.reference_type,
-        submitted_by_name=payload.submitted_by_name or "QC Ca",
+        submitted_by=current_user.user_id,
+        submitted_by_name=payload.submitted_by_name or current_user.full_name or "Nhân viên",
         form_data=payload.form_data,
         score=payload.score,
         status=payload.status,
@@ -271,7 +294,7 @@ def get_workflow_template_by_id(workflow_id: UUID, db: Session = Depends(get_db)
     return format_wf_out(w)
 
 @router.post("/workflows", response_model=DynamicWorkflowTemplateResponse, status_code=status.HTTP_201_CREATED)
-def create_workflow_template(payload: DynamicWorkflowTemplateCreate, db: Session = Depends(get_db)):
+def create_workflow_template(payload: DynamicWorkflowTemplateCreate, db: Session = Depends(get_db), _user: User = Depends(require_roles("admin", "qa", "fst_leader"))):
     code_val = payload.code.strip()
     existing = None
 
@@ -314,7 +337,7 @@ def create_workflow_template(payload: DynamicWorkflowTemplateCreate, db: Session
     return format_wf_out(new_w)
 
 @router.put("/workflows/{workflow_id}", response_model=DynamicWorkflowTemplateResponse)
-def update_workflow_template(workflow_id: UUID, payload: DynamicWorkflowTemplateUpdate, db: Session = Depends(get_db)):
+def update_workflow_template(workflow_id: UUID, payload: DynamicWorkflowTemplateUpdate, db: Session = Depends(get_db), _user: User = Depends(require_roles("admin", "qa", "fst_leader"))):
     w = db.get(DynamicWorkflowTemplate, workflow_id)
     if not w:
         raise HTTPException(status_code=404, detail="Không tìm thấy quy trình workflow cần cập nhật")
@@ -324,6 +347,21 @@ def update_workflow_template(workflow_id: UUID, payload: DynamicWorkflowTemplate
         if dup:
             raise HTTPException(status_code=400, detail=f"Mã quy trình '{payload.code}' đã bị trùng")
         w.code = payload.code.strip()
+
+    # Thẩm định tính toàn vẹn của đồ thị khi hợp nhất dữ liệu mới với dữ liệu hiện có
+    raw_nodes = [n.model_dump() for n in payload.nodes] if payload.nodes is not None else w.nodes
+    raw_edges = [e.model_dump() for e in payload.edges] if payload.edges is not None else w.edges
+    merged_nodes = [WorkflowNode(**n) for n in raw_nodes]
+    merged_edges = [WorkflowEdge(**e) for e in raw_edges]
+    try:
+        validate_workflow_structure(
+            nodes=merged_nodes,
+            edges=merged_edges,
+            module=payload.module or w.module,
+            status=payload.status or w.status,
+        )
+    except ValueError as ve:
+        raise HTTPException(status_code=400, detail=str(ve))
 
     if payload.module is not None:
         w.module = payload.module.strip()
@@ -345,13 +383,161 @@ def update_workflow_template(workflow_id: UUID, payload: DynamicWorkflowTemplate
     return format_wf_out(w)
 
 @router.delete("/workflows/{workflow_id}", status_code=status.HTTP_200_OK)
-def delete_workflow_template(workflow_id: UUID, db: Session = Depends(get_db)):
+def delete_workflow_template(workflow_id: UUID, db: Session = Depends(get_db), _user: User = Depends(require_roles("admin", "qa", "fst_leader"))):
     w = db.get(DynamicWorkflowTemplate, workflow_id)
     if not w:
         raise HTTPException(status_code=404, detail="Không tìm thấy quy trình cần xóa")
     db.delete(w)
     db.commit()
     return {"message": "Đã xóa quy trình thành công", "workflow_id": workflow_id}
+
+
+# ==================== 4. WORKFLOW EXECUTION ENGINE (INSTANCES) ====================
+@router.post("/workflows/{workflow_id}/instances", response_model=WorkflowInstanceResponse, status_code=status.HTTP_201_CREATED)
+def start_workflow_instance(
+    workflow_id: UUID,
+    payload: WorkflowInstanceCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Khởi tạo một phiên thực thi quy trình từ Workflow Template."""
+    wf = db.get(DynamicWorkflowTemplate, workflow_id)
+    if not wf:
+        raise HTTPException(status_code=404, detail="Không tìm thấy quy trình workflow")
+
+    nodes = wf.nodes or []
+    if not nodes:
+        raise HTTPException(status_code=400, detail="Quy trình không có bước công đoạn nào")
+
+    # Xác định node bắt đầu
+    start_node = None
+    if payload.initial_node_id:
+        start_node = next((n for n in nodes if n.get("id") == payload.initial_node_id), None)
+    if not start_node:
+        start_node = next((n for n in nodes if n.get("type") == "start"), nodes[0])
+
+    curr_node_id = str(start_node.get("id"))
+    history_entry = {
+        "node_id": curr_node_id,
+        "node_label": start_node.get("label", curr_node_id),
+        "action": "START",
+        "action_by": current_user.full_name or "Nhân viên",
+        "action_by_id": str(current_user.user_id),
+        "action_at": datetime.now(timezone.utc).isoformat(),
+        "comments": "Khởi tạo luồng quy trình thực thi",
+    }
+
+    inst = WorkflowInstance(
+        workflow_id=workflow_id,
+        reference_id=payload.reference_id,
+        reference_type=payload.reference_type,
+        current_node_id=curr_node_id,
+        status="IN_PROGRESS",
+        started_by=current_user.user_id,
+        history=[history_entry],
+    )
+    db.add(inst)
+    db.commit()
+    db.refresh(inst)
+    return format_instance_out(inst)
+
+@router.get("/workflows/{workflow_id}/instances", response_model=List[WorkflowInstanceResponse])
+def get_workflow_instances(workflow_id: UUID, db: Session = Depends(get_db)):
+    """Lấy danh sách các phiên thực thi của một Workflow Template."""
+    instances = db.query(WorkflowInstance).filter(WorkflowInstance.workflow_id == workflow_id).order_by(desc(WorkflowInstance.created_at)).all()
+    return [format_instance_out(i) for i in instances]
+
+@router.get("/instances", response_model=List[WorkflowInstanceResponse])
+def list_all_instances(
+    status_filter: Optional[str] = Query(None, alias="status"),
+    reference_id: Optional[str] = Query(None),
+    db: Session = Depends(get_db),
+):
+    """Tra cứu tất cả các phiên thực thi quy trình đang chạy trên toàn hệ thống."""
+    query = db.query(WorkflowInstance)
+    if status_filter:
+        query = query.filter(WorkflowInstance.status == status_filter.upper())
+    if reference_id:
+        query = query.filter(WorkflowInstance.reference_id == reference_id)
+    instances = query.order_by(desc(WorkflowInstance.created_at)).all()
+    return [format_instance_out(i) for i in instances]
+
+@router.get("/instances/{instance_id}", response_model=WorkflowInstanceResponse)
+def get_single_instance(instance_id: UUID, db: Session = Depends(get_db)):
+    """Lấy chi tiết một phiên thực thi quy trình bao gồm toàn bộ nhật ký phê duyệt."""
+    inst = db.get(WorkflowInstance, instance_id)
+    if not inst:
+        raise HTTPException(status_code=404, detail="Không tìm thấy phiên thực thi quy trình")
+    return format_instance_out(inst)
+
+@router.post("/instances/{instance_id}/action", response_model=WorkflowInstanceResponse)
+def advance_workflow_instance(
+    instance_id: UUID,
+    payload: WorkflowInstanceAction,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Thực hiện hành động chuyển bước, phê duyệt hoặc từ chối trong quy trình.
+    action: APPROVE, REJECT, ADVANCE, COMPLETE
+    """
+    inst = db.get(WorkflowInstance, instance_id)
+    if not inst:
+        raise HTTPException(status_code=404, detail="Không tìm thấy phiên thực thi quy trình")
+
+    if inst.status in ["COMPLETED", "CANCELLED"]:
+        raise HTTPException(status_code=400, detail=f"Phiên thực thi đã kết thúc với trạng thái: {inst.status}")
+
+    wf = inst.workflow
+    nodes = wf.nodes if wf else []
+    edges = wf.edges if wf else []
+
+    current_node = next((n for n in nodes if n.get("id") == inst.current_node_id), None)
+    curr_label = current_node.get("label", inst.current_node_id) if current_node else inst.current_node_id
+
+    action_type = payload.action.upper().strip()
+    next_node_id = payload.next_node_id
+
+    # Nếu không chỉ định next_node_id và hành động là ADVANCE/APPROVE, tự động tìm theo edges
+    if not next_node_id and action_type in ["APPROVE", "ADVANCE"]:
+        outgoing_edges = [e for e in edges if e.get("source") == inst.current_node_id]
+        if outgoing_edges:
+            next_node_id = outgoing_edges[0].get("target")
+
+    # Xác định trạng thái mới và node mới
+    new_status = inst.status
+    if action_type == "COMPLETE" or (next_node_id and any(n.get("id") == next_node_id and n.get("type") == "end" for n in nodes)):
+        new_status = "COMPLETED"
+    elif action_type == "REJECT" and not next_node_id:
+        new_status = "REJECTED"
+
+    next_node = next((n for n in nodes if n.get("id") == next_node_id), None) if next_node_id else None
+
+    # Ghi nhận lịch sử chuyển bước
+    hist_entry = {
+        "from_node_id": inst.current_node_id,
+        "from_node_label": curr_label,
+        "to_node_id": next_node_id,
+        "to_node_label": next_node.get("label") if next_node else None,
+        "action": action_type,
+        "action_by": current_user.full_name or "Nhân viên",
+        "action_by_id": str(current_user.user_id),
+        "action_at": datetime.now(timezone.utc).isoformat(),
+        "comments": payload.comments or f"Hành động {action_type}",
+    }
+
+    current_history = list(inst.history or [])
+    current_history.append(hist_entry)
+
+    inst.history = current_history
+    if next_node_id:
+        inst.current_node_id = next_node_id
+    inst.status = new_status
+    inst.updated_at = datetime.now(timezone.utc)
+
+    db.commit()
+    db.refresh(inst)
+    return format_instance_out(inst)
 
 # ==================== 4. SEED DEFAULTS (BIỂU MẪU & QUY TRÌNH MẪU CHUẨN ISO) ====================
 @router.post("/seed-defaults", status_code=status.HTTP_200_OK)
@@ -528,5 +714,29 @@ def seed_default_builders(
         )
         db.add(wf_capa)
 
+    # 8. Mẫu Workflow AUDIT_FLOW (Quy trình 4 Bước Đánh Giá Nội Bộ)
+    wf_audit = db.scalar(select(DynamicWorkflowTemplate).where(DynamicWorkflowTemplate.code == "WF-AUDIT-4STEPS"))
+    if not wf_audit:
+        wf_audit = DynamicWorkflowTemplate(
+            module="INTERNAL_AUDIT",
+            code="WF-AUDIT-4STEPS",
+            title="Quy Trình 4 Bước Đánh Giá Nội Bộ",
+            description="Quy trình chuẩn mực đánh giá độc lập: Lập kế hoạch & Chuẩn bị Checklist -> Đánh giá tại hiện trường -> Lập báo cáo phát hiện -> Thẩm tra khắc phục CAPA.",
+            version="1.0",
+            nodes=[
+                {"id": "a_1", "type": "process", "label": "1. Lập Kế Hoạch & Soạn Checklist", "role": "Ban QLCL & ATTP", "description": "Xác định phạm vi, chuẩn mực áp dụng và phân công đánh giá chéo.", "is_ccp": False, "step_number": 1},
+                {"id": "a_2", "type": "process", "label": "2. Thực Hiện Đánh Giá Tại Chỗ", "role": "Ban QLCL & ATTP", "description": "Phỏng vấn nhân sự, kiểm tra hồ sơ ghi chép và quan sát hiện trường sản xuất.", "is_ccp": False, "step_number": 2},
+                {"id": "a_3", "type": "approval", "label": "3. Họp Tổng Kết & Báo Cáo Phát Hiện", "role": "Ban Giám đốc", "description": "Thống nhất phân loại lỗi (Conformity / Major NC / Minor NC / OFI) và ký biên bản.", "is_ccp": False, "step_number": 3},
+                {"id": "a_4", "type": "process", "label": "4. Theo Dõi & Thẩm Tra Khắc Phục CAPA", "role": "Ban QLCL & ATTP", "description": "Giám sát các hành động khắc phục phòng ngừa và đóng hồ sơ sau 30 ngày.", "is_ccp": False, "step_number": 4},
+            ],
+            edges=[
+                {"id": "ea1_2", "source": "a_1", "target": "a_2", "label": "Triển khai đánh giá"},
+                {"id": "ea2_3", "source": "a_2", "target": "a_3", "label": "Lập danh mục phát hiện"},
+                {"id": "ea3_4", "source": "a_3", "target": "a_4", "label": "Phê duyệt & Chuyển CAPA"},
+            ],
+            status="ACTIVE"
+        )
+        db.add(wf_audit)
+
     db.commit()
-    return {"message": "Đã khởi tạo thành công 4 Biểu mẫu Động và 3 Quy trình Mẫu chuẩn ISO 22000:2018!"}
+    return {"message": "Đã khởi tạo thành công 4 Biểu mẫu Động và 4 Quy trình Mẫu chuẩn ISO 22000:2018!"}

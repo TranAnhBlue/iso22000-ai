@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime, date
-from sqlalchemy import Column, String, Text, Boolean, Integer, Float, Date, DateTime, JSON
+from sqlalchemy import Column, String, Text, Boolean, Integer, Float, Date, DateTime, JSON, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 from app.core.database import Base
 
@@ -56,3 +56,15 @@ class ManagementReview(Base):
     status = Column(String(30), default="DRAFT", nullable=False)  # DRAFT, CONCLUDED, APPROVED
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+
+class UserReadAlert(Base):
+    """
+    Quản lý trạng thái đã đọc của các thông báo cảnh báo thời gian thực theo từng người dùng (ISO 22000 Notification Hub).
+    """
+    __tablename__ = "user_read_alerts"
+
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.user_id", ondelete="CASCADE"), primary_key=True)
+    alert_id = Column(String(100), primary_key=True)
+    read_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+

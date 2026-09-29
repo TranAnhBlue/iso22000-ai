@@ -196,7 +196,12 @@ def get_non_conformance_by_id(nc_id: UUID, db: Session = Depends(get_db)):
 
 
 @router.put("/ncs/{nc_id}", response_model=NonConformanceResponse)
-def update_non_conformance(nc_id: UUID, payload: NonConformanceUpdate, db: Session = Depends(get_db)):
+def update_non_conformance(
+    nc_id: UUID,
+    payload: NonConformanceUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "qc", "fst_leader")),
+):
     nc = db.get(NonConformance, nc_id)
     if not nc:
         raise HTTPException(status_code=404, detail="Không tìm thấy bản ghi sự không phù hợp")
@@ -230,7 +235,11 @@ def update_non_conformance(nc_id: UUID, payload: NonConformanceUpdate, db: Sessi
 
 
 @router.delete("/ncs/{nc_id}", status_code=status.HTTP_200_OK)
-def delete_non_conformance(nc_id: UUID, db: Session = Depends(get_db)):
+def delete_non_conformance(
+    nc_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "qc", "fst_leader")),
+):
     nc = db.get(NonConformance, nc_id)
     if not nc:
         raise HTTPException(status_code=404, detail="Không tìm thấy bản ghi sự không phù hợp")
@@ -270,7 +279,11 @@ def get_capa_records(
 
 
 @router.post("/records", response_model=CAPARecordResponse, status_code=status.HTTP_201_CREATED)
-def create_capa_record(payload: CAPARecordCreate, db: Session = Depends(get_db)):
+def create_capa_record(
+    payload: CAPARecordCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "fst_leader")),
+):
     # Verify NC exists
     nc = db.get(NonConformance, payload.nc_id)
     if not nc:
@@ -318,7 +331,12 @@ def get_capa_record_by_id(capa_id: UUID, db: Session = Depends(get_db)):
 
 
 @router.put("/records/{capa_id}", response_model=CAPARecordResponse)
-def update_capa_record(capa_id: UUID, payload: CAPARecordUpdate, db: Session = Depends(get_db)):
+def update_capa_record(
+    capa_id: UUID,
+    payload: CAPARecordUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "fst_leader")),
+):
     c = db.get(CAPARecord, capa_id)
     if not c:
         raise HTTPException(status_code=404, detail="Không tìm thấy hồ sơ CAPA")
@@ -354,7 +372,12 @@ def update_capa_record(capa_id: UUID, payload: CAPARecordUpdate, db: Session = D
 
 
 @router.post("/records/{capa_id}/verify", response_model=CAPARecordResponse)
-def verify_capa_record(capa_id: UUID, payload: CAPAVerifyRequest, db: Session = Depends(get_db)):
+def verify_capa_record(
+    capa_id: UUID,
+    payload: CAPAVerifyRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "fst_leader")),
+):
     c = db.get(CAPARecord, capa_id)
     if not c:
         raise HTTPException(status_code=404, detail="Không tìm thấy hồ sơ CAPA")
@@ -392,7 +415,11 @@ def verify_capa_record(capa_id: UUID, payload: CAPAVerifyRequest, db: Session = 
 
 
 @router.delete("/records/{capa_id}", status_code=status.HTTP_200_OK)
-def delete_capa_record(capa_id: UUID, db: Session = Depends(get_db)):
+def delete_capa_record(
+    capa_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "fst_leader")),
+):
     c = db.get(CAPARecord, capa_id)
     if not c:
         raise HTTPException(status_code=404, detail="Không tìm thấy hồ sơ CAPA")
