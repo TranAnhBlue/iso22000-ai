@@ -23,10 +23,24 @@ def run_migration_sql(sql_query: str):
 
 
 MIGRATION_STATEMENTS = [
-    # Documents columns migration
+    # Documents columns & approvals migration
     "ALTER TABLE documents ADD COLUMN IF NOT EXISTS department VARCHAR(100);",
     "ALTER TABLE documents ADD COLUMN IF NOT EXISTS standard VARCHAR(100);",
     "ALTER TABLE documents ADD COLUMN IF NOT EXISTS content TEXT;",
+    """
+    CREATE TABLE IF NOT EXISTS document_approvals (
+        approval_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        document_id UUID NOT NULL REFERENCES documents(document_id) ON DELETE CASCADE,
+        version VARCHAR(20) NOT NULL DEFAULT '1.0',
+        action VARCHAR(50) NOT NULL,
+        previous_status VARCHAR(30),
+        new_status VARCHAR(30) NOT NULL,
+        performed_by UUID REFERENCES users(user_id) ON DELETE SET NULL,
+        performed_by_name VARCHAR(100),
+        comments TEXT,
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+    );
+    """,
 
     # Suppliers columns migration
     "ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS category VARCHAR(100);",

@@ -38,6 +38,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { QRCodeModal } from "@/components/QRCodeModal";
 import { EmptyState } from "@/components/EmptyState";
 import { ModuleGuideModal } from "@/components/ModuleGuideModal";
+import { printHtml } from "@/lib/print";
 
 import { useModuleAccess } from "@/lib/rbac";
 
@@ -147,11 +148,16 @@ export function TraceabilityPage() {
   }, []);
 
   const triggerPrint = () => {
-    document.body.classList.add("printing-bm-tx");
-    window.print();
-    setTimeout(() => {
-      document.body.classList.remove("printing-bm-tx");
-    }, 1200);
+    const el = document.getElementById("printable-bm-tx-01");
+    if (el) {
+      printHtml(el.innerHTML);
+    } else {
+      document.body.classList.add("printing-bm-tx");
+      window.print();
+      setTimeout(() => {
+        document.body.classList.remove("printing-bm-tx");
+      }, 1200);
+    }
   };
 
   return (

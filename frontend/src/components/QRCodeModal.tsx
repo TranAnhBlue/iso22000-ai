@@ -11,6 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { QrCode, Printer, ShieldCheck, Smartphone, CheckCircle2 } from "lucide-react";
 import logoImg from "@/assets/logo.png";
+import { printHtml } from "@/lib/print";
 
 interface QRCodeModalProps {
   open: boolean;
@@ -61,11 +62,16 @@ export function QRCodeModal({
   }, [open, lotNumber, qrCodeText, scannableContent]);
 
   const printQRLabel = () => {
-    document.body.classList.add("printing-qr-label-only");
-    window.print();
-    setTimeout(() => {
-      document.body.classList.remove("printing-qr-label-only");
-    }, 1200);
+    const el = document.getElementById("printable-qr-label");
+    if (el) {
+      printHtml(el.innerHTML);
+    } else {
+      document.body.classList.add("printing-qr-label-only");
+      window.print();
+      setTimeout(() => {
+        document.body.classList.remove("printing-qr-label-only");
+      }, 1200);
+    }
   };
 
   return (

@@ -4252,7 +4252,11 @@ function PurchasingPage() {
               <DialogFooter className="print:hidden">
                 <Button
                   variant="outline"
-                  onClick={() => window.print()}
+                  onClick={() => {
+                    const el = document.getElementById("iqc-print-area");
+                    if (el) printHtml(el.innerHTML);
+                    else window.print();
+                  }}
                   className="gap-1.5"
                 >
                   <Printer className="h-4 w-4" />
@@ -4362,7 +4366,11 @@ function PurchasingPage() {
             <DialogFooter className="print:hidden">
               <Button
                 variant="outline"
-                onClick={() => window.print()}
+                onClick={() => {
+                  const el = document.getElementById("asl-print-area");
+                  if (el) printHtml(el.innerHTML);
+                  else window.print();
+                }}
                 className="gap-1.5"
               >
                 <Printer className="h-4 w-4" />

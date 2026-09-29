@@ -104,15 +104,52 @@
 @media print {
   @page {
     size: A4 portrait;
-    margin: 12mm 15mm;
+    margin: 10mm 12mm;
   }
-  body {
+  html, body {
     background: #ffffff !important;
     color: #000000 !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
+    height: auto !important;
+    overflow: visible !important;
   }
-  header, nav, aside, footer, button, .print\:hidden {
+  header, nav, aside, footer, button, .print\:hidden, [role="tooltip"], [data-sonner-toaster] {
     display: none !important;
   }
+  /* Remove dark modal overlay & unclip scrollable dialogs when printing */
+  div[class*="backdrop-blur"],
+  div[class*="bg-slate-900/"],
+  div[class*="bg-black/"],
+  div[class*="bg-background/80"],
+  [data-radix-portal] > div:first-child {
+    background: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    box-shadow: none !important;
+  }
+  div[class*="fixed inset-0"],
+  [role="dialog"] {
+    position: static !important;
+    inset: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    box-shadow: none !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+  div[class*="overflow-y-auto"],
+  div[class*="overflow-hidden"],
+  div[class*="max-h-"] {
+    max-height: none !important;
+    overflow: visible !important;
+  }
+  table, tr, td, th, .sig-box, .print-card {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
 }
+

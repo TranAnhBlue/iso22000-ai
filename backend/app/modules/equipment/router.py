@@ -303,7 +303,8 @@ def sync_equipment_calibration_state(eq: Equipment, db: Session):
             days_left = (latest_cal.expiry_date - today).days
             if days_left < 0:
                 eq.calibration_status = "EXPIRED"
-                eq.status = "CALIBRATION_OVERDUE"
+                if eq.status != "MAINTENANCE":
+                    eq.status = "CALIBRATION_OVERDUE"
             elif days_left <= 15:
                 eq.calibration_status = "EXPIRING_SOON"
                 if eq.status == "CALIBRATION_OVERDUE":
@@ -314,7 +315,8 @@ def sync_equipment_calibration_state(eq: Equipment, db: Session):
                     eq.status = "OPERATIONAL"
         else:
             eq.calibration_status = "EXPIRED"
-            eq.status = "CALIBRATION_OVERDUE"
+            if eq.status != "MAINTENANCE":
+                eq.status = "CALIBRATION_OVERDUE"
     else:
         if eq.last_calibration_date and not eq.next_calibration_due:
             freq_m = eq.calibration_frequency_months or 12
@@ -332,12 +334,29 @@ def sync_equipment_maintenance_state(eq: Equipment, db: Session):
         eq.last_maintenance_date = latest_maint.maintenance_date
         freq_d = eq.maintenance_frequency_days or 30
         eq.next_maintenance_due = latest_maint.maintenance_date + timedelta(days=freq_d)
-        if eq.status == "MAINTENANCE":
-            eq.status = "OPERATIONAL"
     else:
         if eq.last_maintenance_date and not eq.next_maintenance_due:
             freq_d = eq.maintenance_frequency_days or 30
             eq.next_maintenance_due = eq.last_maintenance_date + timedelta(days=freq_d)
+
+    # Nếu thiết bị có bất kỳ phiếu bảo trì nào đang tiến hành hoặc chưa đạt, máy bắt buộc ở trạng thái MAINTENANCE
+    active_maint = db.scalar(
+        select(EquipmentMaintenanceLog)
+        .where(
+            EquipmentMaintenanceLog.equipment_id == eq.equipment_id,
+            EquipmentMaintenanceLog.result_status.in_(["IN_PROGRESS", "NEED_FOLLOWUP", "FAILED"])
+        )
+    )
+    if active_maint:
+        eq.status = "MAINTENANCE"
+    else:
+        # Nếu không còn phiếu bảo trì nào đang thực hiện hoặc chưa đạt
+        if eq.status == "MAINTENANCE":
+            if eq.calibration_status == "EXPIRED":
+                eq.status = "CALIBRATION_OVERDUE"
+            else:
+                eq.status = "OPERATIONAL"
+
 
 
 # ==================== 1. KPI STATS ENDPOINT ====================
@@ -750,6 +769,16 @@ def create_maintenance_log(payload: EquipmentMaintenanceLogCreate, db: Session =
     db.add(log)
     db.flush()
 
+    # Cập nhật trạng thái máy tương ứng với kết quả bảo trì
+    res_status = str(payload.result_status or "").upper()
+    if res_status in ["IN_PROGRESS", "NEED_FOLLOWUP", "FAILED"]:
+        eq.status = "MAINTENANCE"
+    elif res_status in ["SUCCESS", "COMPLETED", "PASSED"]:
+        if eq.calibration_status == "EXPIRED":
+            eq.status = "CALIBRATION_OVERDUE"
+        else:
+            eq.status = "OPERATIONAL"
+
     # Tự động đồng bộ sang hồ sơ lý lịch thiết bị
     sync_equipment_maintenance_state(eq, db)
 
@@ -792,6 +821,14 @@ def update_maintenance_log(maintenance_id: UUID, payload: EquipmentMaintenanceLo
     db.flush()
     eq = log.equipment
     if eq:
+        res_status = str(log.result_status or "").upper()
+        if res_status in ["IN_PROGRESS", "NEED_FOLLOWUP", "FAILED"]:
+            eq.status = "MAINTENANCE"
+        elif res_status in ["SUCCESS", "COMPLETED", "PASSED"]:
+            if eq.calibration_status == "EXPIRED":
+                eq.status = "CALIBRATION_OVERDUE"
+            else:
+                eq.status = "OPERATIONAL"
         sync_equipment_maintenance_state(eq, db)
 
     db.commit()

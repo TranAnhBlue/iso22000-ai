@@ -32,6 +32,25 @@ class DocumentUpdate(BaseModel):
     file_url: Optional[str] = None
     approved_by: Optional[UUID] = None
     effective_date: Optional[date] = None
+    approval_note: Optional[str] = None
+
+class DocumentApproveRequest(BaseModel):
+    effective_date: Optional[date] = None
+    approval_note: Optional[str] = None
+
+class DocumentApprovalResponse(BaseModel):
+    approval_id: UUID
+    document_id: UUID
+    version: str
+    action: str
+    previous_status: Optional[str] = None
+    new_status: str
+    performed_by: Optional[UUID] = None
+    performed_by_name: Optional[str] = None
+    comments: Optional[str] = None
+    created_at: Optional[datetime] = None
+
+    model_config = ConfigDict(from_attributes=True)
 
 class DocumentResponse(DocumentBase):
     document_id: UUID

@@ -5,9 +5,15 @@ from uuid import UUID
 from datetime import date
 from app.core.database import get_db
 from app.core.dependencies import require_roles
-from app.modules.documents.models import Document
+from app.modules.documents.models import Document, DocumentApproval
 from app.modules.auth.models import User
-from app.modules.documents.schemas import DocumentCreate, DocumentUpdate, DocumentResponse
+from app.modules.documents.schemas import (
+    DocumentCreate,
+    DocumentUpdate,
+    DocumentResponse,
+    DocumentApproveRequest,
+    DocumentApprovalResponse,
+)
 
 router = APIRouter(prefix="/documents", tags=["Documents & SOPs"])
 
@@ -157,7 +163,7 @@ def get_document_by_id(document_id: UUID, db: Session = Depends(get_db)):
 def create_document(
     doc_in: DocumentCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles("admin", "qa", "fst_leader", "doc_controller", "management")),
+    current_user: User = Depends(require_roles("admin", "qa", "fst_leader", "fs_team_leader", "doc_controller", "management")),
 ):
     """Tạo mới tài liệu / SOP"""
     existing = db.query(Document).filter(Document.doc_code == doc_in.doc_code).first()
@@ -167,20 +173,51 @@ def create_document(
             detail=f"Mã tài liệu '{doc_in.doc_code}' đã tồn tại trong hệ thống."
         )
 
+    user_roles = [str(r.role_code).lower().strip() for r in current_user.roles]
+    if current_user.department:
+        user_roles.append(str(current_user.department).lower().strip())
+    is_approver = "admin" in user_roles or any(r in ["qa", "fst_leader", "fs_team_leader", "management", "manager"] for r in user_roles)
+
+    target_status = (doc_in.status or "DRAFT").upper()
+    approved_by_id = None
+    effective_date_val = None
+
+    # Khóa quyền APPROVED / EFFECTIVE: Chỉ người có quyền duyệt mới được tạo ở trạng thái APPROVED
+    if target_status in ["APPROVED", "EFFECTIVE"]:
+        if not is_approver:
+            target_status = "DRAFT"
+        else:
+            approved_by_id = current_user.user_id
+            effective_date_val = doc_in.effective_date or date.today()
+
     new_doc = Document(
         doc_code=doc_in.doc_code,
         doc_title=doc_in.doc_title,
         doc_type=doc_in.doc_type,
         department=doc_in.department,
         standard=doc_in.standard or "ISO 22000:2018",
-        current_version=doc_in.current_version,
-        status=doc_in.status,
+        current_version=doc_in.current_version or "1.0",
+        status=target_status,
         content=doc_in.content,
         file_url=doc_in.file_url,
-        approved_by=doc_in.approved_by,
-        effective_date=doc_in.effective_date
+        approved_by=approved_by_id,
+        effective_date=effective_date_val,
     )
     db.add(new_doc)
+    db.flush()
+
+    # Ghi nhận lịch sử khởi tạo
+    approval_rec = DocumentApproval(
+        document_id=new_doc.document_id,
+        version=new_doc.current_version,
+        action="APPROVED" if target_status == "APPROVED" else "CREATED",
+        previous_status=None,
+        new_status=new_doc.status,
+        performed_by=current_user.user_id,
+        performed_by_name=current_user.full_name or current_user.username,
+        comments="Khởi tạo tài liệu" if target_status != "APPROVED" else "Khởi tạo và phê duyệt hiệu lực ban hành",
+    )
+    db.add(approval_rec)
     db.commit()
     db.refresh(new_doc)
 
@@ -191,7 +228,7 @@ def update_document(
     document_id: UUID,
     doc_in: DocumentUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles("admin", "qa", "fst_leader", "doc_controller", "management")),
+    current_user: User = Depends(require_roles("admin", "qa", "fst_leader", "fs_team_leader", "doc_controller", "management")),
 ):
     """Cập nhật / Phê duyệt tài liệu"""
     doc = db.query(Document).filter(Document.document_id == document_id).first()
@@ -207,6 +244,42 @@ def update_document(
             )
         doc.doc_code = doc_in.doc_code
 
+    user_roles = [str(r.role_code).lower().strip() for r in current_user.roles]
+    if current_user.department:
+        user_roles.append(str(current_user.department).lower().strip())
+    is_approver = "admin" in user_roles or any(r in ["qa", "fst_leader", "fs_team_leader", "management", "manager"] for r in user_roles)
+
+    prev_status = doc.status
+    prev_version = doc.current_version
+    action_type = "UPDATED"
+
+    # Kiểm tra quyền duyệt khi chuyển sang APPROVED hoặc EFFECTIVE
+    if doc_in.status is not None:
+        target_status = doc_in.status.upper()
+        if target_status in ["APPROVED", "EFFECTIVE"]:
+            if prev_status != "APPROVED":
+                if not is_approver:
+                    raise HTTPException(
+                        status_code=403,
+                        detail="Chỉ Quản lý QA / Đội trưởng ATTP / Ban Giám Đốc mới có quyền phê duyệt ban hành tài liệu.",
+                    )
+                doc.status = "APPROVED"
+                # Lấy người duyệt trực tiếp từ token đăng nhập, không lấy từ client payload!
+                doc.approved_by = current_user.user_id
+                doc.effective_date = doc_in.effective_date or date.today()
+                action_type = "APPROVED"
+        else:
+            doc.status = target_status
+            if target_status == "OBSOLETE":
+                action_type = "OBSOLETED"
+            elif target_status == "PENDING_APPROVAL":
+                action_type = "SUBMITTED"
+
+    if doc_in.current_version is not None and doc_in.current_version != prev_version:
+        doc.current_version = doc_in.current_version
+        if action_type == "UPDATED":
+            action_type = "VERSION_UPDATE"
+
     if doc_in.doc_title is not None:
         doc.doc_title = doc_in.doc_title
     if doc_in.doc_type is not None:
@@ -215,23 +288,77 @@ def update_document(
         doc.department = doc_in.department
     if doc_in.standard is not None:
         doc.standard = doc_in.standard
-    if doc_in.current_version is not None:
-        doc.current_version = doc_in.current_version
-    if doc_in.status is not None:
-        doc.status = doc_in.status
     if doc_in.content is not None:
         doc.content = doc_in.content
     if doc_in.file_url is not None:
         doc.file_url = doc_in.file_url
-    if doc_in.approved_by is not None:
-        doc.approved_by = doc_in.approved_by
-    if doc_in.effective_date is not None:
-        doc.effective_date = doc_in.effective_date
 
+    # Lưu lịch sử phê duyệt / phiên bản
+    approval_rec = DocumentApproval(
+        document_id=doc.document_id,
+        version=doc.current_version,
+        action=action_type,
+        previous_status=prev_status,
+        new_status=doc.status,
+        performed_by=current_user.user_id,
+        performed_by_name=current_user.full_name or current_user.username,
+        comments=doc_in.approval_note or (f"Cập nhật tài liệu phiên bản {doc.current_version}" if action_type != "APPROVED" else "Phê duyệt hiệu lực ban hành"),
+    )
+    db.add(approval_rec)
     db.commit()
     db.refresh(doc)
 
     return DocumentResponse.model_validate(doc)
+
+@router.post("/{document_id}/approve", response_model=DocumentResponse)
+def approve_document(
+    document_id: UUID,
+    payload: DocumentApproveRequest = DocumentApproveRequest(),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "fst_leader", "fs_team_leader", "management", "manager")),
+):
+    """Phê duyệt ban hành tài liệu (Lấy định danh người phê duyệt an toàn từ Token đăng nhập)"""
+    doc = db.query(Document).filter(Document.document_id == document_id).first()
+    if not doc:
+        raise HTTPException(status_code=404, detail="Không tìm thấy tài liệu")
+
+    prev_status = doc.status
+    doc.status = "APPROVED"
+    doc.approved_by = current_user.user_id
+    doc.effective_date = payload.effective_date or date.today()
+
+    approval_rec = DocumentApproval(
+        document_id=doc.document_id,
+        version=doc.current_version,
+        action="APPROVED",
+        previous_status=prev_status,
+        new_status="APPROVED",
+        performed_by=current_user.user_id,
+        performed_by_name=current_user.full_name or current_user.username,
+        comments=payload.approval_note or "Phê duyệt ban hành tài liệu hệ thống ISO 22000",
+    )
+    db.add(approval_rec)
+    db.commit()
+    db.refresh(doc)
+    return DocumentResponse.model_validate(doc)
+
+@router.get("/{document_id}/history", response_model=List[DocumentApprovalResponse])
+def get_document_history(
+    document_id: UUID,
+    db: Session = Depends(get_db),
+):
+    """Lấy toàn bộ lịch sử phiên bản và nhật ký phê duyệt của tài liệu"""
+    doc = db.query(Document).filter(Document.document_id == document_id).first()
+    if not doc:
+        raise HTTPException(status_code=404, detail="Không tìm thấy tài liệu")
+
+    history = (
+        db.query(DocumentApproval)
+        .filter(DocumentApproval.document_id == document_id)
+        .order_by(DocumentApproval.created_at.desc())
+        .all()
+    )
+    return [DocumentApprovalResponse.model_validate(h) for h in history]
 
 @router.delete("/{document_id}")
 def delete_document(

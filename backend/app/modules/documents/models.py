@@ -26,7 +26,26 @@ class Document(Base):
     created_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     approver: Mapped[Optional[User]] = relationship("User", foreign_keys=[approved_by], lazy="joined")
+    approvals: Mapped[list["DocumentApproval"]] = relationship("DocumentApproval", back_populates="document", cascade="all, delete-orphan", order_by="desc(DocumentApproval.created_at)")
 
     @property
     def approver_name(self) -> Optional[str]:
         return self.approver.full_name if self.approver else None
+
+
+class DocumentApproval(Base):
+    __tablename__ = "document_approvals"
+
+    approval_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    document_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("documents.document_id", ondelete="CASCADE"), nullable=False)
+    version: Mapped[str] = mapped_column(String(20), default="1.0", nullable=False)
+    action: Mapped[str] = mapped_column(String(50), nullable=False)  # CREATED, UPDATED, SUBMITTED, APPROVED, REJECTED, OBSOLETED
+    previous_status: Mapped[Optional[str]] = mapped_column(String(30), nullable=True)
+    new_status: Mapped[str] = mapped_column(String(30), nullable=False)
+    performed_by: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), ForeignKey("users.user_id", ondelete="SET NULL"), nullable=True)
+    performed_by_name: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    comments: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    document: Mapped["Document"] = relationship("Document", back_populates="approvals")
+    performer: Mapped[Optional[User]] = relationship("User", foreign_keys=[performed_by], lazy="joined")

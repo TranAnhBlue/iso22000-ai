@@ -772,7 +772,11 @@ def get_haccp_plan_detail(plan_id: UUID, db: Session = Depends(get_db)):
 
 
 @router.post("/plans", response_model=HACCPPlanResponse, status_code=status.HTTP_201_CREATED)
-def create_haccp_plan(payload: HACCPPlanCreate, db: Session = Depends(get_db)):
+def create_haccp_plan(
+    payload: HACCPPlanCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "fs_team_leader", "haccp_leader")),
+):
     existing = db.scalar(select(HACCPPlan).where(HACCPPlan.plan_code == payload.plan_code.strip()))
     if existing:
         raise HTTPException(status_code=400, detail=f"Mã kế hoạch HACCP '{payload.plan_code}' đã tồn tại")
@@ -782,7 +786,7 @@ def create_haccp_plan(payload: HACCPPlanCreate, db: Session = Depends(get_db)):
         plan_name=payload.plan_name.strip(),
         product_line=payload.product_line.strip(),
         version=payload.version.strip(),
-        team_leader=payload.team_leader.strip(),
+        team_leader=payload.team_leader.strip() if payload.team_leader else current_user.full_name,
         approved_by=payload.approved_by.strip() if payload.approved_by else "Giám đốc Nhà máy",
         effective_date=payload.effective_date or date.today(),
         scope_description=payload.scope_description.strip() if payload.scope_description else None,
@@ -795,7 +799,12 @@ def create_haccp_plan(payload: HACCPPlanCreate, db: Session = Depends(get_db)):
 
 
 @router.put("/plans/{plan_id}", response_model=HACCPPlanResponse)
-def update_haccp_plan(plan_id: UUID, payload: HACCPPlanUpdate, db: Session = Depends(get_db)):
+def update_haccp_plan(
+    plan_id: UUID,
+    payload: HACCPPlanUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "fs_team_leader", "haccp_leader")),
+):
     plan = db.get(HACCPPlan, plan_id)
     if not plan:
         raise HTTPException(status_code=404, detail="Không tìm thấy kế hoạch HACCP cần cập nhật")
@@ -829,7 +838,11 @@ def update_haccp_plan(plan_id: UUID, payload: HACCPPlanUpdate, db: Session = Dep
 
 
 @router.delete("/plans/{plan_id}")
-def delete_haccp_plan(plan_id: UUID, db: Session = Depends(get_db)):
+def delete_haccp_plan(
+    plan_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "fs_team_leader")),
+):
     plan = db.get(HACCPPlan, plan_id)
     if not plan:
         raise HTTPException(status_code=404, detail="Không tìm thấy kế hoạch HACCP cần xóa")
@@ -866,7 +879,11 @@ def get_process_steps(
 
 
 @router.post("/process-steps", response_model=ProcessStepResponse, status_code=status.HTTP_201_CREATED)
-def create_process_step(payload: ProcessStepCreate, db: Session = Depends(get_db)):
+def create_process_step(
+    payload: ProcessStepCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "production", "fs_team_leader", "technical")),
+):
     step = ProcessStep(
         plan_id=payload.plan_id,
         step_number=payload.step_number,
@@ -890,7 +907,12 @@ def get_process_step_detail(step_id: UUID, db: Session = Depends(get_db)):
 
 
 @router.put("/process-steps/{step_id}", response_model=ProcessStepResponse)
-def update_process_step(step_id: UUID, payload: ProcessStepUpdate, db: Session = Depends(get_db)):
+def update_process_step(
+    step_id: UUID,
+    payload: ProcessStepUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "production", "fs_team_leader", "technical")),
+):
     step = db.get(ProcessStep, step_id)
     if not step:
         raise HTTPException(status_code=404, detail="Không tìm thấy công đoạn sản xuất")
@@ -904,7 +926,11 @@ def update_process_step(step_id: UUID, payload: ProcessStepUpdate, db: Session =
 
 
 @router.delete("/process-steps/{step_id}")
-def delete_process_step(step_id: UUID, db: Session = Depends(get_db)):
+def delete_process_step(
+    step_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "fs_team_leader")),
+):
     step = db.get(ProcessStep, step_id)
     if not step:
         raise HTTPException(status_code=404, detail="Không tìm thấy công đoạn sản xuất")
@@ -929,7 +955,12 @@ def delete_process_step(step_id: UUID, db: Session = Depends(get_db)):
 
 
 @router.post("/plans/{plan_id}/sync-flow-steps", response_model=List[ProcessStepResponse])
-def sync_plan_flow_steps(plan_id: UUID, payload: SyncFlowStepsRequest, db: Session = Depends(get_db)):
+def sync_plan_flow_steps(
+    plan_id: UUID,
+    payload: SyncFlowStepsRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "production", "fs_team_leader")),
+):
     """Đồng bộ toàn bộ công đoạn sản xuất từ Bộ Thiết Kế Lưu Đồ (Workflow Studio) vào Kế hoạch HACCP."""
     plan = db.get(HACCPPlan, plan_id)
     if not plan:
@@ -1183,7 +1214,11 @@ def get_hazards(
 
 
 @router.post("/hazards", response_model=HazardAnalysisResponse, status_code=status.HTTP_201_CREATED)
-def create_hazard(payload: HazardAnalysisCreate, db: Session = Depends(get_db)):
+def create_hazard(
+    payload: HazardAnalysisCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "fs_team_leader", "technical")),
+):
     step = db.get(ProcessStep, payload.step_id)
     if not step:
         raise HTTPException(status_code=400, detail="Công đoạn sản xuất liên kết không tồn tại")
@@ -1228,7 +1263,12 @@ def get_hazard_detail(hazard_id: UUID, db: Session = Depends(get_db)):
 
 
 @router.put("/hazards/{hazard_id}", response_model=HazardAnalysisResponse)
-def update_hazard(hazard_id: UUID, payload: HazardAnalysisUpdate, db: Session = Depends(get_db)):
+def update_hazard(
+    hazard_id: UUID,
+    payload: HazardAnalysisUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "fs_team_leader", "technical")),
+):
     hazard = db.get(HazardAnalysis, hazard_id)
     if not hazard:
         raise HTTPException(status_code=404, detail="Không tìm thấy mối nguy phân tích")
@@ -1247,7 +1287,11 @@ def update_hazard(hazard_id: UUID, payload: HazardAnalysisUpdate, db: Session = 
 
 
 @router.delete("/hazards/{hazard_id}")
-def delete_hazard(hazard_id: UUID, db: Session = Depends(get_db)):
+def delete_hazard(
+    hazard_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "fs_team_leader")),
+):
     hazard = db.get(HazardAnalysis, hazard_id)
     if not hazard:
         raise HTTPException(status_code=404, detail="Không tìm thấy mối nguy phân tích")
@@ -1289,7 +1333,11 @@ def get_ccp_definitions(
 
 
 @router.post("/ccp-definitions", response_model=CCPDefinitionResponse, status_code=status.HTTP_201_CREATED)
-def create_ccp_definition(payload: CCPDefinitionCreate, db: Session = Depends(get_db)):
+def create_ccp_definition(
+    payload: CCPDefinitionCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "fs_team_leader")),
+):
     # Check duplicate code
     dup = db.scalar(select(CCPDefinition).where(CCPDefinition.ccp_code == payload.ccp_code.strip()))
     if dup:
@@ -1329,7 +1377,12 @@ def get_ccp_detail(ccp_id: UUID, db: Session = Depends(get_db)):
 
 
 @router.put("/ccp-definitions/{ccp_id}", response_model=CCPDefinitionResponse)
-def update_ccp_definition(ccp_id: UUID, payload: CCPDefinitionUpdate, db: Session = Depends(get_db)):
+def update_ccp_definition(
+    ccp_id: UUID,
+    payload: CCPDefinitionUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "fs_team_leader")),
+):
     ccp = db.get(CCPDefinition, ccp_id)
     if not ccp:
         raise HTTPException(status_code=404, detail="Không tìm thấy điểm kiểm soát tới hạn")
@@ -1343,7 +1396,11 @@ def update_ccp_definition(ccp_id: UUID, payload: CCPDefinitionUpdate, db: Sessio
 
 
 @router.delete("/ccp-definitions/{ccp_id}")
-def delete_ccp_definition(ccp_id: UUID, db: Session = Depends(get_db)):
+def delete_ccp_definition(
+    ccp_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa")),
+):
     ccp = db.get(CCPDefinition, ccp_id)
     if not ccp:
         raise HTTPException(status_code=404, detail="Không tìm thấy điểm kiểm soát tới hạn")
@@ -1375,38 +1432,68 @@ def get_ccp_logs(
     return [format_ccp_log_out(l) for l in logs]
 
 
-@router.post("/ccp-logs", response_model=CCPMonitoringLogResponse, status_code=status.HTTP_201_CREATED)
-def create_ccp_log(payload: CCPMonitoringLogCreate, db: Session = Depends(get_db)):
-    ccp = db.get(CCPDefinition, payload.ccp_id)
-    if not ccp:
-        raise HTTPException(status_code=400, detail="Điểm kiểm soát tới hạn không tồn tại")
-    
-    # Tự động thẩm định giá trị đo đạc so với Critical Limits
+def evaluate_ccp_measurement(
+    ccp: CCPDefinition,
+    val: float,
+    client_status: Optional[str] = None,
+    client_exceeded: Optional[bool] = None,
+) -> tuple[bool, str]:
+    """
+    Thẩm định nghiêm ngặt giá trị đo đạc thực tế so với Giới hạn tới hạn (Critical Limits) của CCP.
+    Ngăn chặn việc client sửa giá trị vi phạm nhưng vẫn gán status NORMAL.
+    """
     cl_dict = ccp.critical_limit or {}
-    val = payload.measured_value
-    min_val = cl_dict.get("min_val")
-    max_val = cl_dict.get("max_val")
+    min_raw = cl_dict.get("min_val") if cl_dict.get("min_val") is not None else cl_dict.get("min")
+    max_raw = cl_dict.get("max_val") if cl_dict.get("max_val") is not None else cl_dict.get("max")
+    min_val = float(min_raw) if min_raw is not None else None
+    max_val = float(max_raw) if max_raw is not None else None
 
     is_breached = False
     log_status = "NORMAL"
 
-    if min_val is not None and val < float(min_val):
+    if min_val is not None and val < min_val:
         is_breached = True
         log_status = "CRITICAL"
-    elif max_val is not None and val > float(max_val):
+    elif max_val is not None and val > max_val:
         is_breached = True
         log_status = "CRITICAL"
     else:
-        # Kiểm tra ngưỡng cảnh báo (Warning threshold 10% tiệm cận)
-        if min_val is not None and val <= float(min_val) * 1.05:
+        # Ngưỡng cảnh báo (tiệm cận hoặc cấu hình warning_min, warning_max)
+        w_min = cl_dict.get("warning_min")
+        w_max = cl_dict.get("warning_max")
+        if w_min is not None and val < float(w_min):
             log_status = "WARNING"
-        elif max_val is not None and val >= float(max_val) * 0.95:
+        elif w_max is not None and val > float(w_max):
+            log_status = "WARNING"
+        elif min_val is not None and val <= min_val * 1.05:
+            log_status = "WARNING"
+        elif max_val is not None and val >= max_val * 0.95:
             log_status = "WARNING"
 
-    # Nếu người dùng có truyền trạng thái chỉ định thì tôn trọng hoặc override nếu có vi phạm
-    if payload.is_critical_limit_exceeded or payload.status == "CRITICAL":
+    # Nếu client chủ động đánh dấu vi phạm hoặc cảnh báo nghiêm trọng hơn, cho phép nâng cấp mức độ
+    if client_exceeded is True or client_status in ["CRITICAL", "DEVIATION", "NON_COMPLIANT"]:
         is_breached = True
         log_status = "CRITICAL"
+    elif client_status == "WARNING" and log_status == "NORMAL":
+        log_status = "WARNING"
+
+    return is_breached, log_status
+
+
+@router.post("/ccp-logs", response_model=CCPMonitoringLogResponse, status_code=status.HTTP_201_CREATED)
+def create_ccp_log(
+    payload: CCPMonitoringLogCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "qc", "production", "operator")),
+):
+    ccp = db.get(CCPDefinition, payload.ccp_id)
+    if not ccp:
+        raise HTTPException(status_code=400, detail="Điểm kiểm soát tới hạn không tồn tại")
+    
+    val = float(payload.measured_value)
+    is_breached, log_status = evaluate_ccp_measurement(
+        ccp, val, client_status=payload.status, client_exceeded=payload.is_critical_limit_exceeded
+    )
 
     log_entry = CCPMonitoringLog(
         ccp_id=payload.ccp_id,
@@ -1419,7 +1506,7 @@ def create_ccp_log(payload: CCPMonitoringLogCreate, db: Session = Depends(get_db
         status=log_status,
         deviation_action=payload.deviation_action,
         verification_status=payload.verification_status,
-        checked_by=payload.checked_by,
+        checked_by=payload.checked_by or current_user.user_id,
         verified_by=payload.verified_by,
         notes=payload.notes,
     )
@@ -1438,21 +1525,44 @@ def get_ccp_log_detail(log_id: UUID, db: Session = Depends(get_db)):
 
 
 @router.put("/ccp-logs/{log_id}", response_model=CCPMonitoringLogResponse)
-def update_ccp_log(log_id: UUID, payload: CCPMonitoringLogUpdate, db: Session = Depends(get_db)):
+def update_ccp_log(
+    log_id: UUID,
+    payload: CCPMonitoringLogUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "qc", "production", "operator")),
+):
     log_entry = db.get(CCPMonitoringLog, log_id)
     if not log_entry:
         raise HTTPException(status_code=404, detail="Không tìm thấy bản ghi đo đạc CCP")
     
-    for k, v in payload.model_dump(exclude_unset=True).items():
+    update_data = payload.model_dump(exclude_unset=True)
+    for k, v in update_data.items():
         setattr(log_entry, k, v)
     
+    # Bắt buộc thẩm định và tính toán lại tính toàn vẹn trạng thái so với Critical Limit
+    ccp = log_entry.ccp or db.get(CCPDefinition, log_entry.ccp_id)
+    if ccp:
+        val = float(log_entry.measured_value) if log_entry.measured_value is not None else 0.0
+        is_breached, log_status = evaluate_ccp_measurement(
+            ccp,
+            val,
+            client_status=update_data.get("status"),
+            client_exceeded=update_data.get("is_critical_limit_exceeded"),
+        )
+        log_entry.is_critical_limit_exceeded = is_breached
+        log_entry.status = log_status
+
     db.commit()
     db.refresh(log_entry)
     return format_ccp_log_out(log_entry)
 
 
 @router.delete("/ccp-logs/{log_id}")
-def delete_ccp_log(log_id: UUID, db: Session = Depends(get_db)):
+def delete_ccp_log(
+    log_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa")),
+):
     log_entry = db.get(CCPMonitoringLog, log_id)
     if not log_entry:
         raise HTTPException(status_code=404, detail="Không tìm thấy bản ghi đo đạc CCP")
@@ -1488,7 +1598,11 @@ def get_prp_programs(
 
 
 @router.post("/prp-programs", response_model=PRPProgramResponse, status_code=status.HTTP_201_CREATED)
-def create_prp_program(payload: PRPProgramCreate, db: Session = Depends(get_db)):
+def create_prp_program(
+    payload: PRPProgramCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "fs_team_leader", "sanitation")),
+):
     dup = db.scalar(select(PRPProgram).where(PRPProgram.program_code == payload.program_code.strip()))
     if dup:
         raise HTTPException(status_code=400, detail=f"Mã chương trình '{payload.program_code}' đã tồn tại")
@@ -1518,7 +1632,12 @@ def get_prp_program_detail(program_id: UUID, db: Session = Depends(get_db)):
 
 
 @router.put("/prp-programs/{program_id}", response_model=PRPProgramResponse)
-def update_prp_program(program_id: UUID, payload: PRPProgramUpdate, db: Session = Depends(get_db)):
+def update_prp_program(
+    program_id: UUID,
+    payload: PRPProgramUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "fs_team_leader", "sanitation")),
+):
     prog = db.get(PRPProgram, program_id)
     if not prog:
         raise HTTPException(status_code=404, detail="Không tìm thấy chương trình tiên quyết")
@@ -1532,7 +1651,11 @@ def update_prp_program(program_id: UUID, payload: PRPProgramUpdate, db: Session 
 
 
 @router.delete("/prp-programs/{program_id}")
-def delete_prp_program(program_id: UUID, db: Session = Depends(get_db)):
+def delete_prp_program(
+    program_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa")),
+):
     prog = db.get(PRPProgram, program_id)
     if not prog:
         raise HTTPException(status_code=404, detail="Không tìm thấy chương trình tiên quyết")
@@ -1568,7 +1691,11 @@ def get_prp_checklists(
 
 
 @router.post("/prp-checklists", response_model=PRPChecklistLogResponse, status_code=status.HTTP_201_CREATED)
-def create_prp_checklist(payload: PRPChecklistLogCreate, db: Session = Depends(get_db)):
+def create_prp_checklist(
+    payload: PRPChecklistLogCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "qc", "production", "sanitation", "operator")),
+):
     prog = db.get(PRPProgram, payload.program_id)
     if not prog:
         raise HTTPException(status_code=400, detail="Chương trình tiên quyết không tồn tại")
@@ -1598,7 +1725,7 @@ def create_prp_checklist(payload: PRPChecklistLogCreate, db: Session = Depends(g
         status=log_status,
         finding_notes=payload.finding_notes,
         corrective_action=payload.corrective_action,
-        checked_by=payload.checked_by,
+        checked_by=payload.checked_by or current_user.user_id,
     )
     db.add(checklist_entry)
     db.commit()
@@ -1615,7 +1742,12 @@ def get_prp_checklist_detail(check_id: UUID, db: Session = Depends(get_db)):
 
 
 @router.put("/prp-checklists/{check_id}", response_model=PRPChecklistLogResponse)
-def update_prp_checklist(check_id: UUID, payload: PRPChecklistLogUpdate, db: Session = Depends(get_db)):
+def update_prp_checklist(
+    check_id: UUID,
+    payload: PRPChecklistLogUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "qc", "production", "sanitation", "operator")),
+):
     entry = db.get(PRPChecklistLog, check_id)
     if not entry:
         raise HTTPException(status_code=404, detail="Không tìm thấy nhật ký kiểm tra PRP")
@@ -1629,7 +1761,11 @@ def update_prp_checklist(check_id: UUID, payload: PRPChecklistLogUpdate, db: Ses
 
 
 @router.delete("/prp-checklists/{check_id}")
-def delete_prp_checklist(check_id: UUID, db: Session = Depends(get_db)):
+def delete_prp_checklist(
+    check_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa")),
+):
     entry = db.get(PRPChecklistLog, check_id)
     if not entry:
         raise HTTPException(status_code=404, detail="Không tìm thấy nhật ký kiểm tra PRP")
@@ -1796,7 +1932,11 @@ def get_haccp_plan_reviews(
     return [format_review_out(r) for r in reviews]
 
 @router.post("/reviews", response_model=HACCPPlanReviewResponse, status_code=status.HTTP_201_CREATED)
-def create_haccp_plan_review(payload: HACCPPlanReviewCreate, db: Session = Depends(get_db)):
+def create_haccp_plan_review(
+    payload: HACCPPlanReviewCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "fs_team_leader", "director", "manager")),
+):
     code = payload.review_code
     if not code:
         year = payload.review_date.year if payload.review_date else datetime.now().year
@@ -1813,7 +1953,7 @@ def create_haccp_plan_review(payload: HACCPPlanReviewCreate, db: Session = Depen
         review_date=payload.review_date or date.today(),
         review_type=payload.review_type or "PERIODIC",
         triggered_by_change_id=payload.triggered_by_change_id,
-        reviewed_by_name=payload.reviewed_by_name,
+        reviewed_by_name=payload.reviewed_by_name or current_user.full_name,
         scope_of_review=payload.scope_of_review,
         findings=payload.findings,
         changes_required=payload.changes_required,
@@ -1833,7 +1973,11 @@ def create_haccp_plan_review(payload: HACCPPlanReviewCreate, db: Session = Depen
     return format_review_out(review)
 
 @router.delete("/reviews/{review_id}")
-def delete_haccp_plan_review(review_id: UUID, db: Session = Depends(get_db)):
+def delete_haccp_plan_review(
+    review_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa")),
+):
     review = db.query(HACCPPlanReview).filter(HACCPPlanReview.review_id == review_id).first()
     if not review:
         raise HTTPException(status_code=404, detail="Không tìm thấy biên bản thẩm tra kế hoạch HACCP")

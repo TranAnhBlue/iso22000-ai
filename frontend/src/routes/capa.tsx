@@ -36,6 +36,7 @@ import { WorkflowBuilder, type WorkflowTemplateData } from "@/components/builder
 import { useDepartments } from "@/lib/departments";
 import { EmptyState } from "@/components/EmptyState";
 import { ModuleGuideModal } from "@/components/ModuleGuideModal";
+import { printHtml } from "@/lib/print";
 
 export const Route = createFileRoute("/capa")({
   head: () => ({
@@ -213,6 +214,141 @@ function CAPAManagementPage() {
   useEffect(() => {
     fetchData();
   }, []);
+
+  const handlePrintCAPA = (capa: CAPARecord) => {
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>BM-CAPA-01 - ${capa.capa_number}</title>
+        <meta charset="utf-8" />
+        <style>
+          @page { size: A4 portrait; margin: 12mm 15mm; }
+          body { font-family: "Times New Roman", Times, serif; font-size: 10.5pt; line-height: 1.35; color: #000; background: #fff; margin: 0; padding: 10px; }
+          .hdr-box { border: 2px solid #000; margin-bottom: 15px; }
+          .hdr-tbl { width: 100%; border-collapse: collapse; text-align: center; }
+          .hdr-tbl td { padding: 6px 8px; vertical-align: middle; border-right: 1.5px solid #000; }
+          .hdr-tbl td:last-child { border-right: none; }
+          .title { font-size: 13pt; font-weight: bold; text-transform: uppercase; margin: 0; }
+          .sub { font-size: 9pt; font-style: italic; color: #333; margin-top: 2px; }
+          .sec-box { border: 1px solid #000; margin-bottom: 12px; border-radius: 2px; }
+          .sec-hdr { background: #f1f5f9; padding: 4px 8px; font-weight: bold; font-size: 10pt; text-transform: uppercase; border-bottom: 1px solid #000; }
+          .sec-body { padding: 8px 10px; font-size: 10pt; }
+          .grid-2 { display: table; width: 100%; }
+          .col { display: table-cell; width: 50%; vertical-align: top; padding: 2px 4px; }
+          .content-p { background: #f8fafc; border: 1px solid #cbd5e1; padding: 6px 8px; border-radius: 3px; margin: 4px 0 6px 0; font-family: sans-serif; font-size: 9.5pt; line-height: 1.4; }
+          .sig-tbl { width: 100%; border-collapse: collapse; margin-top: 25px; text-align: center; font-size: 10pt; page-break-inside: avoid; }
+          .sig-tbl td { width: 33.33%; vertical-align: top; }
+          .footer-note { margin-top: 20px; font-size: 8pt; text-align: center; color: #64748b; border-top: 1px solid #cbd5e1; padding-top: 6px; }
+        </style>
+      </head>
+      <body>
+        <div class="hdr-box">
+          <table class="hdr-tbl">
+            <tr>
+              <td style="width: 25%;">
+                <strong style="font-size: 11pt; color: #047857;">WCERT FSMS</strong><br/>
+                <span style="font-size: 8.5pt;">ISO 22000:2018 Standard</span>
+              </td>
+              <td style="width: 50%;">
+                <div class="title">PHIẾU XỬ LÝ SỰ KHÔNG PHÙ HỢP & CAPA</div>
+                <div class="sub">(Hệ Thống Quản Lý An Toàn Thực Phẩm - ISO 22000:2018)</div>
+              </td>
+              <td style="width: 25%; font-size: 8.5pt; text-align: left; padding-left: 10px;">
+                <div><b>Mã BM:</b> BM-CAPA-01</div>
+                <div><b>Lần BH:</b> 02/2026</div>
+                <div><b>Mã Phiếu:</b> <strong>${capa.capa_number}</strong></div>
+              </td>
+            </tr>
+          </table>
+        </div>
+
+        <div class="sec-box">
+          <div class="sec-hdr">I. THÔNG TIN SỰ KHÔNG PHÙ HỢP (NON-CONFORMANCE DETAILS)</div>
+          <div class="sec-body">
+            <div class="grid-2">
+              <div class="col">
+                <div><b>Tiêu đề sự cố:</b> ${capa.title}</div>
+                <div><b>Mã sự cố NC:</b> ${capa.nc_number || "NC-2026"}</div>
+              </div>
+              <div class="col">
+                <div><b>Bộ phận chịu trách nhiệm:</b> ${capa.assigned_dept}</div>
+                <div><b>Người phụ trách:</b> ${capa.assigned_to_name}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="sec-box">
+          <div class="sec-hdr">II. PHÂN TÍCH NGUYÊN NHÂN GỐC RỄ (ROOT CAUSE ANALYSIS - ĐIỀU KHOẢN 8.9.3)</div>
+          <div class="sec-body">
+            <div><b>Phương pháp áp dụng:</b> ${capa.root_cause_method === "5_WHYS" ? "5-Why Analysis" : "Ishikawa Fishbone Diagram 5M"}</div>
+            <div style="margin-top: 4px;"><b>Kết luận nguyên nhân cốt lõi:</b></div>
+            <div class="content-p">${capa.root_cause_summary || "Đã phân tích và xác định điểm nghẽn quy trình."}</div>
+          </div>
+        </div>
+
+        <div class="sec-box">
+          <div class="sec-hdr">III. KẾ HOẠCH KHẮC PHỤC & PHÒNG NGỪA (CORRECTIVE & PREVENTIVE ACTIONS)</div>
+          <div class="sec-body">
+            <div><b>1. Hành động khắc phục nguyên nhân (Corrective Action):</b></div>
+            <div class="content-p">${capa.corrective_action}</div>
+            ${capa.preventive_action ? `
+              <div><b>2. Biện pháp phòng ngừa tái diễn (Preventive Action):</b></div>
+              <div class="content-p">${capa.preventive_action}</div>
+            ` : ""}
+            <div class="grid-2" style="margin-top: 6px; font-weight: bold;">
+              <div class="col">Hạn hoàn thành: ${capa.target_date}</div>
+              <div class="col">Ngày thực tế hoàn tất: ${capa.completed_date || "Đang thực hiện"}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="sec-box">
+          <div class="sec-hdr">IV. THẨM TRA HIỆU LỰC SAU 30 NGÀY & KẾT LUẬN ĐÓNG PHIẾU (VERIFICATION)</div>
+          <div class="sec-body">
+            <div class="grid-2">
+              <div class="col"><b>Người thẩm tra:</b> ${capa.verified_by_name || "Trưởng Ban QLCL & ATTP"}</div>
+              <div class="col"><b>Ngày thẩm tra:</b> ${capa.verification_date || "Sau 30 ngày"}</div>
+            </div>
+            <div style="margin-top: 4px;">
+              <b>Kết luận hiệu lực: </b>
+              <strong style="color: ${capa.verification_status === 'EFFECTIVE' ? '#047857' : '#d97706'};">
+                ${capa.verification_status === 'EFFECTIVE' ? '✓ ĐẠT HIỆU LỰC (EFFECTIVE) — ĐỒNG Ý ĐÓNG PHIẾU' : '⏳ ĐANG THEO DÕI CHU KỲ 30 NGÀY'}
+              </strong>
+            </div>
+            <div class="content-p">${capa.verification_result || "Đoàn đánh giá nội bộ sẽ tái thẩm tra số liệu tại hiện trường sau 30 ngày vận hành ổn định."}</div>
+          </div>
+        </div>
+
+        <table class="sig-tbl">
+          <tr>
+            <td>
+              <strong>NGƯỜI LẬP BÁO CÁO</strong><br/>
+              <i>(Ký và ghi rõ họ tên)</i><br/><br/><br/><br/>
+              <strong>${capa.assigned_to_name || "Trần Văn An"}</strong>
+            </td>
+            <td>
+              <strong>TRƯỞNG BỘ PHẬN PHỤ TRÁCH</strong><br/>
+              <i>(Ký duyệt hành động)</i><br/><br/><br/><br/>
+              <strong>Nguyễn Văn Hùng</strong>
+            </td>
+            <td>
+              <strong>TRƯỞNG BAN QLCL / ĐDLĐ</strong><br/>
+              <i>(Thẩm định & Phê duyệt đóng CAPA)</i><br/><br/><br/><br/>
+              <strong>Phạm Quốc Bảo</strong>
+            </td>
+          </tr>
+        </table>
+
+        <div class="footer-note">
+          WCERT FSMS • HỆ THỐNG QUẢN LÝ AN TOÀN THỰC PHẨM THEO TIÊU CHUẨN QUỐC TẾ ISO 22000:2018
+        </div>
+      </body>
+      </html>
+    `;
+    printHtml(html);
+  };
 
   // Filtered lists
   const filteredNCs = ncs.filter((n) => {
@@ -1780,7 +1916,7 @@ function CAPAManagementPage() {
               <div className="flex items-center gap-2">
                 <Button
                   size="sm"
-                  onClick={() => window.print()}
+                  onClick={() => printingCAPA && handlePrintCAPA(printingCAPA)}
                   className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 h-8 px-3"
                 >
                   <Printer className="h-3.5 w-3.5" />

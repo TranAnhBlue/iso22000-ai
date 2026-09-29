@@ -17,6 +17,7 @@ import {
   Wrench,
   Calendar,
   AlertTriangle,
+  AlertCircle,
   CheckCircle2,
   Search,
   Plus,
@@ -569,8 +570,8 @@ function EquipmentModule() {
       food_grade_lubricant_used: true,
       hygiene_sanitation_after_maint: true,
       cost: 500000,
-      result_status: "COMPLETED",
-      notes: "Thiết bị vận hành êm, đạt tiêu chuẩn vệ sinh an toàn thực phẩm.",
+      result_status: "IN_PROGRESS",
+      notes: "Đang tiến hành bảo dưỡng kiểm tra thiết bị.",
     });
     setIsMaintModalOpen(true);
   };
@@ -1012,6 +1013,131 @@ function EquipmentModule() {
     printHtml(htmlContent);
   };
 
+  // Thực hiện in Biên bản Bảo trì Thiết bị qua hidden iframe
+  const triggerPrintMaintenanceLog = (m: MaintenanceLogItem) => {
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8" />
+        <title>BM-BT-01 - Phiếu Bảo Trì Thiết Bị [${m.maintenance_code}]</title>
+        <style>
+          @page { size: A4 portrait; margin: 15mm 20mm; }
+          body { font-family: "Times New Roman", Times, serif; font-size: 13px; line-height: 1.5; color: #000; background: #fff; margin: 0; padding: 0; }
+          .header-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; border: 1.5px solid #0f172a; }
+          .header-table td { border: 1px solid #0f172a; padding: 8px 10px; vertical-align: middle; }
+          .logo-box { width: 25%; text-align: center; }
+          .logo-title { font-size: 15px; font-weight: bold; color: #047857; text-transform: uppercase; margin-top: 4px; }
+          .logo-sub { font-size: 10px; color: #475569; }
+          .title-box { width: 50%; text-align: center; }
+          .title-main { font-size: 15px; font-weight: 900; color: #0f172a; text-transform: uppercase; margin-top: 3px; }
+          .meta-box { width: 25%; font-size: 11px; background-color: #f8fafc; line-height: 1.5; }
+          table.data-table { width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 13px; }
+          table.data-table th, table.data-table td { border: 1px solid #0f172a; padding: 7px 10px; text-align: left; vertical-align: middle; }
+          table.data-table th { background-color: #f1f5f9; font-weight: bold; }
+          .meta-title { font-weight: bold; width: 28%; background-color: #f8fafc; }
+          .sig-box { margin-top: 35px; display: flex; justify-content: space-between; text-align: center; page-break-inside: avoid; }
+          .sig-col { width: 45%; font-size: 12px; }
+          .footer-note { margin-top: 25px; padding-top: 8px; border-top: 1px solid #cbd5e1; font-size: 10px; color: #64748b; text-align: center; }
+        </style>
+      </head>
+      <body>
+        <table class="header-table">
+          <tr>
+            <td class="logo-box">
+              <img src="${origin}/logo.png" alt="Logo" style="max-height: 42px; width: auto; object-fit: contain; margin: 0 auto 4px; display: block;" onerror="this.style.display='none'" />
+              <div class="logo-title">WCERT FSMS</div>
+              <div class="logo-sub">ISO 22000:2018</div>
+            </td>
+            <td class="title-box">
+              <div style="font-size: 10px; font-weight: bold; color: #475569; text-transform: uppercase;">
+                HỆ THỐNG QUẢN LÝ AN TOÀN THỰC PHẨM
+              </div>
+              <div class="title-main">PHIẾU BẢO TRÌ & SỬA CHỮA THIẾT BỊ</div>
+              <div style="font-size: 10.5px; font-style: italic; color: #64748b; margin-top: 2px;">(Tuân thủ Điều khoản ISO 8.2 & PRP Cơ sở vật chất)</div>
+            </td>
+            <td class="meta-box">
+              <div><b>Biểu mẫu:</b> BM-BT-01</div>
+              <div><b>Số phiếu:</b> ${m.maintenance_code}</div>
+              <div><b>Ngày thực hiện:</b> ${m.maintenance_date}</div>
+              <div><b>Tiêu chuẩn:</b> NSF H1 & ISO 22000</div>
+            </td>
+          </tr>
+        </table>
+
+        <table class="data-table">
+          <tr>
+            <td class="meta-title">Mã số thiết bị:</td>
+            <td style="font-weight: bold; color: #047857;">${m.equipment_code || "—"}</td>
+            <td class="meta-title">Tên thiết bị:</td>
+            <td style="font-weight: bold;">${m.equipment_name || "—"}</td>
+          </tr>
+          <tr>
+            <td class="meta-title">Vị trí lắp đặt:</td>
+            <td>${m.installation_location || "—"}</td>
+            <td class="meta-title">Phân loại bảo dưỡng:</td>
+            <td><b>${m.maintenance_type === "PREVENTIVE" ? "Bảo trì phòng ngừa định kỳ (PM)" : m.maintenance_type}</b></td>
+          </tr>
+          <tr>
+            <td class="meta-title">Đơn vị / KTV thực hiện:</td>
+            <td><b>${m.performer_display_name || m.performer_name || "—"}</b></td>
+            <td class="meta-title">Chi phí vật tư / dịch vụ:</td>
+            <td>${m.cost ? Number(m.cost).toLocaleString("vi-VN") + " VNĐ" : "0 VNĐ"}</td>
+          </tr>
+          <tr>
+            <td class="meta-title">Nội dung công việc thực hiện:</td>
+            <td colspan="3">${m.tasks_performed && m.tasks_performed.length > 0 ? m.tasks_performed.map((t) => t.task).join("; ") : m.notes || "Bảo dưỡng định kỳ."}</td>
+          </tr>
+          <tr>
+            <td class="meta-title">Phụ tùng & Vật tư thay thế:</td>
+            <td colspan="3">${m.parts_replaced && m.parts_replaced.length > 0 ? m.parts_replaced.map((p) => `${p.part} (SL: ${p.qty || 1})`).join(", ") : "Không có"}</td>
+          </tr>
+          <tr>
+            <td class="meta-title">Dầu mỡ bôi trơn NSF H1:</td>
+            <td><b>${m.food_grade_lubricant_used ? "✓ ĐẠT CHUẨN AN TOÀN THỰC PHẨM (NSF H1)" : "✗ Không sử dụng"}</b></td>
+            <td class="meta-title">Vệ sinh & Khử trùng sau BT:</td>
+            <td><b>${m.hygiene_sanitation_after_maint ? "✓ ĐÃ VỆ SINH & KHỬ TRÙNG ĐẠT CHUẨN" : "✗ Chưa hoàn tất"}</b></td>
+          </tr>
+          <tr>
+            <td class="meta-title">Kết luận & Trạng thái:</td>
+            <td colspan="3"><b>${m.result_status === "IN_PROGRESS" ? "ĐANG BẢO TRÌ / SỬA CHỮA" : m.result_status === "NEED_FOLLOWUP" ? "CẦN THEO DÕI THÊM" : "HOÀN TẤT ĐẠT CHUẨN - BÀN GIAO SẢN XUẤT"}</b></td>
+          </tr>
+          <tr>
+            <td class="meta-title">Ghi chú & Khuyến cáo:</td>
+            <td colspan="3">${m.notes || "Thiết bị vận hành êm, không rò rỉ dầu nhớt, đạt điều kiện an toàn thực phẩm."}</td>
+          </tr>
+        </table>
+
+        <div style="border: 1px dashed #047857; background: #f0fdf4; padding: 10px; border-radius: 6px; margin: 15px 0; font-size: 12px; color: #166534;">
+          <b>✓ CAM KẾT BẢO DƯỠNG THIẾT BỊ AN TOÀN THỰC PHẨM (PRP ISO/TS 22002-1):</b><br/>
+          Kỹ thuật viên cam kết chỉ sử dụng mỡ bôi trơn cấp thực phẩm NSF H1 cho các điểm có nguy cơ tiếp xúc với thực phẩm. Đã tiến hành thu gom dụng cụ, lau chùi dầu thừa và khử trùng bề mặt buồng máy trước khi bàn giao lại cho Tổ trưởng sản xuất.
+        </div>
+
+        <div class="sig-box">
+          <div class="sig-col">
+            <b>KỸ THUẬT VIÊN BẢO TRÌ</b><br/>
+            <i>(Ký và ghi rõ họ tên)</i><br/><br/><br/><br/>
+            <b>${m.performer_display_name || m.performer_name || "KTV Cơ Điện"}</b><br/>
+            <span style="font-size: 10px; color: #64748b;">Tổ Cơ Điện & Bảo Trì</span>
+          </div>
+          <div class="sig-col">
+            <b>NGHIỆM THU HIỆN TRƯỜNG (QA / TRƯỞNG CA)</b><br/>
+            <i>(Ký duyệt xác nhận nhận bàn giao)</i><br/><br/><br/><br/>
+            <b>Trưởng Ca Sản Xuất</b><br/>
+            <span style="font-size: 10px; color: #64748b;">Xác nhận Đạt Điều kiện Vệ sinh ATTP</span>
+          </div>
+        </div>
+
+        <div class="footer-note">
+          WCERT FSMS • HỆ THỐNG QUẢN LÝ AN TOÀN THỰC PHẨM THEO TIÊU CHUẨN QUỐC TẾ ISO 22000:2018
+        </div>
+      </body>
+      </html>
+    `;
+    printHtml(htmlContent);
+  };
+
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* HEADER & TOP ACTIONS */}
@@ -1395,8 +1521,17 @@ function EquipmentModule() {
                         </div>
                         <div className="flex items-center justify-between text-[11px] text-muted-foreground">
                           <span>Hạn bảo dưỡng tới:</span>
-                          <span className="font-bold text-foreground">{eq.next_maintenance_due || "Chưa lên lịch"}</span>
+                          <span className={`font-bold ${eq.next_maintenance_due && new Date(eq.next_maintenance_due) < new Date() ? "text-rose-600 font-black" : "text-foreground"}`}>
+                            {eq.next_maintenance_due || "Chưa lên lịch"}
+                            {eq.next_maintenance_due && new Date(eq.next_maintenance_due) < new Date() && " (Quá hạn!)"}
+                          </span>
                         </div>
+                        {eq.status === "MAINTENANCE" && (
+                          <div className="mt-1 rounded-md bg-amber-500/15 border border-amber-300 px-2 py-1 text-[11px] font-bold text-amber-800 flex items-center gap-1.5">
+                            <Wrench className="h-3 w-3 text-amber-600 animate-spin" />
+                            Thiết bị đang bảo trì / tạm ngừng
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -1658,6 +1793,7 @@ function EquipmentModule() {
                   <th className="px-3.5 py-2.5 text-center">Khử trùng</th>
                   <th className="px-3.5 py-2.5">Người thực hiện</th>
                   <th className="px-3.5 py-2.5 text-center">Kết quả</th>
+                  <th className="px-3.5 py-2.5 text-center w-24">Thao tác</th>
                 </tr>
               </thead>
               <tbody className="divide-y">
@@ -1714,9 +1850,36 @@ function EquipmentModule() {
                       {m.performer_display_name || m.performer_name || "—"}
                     </td>
                     <td className="px-3.5 py-2.5 text-center">
-                      <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-700 border border-emerald-200">
-                        {m.result_status}
-                      </span>
+                      {m.result_status === "IN_PROGRESS" ? (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2.5 py-0.5 text-[10px] font-bold text-amber-700 border border-amber-300">
+                          <Wrench className="h-3 w-3 animate-spin" />
+                          Đang bảo trì
+                        </span>
+                      ) : m.result_status === "NEED_FOLLOWUP" ? (
+                        <span className="rounded-full bg-rose-500/10 px-2.5 py-0.5 text-[10px] font-bold text-rose-700 border border-rose-300">
+                          Cần theo dõi
+                        </span>
+                      ) : m.result_status === "FAILED" ? (
+                        <span className="rounded-full bg-rose-600/10 px-2.5 py-0.5 text-[10px] font-bold text-rose-800 border border-rose-300">
+                          Không đạt
+                        </span>
+                      ) : (
+                        <span className="rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[10px] font-bold text-emerald-700 border border-emerald-200">
+                          Hoàn tất
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-3.5 py-2.5 text-center">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => triggerPrintMaintenanceLog(m)}
+                        className="h-7 px-2 text-[11px] gap-1 text-slate-700 hover:bg-slate-100"
+                        title="In Phiếu Bảo Trì Thiết Bị (BM-BT-01)"
+                      >
+                        <Printer className="h-3 w-3" />
+                        In phiếu
+                      </Button>
                     </td>
                   </tr>
                 ))}
@@ -2348,16 +2511,56 @@ function EquipmentModule() {
               </div>
             </div>
 
-            <div>
-              <Label className="text-xs text-muted-foreground">Chi phí bảo dưỡng (VNĐ):</Label>
-              <Input
-                type="number"
-                min="0"
-                value={maintForm.cost}
-                onChange={(e) => setMaintForm({ ...maintForm, cost: e.target.value })}
-                className="mt-1 h-9 text-xs"
-              />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <div>
+                <Label className="text-xs text-muted-foreground">Chi phí bảo dưỡng (VNĐ):</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  value={maintForm.cost}
+                  onChange={(e) => setMaintForm({ ...maintForm, cost: e.target.value })}
+                  className="mt-1 h-9 text-xs"
+                />
+              </div>
+              <div>
+                <Label className="text-xs font-semibold">Loại hình bảo trì (*):</Label>
+                <select
+                  value={maintForm.maintenance_type || "PREVENTIVE"}
+                  onChange={(e) => setMaintForm({ ...maintForm, maintenance_type: e.target.value })}
+                  className="mt-1 w-full rounded-md border bg-background px-3 h-9 text-xs font-medium"
+                >
+                  <option value="PREVENTIVE">Bảo trì phòng ngừa định kỳ (PM)</option>
+                  <option value="CORRECTIVE">Sửa chữa sự cố đột xuất</option>
+                  <option value="OVERHAUL">Đại tu / Nâng cấp thiết bị</option>
+                </select>
+              </div>
             </div>
+
+            <div>
+              <Label className="text-xs font-semibold">Trạng thái phiếu / Tiến độ thiết bị (*):</Label>
+              <select
+                value={maintForm.result_status || "IN_PROGRESS"}
+                onChange={(e) => setMaintForm({ ...maintForm, result_status: e.target.value })}
+                className="mt-1 w-full rounded-md border bg-background px-3 h-9 text-xs font-semibold text-primary"
+              >
+                <option value="IN_PROGRESS">🟡 Đang bảo trì / Sửa chữa (Máy tự động chuyển sang BẢO TRÌ)</option>
+                <option value="COMPLETED">🟢 Đã hoàn thành (Máy tự động quay về HOẠT ĐỘNG TỐT)</option>
+                <option value="NEED_FOLLOWUP">🟠 Chưa đạt / Cần theo dõi tiếp (Máy tiếp tục ở trạng thái BẢO TRÌ)</option>
+                <option value="FAILED">🔴 Không đạt / Hỏng nặng (Dừng máy, chờ khắc phục)</option>
+              </select>
+            </div>
+
+            {maintForm.result_status === "IN_PROGRESS" || maintForm.result_status === "NEED_FOLLOWUP" || maintForm.result_status === "FAILED" ? (
+              <div className="rounded-lg bg-amber-500/10 border border-amber-500/30 p-2.5 text-xs text-amber-700 dark:text-amber-300 flex items-center gap-2">
+                <AlertCircle className="h-4 w-4 shrink-0 text-amber-600" />
+                <span>Thiết bị sẽ tự động duy trì trạng thái <strong>"Đang bảo trì / Sửa chữa"</strong> trên toàn hệ thống cho đến khi hoàn tất.</span>
+              </div>
+            ) : (
+              <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/30 p-2.5 text-xs text-emerald-700 dark:text-emerald-300 flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
+                <span>Khi hoàn tất, thiết bị sẽ tự động chuyển về trạng thái <strong>"Đang hoạt động tốt"</strong> và cập nhật chu kỳ bảo dưỡng kế tiếp.</span>
+              </div>
+            )}
 
             {/* CHECKBOX AN TOÀN THỰC PHẨM */}
             <div className="rounded-xl border bg-muted/30 p-3 space-y-2">

@@ -169,7 +169,11 @@ def get_inventory_stock(
 
 
 @router.post("/stock", response_model=WarehouseInventoryResponse, status_code=status.HTTP_201_CREATED)
-def create_inventory_item(item_in: WarehouseInventoryCreate, db: Session = Depends(get_db)):
+def create_inventory_item(
+    item_in: WarehouseInventoryCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "warehouse", "inventory", "qa", "production")),
+):
     # Tự động tạo mã QR nếu chưa có
     qr_code = item_in.qr_code or f"QR-{item_in.lot_number}-{datetime.now().strftime('%Y%m%d%H%M%S')}"
     
@@ -203,7 +207,12 @@ def create_inventory_item(item_in: WarehouseInventoryCreate, db: Session = Depen
 
 
 @router.put("/stock/{inventory_id}", response_model=WarehouseInventoryResponse)
-def update_inventory_item(inventory_id: uuid.UUID, item_in: WarehouseInventoryUpdate, db: Session = Depends(get_db)):
+def update_inventory_item(
+    inventory_id: uuid.UUID,
+    item_in: WarehouseInventoryUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "warehouse", "inventory", "qa", "production")),
+):
     item = db.query(WarehouseInventory).filter(WarehouseInventory.inventory_id == inventory_id).first()
     if not item:
         raise HTTPException(status_code=404, detail="Không tìm thấy mục tồn kho này")
@@ -225,7 +234,7 @@ def update_inventory_item(inventory_id: uuid.UUID, item_in: WarehouseInventoryUp
 def delete_inventory_item(
     inventory_id: uuid.UUID,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles("admin", "warehouse", "qa")),
+    current_user: User = Depends(require_roles("admin", "warehouse", "inventory", "qa")),
 ):
     item = db.query(WarehouseInventory).filter(WarehouseInventory.inventory_id == inventory_id).first()
     if not item:
@@ -273,10 +282,16 @@ def get_retained_samples(
 
 
 @router.post("/samples", response_model=RetainedSampleResponse, status_code=status.HTTP_201_CREATED)
-def create_retained_sample(sample_in: RetainedSampleCreate, db: Session = Depends(get_db)):
+def create_retained_sample(
+    sample_in: RetainedSampleCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qc", "qa", "laboratory")),
+):
     exist = db.query(RetainedSample).filter(RetainedSample.sample_code == sample_in.sample_code).first()
     if exist:
         raise HTTPException(status_code=400, detail=f"Mã mẫu lưu {sample_in.sample_code} đã tồn tại!")
+
+    sampled_by = sample_in.sampled_by or current_user.full_name or "Nhân viên QC"
 
     new_sample = RetainedSample(
         sample_code=sample_in.sample_code,
@@ -288,7 +303,7 @@ def create_retained_sample(sample_in: RetainedSampleCreate, db: Session = Depend
         storage_temperature_c=sample_in.storage_temperature_c,
         sample_date=sample_in.sample_date,
         expiry_date=sample_in.expiry_date,
-        sampled_by=sample_in.sampled_by,
+        sampled_by=sampled_by,
         test_result=sample_in.test_result,
         test_details=sample_in.test_details,
         status=sample_in.status,
@@ -303,7 +318,12 @@ def create_retained_sample(sample_in: RetainedSampleCreate, db: Session = Depend
 
 
 @router.put("/samples/{sample_id}", response_model=RetainedSampleResponse)
-def update_retained_sample(sample_id: uuid.UUID, sample_in: RetainedSampleUpdate, db: Session = Depends(get_db)):
+def update_retained_sample(
+    sample_id: uuid.UUID,
+    sample_in: RetainedSampleUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qc", "qa", "laboratory")),
+):
     sample = db.query(RetainedSample).filter(RetainedSample.sample_id == sample_id).first()
     if not sample:
         raise HTTPException(status_code=404, detail="Không tìm thấy mẫu lưu này")
@@ -406,7 +426,11 @@ def get_production_batches(
 
 
 @router.post("/batches", response_model=ProductionBatchResponse, status_code=status.HTTP_201_CREATED)
-def create_production_batch(batch_in: ProductionBatchCreate, db: Session = Depends(get_db)):
+def create_production_batch(
+    batch_in: ProductionBatchCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "production", "qa", "qc")),
+):
     exist = db.query(ProductionBatch).filter(ProductionBatch.batch_number == batch_in.batch_number).first()
     if exist:
         raise HTTPException(status_code=400, detail=f"Mã mẻ sản xuất {batch_in.batch_number} đã tồn tại!")
@@ -423,7 +447,7 @@ def create_production_batch(batch_in: ProductionBatchCreate, db: Session = Depen
         start_time=batch_in.start_time,
         end_time=batch_in.end_time,
         status=batch_in.status,
-        qc_inspector=batch_in.qc_inspector,
+        qc_inspector=batch_in.qc_inspector or current_user.full_name,
         notes=batch_in.notes,
     )
     db.add(new_batch)
@@ -445,6 +469,55 @@ def create_production_batch(batch_in: ProductionBatchCreate, db: Session = Depen
     db.commit()
     db.refresh(new_batch)
     return get_production_batches(search=new_batch.batch_number, db=db)[0]
+
+
+@router.put("/batches/{batch_id}", response_model=ProductionBatchResponse)
+def update_production_batch(
+    batch_id: uuid.UUID,
+    batch_in: ProductionBatchUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "production", "qa", "qc")),
+):
+    batch = db.query(ProductionBatch).filter(ProductionBatch.batch_id == batch_id).first()
+    if not batch:
+        raise HTTPException(status_code=404, detail="Không tìm thấy mẻ sản xuất này")
+
+    update_data = batch_in.model_dump(exclude_unset=True)
+    materials = update_data.pop("materials", None)
+
+    for field, val in update_data.items():
+        setattr(batch, field, val)
+
+    if materials is not None:
+        db.query(BatchMaterialUsage).filter(BatchMaterialUsage.batch_id == batch.batch_id).delete()
+        for mat in materials:
+            usage = BatchMaterialUsage(
+                batch_id=batch.batch_id,
+                material_lot_id=mat.get("material_lot_id") if isinstance(mat, dict) else getattr(mat, "material_lot_id", None),
+                material_name=mat.get("material_name") if isinstance(mat, dict) else getattr(mat, "material_name", ""),
+                lot_number=mat.get("lot_number") if isinstance(mat, dict) else getattr(mat, "lot_number", ""),
+                quantity_used=mat.get("quantity_used") if isinstance(mat, dict) else getattr(mat, "quantity_used", 0),
+                unit=mat.get("unit", "kg") if isinstance(mat, dict) else getattr(mat, "unit", "kg"),
+            )
+            db.add(usage)
+
+    db.commit()
+    db.refresh(batch)
+    return get_production_batches(search=batch.batch_number, db=db)[0]
+
+
+@router.delete("/batches/{batch_id}", status_code=status.HTTP_200_OK)
+def delete_production_batch(
+    batch_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "production", "qa")),
+):
+    batch = db.query(ProductionBatch).filter(ProductionBatch.batch_id == batch_id).first()
+    if not batch:
+        raise HTTPException(status_code=404, detail="Không tìm thấy mẻ sản xuất này")
+    db.delete(batch)
+    db.commit()
+    return {"message": "Đã xóa mẻ sản xuất thành công", "batch_id": str(batch_id)}
 
 
 # =========================================================================
@@ -503,7 +576,11 @@ def get_order_dispatches(
 
 
 @router.post("/dispatches", response_model=OrderDispatchResponse, status_code=status.HTTP_201_CREATED)
-def create_order_dispatch(dispatch_in: OrderDispatchCreate, db: Session = Depends(get_db)):
+def create_order_dispatch(
+    dispatch_in: OrderDispatchCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "warehouse", "inventory", "logistics", "qa")),
+):
     exist = db.query(OrderDispatch).filter(OrderDispatch.dispatch_code == dispatch_in.dispatch_code).first()
     if exist:
         raise HTTPException(status_code=400, detail=f"Mã phiếu xuất {dispatch_in.dispatch_code} đã tồn tại!")
@@ -523,12 +600,46 @@ def create_order_dispatch(dispatch_in: OrderDispatchCreate, db: Session = Depend
         vehicle_temp_c=dispatch_in.vehicle_temp_c,
         vehicle_check_status=dispatch_in.vehicle_check_status,
         status=dispatch_in.status,
+        dispatched_by=current_user.user_id,
         notes=dispatch_in.notes,
     )
     db.add(new_d)
     db.commit()
     db.refresh(new_d)
     return get_order_dispatches(search=new_d.dispatch_code, db=db)[0]
+
+
+@router.put("/dispatches/{dispatch_id}", response_model=OrderDispatchResponse)
+def update_order_dispatch(
+    dispatch_id: uuid.UUID,
+    dispatch_in: OrderDispatchUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "warehouse", "inventory", "logistics", "qa")),
+):
+    d = db.query(OrderDispatch).filter(OrderDispatch.dispatch_id == dispatch_id).first()
+    if not d:
+        raise HTTPException(status_code=404, detail="Không tìm thấy phiếu xuất kho này")
+
+    for field, val in dispatch_in.model_dump(exclude_unset=True).items():
+        setattr(d, field, val)
+
+    db.commit()
+    db.refresh(d)
+    return get_order_dispatches(search=d.dispatch_code, db=db)[0]
+
+
+@router.delete("/dispatches/{dispatch_id}", status_code=status.HTTP_200_OK)
+def delete_order_dispatch(
+    dispatch_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "warehouse", "qa")),
+):
+    d = db.query(OrderDispatch).filter(OrderDispatch.dispatch_id == dispatch_id).first()
+    if not d:
+        raise HTTPException(status_code=404, detail="Không tìm thấy phiếu xuất kho này")
+    db.delete(d)
+    db.commit()
+    return {"message": "Đã xóa phiếu xuất kho thành công", "dispatch_id": str(dispatch_id)}
 
 
 # =========================================================================
@@ -622,7 +733,11 @@ def get_vehicle_inspections(
     return [format_vehicle_inspection(v) for v in inspections]
 
 @router.post("/vehicle-inspections", response_model=VehicleInspectionResponse, status_code=status.HTTP_201_CREATED)
-def create_vehicle_inspection(payload: VehicleInspectionCreate, db: Session = Depends(get_db)):
+def create_vehicle_inspection(
+    payload: VehicleInspectionCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "warehouse", "logistics", "qa", "qc")),
+):
     """Tạo mới phiếu kiểm tra phương tiện vận chuyển (BM01-PTVC)"""
     existing = db.query(VehicleInspection).filter(VehicleInspection.inspection_code == payload.inspection_code).first()
     if existing:
@@ -652,7 +767,7 @@ def create_vehicle_inspection(payload: VehicleInspectionCreate, db: Session = De
         no_odor_check=payload.no_odor_check,
         pest_free_check=payload.pest_free_check,
         inspection_result=result,
-        inspector_name=payload.inspector_name,
+        inspector_name=payload.inspector_name or current_user.full_name or "Nhân viên kiểm tra",
         notes=payload.notes,
     )
     db.add(insp)
@@ -661,7 +776,12 @@ def create_vehicle_inspection(payload: VehicleInspectionCreate, db: Session = De
     return format_vehicle_inspection(insp)
 
 @router.put("/vehicle-inspections/{inspection_id}", response_model=VehicleInspectionResponse)
-def update_vehicle_inspection(inspection_id: int, payload: VehicleInspectionUpdate, db: Session = Depends(get_db)):
+def update_vehicle_inspection(
+    inspection_id: int,
+    payload: VehicleInspectionUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "warehouse", "logistics", "qa", "qc")),
+):
     """Cập nhật phiếu kiểm tra phương tiện"""
     insp = db.query(VehicleInspection).filter(VehicleInspection.id == inspection_id).first()
     if not insp:
@@ -685,7 +805,11 @@ def update_vehicle_inspection(inspection_id: int, payload: VehicleInspectionUpda
     return format_vehicle_inspection(insp)
 
 @router.delete("/vehicle-inspections/{inspection_id}")
-def delete_vehicle_inspection(inspection_id: int, db: Session = Depends(get_db)):
+def delete_vehicle_inspection(
+    inspection_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "warehouse", "qa")),
+):
     """Xóa phiếu kiểm tra phương tiện"""
     insp = db.query(VehicleInspection).filter(VehicleInspection.id == inspection_id).first()
     if not insp:
@@ -746,7 +870,7 @@ def get_disposal_records(
 def create_disposal_record(
     payload: DisposalRecordCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles("admin", "qa", "fst_leader", "warehouse")),
+    current_user: User = Depends(require_roles("admin", "qa", "fst_leader", "fs_team_leader", "warehouse")),
 ):
     """Tạo mới biên bản tiêu hủy hàng (BM02-HỦY HÀNG)"""
     existing = db.query(DisposalRecord).filter(DisposalRecord.record_code == payload.record_code).first()
@@ -779,7 +903,7 @@ def update_disposal_record(
     record_id: int,
     payload: DisposalRecordUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles("admin", "qa", "fst_leader", "warehouse")),
+    current_user: User = Depends(require_roles("admin", "qa", "fst_leader", "fs_team_leader", "warehouse")),
 ):
     """Cập nhật biên bản tiêu hủy hàng"""
     record = db.query(DisposalRecord).filter(DisposalRecord.id == record_id).first()
@@ -797,7 +921,7 @@ def update_disposal_record(
 def delete_disposal_record(
     record_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles("admin", "qa", "fst_leader", "warehouse")),
+    current_user: User = Depends(require_roles("admin", "qa", "fst_leader", "fs_team_leader", "warehouse")),
 ):
     """Xóa biên bản tiêu hủy hàng"""
     record = db.query(DisposalRecord).filter(DisposalRecord.id == record_id).first()

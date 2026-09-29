@@ -49,6 +49,7 @@ import { useDepartments } from "@/lib/departments";
 import logoImg from "@/assets/logo.png";
 import { DynamicFormRenderer } from "@/components/builder/DynamicFormRenderer";
 import type { FormTemplateData } from "@/components/builder/types";
+import { printHtml } from "@/lib/print";
 import { EmptyState } from "@/components/EmptyState";
 import { ModuleGuideModal } from "@/components/ModuleGuideModal";
 
@@ -1095,7 +1096,14 @@ function PRPModule() {
             <Button variant="outline" onClick={() => setShowPrintModal(false)}>
               Đóng
             </Button>
-            <Button onClick={() => window.print()} className="bg-primary text-primary-foreground">
+            <Button
+              onClick={() => {
+                const el = document.getElementById("printable-prp");
+                if (el) printHtml(el.innerHTML);
+                else window.print();
+              }}
+              className="bg-primary text-primary-foreground"
+            >
               <Printer className="h-4 w-4 mr-2" /> In Biểu mẫu
             </Button>
           </DialogFooter>

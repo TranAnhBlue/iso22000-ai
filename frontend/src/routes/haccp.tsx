@@ -717,6 +717,210 @@ function HACCPModule() {
     printHtml(html);
   };
 
+  const handlePrintHaccpPlan = () => {
+    const p = currentPlan;
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>HACCP Plan - ${p?.plan_code || "BM-HACCP-01"}</title>
+        <meta charset="utf-8" />
+        <style>
+          @page { size: A4 landscape; margin: 10mm 12mm; }
+          body { font-family: "Times New Roman", Times, serif; font-size: 10pt; line-height: 1.35; color: #000; background: #fff; margin: 0; padding: 10px; }
+          .header-tbl { width: 100%; border-collapse: collapse; margin-bottom: 12px; border: 1.5px solid #000; }
+          .header-tbl td { padding: 6px 10px; vertical-align: middle; border: 1px solid #000; }
+          .title { text-align: center; font-size: 13pt; font-weight: bold; text-transform: uppercase; margin: 0; }
+          .sub { text-align: center; font-size: 9pt; font-style: italic; margin-top: 2px; }
+          .meta-tbl { width: 100%; border-collapse: collapse; margin-bottom: 12px; font-size: 9.5pt; border: 1px solid #000; }
+          .meta-tbl td { padding: 5px 8px; border: 1px solid #000; }
+          .plan-tbl { width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 9.5pt; }
+          .plan-tbl th, .plan-tbl td { border: 1px solid #000; padding: 6px; }
+          .plan-tbl th { background-color: #f1f5f9; text-align: center; font-weight: bold; }
+          .sig-tbl { width: 100%; border-collapse: collapse; margin-top: 25px; text-align: center; font-size: 10pt; page-break-inside: avoid; }
+          .sig-tbl td { width: 50%; vertical-align: top; }
+          .footer-note { margin-top: 20px; font-size: 8pt; text-align: center; color: #64748b; border-top: 1px solid #cbd5e1; padding-top: 6px; }
+        </style>
+      </head>
+      <body>
+        <table class="header-tbl">
+          <tr>
+            <td style="width: 25%; text-align: center;">
+              <strong style="font-size: 11pt; color: #047857;">WCERT FSMS</strong><br/>
+              <span style="font-size: 8pt;">ISO 22000:2018 Standard</span>
+            </td>
+            <td style="width: 50%; text-align: center;">
+              <h2 class="title">BẢNG KẾ HOẠCH KIỂM SOÁT MỐI NGUY & ĐIỂM CCP</h2>
+              <div class="sub">(HACCP PLAN - ĐIỀU KHOẢN 8.5.4)</div>
+            </td>
+            <td style="width: 25%; font-size: 8.5pt;">
+              Biểu mẫu: <strong>BM-HACCP-01</strong><br/>
+              Mã kế hoạch: <strong>${p?.plan_code || "HACCP-2026-01"}</strong><br/>
+              Phiên bản: <strong>Ver ${p?.version || "2.1"}</strong>
+            </td>
+          </tr>
+        </table>
+
+        <table class="meta-tbl">
+          <tr>
+            <td style="width: 50%;"><strong>Tên Kế hoạch / Sản phẩm:</strong> ${p?.plan_name || "Chế biến Cá Ngừ"}</td>
+            <td style="width: 50%;"><strong>Phạm vi áp dụng:</strong> Toàn bộ dây chuyền sản xuất & đóng gói</td>
+          </tr>
+          <tr>
+            <td><strong>Đội trưởng Đội HACCP:</strong> ${p?.team_leader || "Nguyễn Văn An"}</td>
+            <td><strong>Lãnh đạo Phê duyệt:</strong> ${p?.approved_by || "Lê Hoàng Quân (Giám đốc)"}</td>
+          </tr>
+        </table>
+
+        <table class="plan-tbl">
+          <thead>
+            <tr>
+              <th style="width: 8%;">Mã CCP</th>
+              <th style="width: 14%;">Công đoạn</th>
+              <th style="width: 18%;">Mối nguy kiểm soát</th>
+              <th style="width: 16%;">Giới hạn tới hạn (CL)</th>
+              <th style="width: 18%;">Thủ tục Giám sát</th>
+              <th style="width: 16%;">Hành động Khắc phục</th>
+              <th style="width: 10%;">Trách nhiệm</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${ccps.map((c) => `
+              <tr>
+                <td style="text-align: center; font-weight: bold; color: #b91c1c;">${c.ccp_code}</td>
+                <td><strong>${c.step_name}</strong></td>
+                <td>${c.hazard_description}</td>
+                <td><strong>${c.critical_limit?.condition_text || "Đạt chuẩn"}</strong></td>
+                <td>${c.monitoring_frequency || "Liên tục"} (${c.monitoring_method || "Đo đạc kiểm tra"})</td>
+                <td>${c.corrective_action_plan || "Cô lập lô, điều chỉnh thiết bị"}</td>
+                <td style="text-align: center;">${c.responsible_role || "KCS / QC Ca"}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+
+        <div style="border: 1px dashed #047857; background: #f0fdf4; padding: 8px 12px; border-radius: 4px; font-size: 9pt; color: #166534; margin-bottom: 15px;">
+          <strong>✓ THẨM ĐỊNH KHOA HỌC (VALIDATION STUDY):</strong> Giới hạn tới hạn và các biện pháp kiểm soát trên đã được thẩm định dựa trên nghiên cứu khoa học, quy chuẩn kỹ thuật quốc gia QCVN và Codex CAC/RCP 1-1969 trước khi áp dụng vào thực tế sản xuất.
+        </div>
+
+        <table class="sig-tbl">
+          <tr>
+            <td>
+              <strong>ĐỘI TRƯỞNG HACCP</strong><br/>
+              <i>(Ký và ghi rõ họ tên)</i><br/><br/><br/><br/>
+              <strong>${p?.team_leader || "Nguyễn Văn An"}</strong>
+            </td>
+            <td>
+              <strong>GIÁM ĐỐC NHÀ MÁY PHÊ DUYỆT</strong><br/>
+              <i>(Ký tên & đóng dấu)</i><br/><br/><br/><br/>
+              <strong>${p?.approved_by || "Lê Hoàng Quân"}</strong>
+            </td>
+          </tr>
+        </table>
+
+        <div class="footer-note">
+          WCERT FSMS • HỆ THỐNG QUẢN LÝ AN TOÀN THỰC PHẨM THEO TIÊU CHUẨN QUỐC TẾ ISO 22000:2018
+        </div>
+      </body>
+      </html>
+    `;
+    printHtml(html);
+  };
+
+  const handlePrintCCPLogs = () => {
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Nhật Ký Giám Sát CCP - BM-CCP-LOG-01</title>
+        <meta charset="utf-8" />
+        <style>
+          @page { size: A4 landscape; margin: 10mm 12mm; }
+          body { font-family: "Times New Roman", Times, serif; font-size: 10pt; line-height: 1.35; color: #000; background: #fff; margin: 0; padding: 10px; }
+          .header-tbl { width: 100%; border-collapse: collapse; margin-bottom: 12px; border: 1.5px solid #000; }
+          .header-tbl td { padding: 6px 10px; vertical-align: middle; border: 1px solid #000; }
+          .title { text-align: center; font-size: 13pt; font-weight: bold; text-transform: uppercase; margin: 0; }
+          .sub { text-align: center; font-size: 9pt; font-style: italic; margin-top: 2px; }
+          .log-tbl { width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 9.5pt; }
+          .log-tbl th, .log-tbl td { border: 1px solid #000; padding: 6px; }
+          .log-tbl th { background-color: #f1f5f9; text-align: center; font-weight: bold; }
+          .sig-tbl { width: 100%; border-collapse: collapse; margin-top: 25px; text-align: center; font-size: 10pt; page-break-inside: avoid; }
+          .sig-tbl td { width: 50%; vertical-align: top; }
+          .footer-note { margin-top: 20px; font-size: 8pt; text-align: center; color: #64748b; border-top: 1px solid #cbd5e1; padding-top: 6px; }
+        </style>
+      </head>
+      <body>
+        <table class="header-tbl">
+          <tr>
+            <td style="width: 25%; text-align: center;">
+              <strong style="font-size: 11pt; color: #047857;">WCERT FSMS</strong><br/>
+              <span style="font-size: 8pt;">ISO 22000:2018 Standard</span>
+            </td>
+            <td style="width: 50%; text-align: center;">
+              <h2 class="title">NHẬT KÝ GIÁM SÁT ĐIỂM KIỂM SOÁT TỚI HẠN CCP</h2>
+              <div class="sub">(THEO DÕI THÔNG SỐ ĐO ĐẠC THEO CA VẬN HÀNH)</div>
+            </td>
+            <td style="width: 25%; font-size: 8.5pt;">
+              Biểu mẫu: <strong>BM-CCP-LOG-01</strong><br/>
+              Ngày in: <strong>${new Date().toLocaleDateString("vi-VN")}</strong><br/>
+              Số bản ghi: <strong>${logs.length} bản ghi</strong>
+            </td>
+          </tr>
+        </table>
+
+        <table class="log-tbl">
+          <thead>
+            <tr>
+              <th style="width: 10%;">Mã CCP</th>
+              <th style="width: 15%;">Số Lô Hàng (Lot #)</th>
+              <th style="width: 15%;">Thời Gian Đo</th>
+              <th style="width: 15%;">Giá Trị Đo Thực Tế</th>
+              <th style="width: 18%;">Giới Hạn Tới Hạn (CL)</th>
+              <th style="width: 12%;">Kết Luận</th>
+              <th style="width: 15%;">Người Giám Sát</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${logs.map((l) => `
+              <tr>
+                <td style="text-align: center; font-weight: bold; color: #b91c1c;">${l.ccp_code}</td>
+                <td style="font-family: monospace; font-weight: bold;">${l.batch_number}</td>
+                <td style="text-align: center;">${l.test_time || "Hôm nay"}</td>
+                <td style="text-align: center; font-weight: bold;">${l.measured_value} ${l.unit}</td>
+                <td>${l.critical_limit_text || "Tiêu chuẩn"}</td>
+                <td style="text-align: center; font-weight: bold; color: ${l.status === 'PASS' || l.status === 'PASSED' ? '#047857' : '#b91c1c'};">
+                  ${l.status === 'PASS' || l.status === 'PASSED' ? '✓ ĐẠT' : '✕ KHÔNG ĐẠT'}
+                </td>
+                <td>${l.inspector_name || "QC Ca"}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+
+        <table class="sig-tbl">
+          <tr>
+            <td>
+              <strong>NHÂN VIÊN GIÁM SÁT CCP (QC/KCS)</strong><br/>
+              <i>(Ký và ghi rõ họ tên)</i><br/><br/><br/><br/>
+              <strong>QC Trưởng Ca Sản Xuất</strong>
+            </td>
+            <td>
+              <strong>TRƯỞNG BAN HACCP / QUẢN ĐỐC XƯỞNG</strong><br/>
+              <i>(Ký duyệt kiểm tra cuối ca)</i><br/><br/><br/><br/>
+              <strong>${currentPlan?.team_leader || "Đội Trưởng HACCP"}</strong>
+            </td>
+          </tr>
+        </table>
+
+        <div class="footer-note">
+          WCERT FSMS • HỆ THỐNG QUẢN LÝ AN TOÀN THỰC PHẨM THEO TIÊU CHUẨN QUỐC TẾ ISO 22000:2018
+        </div>
+      </body>
+      </html>
+    `;
+    printHtml(html);
+  };
+
   useEffect(() => {
     fetchData();
   }, []);
@@ -3427,7 +3631,7 @@ function HACCPModule() {
                   <p className="text-xs text-slate-500">Tiêu chuẩn ISO 22000:2018 Điều khoản 8.5.4 • Mã hồ sơ: BM-HACCP-01</p>
                 </div>
               </div>
-              <Button size="sm" onClick={() => window.print()} className="bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold">
+              <Button size="sm" onClick={handlePrintHaccpPlan} className="bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold">
                 <Printer className="w-3.5 h-3.5 mr-1" /> In Bản Cứng
               </Button>
             </div>
@@ -3483,7 +3687,7 @@ function HACCPModule() {
                 <h2 className="text-lg font-black uppercase text-slate-900">NHẬT KÝ THEO DÕI ĐO ĐẠC ĐIỂM KIỂM SOÁT TỚI HẠN CCP</h2>
                 <p className="text-xs text-slate-500">Biểu mẫu BM-CCP-LOG-01 • Nhà máy WCERT</p>
               </div>
-              <Button size="sm" onClick={() => window.print()} className="bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold">
+              <Button size="sm" onClick={handlePrintCCPLogs} className="bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold">
                 <Printer className="w-3.5 h-3.5 mr-1" /> In Nhật Ký
               </Button>
             </div>

@@ -489,7 +489,7 @@ export function ModuleGuideModal({
 
   return (
     <Dialog open={isModalOpen} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto p-0 rounded-2xl border border-border shadow-2xl">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto p-0 rounded-2xl border border-border shadow-2xl">
         {/* Header Banner */}
         <div className="bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-700 p-6 text-white relative overflow-hidden rounded-t-2xl">
           <div className="absolute -right-10 -bottom-10 opacity-10 pointer-events-none">
@@ -526,17 +526,17 @@ export function ModuleGuideModal({
               {guide.steps.map((step, idx) => (
                 <div
                   key={idx}
-                  className="rounded-xl border border-border/80 bg-muted/40 p-4 transition-all hover:bg-muted/70 hover:border-primary/40"
+                  className="rounded-xl border border-border/80 bg-muted/40 p-4 transition-all hover:bg-muted/70 hover:border-primary/40 flex flex-col justify-start"
                 >
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-primary text-xs font-bold shrink-0">
+                  <div className="flex items-start gap-2 mb-2">
+                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-primary text-xs font-bold shrink-0 mt-0.5">
                       {idx + 1}
                     </span>
-                    <h5 className="font-semibold text-sm text-foreground line-clamp-1">
+                    <h5 className="font-semibold text-sm text-foreground leading-snug break-words">
                       {step.title}
                     </h5>
                   </div>
-                  <p className="text-xs text-muted-foreground leading-relaxed">
+                  <p className="text-xs text-muted-foreground leading-relaxed pl-8">
                     {step.desc}
                   </p>
                 </div>
