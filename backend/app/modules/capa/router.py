@@ -6,6 +6,8 @@ from sqlalchemy import select, and_, or_, desc, func
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.core.dependencies import require_roles
+from app.modules.auth.models import User
 from app.modules.capa.models import NonConformance, CAPARecord
 from app.modules.capa.schemas import (
     NonConformanceCreate,
@@ -538,7 +540,10 @@ def ai_suggest_actions(req: AISuggestActionsRequest):
 
 # ==================== 5. SEED DEFAULTS ====================
 @router.post("/seed-defaults", status_code=status.HTTP_201_CREATED)
-def seed_capa_defaults(db: Session = Depends(get_db)):
+def seed_capa_defaults(
+    db: Session = Depends(get_db),
+    admin_user: User = Depends(require_roles("admin")),
+):
     """
     Tự động nạp 5 kịch bản sự cố NC & CAPA mẫu thực tế chuẩn nhà máy thủy sản/thực phẩm.
     """

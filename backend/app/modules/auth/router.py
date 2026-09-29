@@ -1,9 +1,10 @@
-from fastapi import APIRouter, Depends, status
-from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 from app.core.database import get_db
+from app.core.dependencies import get_current_user
+from app.modules.auth.models import User
 from app.modules.auth.schemas import UserRegisterRequest, UserLoginRequest, TokenResponse, DepartmentOption
 from app.modules.auth import service
+from fastapi import HTTPException
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -21,5 +22,19 @@ def login(payload: UserLoginRequest, db: Session = Depends(get_db)):
     return service.authenticate_user(db, payload)
 
 @router.get("/me", response_model=TokenResponse)
-def get_me(user_id: str, db: Session = Depends(get_db)):
-    return service.get_current_user_profile(db, user_id)
+def get_me(
+    current_user: User = Depends(get_current_user),
+    user_id: Optional[str] = None,
+):
+    """
+    Xác thực hồ sơ người dùng hiện tại thông qua Bearer JWT Token.
+    Ngăn chặn việc giả mạo UUID qua query parameter.
+    """
+    if user_id and str(current_user.user_id) != user_id:
+        user_roles = [str(r.role_code).lower() for r in current_user.roles]
+        if "admin" not in user_roles:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Không có quyền truy cập hồ sơ của người dùng khác.",
+            )
+    return service.get_current_user_profile(current_user)

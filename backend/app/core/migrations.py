@@ -15,7 +15,11 @@ def run_migration_sql(sql_query: str):
         with engine.begin() as conn:
             conn.execute(text(sql_query))
     except Exception as err:
-        pass
+        err_msg = str(err).lower()
+        # Bỏ qua các cảnh báo cột/bảng đã tồn tại vốn là bình thường trong migration lặp lại
+        if "already exists" not in err_msg and "duplicate" not in err_msg:
+            import logging
+            logging.getLogger("uvicorn.error").warning(f"[MIGRATION NOTICE] Bỏ qua lỗi DDL: {err}")
 
 
 MIGRATION_STATEMENTS = [

@@ -1,17 +1,17 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional
 
 class UserRegisterRequest(BaseModel):
-    username: str
-    password: str
-    full_name: str
+    username: str = Field(..., min_length=3, max_length=50)
+    password: str = Field(..., min_length=6, max_length=100, description="Mật khẩu tối thiểu 6 ký tự")
+    full_name: str = Field(..., min_length=2, max_length=100)
     email: Optional[str] = None
     phone: Optional[str] = None
     department: Optional[str] = None
 
 class UserLoginRequest(BaseModel):
-    username: str
-    password: str
+    username: str = Field(..., min_length=2)
+    password: str = Field(..., min_length=1)
 
 class UserRoleAssignRequest(BaseModel):
     user_id: str

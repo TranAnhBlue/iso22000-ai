@@ -2982,7 +2982,18 @@ function AuditManagementPage() {
             <div className="flex-1 overflow-hidden pt-3">
               <WorkflowBuilder
                 initialData={workflowTemplate}
-                onSave={() => setShowWorkflowModal(false)}
+                onSave={async (wf) => {
+                  try {
+                    await api.post("/builders/workflows", wf);
+                    setWorkflowTemplate(wf);
+                    toast.success("Đã lưu lưu đồ quy trình Đánh giá nội bộ thành công!");
+                    setShowWorkflowModal(false);
+                  } catch (err: any) {
+                    const msg = err.response?.data?.detail || err.message;
+                    toast.error("Lỗi khi lưu quy trình: " + msg);
+                    throw new Error(msg);
+                  }
+                }}
                 onCancel={() => setShowWorkflowModal(false)}
               />
             </div>

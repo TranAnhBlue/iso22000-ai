@@ -85,33 +85,15 @@ def authenticate_user(db: Session, payload: UserLoginRequest) -> TokenResponse:
             detail="Máy chủ cơ sở dữ liệu Supabase chưa sẵn sàng hoặc sai DATABASE_URL trên Render. Vui lòng kiểm tra lại kết nối database.",
         )
 
-    if not user and payload.username == "admin":
-        role_admin = db.query(Role).filter((Role.role_code == "admin") | (Role.role_code == "ADMIN")).first()
-        if not role_admin:
-            role_admin = Role(role_code="admin", role_name="Quản trị hệ thống", description="Admin tổng")
-            db.add(role_admin)
-            db.commit()
-            db.refresh(role_admin)
-
-        user = User(
-            username="admin",
-            password_hash=get_password_hash("123456"),
-            full_name="Quản trị viên hệ thống",
-            department="Phòng CNTT & Hệ thống",
-            phone="0912.888.999",
-            is_active=True
-        )
-        user.roles.append(role_admin)
-        db.add(user)
-        db.commit()
-        db.refresh(user)
-
     if not user or not verify_password(payload.password, str(user.password_hash)):
         raise HTTPException(status_code=400, detail="Sai tên đăng nhập hoặc mật khẩu.")
 
     if not user.is_active:
         raise HTTPException(status_code=403, detail="Tài khoản đã bị tạm khóa.")
 
+    return format_user_profile(user)
+
+def format_user_profile(user: User) -> TokenResponse:
     current_role = "user"
     if user.roles:
         current_role = str(user.roles[0].role_code).lower()
@@ -127,22 +109,5 @@ def authenticate_user(db: Session, payload: UserLoginRequest) -> TokenResponse:
         phone=str(user.phone) if user.phone else None
     )
 
-def get_current_user_profile(db: Session, user_id: str) -> TokenResponse:
-    user = db.query(User).filter(User.user_id == user_id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="Không tìm thấy người dùng.")
-
-    current_role = "user"
-    if user.roles:
-        current_role = str(user.roles[0].role_code).lower()
-
-    token = create_access_token(data={"sub": str(user.user_id), "role": current_role})
-    return TokenResponse(
-        access_token=token,
-        user_id=str(user.user_id),
-        username=str(user.username),
-        full_name=str(user.full_name),
-        role=current_role,
-        department=str(user.department) if user.department else None,
-        phone=str(user.phone) if user.phone else None
-    )
+def get_current_user_profile(user: User) -> TokenResponse:
+    return format_user_profile(user)

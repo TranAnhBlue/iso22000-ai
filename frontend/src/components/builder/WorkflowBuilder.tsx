@@ -282,6 +282,19 @@ export const WorkflowBuilder: React.FC<WorkflowBuilderProps> = ({
       return;
     }
 
+    const emptyNode = template.nodes.find((n) => !n.label?.trim());
+    if (emptyNode) {
+      toast.error(`Bước công đoạn số ${emptyNode.step_number || ""} chưa có tên mô tả!`);
+      return;
+    }
+
+    const nodeIds = new Set(template.nodes.map((n) => n.id));
+    const invalidEdge = template.edges.find((e) => !nodeIds.has(e.source) || !nodeIds.has(e.target));
+    if (invalidEdge) {
+      toast.error("Có đường liên kết trỏ đến bước không tồn tại. Vui lòng kiểm tra lại liên kết đồ thị!");
+      return;
+    }
+
     setSaving(true);
     try {
       await onSave(template);

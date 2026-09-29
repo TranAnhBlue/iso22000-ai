@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import select, desc, func, and_, or_
 
 from app.core.database import get_db
+from app.core.dependencies import require_roles
 from app.modules.builder.models import (
     DynamicFormTemplate,
     DynamicFormSubmission,
@@ -354,7 +355,10 @@ def delete_workflow_template(workflow_id: UUID, db: Session = Depends(get_db)):
 
 # ==================== 4. SEED DEFAULTS (BIỂU MẪU & QUY TRÌNH MẪU CHUẨN ISO) ====================
 @router.post("/seed-defaults", status_code=status.HTTP_200_OK)
-def seed_default_builders(db: Session = Depends(get_db)):
+def seed_default_builders(
+    db: Session = Depends(get_db),
+    admin_user: User = Depends(require_roles("admin")),
+):
     """Tự động nạp các biểu mẫu và quy trình mẫu chuẩn ISO 22000:2018 cho toàn bộ các phân hệ."""
     
     # 1. Mẫu Form GMP-01 (Checklist Vệ sinh Nhà xưởng)

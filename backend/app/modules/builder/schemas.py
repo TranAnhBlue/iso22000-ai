@@ -1,7 +1,7 @@
 from typing import Optional, List, Dict, Any
 from uuid import UUID
 from datetime import datetime
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, model_validator
 
 # ==================== 1. FORM BUILDER SCHEMAS ====================
 class FormFieldDefinition(BaseModel):
@@ -112,6 +112,28 @@ class DynamicWorkflowTemplateBase(BaseModel):
     status: str = Field(default="ACTIVE", max_length=30)
 
     model_config = ConfigDict(extra="ignore")
+
+    @model_validator(mode="after")
+    def validate_workflow_graph(self):
+        if not self.nodes:
+            raise ValueError("Quy trình phải chứa ít nhất 1 node công đoạn.")
+        
+        node_ids = set()
+        for idx, node in enumerate(self.nodes):
+            if not node.id or not str(node.id).strip():
+                raise ValueError(f"Node tại vị trí {idx + 1} không có ID hợp lệ.")
+            if node.id in node_ids:
+                raise ValueError(f"Trùng lặp node ID: {node.id}")
+            node_ids.add(node.id)
+            if not node.label or not str(node.label).strip():
+                raise ValueError(f"Node {node.id} chưa có tên bước công đoạn (label).")
+
+        for edge in self.edges:
+            if edge.source not in node_ids:
+                raise ValueError(f"Edge {edge.id} có điểm bắt đầu (source) không tồn tại trong danh sách node: {edge.source}")
+            if edge.target not in node_ids:
+                raise ValueError(f"Edge {edge.id} có điểm kết thúc (target) không tồn tại trong danh sách node: {edge.target}")
+        return self
 
 class DynamicWorkflowTemplateCreate(DynamicWorkflowTemplateBase):
     model_config = ConfigDict(extra="ignore")

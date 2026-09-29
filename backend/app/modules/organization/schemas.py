@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 from typing import Optional, List, Dict, Any, Union
 from datetime import date, datetime
 import uuid
@@ -18,9 +18,9 @@ class UserOut(BaseModel):
     status: str
 
 class UserCreate(BaseModel):
-    name: str
-    username: str
-    password: str = "123456"
+    name: str = Field(..., min_length=2)
+    username: str = Field(..., min_length=3)
+    password: str = Field(..., min_length=6, description="Mật khẩu bắt buộc tối thiểu 6 ký tự")
     dept: str
     role_code: str
     email: Optional[str] = None

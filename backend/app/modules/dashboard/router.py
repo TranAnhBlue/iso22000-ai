@@ -5,6 +5,8 @@ from datetime import datetime, date, timedelta
 import uuid
 
 from app.core.database import get_db
+from app.core.dependencies import require_roles
+from app.modules.auth.models import User
 from app.modules.dashboard.models import QualityObjective, ManagementReview
 from app.modules.documents.models import Document
 from app.modules.purchasing.models import Supplier, MaterialLot, IQCInspection
@@ -474,7 +476,10 @@ def delete_management_review(review_id: uuid.UUID, db: Session = Depends(get_db)
 
 # ==================== 5. SEED DEFAULT DASHBOARD DATA ====================
 @router.post("/seed-defaults")
-def seed_default_dashboard_data(db: Session = Depends(get_db)):
+def seed_default_dashboard_data(
+    db: Session = Depends(get_db),
+    admin_user: User = Depends(require_roles("admin")),
+):
     """
     Nạp dữ liệu mẫu chất lượng cao cho Mục tiêu chất lượng (Clause 6.2)
     và Biên bản họp Xem xét của Lãnh đạo (Clause 9.3).

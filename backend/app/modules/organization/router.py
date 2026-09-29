@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 from app.core.database import get_db
 from app.core.security import get_password_hash
+from app.core.dependencies import get_current_user, require_roles
 from app.modules.auth.models import User, Role, Department
 from app.modules.organization.models import InterestedParty, ContextRisk, CommunicationLog, FoodSafetyTeamMember
 from app.modules.organization.schemas import (
@@ -43,21 +44,24 @@ def format_dept_out(dept: Department, count: int = 0) -> DepartmentOut:
         name=str(dept.dept_name),
         role_code=str(dept.dept_code),
         count=count,
-        head="",
         description=str(dept.description) if dept.description else None
     )
 
 # ==================== USERS CRUD ====================
 
 @router.get("/users", response_model=List[UserOut])
-def get_users(db: Session = Depends(get_db)):
-    """Lấy danh sách người dùng trong hệ thống"""
+def get_users(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """Lấy danh sách người dùng trong hệ thống (Yêu cầu đăng nhập)"""
     users = db.query(User).order_by(User.created_at.desc()).all()
     return [format_user_out(u) for u in users]
 
 @router.post("/users", response_model=UserOut, status_code=status.HTTP_201_CREATED)
-def create_user(payload: UserCreate, db: Session = Depends(get_db)):
-    """Tạo mới tài khoản người dùng và gán vai trò phòng ban"""
+def create_user(
+    payload: UserCreate,
+    db: Session = Depends(get_db),
+    admin_user: User = Depends(require_roles("admin")),
+):
+    """Tạo mới tài khoản người dùng và gán vai trò phòng ban (Chỉ dành cho Admin)"""
     existing = db.query(User).filter(User.username == payload.username).first()
     if existing:
         raise HTTPException(status_code=400, detail="Tên đăng nhập đã tồn tại")
@@ -87,8 +91,13 @@ def create_user(payload: UserCreate, db: Session = Depends(get_db)):
     return format_user_out(new_user)
 
 @router.put("/users/{user_id}", response_model=UserOut)
-def update_user(user_id: str, payload: UserUpdate, db: Session = Depends(get_db)):
-    """Cập nhật thông tin và phân quyền người dùng"""
+def update_user(
+    user_id: str,
+    payload: UserUpdate,
+    db: Session = Depends(get_db),
+    admin_user: User = Depends(require_roles("admin")),
+):
+    """Cập nhật thông tin và phân quyền người dùng (Chỉ dành cho Admin)"""
     user = db.query(User).filter(User.user_id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="Không tìm thấy người dùng")
@@ -121,14 +130,18 @@ def update_user(user_id: str, payload: UserUpdate, db: Session = Depends(get_db)
     return format_user_out(user)
 
 @router.delete("/users/{user_id}")
-def delete_user(user_id: str, db: Session = Depends(get_db)):
-    """Xóa tài khoản người dùng"""
+def delete_user(
+    user_id: str,
+    db: Session = Depends(get_db),
+    admin_user: User = Depends(require_roles("admin")),
+):
+    """Xóa tài khoản người dùng (Chỉ dành cho Admin)"""
     user = db.query(User).filter(User.user_id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="Không tìm thấy người dùng")
     db.delete(user)
     db.commit()
-    return {"message": "Đã xoá người dùng thành công"}
+    return {"message": "Đã xóa người dùng thành công"}
 
 
 # ==================== DEPARTMENTS CRUD ====================

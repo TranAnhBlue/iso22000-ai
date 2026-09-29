@@ -19,22 +19,26 @@ def get_password_hash(password: str) -> str:
     return f"{salt}${hashed}"
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Xác thực mật khẩu"""
+    """Xác thực mật khẩu an toàn, chống timing attack, không dùng mật khẩu demo cứng"""
     try:
-        # Nếu là chuỗi hash bcrypt cũ từ database hoặc tài khoản demo
-        if hashed_password.startswith("$2b$") or hashed_password.startswith("$2a$"):
-            return plain_password in ["123456", "admin123", "qa123", "prod123", "maint123"]
-        
-        # Hỗ trợ mật khẩu demo chung cho môi trường dev
-        if plain_password in ["123456", "admin123", "qa123", "prod123", "maint123"]:
-            salt, stored_hash = hashed_password.split("$")
-            for demo_pwd in ["123456", "admin123", "qa123", "prod123", "maint123"]:
-                if hashlib.sha256((salt + demo_pwd).encode('utf-8')).hexdigest() == stored_hash:
-                    return True
+        if not hashed_password or not plain_password:
+            return False
 
-        salt, stored_hash = hashed_password.split("$")
-        calculated_hash = hashlib.sha256((salt + plain_password).encode('utf-8')).hexdigest()
-        return calculated_hash == stored_hash
+        # Định dạng chuẩn mới: salt$sha256_hash
+        if "$" in hashed_password and not (hashed_password.startswith("$2b$") or hashed_password.startswith("$2a$")):
+            salt, stored_hash = hashed_password.split("$", 1)
+            calculated_hash = hashlib.sha256((salt + plain_password).encode('utf-8')).hexdigest()
+            return secrets.compare_digest(calculated_hash, stored_hash)
+
+        # Hỗ trợ bcrypt cũ nếu database còn lưu chuỗi $2b$ / $2a$
+        if hashed_password.startswith("$2b$") or hashed_password.startswith("$2a$"):
+            try:
+                import bcrypt
+                return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
+            except Exception:
+                return False
+
+        return False
     except Exception:
         return False
 

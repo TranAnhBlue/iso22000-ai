@@ -6,6 +6,8 @@ from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import desc, func, or_, and_
 
 from app.core.database import get_db
+from app.core.dependencies import require_roles
+from app.modules.auth.models import User
 from app.modules.inventory.models import (
     ProductionBatch,
     BatchMaterialUsage,
@@ -317,7 +319,12 @@ def forward_traceability_mock_recall(
 # 3. QUARANTINE TAINTED STOCK ACTION (KHÓA XUẤT KHO / BIỆT TRỮ KHẨN CẤP)
 # =========================================================================
 @router.post("/quarantine-batch/{batch_number}")
-def quarantine_batch_stock(batch_number: str, reason: str = "Cảnh báo sự cố ATTP", db: Session = Depends(get_db)):
+def quarantine_batch_stock(
+    batch_number: str,
+    reason: str = "Cảnh báo sự cố ATTP",
+    db: Session = Depends(get_db),
+    authorized_user: User = Depends(require_roles("admin", "qa", "warehouse")),
+):
     stocks = db.query(WarehouseInventory).filter(WarehouseInventory.lot_number == batch_number).all()
     if not stocks:
         raise HTTPException(status_code=404, detail=f"Không tìm thấy lô tồn kho nào cho mã mẻ {batch_number}")
@@ -338,7 +345,10 @@ def quarantine_batch_stock(batch_number: str, reason: str = "Cảnh báo sự c�
 # 4. RESET & SEED COMPLETE ISO 22000 TRACEABILITY DEMO DATA
 # =========================================================================
 @router.post("/seed-demo")
-def seed_traceability_demo_data(db: Session = Depends(get_db)):
+def seed_traceability_demo_data(
+    db: Session = Depends(get_db),
+    admin_user: User = Depends(require_roles("admin")),
+):
     today = date.today()
 
     # 1. Đảm bảo có NCC và Lô Nguyên liệu

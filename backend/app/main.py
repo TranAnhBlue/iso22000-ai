@@ -34,18 +34,31 @@ app = FastAPI(
 from fastapi.responses import JSONResponse
 from fastapi.requests import Request
 
+import os
+import logging
+
+logger = logging.getLogger("uvicorn.error")
+
+# Đọc cấu hình origins từ biến môi trường nếu có
+custom_origins = os.getenv("CORS_ORIGINS", "").split(",")
+allowed_origins_list = [
+    "http://localhost:8080",
+    "http://127.0.0.1:8080",
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "https://iso22000-ai.vercel.app",
+]
+for o in custom_origins:
+    cleaned = o.strip()
+    if cleaned and cleaned not in allowed_origins_list:
+        allowed_origins_list.append(cleaned)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:8080",
-        "http://127.0.0.1:8080",
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-        "https://iso22000-ai.vercel.app",
-    ],
-    allow_origin_regex=r"^https?://.*$",
+    allow_origins=allowed_origins_list,
+    allow_origin_regex=r"^https://[a-zA-Z0-9_\-]+\.vercel\.app$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -54,12 +67,18 @@ app.add_middleware(
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
-    origin = request.headers.get("origin", "*")
+    logger.exception(f"[INTERNAL SERVER ERROR] {request.method} {request.url.path}: {exc}")
+    
+    origin = request.headers.get("origin", "")
+    # Trong môi trường production, không để lộ cấu trúc DB hoặc runtime exception
+    is_prod = os.getenv("ENVIRONMENT", "production").lower() == "production"
+    error_msg = "Đã xảy ra lỗi máy chủ nội bộ. Vui lòng thử lại sau." if is_prod else f"Lỗi máy chủ: {str(exc)}"
+
     return JSONResponse(
         status_code=500,
-        content={"detail": f"Lỗi máy chủ: {str(exc)}"},
+        content={"detail": error_msg},
         headers={
-            "Access-Control-Allow-Origin": origin,
+            "Access-Control-Allow-Origin": origin if origin else "*",
             "Access-Control-Allow-Credentials": "true",
             "Access-Control-Allow-Methods": "*",
             "Access-Control-Allow-Headers": "*",

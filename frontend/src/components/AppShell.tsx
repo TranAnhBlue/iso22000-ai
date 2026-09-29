@@ -198,6 +198,16 @@ export function AppShell({ children, module }: { children: ReactNode; module?: M
     }
   }, [navigate]);
 
+  // Quản lý trạng thái đã đọc của thông báo trong localStorage
+  const getReadAlertIds = (): Set<string> => {
+    try {
+      const raw = localStorage.getItem("wcert.read_alerts");
+      return raw ? new Set(JSON.parse(raw)) : new Set();
+    } catch {
+      return new Set();
+    }
+  };
+
   // Tải danh sách thông báo cảnh báo thời gian thực từ CSDL theo vai trò (Role-specific)
   useEffect(() => {
     if (!session) return;
@@ -206,7 +216,9 @@ export function AppShell({ children, module }: { children: ReactNode; module?: M
         const res = await api.get<ExecutiveAlert[]>(`/dashboard/executive-alerts?role=${encodeURIComponent(session.role)}`);
         if (Array.isArray(res.data)) {
           setAlerts(res.data);
-          setUnreadCount(res.data.length);
+          const readIds = getReadAlertIds();
+          const unread = res.data.filter(a => !readIds.has(a.id)).length;
+          setUnreadCount(unread);
         }
       } catch {
         // Không sử dụng mock alert - để mảng rỗng nếu chưa có thông báo từ CSDL
@@ -240,6 +252,12 @@ export function AppShell({ children, module }: { children: ReactNode; module?: M
   };
 
   const handleMarkAllRead = () => {
+    const allIds = alerts.map(a => a.id);
+    const existing = getReadAlertIds();
+    allIds.forEach(id => existing.add(id));
+    try {
+      localStorage.setItem("wcert.read_alerts", JSON.stringify(Array.from(existing)));
+    } catch {}
     setUnreadCount(0);
     toast.success("Đã đánh dấu tất cả thông báo là đã đọc.");
   };
