@@ -367,3 +367,21 @@ class SyncFlowStepsRequest(BaseModel):
 
     model_config = ConfigDict(extra="ignore")
 
+
+class SaveWorkflowAndStepsRequest(BaseModel):
+    workflow: Dict[str, Any] = Field(..., description="Thông tin Workflow Template (code, title, nodes, edges,...)")
+    steps: Optional[List[SyncFlowStepItem]] = Field(default=None, description="Danh sách công đoạn cần đồng bộ (nếu để trống sẽ tự tạo từ workflow.nodes)")
+
+    model_config = ConfigDict(extra="ignore")
+
+
+class SaveWorkflowAndStepsResponse(BaseModel):
+    workflow_id: UUID
+    workflow_code: str
+    workflow_title: str
+    steps: List[ProcessStepResponse]
+    message: str
+
+    model_config = ConfigDict(from_attributes=True)
+
+

@@ -2924,10 +2924,6 @@ function HACCPModule() {
               initialData={currentWorkflowData}
               onSave={async (wf) => {
                 try {
-                  // 1. Lưu sơ đồ workflow template vào hệ thống Dynamic Workflows
-                  await api.post("/builders/workflows", wf);
-
-                  // 2. Đồng bộ công đoạn với Kế hoạch HACCP hiện tại
                   const targetPlanId = selectedPlanId !== "ALL" ? selectedPlanId : (currentPlan?.plan_id || plans[0]?.plan_id);
                   if (targetPlanId) {
                     const stepPayload = wf.nodes.map((n, idx) => ({
@@ -2938,7 +2934,13 @@ function HACCPModule() {
                       is_ccp_or_oprp: !!n.is_ccp,
                       product_line: currentPlan?.product_line || "Chế biến Thủy hải sản",
                     }));
-                    await api.post(`/haccp/plans/${targetPlanId}/sync-flow-steps`, { steps: stepPayload });
+                    // Giao dịch nguyên tử ở backend: Lưu workflow và đồng bộ công đoạn trong 1 request duy nhất
+                    await api.post(`/haccp/plans/${targetPlanId}/save-workflow-and-steps`, {
+                      workflow: wf,
+                      steps: stepPayload,
+                    });
+                  } else {
+                    await api.post("/builders/workflows", wf);
                   }
 
                   toast.success("Đã lưu lưu đồ và đồng bộ danh mục công đoạn HACCP thành công!");

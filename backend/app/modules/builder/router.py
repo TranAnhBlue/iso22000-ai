@@ -137,6 +137,7 @@ def create_form_template(payload: DynamicFormTemplateCreate, db: Session = Depen
         version=payload.version.strip(),
         fields=[f.model_dump() for f in payload.fields],
         status=payload.status,
+        created_by=_user.user_id,
     )
     db.add(new_t)
     db.commit()
@@ -330,6 +331,7 @@ def create_workflow_template(payload: DynamicWorkflowTemplateCreate, db: Session
         nodes=[n.model_dump() for n in payload.nodes],
         edges=[e.model_dump() for e in payload.edges],
         status=payload.status,
+        created_by=_user.user_id,
     )
     db.add(new_w)
     db.commit()
@@ -349,16 +351,27 @@ def update_workflow_template(workflow_id: UUID, payload: DynamicWorkflowTemplate
         w.code = payload.code.strip()
 
     # Thẩm định tính toàn vẹn của đồ thị khi hợp nhất dữ liệu mới với dữ liệu hiện có
-    raw_nodes = [n.model_dump() for n in payload.nodes] if payload.nodes is not None else w.nodes
-    raw_edges = [e.model_dump() for e in payload.edges] if payload.edges is not None else w.edges
-    merged_nodes = [WorkflowNode(**n) for n in raw_nodes]
-    merged_edges = [WorkflowEdge(**e) for e in raw_edges]
+    if payload.nodes is not None:
+        merged_nodes = payload.nodes
+    else:
+        existing_nodes = w.nodes or []
+        merged_nodes = [WorkflowNode.model_validate(n) for n in existing_nodes]
+
+    if payload.edges is not None:
+        merged_edges = payload.edges
+    else:
+        existing_edges = w.edges or []
+        merged_edges = [WorkflowEdge.model_validate(e) for e in existing_edges]
+
+    module_val = str(payload.module if payload.module is not None else w.module)
+    status_val = str(payload.status if payload.status is not None else w.status)
+
     try:
         validate_workflow_structure(
             nodes=merged_nodes,
             edges=merged_edges,
-            module=payload.module or w.module,
-            status=payload.status or w.status,
+            module=module_val,
+            status=status_val,
         )
     except ValueError as ve:
         raise HTTPException(status_code=400, detail=str(ve))
@@ -470,6 +483,102 @@ def get_single_instance(instance_id: UUID, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Không tìm thấy phiên thực thi quy trình")
     return format_instance_out(inst)
 
+def check_user_workflow_permission(
+    user: User,
+    node: Optional[Dict[str, Any]],
+    inst: WorkflowInstance,
+    is_start_node: bool = False,
+) -> tuple[bool, str]:
+    """
+    Kiểm tra xem user có quyền thực hiện hành động trên node hiện tại của workflow hay không.
+    Trả về (is_allowed, reason_if_denied).
+    """
+    user_roles = [str(r.role_code).lower().strip() for r in (user.roles or [])]
+    user_role_names = [str(r.role_name).lower().strip() for r in (user.roles or [])]
+    user_dept = str(user.department or "").lower().strip()
+
+    # 1. Superuser / Admin bypass
+    if "admin" in user_roles:
+        return True, ""
+
+    if not node:
+        if inst.started_by and str(inst.started_by) == str(user.user_id):
+            return True, ""
+        return False, "Node hiện tại không tồn tại trong cấu hình quy trình."
+
+    # 2. Khởi tạo quy trình (start node) cho phép người tạo phiên thực thi
+    if is_start_node and inst.started_by and str(inst.started_by) == str(user.user_id):
+        return True, ""
+
+    required_role = str(node.get("role") or "").strip().lower()
+    required_dept = str(node.get("department") or "").strip().lower()
+
+    # Nếu node không yêu cầu vai trò hoặc áp dụng chung cho mọi nhân viên
+    if not required_role and not required_dept:
+        return True, ""
+
+    if any(kw in required_role for kw in ["mọi nhân viên", "all", "any", "tất cả"]):
+        return True, ""
+
+    # 3. Kiểm tra vai trò
+    role_matched = False
+    if required_role:
+        for ur in user_roles:
+            if ur in required_role or required_role in ur:
+                role_matched = True
+                break
+        if not role_matched:
+            for urn in user_role_names:
+                if urn in required_role or required_role in urn:
+                    role_matched = True
+                    break
+        if not role_matched:
+            synonyms = {
+                "qc": ["qc", "kcs", "kiểm tra", "giám sát", "tiếp nhận"],
+                "qa": ["qa", "qlcl", "quản lý chất lượng", "đảm bảo chất lượng", "iso"],
+                "prod": ["sản xuất", "trưởng ca", "tổ trưởng", "operator", "vận hành", "sơ chế", "đóng gói", "phối trộn"],
+                "warehouse": ["kho", "thủ kho", "vật tư", "logistics"],
+                "fst_leader": ["fst", "attp", "đội trưởng", "an toàn thực phẩm"],
+                "management": ["giám đốc", "ban giám đốc", "lãnh đạo", "director", "manager"],
+                "auditor": ["đánh giá", "auditor", "kiểm toán viên"],
+            }
+            for user_r in user_roles:
+                for syn_key, syn_words in synonyms.items():
+                    if user_r == syn_key or syn_key in user_r:
+                        if any(w in required_role for w in syn_words):
+                            role_matched = True
+                            break
+                    if role_matched:
+                        break
+                if role_matched:
+                    break
+    else:
+        role_matched = True
+
+    # 4. Kiểm tra phòng ban
+    dept_matched = False
+    if required_dept:
+        if user_dept and (user_dept in required_dept or required_dept in user_dept):
+            dept_matched = True
+    else:
+        dept_matched = True
+
+    if required_role and required_dept:
+        if role_matched and dept_matched:
+            return True, ""
+        return False, f"Yêu cầu vai trò '{node.get('role')}' thuộc bộ phận '{node.get('department')}'."
+    elif required_role:
+        if role_matched:
+            return True, ""
+        return False, f"Yêu cầu vai trò '{node.get('role')}'. Vai trò hiện tại của bạn không khớp."
+    elif required_dept:
+        if dept_matched:
+            return True, ""
+        return False, f"Yêu cầu bộ phận '{node.get('department')}'. Bạn thuộc bộ phận '{user.department or 'chưa xác định'}'."
+
+    return True, ""
+
+
 @router.post("/instances/{instance_id}/action", response_model=WorkflowInstanceResponse)
 def advance_workflow_instance(
     instance_id: UUID,
@@ -480,45 +589,111 @@ def advance_workflow_instance(
     """
     Thực hiện hành động chuyển bước, phê duyệt hoặc từ chối trong quy trình.
     action: APPROVE, REJECT, ADVANCE, COMPLETE
+    Bảo vệ nghiêm ngặt:
+    - Kiểm tra role của user trên node hiện tại.
+    - Kiểm tra next_node_id phải là edge đi ra từ node hiện tại.
+    - Ngăn chặn nhảy bước hoặc tự COMPLETE trái phép.
     """
     inst = db.get(WorkflowInstance, instance_id)
     if not inst:
         raise HTTPException(status_code=404, detail="Không tìm thấy phiên thực thi quy trình")
 
-    if inst.status in ["COMPLETED", "CANCELLED"]:
+    if inst.status in ["COMPLETED", "CANCELLED", "REJECTED"]:
         raise HTTPException(status_code=400, detail=f"Phiên thực thi đã kết thúc với trạng thái: {inst.status}")
 
     wf = inst.workflow
-    nodes = wf.nodes if wf else []
-    edges = wf.edges if wf else []
+    nodes = list(wf.nodes or []) if wf and isinstance(wf.nodes, list) else []
+    edges = list(wf.edges or []) if wf and isinstance(wf.edges, list) else []
 
-    current_node = next((n for n in nodes if n.get("id") == inst.current_node_id), None)
-    curr_label = current_node.get("label", inst.current_node_id) if current_node else inst.current_node_id
+    current_node = next((n for n in nodes if str(n.get("id")) == str(inst.current_node_id)), None)
+    curr_label = current_node.get("label", inst.current_node_id) if current_node else str(inst.current_node_id)
+    is_start = bool(current_node and (current_node.get("type") == "start" or (nodes and str(current_node.get("id")) == str(nodes[0].get("id")))))
+    is_end = bool(current_node and current_node.get("type") == "end")
 
+    # 1. Kiểm tra vai trò của người dùng trên node hiện tại
+    can_act, reason = check_user_workflow_permission(current_user, current_node, inst, is_start_node=is_start)
+    if not can_act:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Quyền truy cập bị từ chối: {reason}",
+        )
+
+    # 2. Kiểm tra action thuộc APPROVE | REJECT | ADVANCE | COMPLETE
     action_type = payload.action.upper().strip()
-    next_node_id = payload.next_node_id
+    ALLOWED_ACTIONS = {"APPROVE", "REJECT", "ADVANCE", "COMPLETE"}
+    if action_type not in ALLOWED_ACTIONS:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Hành động '{payload.action}' không hợp lệ. Chỉ chấp nhận: {', '.join(sorted(ALLOWED_ACTIONS))}",
+        )
 
-    # Nếu không chỉ định next_node_id và hành động là ADVANCE/APPROVE, tự động tìm theo edges
-    if not next_node_id and action_type in ["APPROVE", "ADVANCE"]:
-        outgoing_edges = [e for e in edges if e.get("source") == inst.current_node_id]
-        if outgoing_edges:
-            next_node_id = outgoing_edges[0].get("target")
+    user_roles = [str(r.role_code).lower().strip() for r in (current_user.roles or [])]
+    is_admin = "admin" in user_roles
 
-    # Xác định trạng thái mới và node mới
+    # 3. Kiểm tra liên kết đi ra (outgoing edges) từ node hiện tại
+    outgoing_edges = [e for e in edges if str(e.get("source")) == str(inst.current_node_id)]
+    allowed_target_ids = {str(e.get("target")) for e in outgoing_edges if e.get("target")}
+
+    next_node_id = str(payload.next_node_id).strip() if payload.next_node_id else None
+
+    if action_type in ["APPROVE", "ADVANCE"]:
+        if next_node_id:
+            if next_node_id not in allowed_target_ids:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Không thể chuyển tới bước '{next_node_id}'. Đây không phải liên kết đi ra hợp lệ từ bước hiện tại '{curr_label}'. Các bước hợp lệ: {', '.join(sorted(allowed_target_ids)) if allowed_target_ids else 'Không có'}",
+                )
+        else:
+            if outgoing_edges:
+                next_node_id = str(outgoing_edges[0].get("target"))
+            elif is_end:
+                next_node_id = None
+            else:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Không có bước tiếp theo hợp lệ từ bước hiện tại '{curr_label}'.",
+                )
+
+    elif action_type == "REJECT":
+        if next_node_id:
+            raw_history = inst.history if isinstance(inst.history, list) else []
+            history_nodes = {str(h.get("from_node_id")) for h in raw_history if h.get("from_node_id")}
+            if next_node_id not in allowed_target_ids and next_node_id not in history_nodes:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Không thể chuyển tới bước '{next_node_id}' khi từ chối. Bước này không nằm trong luồng liên kết đi ra hoặc lịch sử các bước trước đó.",
+                )
+
+    elif action_type == "COMPLETE":
+        has_end_target = any(
+            str(e.get("target")) in {str(n.get("id")) for n in nodes if n.get("type") == "end"}
+            for e in outgoing_edges
+        )
+        if not (is_end or is_admin or (next_node_id and next_node_id in allowed_target_ids and any(str(n.get("id")) == next_node_id and n.get("type") == "end" for n in nodes)) or has_end_target):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Không thể tự hoàn tất (COMPLETE) quy trình từ bước '{curr_label}'. Bạn phải thực hiện tuần tự qua các bước công đoạn và chỉ hoàn tất khi kết thúc luồng quy trình.",
+            )
+        if not next_node_id and has_end_target:
+            end_edges = [e for e in outgoing_edges if any(str(n.get("id")) == str(e.get("target")) and n.get("type") == "end" for n in nodes)]
+            if end_edges:
+                next_node_id = str(end_edges[0].get("target"))
+
+    # 4. Xác định trạng thái mới
     new_status = inst.status
-    if action_type == "COMPLETE" or (next_node_id and any(n.get("id") == next_node_id and n.get("type") == "end" for n in nodes)):
+    if action_type == "COMPLETE" or is_end or (next_node_id and any(str(n.get("id")) == next_node_id and n.get("type") == "end" for n in nodes)):
         new_status = "COMPLETED"
     elif action_type == "REJECT" and not next_node_id:
         new_status = "REJECTED"
 
-    next_node = next((n for n in nodes if n.get("id") == next_node_id), None) if next_node_id else None
+    next_node = next((n for n in nodes if str(n.get("id")) == str(next_node_id)), None) if next_node_id else None
 
-    # Ghi nhận lịch sử chuyển bước
+    # 5. Ghi nhận lịch sử chuyển bước
     hist_entry = {
         "from_node_id": inst.current_node_id,
         "from_node_label": curr_label,
         "to_node_id": next_node_id,
-        "to_node_label": next_node.get("label") if next_node else None,
+        "to_node_label": next_node.get("label") if next_node else ("Hoàn tất quy trình" if new_status == "COMPLETED" else "Kết thúc từ chối"),
         "action": action_type,
         "action_by": current_user.full_name or "Nhân viên",
         "action_by_id": str(current_user.user_id),
@@ -526,7 +701,7 @@ def advance_workflow_instance(
         "comments": payload.comments or f"Hành động {action_type}",
     }
 
-    current_history = list(inst.history or [])
+    current_history = list(inst.history) if isinstance(inst.history, list) else []
     current_history.append(hist_entry)
 
     inst.history = current_history

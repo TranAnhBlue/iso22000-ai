@@ -50,7 +50,12 @@ from app.modules.haccp.schemas import (
     HACCPPlanReviewResponse,
     SyncFlowStepsRequest,
     SyncFlowStepItem,
+    SaveWorkflowAndStepsRequest,
+    SaveWorkflowAndStepsResponse,
 )
+from app.modules.builder.models import DynamicWorkflowTemplate
+from app.modules.builder.schemas import WorkflowNode, WorkflowEdge, validate_workflow_structure
+from app.core.dependencies import require_roles
 
 router = APIRouter(prefix="/haccp", tags=["HACCP, CCP & PRP Management"])
 
@@ -988,6 +993,169 @@ def sync_plan_flow_steps(plan_id: UUID, payload: SyncFlowStepsRequest, db: Sessi
         db.refresh(s)
 
     return [format_step_out(s) for s in result_steps]
+
+
+@router.post("/plans/{plan_id}/save-workflow-and-steps", response_model=SaveWorkflowAndStepsResponse)
+def save_workflow_and_sync_steps_atomic(
+    plan_id: UUID,
+    payload: SaveWorkflowAndStepsRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "fst_leader")),
+):
+    """
+    Lưu đồ quy trình workflow và đồng bộ công đoạn HACCP trong MỘT giao dịch (transaction) nguyên tử duy nhất.
+    Đảm bảo workflow template và process-step không bao giờ bị lệch dữ liệu khi có sự cố.
+    """
+    plan = db.get(HACCPPlan, plan_id)
+    if not plan:
+        raise HTTPException(status_code=404, detail="Không tìm thấy kế hoạch HACCP")
+
+    wf_raw = payload.workflow
+    wf_code = str(wf_raw.get("code") or f"WF-HACCP-{str(plan_id)[:8]}").strip()
+    wf_title = str(wf_raw.get("title") or f"Lưu đồ Quy trình HACCP - {plan.plan_name}").strip()
+    wf_desc = wf_raw.get("description") or f"Lưu đồ quy trình sản xuất đồng bộ cho kế hoạch HACCP '{plan.plan_name}'."
+    wf_module = str(wf_raw.get("module") or "HACCP_FLOW").strip().upper()
+    wf_version = str(wf_raw.get("version") or "1.0").strip()
+
+    raw_nodes = wf_raw.get("nodes") or []
+    raw_edges = wf_raw.get("edges") or []
+
+    # 1. Thẩm định tính toàn vẹn của đồ thị workflow (không cycle, start/end hợp lệ, kết nối đầy đủ)
+    try:
+        typed_nodes = [WorkflowNode.model_validate(n) for n in raw_nodes]
+        typed_edges = [WorkflowEdge.model_validate(e) for e in raw_edges]
+        validate_workflow_structure(
+            nodes=typed_nodes,
+            edges=typed_edges,
+            module=wf_module,
+            status="ACTIVE",
+        )
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Cấu trúc lưu đồ workflow không hợp lệ: {str(e)}")
+
+    import re
+
+    # Bắt đầu giao dịch nguyên tử
+    try:
+        # A. Upsert Workflow Template
+        wf = db.scalar(select(DynamicWorkflowTemplate).where(DynamicWorkflowTemplate.code == wf_code))
+        if wf:
+            wf.title = wf_title
+            wf.description = wf_desc
+            wf.version = wf_version
+            wf.module = wf_module
+            wf.nodes = [n.model_dump() for n in typed_nodes]
+            wf.edges = [e.model_dump() for e in typed_edges]
+            wf.status = "ACTIVE"
+            wf.updated_at = datetime.now(timezone.utc)
+        else:
+            wf = DynamicWorkflowTemplate(
+                module=wf_module,
+                code=wf_code,
+                title=wf_title,
+                description=wf_desc,
+                version=wf_version,
+                nodes=[n.model_dump() for n in typed_nodes],
+                edges=[e.model_dump() for e in typed_edges],
+                status="ACTIVE",
+                created_by=current_user.user_id,
+            )
+            db.add(wf)
+        db.flush()
+
+        # B. Đồng bộ ProcessStep
+        current_steps = db.scalars(
+            select(ProcessStep).where(ProcessStep.plan_id == plan_id).order_by(ProcessStep.step_number.asc())
+        ).all()
+        current_step_map = {str(s.step_id): s for s in current_steps}
+
+        steps_to_sync = payload.steps
+        if steps_to_sync is None:
+            # Tự động suy ra từ typed_nodes
+            steps_to_sync = []
+            for idx, n in enumerate(typed_nodes, start=1):
+                clean_name = re.sub(r"^\d+[\.\:\-]\s*", "", n.label).strip() or n.label
+                cfg = n.config or {}
+                steps_to_sync.append(
+                    SyncFlowStepItem(
+                        step_id=n.id if len(n.id) == 36 else None,
+                        step_number=idx,
+                        step_name=clean_name,
+                        product_line=plan.product_line or "Chế biến Thủy hải sản",
+                        description=str(cfg.get("description") or ""),
+                        is_ccp_or_oprp=bool(cfg.get("is_ccp")),
+                    )
+                )
+
+        kept_step_ids = set()
+        result_steps = []
+
+        for idx, item in enumerate(steps_to_sync, start=1):
+            raw_name = (item.step_name or "").strip()
+            clean_name = re.sub(r"^\d+[\.\:\-]\s*", "", raw_name).strip() or raw_name or f"Công đoạn {idx}"
+
+            matched_step = None
+            if item.step_id:
+                matched_step = current_step_map.get(str(item.step_id))
+
+            if not matched_step:
+                for s in current_steps:
+                    if str(s.step_id) not in kept_step_ids and s.step_name.strip().lower() == clean_name.lower():
+                        matched_step = s
+                        break
+
+            if matched_step:
+                matched_step.step_number = idx
+                matched_step.step_name = clean_name
+                if item.description is not None:
+                    matched_step.description = item.description
+                if item.is_ccp_or_oprp is not None:
+                    matched_step.is_ccp_or_oprp = bool(item.is_ccp_or_oprp)
+                if item.product_line:
+                    matched_step.product_line = item.product_line
+                kept_step_ids.add(str(matched_step.step_id))
+                result_steps.append(matched_step)
+            else:
+                new_step = ProcessStep(
+                    plan_id=plan_id,
+                    step_number=idx,
+                    step_name=clean_name,
+                    product_line=item.product_line or plan.product_line or "Chế biến Thủy hải sản",
+                    description=item.description or "",
+                    is_ccp_or_oprp=bool(item.is_ccp_or_oprp),
+                )
+                db.add(new_step)
+                db.flush()
+                kept_step_ids.add(str(new_step.step_id))
+                result_steps.append(new_step)
+
+        # Xóa các công đoạn không còn trong sơ đồ
+        for s in current_steps:
+            if str(s.step_id) not in kept_step_ids:
+                db.delete(s)
+
+        # C. Commit toàn bộ giao dịch nguyên tử
+        db.commit()
+        db.refresh(wf)
+        for s in result_steps:
+            db.refresh(s)
+
+        return SaveWorkflowAndStepsResponse(
+            workflow_id=wf.workflow_id,
+            workflow_code=wf.code,
+            workflow_title=wf.title,
+            steps=[format_step_out(s) for s in result_steps],
+            message="Đã lưu sơ đồ quy trình và đồng bộ danh mục công đoạn HACCP thành công trong một giao dịch nguyên tử.",
+        )
+    except HTTPException:
+        db.rollback()
+        raise
+    except Exception as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Lỗi khi thực hiện giao dịch lưu workflow và công đoạn: {str(exc)}",
+        )
 
 
 # ==================== 3. HAZARD ANALYSIS CRUD ====================

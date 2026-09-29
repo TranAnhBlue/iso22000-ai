@@ -1,7 +1,7 @@
 from typing import Optional, List, Dict, Any
 from uuid import UUID
 from datetime import datetime
-from pydantic import BaseModel, Field, ConfigDict, model_validator
+from pydantic import BaseModel, Field, ConfigDict, model_validator, field_validator
 
 # ==================== 1. FORM BUILDER SCHEMAS ====================
 class FormFieldDefinition(BaseModel):
@@ -109,41 +109,43 @@ def validate_workflow_structure(
     if not nodes:
         raise ValueError("Quy trình phải chứa ít nhất 1 node công đoạn.")
 
-    node_ids = set()
+    node_ids: set[str] = set()
     for idx, node in enumerate(nodes):
-        if not node.id or not str(node.id).strip():
+        if not node.id or not node.id.strip():
             raise ValueError(f"Node tại vị trí {idx + 1} không có ID hợp lệ.")
-        node_id_clean = str(node.id).strip()
+        node_id_clean = node.id.strip()
         if node_id_clean in node_ids:
             raise ValueError(f"Trùng lặp node ID: '{node_id_clean}'. Mỗi bước công đoạn phải có mã duy nhất.")
         node_ids.add(node_id_clean)
 
-        if not node.label or not str(node.label).strip():
+        if not node.label or not node.label.strip():
             raise ValueError(f"Node '{node_id_clean}' chưa có tên bước công đoạn (label).")
 
         if node.type:
-            node_type_clean = str(node.type).strip().lower()
+            node_type_clean = node.type.strip().lower()
             if node_type_clean not in VALID_NODE_TYPES:
                 raise ValueError(f"Loại node '{node.type}' tại bước '{node_id_clean}' không hợp lệ. Các loại cho phép: {', '.join(sorted(VALID_NODE_TYPES))}")
 
         if node.step_number is not None and node.step_number < 1:
             raise ValueError(f"Số thứ tự bước (step_number) của node '{node_id_clean}' phải là số nguyên dương (>= 1).")
 
-        if node.role is not None and not str(node.role).strip():
+        if node.role is not None and not node.role.strip():
             raise ValueError(f"Vai trò phụ trách (role) của node '{node_id_clean}' không được để trống.")
 
-    edge_ids = set()
-    edge_pairs = set()
+    edge_ids: set[str] = set()
+    edge_pairs: set[tuple[str, str]] = set()
+    adj: Dict[str, List[str]] = {nid: [] for nid in node_ids}
+
     for idx, edge in enumerate(edges):
-        if not edge.id or not str(edge.id).strip():
+        if not edge.id or not edge.id.strip():
             raise ValueError(f"Đường liên kết tại vị trí {idx + 1} không có ID hợp lệ.")
-        edge_id_clean = str(edge.id).strip()
+        edge_id_clean = edge.id.strip()
         if edge_id_clean in edge_ids:
             raise ValueError(f"Trùng lặp mã liên kết (edge ID): '{edge_id_clean}'.")
         edge_ids.add(edge_id_clean)
 
-        src = str(edge.source).strip()
-        tgt = str(edge.target).strip()
+        src = edge.source.strip()
+        tgt = edge.target.strip()
 
         if src not in node_ids:
             raise ValueError(f"Liên kết '{edge_id_clean}' có điểm bắt đầu (source='{src}') không tồn tại trong danh sách node.")
@@ -157,6 +159,68 @@ def validate_workflow_structure(
         if pair in edge_pairs:
             raise ValueError(f"Đã tồn tại đường liên kết từ node '{src}' tới node '{tgt}'. Không được khai báo trùng lặp.")
         edge_pairs.add(pair)
+        adj[src].append(tgt)
+
+    # 1. Kiểm tra chu trình có hướng (Directed cycle detection via DFS coloring)
+    visited_state: Dict[str, int] = {}  # 0: unvisited, 1: visiting, 2: visited
+    def dfs_cycle(u: str, path: List[str]) -> Optional[List[str]]:
+        visited_state[u] = 1
+        for v in adj.get(u, []):
+            if visited_state.get(v, 0) == 1:
+                idx = path.index(v) if v in path else 0
+                return path[idx:] + [v]
+            elif visited_state.get(v, 0) == 0:
+                cycle_found = dfs_cycle(v, path + [v])
+                if cycle_found:
+                    return cycle_found
+        visited_state[u] = 2
+        return None
+
+    for nid in node_ids:
+        if visited_state.get(nid, 0) == 0:
+            cycle = dfs_cycle(nid, [nid])
+            if cycle:
+                cycle_str = " -> ".join(cycle)
+                raise ValueError(f"Quy trình bị vòng lặp vô hạn (cycle: {cycle_str}). Các bước phê duyệt/công đoạn phải tiến triển một chiều đến kết thúc.")
+
+    # 2. Kiểm tra tính toàn vẹn điểm bắt đầu (Start) và kết thúc (End) khi quy trình có liên kết
+    if len(nodes) >= 2 and edges:
+        start_nodes = [n for n in nodes if (n.type or "").strip().lower() in ["start", "startnode"]]
+        end_nodes = [n for n in nodes if (n.type or "").strip().lower() in ["end", "endnode"]]
+
+        if start_nodes:
+            start_ids = {n.id.strip() for n in start_nodes}
+        else:
+            in_degrees = {nid: 0 for nid in node_ids}
+            for edge in edges:
+                in_degrees[edge.target.strip()] = in_degrees.get(edge.target.strip(), 0) + 1
+            start_ids = {nid for nid, deg in in_degrees.items() if deg == 0}
+
+        if end_nodes:
+            end_ids = {n.id.strip() for n in end_nodes}
+        else:
+            end_ids = {nid for nid, tgts in adj.items() if len(tgts) == 0}
+
+        if not start_ids:
+            raise ValueError("Quy trình không có điểm bắt đầu (start node) hợp lệ.")
+        if not end_ids:
+            raise ValueError("Quy trình không có điểm kết thúc (end node) hợp lệ.")
+
+        # Kiểm tra tính tới được (reachability): Từ ít nhất một điểm bắt đầu phải đến được điểm kết thúc
+        reachable_nodes: set[str] = set()
+        queue = list(start_ids)
+        visited_nodes = set(queue)
+        while queue:
+            curr = queue.pop(0)
+            reachable_nodes.add(curr)
+            for nxt in adj.get(curr, []):
+                if nxt not in visited_nodes:
+                    visited_nodes.add(nxt)
+                    queue.append(nxt)
+
+        if not (end_ids & reachable_nodes):
+            raise ValueError("Không tìm thấy đường đi hoàn chỉnh từ điểm bắt đầu (start) đến điểm kết thúc (end). Quy trình không thể hoàn tất.")
+
 
 
 class WorkflowNode(BaseModel):
@@ -240,10 +304,20 @@ class WorkflowInstanceCreate(BaseModel):
     reference_type: Optional[str] = None
     initial_node_id: Optional[str] = None
 
+ALLOWED_WORKFLOW_ACTIONS = {"APPROVE", "REJECT", "ADVANCE", "COMPLETE"}
+
 class WorkflowInstanceAction(BaseModel):
     action: str = Field(..., description="APPROVE, REJECT, ADVANCE, COMPLETE")
     next_node_id: Optional[str] = None
     comments: Optional[str] = None
+
+    @field_validator("action")
+    @classmethod
+    def validate_action(cls, v: str) -> str:
+        act = v.strip().upper()
+        if act not in ALLOWED_WORKFLOW_ACTIONS:
+            raise ValueError(f"Hành động '{v}' không hợp lệ. Phải thuộc một trong các hành động: {', '.join(sorted(ALLOWED_WORKFLOW_ACTIONS))}")
+        return act
 
 class WorkflowInstanceResponse(BaseModel):
     instance_id: UUID

@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from typing import List, Dict, Any, Optional
-from datetime import datetime, date, timedelta
+from datetime import datetime, date, timedelta, timezone
 import uuid
 
 from app.core.database import get_db
@@ -295,9 +295,27 @@ def get_executive_alerts(
 ):
     """
     Tổng hợp danh mục cảnh báo khẩn cấp realtime phân luồng thông minh theo từng Role nghiệp vụ.
+    Suy ra role từ current_user thực tế để ngăn chặn giả mạo quyền truy cập qua query string.
     """
     alerts: List[ExecutiveAlertItem] = []
-    user_role = (role or "").lower()
+    
+    # Xác thực vai trò thực tế của người dùng từ CSDL token
+    user_roles = [str(r.role_code).lower().strip() for r in current_user.roles]
+    user_dept = str(current_user.department or "").lower().strip()
+    is_admin = "admin" in user_roles
+    is_management = is_admin or any(r in ["management", "qa_qc_manager", "ban giám đốc", "quản trị hệ thống", "qa"] for r in user_roles)
+
+    # Chỉ Admin/Management mới có quyền xem toàn bộ hoặc lọc theo role khác qua query string.
+    # Người dùng thông thường bắt buộc nhận danh sách cảnh báo theo đúng quyền hạn/phòng ban thực tế của mình.
+    requested_role = (role or "").lower().strip()
+    if is_management:
+        effective_role = requested_role
+    else:
+        effective_role = ""
+        for candidate in ["maintenance", "production", "warehouse", "logistics", "purchasing", "hr", "qc", "staff"]:
+            if any(candidate in r for r in user_roles) or candidate in user_dept:
+                effective_role = candidate
+                break
 
     # 1. Critical & Major NCs (Clause 10.2) -> Tất cả, đặc biệt QA, Ban Giám Đốc, Sản xuất
     open_ncs = db.query(NonConformance).filter(NonConformance.status.in_(["OPEN", "INVESTIGATING"])).all()
@@ -411,21 +429,24 @@ def get_executive_alerts(
     for a in alerts:
         a.is_read = a.alert_id in read_ids
 
-    # Lọc thông minh theo Role nếu người dùng yêu cầu phân luồng
-    if user_role in ["maintenance", "equipment"]:
+    # Lọc thông minh theo Role thực tế sau khi đã xác thực
+    if any(k in effective_role for k in ["maintenance", "equipment", "bảo trì"]):
         filtered = [a for a in alerts if a.category in ["EQUIPMENT", "CCP", "QUARANTINE", "CAPA"]]
         return filtered if filtered else alerts[:4]
-    elif user_role in ["production"]:
+    elif any(k in effective_role for k in ["production", "sản xuất"]):
         filtered = [a for a in alerts if a.category in ["CCP", "QUARANTINE", "HEALTH", "CAPA", "EQUIPMENT"]]
         return filtered if filtered else alerts[:4]
-    elif user_role in ["sales_logistics", "sales", "warehouse"]:
+    elif any(k in effective_role for k in ["warehouse", "kho", "logistics", "sales"]):
         filtered = [a for a in alerts if a.category in ["QUARANTINE", "SUPPLIER", "CAPA"]]
         return filtered if filtered else alerts[:4]
-    elif user_role in ["hr_accounting", "admin_acct"]:
+    elif any(k in effective_role for k in ["hr", "nhân sự", "y tế", "admin_acct"]):
         filtered = [a for a in alerts if a.category in ["HEALTH", "AUDIT", "DOCUMENT"]]
         return filtered if filtered else alerts[:4]
-    elif user_role in ["purchasing", "pur"]:
+    elif any(k in effective_role for k in ["purchasing", "thu mua", "pur"]):
         filtered = [a for a in alerts if a.category in ["SUPPLIER", "QUARANTINE", "CAPA"]]
+        return filtered if filtered else alerts[:4]
+    elif not is_management and effective_role:
+        filtered = [a for a in alerts if a.category in ["HEALTH", "CAPA", "CCP"]]
         return filtered if filtered else alerts[:4]
 
     return alerts
