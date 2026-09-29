@@ -682,7 +682,7 @@ def ai_audit_readiness_forecast(payload: AuditReadinessForecastRequest, db: Sess
         top_critical_risks=top_risks,
         strengths_identified=strengths,
         immediate_remediation_plan=immediate_plan,
-        forecast_generated_at=datetime.utcnow().strftime("%d/%m/%Y %H:%M:%S UTC"),
+        forecast_generated_at=datetime.now(timezone.utc).strftime("%d/%m/%Y %H:%M:%S UTC"),
     )
 
 

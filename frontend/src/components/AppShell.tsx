@@ -217,7 +217,7 @@ export function AppShell({ children, module }: { children: ReactNode; module?: M
         if (Array.isArray(res.data)) {
           setAlerts(res.data);
           const readIds = getReadAlertIds();
-          const unread = res.data.filter(a => !readIds.has(a.id)).length;
+          const unread = res.data.filter((a) => !readIds.has(a.alert_id || a.title)).length;
           setUnreadCount(unread);
         }
       } catch {
@@ -252,7 +252,7 @@ export function AppShell({ children, module }: { children: ReactNode; module?: M
   };
 
   const handleMarkAllRead = () => {
-    const allIds = alerts.map(a => a.id);
+    const allIds = alerts.map((a) => a.alert_id || a.title);
     const existing = getReadAlertIds();
     allIds.forEach(id => existing.add(id));
     try {

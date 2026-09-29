@@ -120,12 +120,12 @@ class DynamicWorkflowTemplateBase(BaseModel):
         
         node_ids = set()
         for idx, node in enumerate(self.nodes):
-            if not node.id or not str(node.id).strip():
+            if not node.id or not node.id.strip():
                 raise ValueError(f"Node tại vị trí {idx + 1} không có ID hợp lệ.")
             if node.id in node_ids:
                 raise ValueError(f"Trùng lặp node ID: {node.id}")
             node_ids.add(node.id)
-            if not node.label or not str(node.label).strip():
+            if not node.label or not node.label.strip():
                 raise ValueError(f"Node {node.id} chưa có tên bước công đoạn (label).")
 
         for edge in self.edges:
@@ -151,7 +151,7 @@ class DynamicWorkflowTemplateUpdate(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
 class DynamicWorkflowTemplateResponse(DynamicWorkflowTemplateBase):
-    workflow_id: UUID
+    workflow_id: Optional[Union[UUID, str]] = None
     created_by: Optional[UUID] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None

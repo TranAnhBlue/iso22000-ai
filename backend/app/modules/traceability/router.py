@@ -274,7 +274,7 @@ def forward_traceability_mock_recall(
     
     batches = db.query(ProductionBatch).filter(ProductionBatch.batch_id.in_(batch_ids)).all() if batch_ids else []
     affected_batch_numbers = [str(b.batch_number) for b in batches]
-    total_prod_qty = sum(float(b.actual_quantity or 0.0) for b in batches)
+    total_prod_qty = sum(float(getattr(b, "actual_quantity", 0.0) or 0.0) for b in batches)
 
     # 3. Tìm tồn kho thành phẩm tương ứng
     stocks = db.query(WarehouseInventory).filter(
@@ -301,7 +301,7 @@ def forward_traceability_mock_recall(
         risk_level = "LOW"
 
     return MockRecallResponse(
-        material_lot_number=str(lot_code),
+        material_lot_number=lot_code,
         material_name=str(material_name),
         supplier_name=str(supplier_name),
         affected_batches=affected_batch_numbers,

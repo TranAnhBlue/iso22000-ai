@@ -30,58 +30,59 @@ router = APIRouter()
 
 
 # ==================== HELPER FORMATTERS ====================
-def format_nc_out(nc: NonConformance) -> NonConformanceResponse:
-    capa_count = len(nc.capa_records) if nc.capa_records else 0
+def format_nc_out(nc: Any) -> NonConformanceResponse:
+    capa_records = getattr(nc, "capa_records", []) or []
+    capa_count = len(capa_records)
     return NonConformanceResponse(
         nc_id=nc.nc_id,
-        nc_number=nc.nc_number,
-        title=nc.title,
-        source=nc.source,
-        severity=nc.severity,
+        nc_number=str(nc.nc_number),
+        title=str(nc.title),
+        source=str(nc.source),
+        severity=str(nc.severity),
         occurred_date=nc.occurred_date,
-        occurred_location=nc.occurred_location,
-        description=nc.description,
-        immediate_action=nc.immediate_action,
-        affected_lot_number=nc.affected_lot_number,
-        affected_quantity=nc.affected_quantity,
+        occurred_location=str(nc.occurred_location) if nc.occurred_location else None,
+        description=str(nc.description),
+        immediate_action=str(nc.immediate_action) if nc.immediate_action else None,
+        affected_lot_number=str(nc.affected_lot_number) if nc.affected_lot_number else None,
+        affected_quantity=str(nc.affected_quantity) if nc.affected_quantity else None,
         reported_by=nc.reported_by,
-        reported_by_name=nc.reported_by_name or "KCS Ca sản xuất",
-        status=nc.status,
+        reported_by_name=str(nc.reported_by_name or "KCS Ca sản xuất"),
+        status=str(nc.status),
         created_at=nc.created_at,
         updated_at=nc.updated_at,
         capa_count=capa_count,
     )
 
 
-def format_capa_out(c: CAPARecord) -> CAPARecordResponse:
+def format_capa_out(c: Any) -> CAPARecordResponse:
     nc = getattr(c, "non_conformance", None)
     return CAPARecordResponse(
         capa_id=c.capa_id,
-        capa_number=c.capa_number,
+        capa_number=str(c.capa_number),
         nc_id=c.nc_id,
-        title=c.title,
-        root_cause_method=c.root_cause_method,
-        root_cause_analysis=c.root_cause_analysis,
-        root_cause_summary=c.root_cause_summary,
-        corrective_action=c.corrective_action,
-        preventive_action=c.preventive_action,
+        title=str(c.title),
+        root_cause_method=str(c.root_cause_method),
+        root_cause_analysis=c.root_cause_analysis if isinstance(c.root_cause_analysis, dict) else {},
+        root_cause_summary=str(c.root_cause_summary) if c.root_cause_summary else None,
+        corrective_action=str(c.corrective_action),
+        preventive_action=str(c.preventive_action) if c.preventive_action else None,
         assigned_to=c.assigned_to,
-        assigned_to_name=c.assigned_to_name or "Trưởng bộ phận",
-        assigned_dept=c.assigned_dept or "Phòng Sản xuất",
+        assigned_to_name=str(c.assigned_to_name or "Trưởng bộ phận"),
+        assigned_dept=str(c.assigned_dept or "Phòng Sản xuất"),
         target_date=c.target_date,
         completed_date=c.completed_date,
         verified_by=c.verified_by,
-        verified_by_name=c.verified_by_name,
+        verified_by_name=str(c.verified_by_name) if c.verified_by_name else None,
         verification_date=c.verification_date,
-        verification_result=c.verification_result,
-        verification_status=c.verification_status,
-        status=c.status,
-        evidence_urls=c.evidence_urls or [],
+        verification_result=str(c.verification_result) if c.verification_result else None,
+        verification_status=str(c.verification_status),
+        status=str(c.status),
+        evidence_urls=list(c.evidence_urls or []),
         created_at=c.created_at,
         updated_at=c.updated_at,
-        nc_number=nc.nc_number if nc else None,
-        nc_title=nc.title if nc else None,
-        nc_severity=nc.severity if nc else None,
+        nc_number=str(nc.nc_number) if nc else None,
+        nc_title=str(nc.title) if nc else None,
+        nc_severity=str(nc.severity) if nc else None,
     )
 
 
@@ -300,8 +301,8 @@ def create_capa_record(payload: CAPARecordCreate, db: Session = Depends(get_db))
     db.add(new_capa)
 
     # Cập nhật trạng thái NC sang ACTION_REQUIRED nếu đang là NEW
-    if nc.status == "NEW":
-        nc.status = "ACTION_REQUIRED"
+    if getattr(nc, "status", None) == "NEW":
+        setattr(nc, "status", "ACTION_REQUIRED")
 
     db.commit()
     db.refresh(new_capa)
@@ -381,7 +382,7 @@ def verify_capa_record(capa_id: UUID, payload: CAPAVerifyRequest, db: Session = 
                 )
             )
             if not other_open or other_open == 0:
-                nc.status = "CLOSED"
+                setattr(nc, "status", "CLOSED")
     else:
         c.status = "IN_PROGRESS"  # Tái mở yêu cầu xử lý lại
 

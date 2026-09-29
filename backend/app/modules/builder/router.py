@@ -185,9 +185,9 @@ def get_form_submissions(
                 submitted_by=str(s.submitted_by) if s.submitted_by else None,
                 submitted_by_name=str(s.submitted_by_name) if s.submitted_by_name else None,
                 form_data=dict(s.form_data or {}),
-                score=float(s.score) if s.score is not None else None,
+                score=float(getattr(s, "score", 0.0) or 0.0) if getattr(s, "score", None) is not None else None,
                 status=str(s.status),
-                created_at=s.created_at,
+                created_at=getattr(s, "created_at", None),
                 template_title=str(t.title) if t and getattr(t, "title", None) else None,
                 template_code=str(t.code) if t and getattr(t, "code", None) else None,
             )
@@ -244,9 +244,9 @@ def submit_form_data(payload: DynamicFormSubmissionCreate, db: Session = Depends
         submitted_by=str(new_sub.submitted_by) if new_sub.submitted_by else None,
         submitted_by_name=str(new_sub.submitted_by_name) if new_sub.submitted_by_name else None,
         form_data=dict(new_sub.form_data or {}),
-        score=float(new_sub.score) if new_sub.score is not None else None,
+        score=float(getattr(new_sub, "score", 0.0) or 0.0) if getattr(new_sub, "score", None) is not None else None,
         status=str(new_sub.status),
-        created_at=new_sub.created_at,
+        created_at=getattr(new_sub, "created_at", None),
         template_title=str(t.title),
         template_code=str(t.code),
     )
