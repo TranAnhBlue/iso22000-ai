@@ -144,6 +144,12 @@ MIGRATION_STATEMENTS = [
     "ALTER TABLE order_dispatches ADD COLUMN IF NOT EXISTS notes TEXT;",
 
     # Phase 6 / Luồng 15: Vehicle Inspections (BM01-PTVC 5 tiêu chí gốc)
+    "ALTER TABLE vehicle_inspections ADD COLUMN IF NOT EXISTS customer_name VARCHAR(255);",
+    "ALTER TABLE vehicle_inspections ADD COLUMN IF NOT EXISTS vehicle_type VARCHAR(100) DEFAULT 'Xe tải thùng kín';",
+    "ALTER TABLE vehicle_inspections ADD COLUMN IF NOT EXISTS transport_company VARCHAR(255) DEFAULT 'Đội xe Công ty';",
+    "ALTER TABLE vehicle_inspections ADD COLUMN IF NOT EXISTS driver_phone VARCHAR(50);",
+    "ALTER TABLE vehicle_inspections ADD COLUMN IF NOT EXISTS corrective_action TEXT;",
+    "ALTER TABLE vehicle_inspections ADD COLUMN IF NOT EXISTS notes TEXT;",
     "ALTER TABLE vehicle_inspections ADD COLUMN IF NOT EXISTS valid_registration_check BOOLEAN DEFAULT TRUE;",
     "ALTER TABLE vehicle_inspections ADD COLUMN IF NOT EXISTS cargo_integrity_check BOOLEAN DEFAULT TRUE;",
     "ALTER TABLE vehicle_inspections ADD COLUMN IF NOT EXISTS clean_dry_check BOOLEAN DEFAULT TRUE;",
@@ -342,8 +348,501 @@ MIGRATION_STATEMENTS = [
         read_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
         PRIMARY KEY (user_id, alert_id)
     );
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS metal_detector_logs (
+        log_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        machine_code VARCHAR(50) NOT NULL DEFAULT 'MD-01',
+        machine_name VARCHAR(100) NOT NULL DEFAULT 'Máy dò kim loại băng tải',
+        log_date DATE NOT NULL DEFAULT CURRENT_DATE,
+        check_time VARCHAR(20) NOT NULL,
+        shift_name VARCHAR(50) NOT NULL DEFAULT 'Ca 1',
+        batch_number VARCHAR(100) NOT NULL,
+        product_name VARCHAR(255) NOT NULL,
+        fe_standard_mm NUMERIC(4, 2) NOT NULL DEFAULT 0.50,
+        fe_detected BOOLEAN NOT NULL DEFAULT TRUE,
+        sus_standard_mm NUMERIC(4, 2) NOT NULL DEFAULT 0.80,
+        sus_detected BOOLEAN NOT NULL DEFAULT TRUE,
+        rejection_mechanism_working BOOLEAN NOT NULL DEFAULT TRUE,
+        metal_detected_count INTEGER NOT NULL DEFAULT 0,
+        test_result VARCHAR(30) NOT NULL DEFAULT 'PASSED',
+        corrective_action TEXT,
+        checked_by_name VARCHAR(100) NOT NULL,
+        verified_by_name VARCHAR(100),
+        notes TEXT,
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+    );
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS in_process_qc_logs (
+        log_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        inspection_code VARCHAR(50) UNIQUE NOT NULL,
+        stage_code VARCHAR(50) NOT NULL,
+        stage_name VARCHAR(150) NOT NULL,
+        log_date DATE NOT NULL DEFAULT CURRENT_DATE,
+        check_time VARCHAR(20) NOT NULL,
+        shift_name VARCHAR(50) NOT NULL DEFAULT 'Ca 1',
+        batch_number VARCHAR(100) NOT NULL,
+        product_name VARCHAR(255) NOT NULL,
+        criteria_data JSONB NOT NULL,
+        overall_status VARCHAR(30) NOT NULL DEFAULT 'PASS',
+        deviations TEXT,
+        corrective_actions TEXT,
+        inspector_name VARCHAR(100) NOT NULL,
+        supervisor_name VARCHAR(100),
+        notes TEXT,
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+    );
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS training_requests (
+        request_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        request_code VARCHAR(50) UNIQUE NOT NULL,
+        department VARCHAR(100) NOT NULL,
+        proposer_name VARCHAR(100) NOT NULL,
+        course_name VARCHAR(255) NOT NULL,
+        training_reason TEXT NOT NULL,
+        expected_duration VARCHAR(50) NOT NULL DEFAULT '0.5 ngày',
+        attendee_count INTEGER NOT NULL DEFAULT 1,
+        target_participants TEXT NOT NULL,
+        expected_outcomes TEXT NOT NULL,
+        request_date DATE NOT NULL DEFAULT CURRENT_DATE,
+        status VARCHAR(50) NOT NULL DEFAULT 'SUBMITTED',
+        approver_name VARCHAR(100),
+        approval_date DATE,
+        approval_note TEXT,
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+    );
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS training_evaluations (
+        evaluation_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        course_id UUID REFERENCES training_courses(course_id) ON DELETE SET NULL,
+        employee_code VARCHAR(50) NOT NULL,
+        employee_name VARCHAR(100) NOT NULL,
+        department VARCHAR(100) NOT NULL,
+        evaluator_name VARCHAR(100) NOT NULL,
+        evaluation_date DATE NOT NULL DEFAULT CURRENT_DATE,
+        knowledge_score INTEGER NOT NULL DEFAULT 4,
+        skill_application_score INTEGER NOT NULL DEFAULT 4,
+        attitude_awareness_score INTEGER NOT NULL DEFAULT 5,
+        overall_rating VARCHAR(30) NOT NULL DEFAULT 'DAT',
+        supervisor_feedback TEXT,
+        need_retraining BOOLEAN NOT NULL DEFAULT FALSE,
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+    );
+    """,
+    # Phase An Giang: Pest Control Logs (BM01-SVGH)
+    """
+    CREATE TABLE IF NOT EXISTS pest_control_logs (
+        log_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        log_code VARCHAR(50) UNIQUE NOT NULL,
+        check_date DATE NOT NULL DEFAULT CURRENT_DATE,
+        inspector_name VARCHAR(100) NOT NULL,
+        trap_locations JSONB NOT NULL DEFAULT '[]'::jsonb,
+        total_pests_caught INTEGER NOT NULL DEFAULT 0,
+        corrective_actions TEXT,
+        status VARCHAR(30) NOT NULL DEFAULT 'COMPLETED',
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+    );
+    """,
+    # Phase An Giang: Allergen Controls (BM01-CGDU)
+    """
+    CREATE TABLE IF NOT EXISTS allergen_controls (
+        allergen_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        allergen_code VARCHAR(50) UNIQUE NOT NULL,
+        material_name VARCHAR(255) NOT NULL,
+        allergen_types VARCHAR(255) NOT NULL,
+        is_contained_in_product BOOLEAN NOT NULL DEFAULT TRUE,
+        cross_contact_risk_stage TEXT,
+        preventive_measures TEXT NOT NULL,
+        responsible_person VARCHAR(100) NOT NULL,
+        status VARCHAR(30) NOT NULL DEFAULT 'ACTIVE',
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+    );
+    """,
+    # Phase An Giang: Visitor Health Declarations (BM03-KSSK)
+    """
+    CREATE TABLE IF NOT EXISTS visitor_health_declarations (
+        declaration_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        declaration_code VARCHAR(50) UNIQUE NOT NULL,
+        visit_date DATE NOT NULL DEFAULT CURRENT_DATE,
+        visitor_name VARCHAR(100) NOT NULL,
+        company_name VARCHAR(150) NOT NULL,
+        purpose_of_visit VARCHAR(255) NOT NULL,
+        has_diarrhea BOOLEAN NOT NULL DEFAULT FALSE,
+        has_fever_cough BOOLEAN NOT NULL DEFAULT FALSE,
+        has_open_wound BOOLEAN NOT NULL DEFAULT FALSE,
+        visited_epidemic_area BOOLEAN NOT NULL DEFAULT FALSE,
+        is_approved_entry BOOLEAN NOT NULL DEFAULT TRUE,
+        escort_person VARCHAR(100),
+        commitment_signed BOOLEAN NOT NULL DEFAULT TRUE,
+        notes TEXT,
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+    );
+    """,
+    # Phase An Giang: First Aid Cabinet Logs (BM01-KSSK)
+    """
+    CREATE TABLE IF NOT EXISTS first_aid_logs (
+        log_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        log_code VARCHAR(50) UNIQUE NOT NULL,
+        issue_date DATE NOT NULL DEFAULT CURRENT_DATE,
+        recipient_name VARCHAR(100) NOT NULL,
+        department VARCHAR(100) NOT NULL,
+        reason_symptom TEXT NOT NULL,
+        supplies_provided TEXT NOT NULL,
+        quantity INTEGER NOT NULL DEFAULT 1,
+        dispenser_name VARCHAR(100) NOT NULL,
+        status_after_aid VARCHAR(100) NOT NULL DEFAULT 'Tiếp tục làm việc',
+        notes TEXT,
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+    );
+    """,
+    # Phase An Giang: Vehicle Inspection Logs (BM01-PTVC)
+    """
+    CREATE TABLE IF NOT EXISTS vehicle_inspection_logs (
+        inspection_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        inspection_code VARCHAR(50) UNIQUE NOT NULL,
+        inspection_date DATE NOT NULL DEFAULT CURRENT_DATE,
+        customer_name VARCHAR(255) NOT NULL,
+        vehicle_type VARCHAR(100) NOT NULL,
+        license_plate VARCHAR(50) NOT NULL,
+        driver_name VARCHAR(100) NOT NULL,
+        check_registration_valid BOOLEAN NOT NULL DEFAULT TRUE,
+        check_clean_floor BOOLEAN NOT NULL DEFAULT TRUE,
+        check_no_odor BOOLEAN NOT NULL DEFAULT TRUE,
+        check_no_pests BOOLEAN NOT NULL DEFAULT TRUE,
+        check_enclosed_tarp BOOLEAN NOT NULL DEFAULT TRUE,
+        overall_result VARCHAR(30) NOT NULL DEFAULT 'PASSED',
+        inspector_name VARCHAR(100) NOT NULL,
+        corrective_action TEXT,
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+    );
+    """,
+    # ==================== 15. DOCUMENT CONTROL EXTENSIONS (QT-KSTL AN GIANG) ====================
+    """
+    ALTER TABLE documents
+    ADD COLUMN IF NOT EXISTS review_due_date DATE,
+    ADD COLUMN IF NOT EXISTS drafter_name VARCHAR(150),
+    ADD COLUMN IF NOT EXISTS reviewer_name VARCHAR(150),
+    ADD COLUMN IF NOT EXISTS security_level VARCHAR(50) DEFAULT 'INTERNAL',
+    ADD COLUMN IF NOT EXISTS review_frequency_years INTEGER DEFAULT 3,
+    ADD COLUMN IF NOT EXISTS last_reviewed_date DATE;
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS document_change_requests (
+        request_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        request_code VARCHAR(50) UNIQUE NOT NULL,
+        document_id UUID REFERENCES documents(document_id) ON DELETE SET NULL,
+        doc_code VARCHAR(50) NOT NULL,
+        doc_title VARCHAR(255) NOT NULL,
+        change_type VARCHAR(30) NOT NULL DEFAULT 'REVISION',
+        department VARCHAR(100) NOT NULL,
+        requested_by UUID REFERENCES users(user_id) ON DELETE SET NULL,
+        requested_by_name VARCHAR(150) NOT NULL,
+        request_date DATE NOT NULL,
+        reason TEXT NOT NULL,
+        proposed_content TEXT,
+        target_completion_date DATE,
+        assigned_drafter VARCHAR(150),
+        dept_head_opinion VARCHAR(50),
+        dept_head_comment TEXT,
+        dept_head_signed_at TIMESTAMPTZ,
+        dept_head_signer_name VARCHAR(150),
+        qa_head_opinion VARCHAR(50),
+        qa_head_comment TEXT,
+        qa_head_signed_at TIMESTAMPTZ,
+        qa_head_signer_name VARCHAR(150),
+        director_approval VARCHAR(50),
+        director_comment TEXT,
+        director_signed_at TIMESTAMPTZ,
+        director_signer_name VARCHAR(150),
+        status VARCHAR(30) NOT NULL DEFAULT 'SUBMITTED',
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+    );
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS document_distributions (
+        distribution_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        notice_code VARCHAR(50) NOT NULL,
+        document_id UUID REFERENCES documents(document_id) ON DELETE CASCADE,
+        doc_code VARCHAR(50) NOT NULL,
+        doc_title VARCHAR(255) NOT NULL,
+        version VARCHAR(20) NOT NULL DEFAULT '1.0',
+        effective_date DATE NOT NULL,
+        change_summary TEXT,
+        department_recipient VARCHAR(100) NOT NULL,
+        recipient_user_id UUID REFERENCES users(user_id) ON DELETE SET NULL,
+        distribution_method VARCHAR(50) NOT NULL DEFAULT 'PORTAL',
+        copy_number INTEGER NOT NULL DEFAULT 1,
+        distributed_by_name VARCHAR(150) NOT NULL,
+        distribution_date DATE NOT NULL,
+        acknowledged BOOLEAN NOT NULL DEFAULT FALSE,
+        acknowledged_by_name VARCHAR(150),
+        acknowledged_at TIMESTAMPTZ,
+        obsolete_copy_retrieved BOOLEAN NOT NULL DEFAULT FALSE,
+        retrieval_date DATE,
+        notes TEXT,
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+    );
+    """,
+    """
+    ALTER TABLE document_distributions
+    ADD COLUMN IF NOT EXISTS recipient_user_id UUID REFERENCES users(user_id);
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS external_documents (
+        external_doc_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        doc_code VARCHAR(100) UNIQUE NOT NULL,
+        doc_title VARCHAR(255) NOT NULL,
+        category VARCHAR(50) NOT NULL DEFAULT 'LAW_REGULATION',
+        issuing_body VARCHAR(150) NOT NULL,
+        published_date DATE,
+        effective_date DATE,
+        status VARCHAR(30) NOT NULL DEFAULT 'EFFECTIVE',
+        superseded_by VARCHAR(100),
+        department_in_charge VARCHAR(100) NOT NULL DEFAULT 'Ban QLCL & ATTP',
+        review_frequency VARCHAR(50) NOT NULL DEFAULT 'ANNUAL',
+        last_checked_date DATE,
+        checked_by_name VARCHAR(150),
+        file_url TEXT,
+        notes TEXT,
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+    );
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS metal_detector_logs (
+        log_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        machine_code VARCHAR(50) NOT NULL DEFAULT 'MD-01',
+        machine_name VARCHAR(100) NOT NULL DEFAULT 'Máy dò kim loại băng tải',
+        log_date DATE NOT NULL,
+        check_time TIME WITHOUT TIME ZONE NOT NULL,
+        shift_name VARCHAR(50) NOT NULL DEFAULT 'Ca 1',
+        batch_number VARCHAR(100) NOT NULL,
+        product_name VARCHAR(255) NOT NULL,
+        fe_standard_mm NUMERIC(4,2) NOT NULL DEFAULT 0.50,
+        fe_detected BOOLEAN NOT NULL DEFAULT TRUE,
+        sus_standard_mm NUMERIC(4,2) NOT NULL DEFAULT 0.80,
+        sus_detected BOOLEAN NOT NULL DEFAULT TRUE,
+        rejection_mechanism_working BOOLEAN NOT NULL DEFAULT TRUE,
+        test_result VARCHAR(30) NOT NULL DEFAULT 'PASSED',
+        deviation_notes TEXT,
+        corrective_action TEXT,
+        inspector_name VARCHAR(150) NOT NULL,
+        supervisor_signature VARCHAR(150),
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+    );
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS in_process_qc_logs (
+        log_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        stage_name VARCHAR(100) NOT NULL,
+        stage_code VARCHAR(50) NOT NULL,
+        log_date DATE NOT NULL,
+        check_time TIME WITHOUT TIME ZONE NOT NULL,
+        batch_number VARCHAR(100) NOT NULL,
+        product_name VARCHAR(255) NOT NULL,
+        temperature_c NUMERIC(5,2),
+        moisture_percent NUMERIC(5,2),
+        particle_size_mm NUMERIC(6,3),
+        uniformity_check BOOLEAN DEFAULT TRUE,
+        sensory_check VARCHAR(50) DEFAULT 'PASS',
+        parameters JSONB,
+        inspection_result VARCHAR(30) NOT NULL DEFAULT 'PASSED',
+        corrective_action TEXT,
+        inspector_name VARCHAR(150) NOT NULL,
+        supervisor_signature VARCHAR(150),
+        notes TEXT,
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+    );
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS training_requests (
+        request_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        request_code VARCHAR(50) NOT NULL,
+        department_name VARCHAR(100) NOT NULL,
+        requested_by_name VARCHAR(150) NOT NULL,
+        request_date DATE NOT NULL,
+        course_title VARCHAR(255) NOT NULL,
+        training_purpose TEXT NOT NULL,
+        target_audience VARCHAR(255) NOT NULL,
+        proposed_trainer VARCHAR(150),
+        estimated_participants INTEGER NOT NULL DEFAULT 1,
+        proposed_date DATE,
+        estimated_budget NUMERIC(15,2) DEFAULT 0,
+        status VARCHAR(30) NOT NULL DEFAULT 'PENDING',
+        approval_comment TEXT,
+        approved_by_name VARCHAR(150),
+        approved_at TIMESTAMPTZ,
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+    );
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS training_evaluations (
+        evaluation_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        evaluation_code VARCHAR(50) NOT NULL,
+        course_id UUID REFERENCES training_courses(course_id) ON DELETE SET NULL,
+        course_title VARCHAR(255) NOT NULL,
+        participant_name VARCHAR(150) NOT NULL,
+        department_name VARCHAR(100) NOT NULL,
+        evaluation_date DATE NOT NULL,
+        evaluated_by_name VARCHAR(150) NOT NULL,
+        post_training_score NUMERIC(5,2),
+        work_application_rating INTEGER DEFAULT 4,
+        productivity_impact_rating INTEGER DEFAULT 4,
+        error_reduction_rating INTEGER DEFAULT 4,
+        overall_effectiveness VARCHAR(50) NOT NULL DEFAULT 'EFFECTIVE',
+        supervisor_comment TEXT,
+        follow_up_recommendation TEXT,
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+    );
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS records_retention (
+        retention_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        record_code VARCHAR(50) UNIQUE NOT NULL,
+        record_name VARCHAR(255) NOT NULL,
+        department VARCHAR(100) NOT NULL,
+        storage_location VARCHAR(255) NOT NULL,
+        retention_period VARCHAR(100) NOT NULL DEFAULT '02 năm',
+        disposal_method VARCHAR(255) DEFAULT 'Hủy bằng máy cắt vụn & Xóa file số',
+        responsible_person VARCHAR(150),
+        status VARCHAR(30) NOT NULL DEFAULT 'RETAINED',
+        disposal_date DATE,
+        disposal_council VARCHAR(255),
+        disposal_minutes_code VARCHAR(100),
+        notes TEXT,
+        is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+    );
+    """,
+    """
+    ALTER TABLE records_retention
+    ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
+    ADD COLUMN IF NOT EXISTS creation_date DATE DEFAULT CURRENT_DATE,
+    ADD COLUMN IF NOT EXISTS retention_expiry_date DATE;
+    """,
+    """
+    DO $$
+    BEGIN
+        IF NOT EXISTS (
+            SELECT 1 FROM pg_constraint WHERE conname = 'uq_records_retention_record_code'
+        ) THEN
+            ALTER TABLE records_retention ADD CONSTRAINT uq_records_retention_record_code UNIQUE (record_code);
+        END IF;
+    END $$;
+    """,
+    # Builder template approval & history columns
+    """
+    ALTER TABLE dynamic_form_templates
+    ADD COLUMN IF NOT EXISTS is_approved BOOLEAN NOT NULL DEFAULT TRUE,
+    ADD COLUMN IF NOT EXISTS approved_by_name VARCHAR(100) DEFAULT 'Quản trị hệ thống',
+    ADD COLUMN IF NOT EXISTS approved_at TIMESTAMPTZ,
+    ADD COLUMN IF NOT EXISTS change_history JSONB DEFAULT '[]'::jsonb;
+    """,
+    """
+    ALTER TABLE dynamic_workflow_templates
+    ADD COLUMN IF NOT EXISTS is_approved BOOLEAN NOT NULL DEFAULT TRUE,
+    ADD COLUMN IF NOT EXISTS approved_by_name VARCHAR(100) DEFAULT 'Quản trị hệ thống',
+    ADD COLUMN IF NOT EXISTS approved_at TIMESTAMPTZ,
+    ADD COLUMN IF NOT EXISTS change_history JSONB DEFAULT '[]'::jsonb;
+    """,
+    # Audit Logs
+    """
+    CREATE TABLE IF NOT EXISTS audit_logs (
+        log_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID REFERENCES users(user_id) ON DELETE SET NULL,
+        username VARCHAR(50) NOT NULL,
+        action VARCHAR(100) NOT NULL,
+        entity_type VARCHAR(50) NOT NULL,
+        entity_id VARCHAR(100),
+        details JSONB,
+        ip_address VARCHAR(50) DEFAULT '127.0.0.1',
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+    );
+    """,
+    # Water Safety Records (BM01-SSOP-NUOC)
+    """
+    CREATE TABLE IF NOT EXISTS water_safety_records (
+        record_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        record_code VARCHAR(50) UNIQUE NOT NULL,
+        sampling_point VARCHAR(255) NOT NULL,
+        sampling_date DATE NOT NULL DEFAULT CURRENT_DATE,
+        sampling_time VARCHAR(20) NOT NULL DEFAULT '07:00',
+        ph_level NUMERIC(4, 2) NOT NULL DEFAULT 7.2,
+        chlorine_ppm NUMERIC(4, 2) NOT NULL DEFAULT 0.5,
+        turbidity_ntu NUMERIC(4, 2) NOT NULL DEFAULT 0.5,
+        sensory_result VARCHAR(100) NOT NULL DEFAULT 'Trong suốt, không màu, không mùi vị lạ',
+        coliform_cfu NUMERIC(6, 2) DEFAULT 0.0,
+        e_coli_cfu NUMERIC(6, 2) DEFAULT 0.0,
+        overall_status VARCHAR(30) NOT NULL DEFAULT 'PASS',
+        tested_by_name VARCHAR(100) NOT NULL DEFAULT 'Kỹ thuật Cơ điện',
+        verified_by_name VARCHAR(100),
+        corrective_action TEXT,
+        notes TEXT,
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+    );
+    """,
+    # Chemical Records (BM01-SSOP-HOACHAT)
+    """
+    CREATE TABLE IF NOT EXISTS chemical_records (
+        chemical_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        chemical_code VARCHAR(50) UNIQUE NOT NULL,
+        chemical_name VARCHAR(255) NOT NULL,
+        purpose VARCHAR(255) NOT NULL,
+        is_food_grade BOOLEAN NOT NULL DEFAULT TRUE,
+        supplier_name VARCHAR(255) NOT NULL,
+        msds_document_url VARCHAR(500),
+        msds_file_name VARCHAR(255),
+        msds_expiry_date DATE,
+        dilution_ratio VARCHAR(100) NOT NULL DEFAULT '1:1000',
+        storage_location VARCHAR(255) NOT NULL DEFAULT 'Kho hóa chất riêng biệt có khóa',
+        approval_status VARCHAR(30) NOT NULL DEFAULT 'APPROVED',
+        current_stock_kg NUMERIC(10, 2) NOT NULL DEFAULT 50.0,
+        safety_instructions TEXT,
+        approved_by VARCHAR(100) DEFAULT 'Trưởng Đội ATTP',
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+    );
+    """,
+    # Waste Logs (BM01-SSOP-RACTHAI)
+    """
+    CREATE TABLE IF NOT EXISTS waste_logs (
+        waste_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        log_code VARCHAR(50) UNIQUE NOT NULL,
+        log_date DATE NOT NULL DEFAULT CURRENT_DATE,
+        waste_type VARCHAR(50) NOT NULL DEFAULT 'ORGANIC_BYPRODUCT',
+        description VARCHAR(255) NOT NULL,
+        quantity_kg NUMERIC(10, 2) NOT NULL,
+        storage_area VARCHAR(150) NOT NULL DEFAULT 'Nhà chứa phụ phẩm khép kín',
+        disposal_contractor VARCHAR(255) NOT NULL DEFAULT 'Nhà máy Bột cá An Giang',
+        transfer_note_code VARCHAR(100),
+        status VARCHAR(30) NOT NULL DEFAULT 'TRANSFERRED',
+        handled_by_name VARCHAR(100) NOT NULL DEFAULT 'Tổ Vệ sinh Môi trường',
+        notes TEXT,
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+    );
+    """,
+    # Environmental Monitoring Schedules
+    """
+    CREATE TABLE IF NOT EXISTS environmental_monitoring_schedules (
+        schedule_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        item_code VARCHAR(50) UNIQUE NOT NULL,
+        target_object VARCHAR(150) NOT NULL,
+        parameters VARCHAR(255) NOT NULL,
+        frequency VARCHAR(50) NOT NULL DEFAULT '1 tháng/lần',
+        testing_unit VARCHAR(255) NOT NULL DEFAULT 'Trung tâm Kiểm nghiệm Pasteur / Quatest',
+        last_tested_date DATE,
+        next_due_date DATE NOT NULL,
+        status VARCHAR(30) NOT NULL DEFAULT 'SCHEDULED',
+        last_result VARCHAR(50) DEFAULT 'PASSED',
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+    );
     """
 ]
+
 
 
 def run_migrations():

@@ -112,7 +112,7 @@ def update_change_request(
     change_id: uuid.UUID,
     payload: ChangeRequestUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles("admin", "qa", "fst_leader", "management", "manager")),
+    current_user: User = Depends(require_roles("admin", "qa", "fst_leader", "fs_team_leader", "management", "manager", "production", "technical")),
 ):
     cr = db.query(ChangeRequest).filter(ChangeRequest.change_id == change_id).first()
     if not cr:
@@ -136,14 +136,48 @@ def update_change_request_status(
     if not cr:
         raise HTTPException(status_code=404, detail="Không tìm thấy phiếu yêu cầu thay đổi")
 
-    cr.review_status = payload.status
-    if payload.status == "APPROVED":
-        cr.approved_by_name = payload.actor_name or "Ban Giám Đốc / QA Manager"
+    current_status = cr.review_status or "DRAFT"
+    target_status = payload.status
+
+    if target_status == current_status:
+        return format_change_request(cr)
+
+    allowed_next = VALID_TRANSITIONS.get(current_status, [])
+    is_admin = check_user_has_roles(current_user, ["admin"])
+    if target_status not in allowed_next and not is_admin:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Chuyển đổi trạng thái không hợp lệ: không thể chuyển từ '{current_status}' sang '{target_status}'. Luồng chuẩn: DRAFT -> UNDER_REVIEW -> APPROVED -> IMPLEMENTED.",
+        )
+
+    required_roles = ROLE_REQUIREMENTS_PER_STATUS.get(target_status, [])
+    if required_roles and not check_user_has_roles(current_user, required_roles):
+        raise HTTPException(
+            status_code=403,
+            detail=f"Bạn không có quyền chuyển trạng thái sang '{target_status}'. Yêu cầu vai trò: {', '.join(required_roles)}.",
+        )
+
+    actor_display = current_user.full_name or current_user.username
+    cr.review_status = target_status
+
+    if target_status == "APPROVED":
+        cr.approved_by_name = actor_display
         cr.approval_date = date.today()
-    elif payload.status == "IMPLEMENTED":
+        if payload.note:
+            cr.verification_result = payload.note
+    elif target_status == "REJECTED":
+        cr.approved_by_name = actor_display
+        cr.approval_date = date.today()
+        if payload.note:
+            cr.verification_result = f"Từ chối phê duyệt: {payload.note}"
+    elif target_status == "IMPLEMENTED":
         cr.implementation_date = date.today()
-        if payload.actor_name:
-            cr.verified_by_name = payload.actor_name
+        cr.verified_by_name = actor_display
+        if not cr.approved_by_name:
+            cr.approved_by_name = actor_display
+            cr.approval_date = date.today()
+        if payload.note:
+            cr.verification_result = payload.note
 
     db.commit()
     db.refresh(cr)
@@ -161,3 +195,38 @@ def delete_change_request(
     db.delete(cr)
     db.commit()
     return {"message": "Đã xóa phiếu yêu cầu thay đổi thành công"}
+
+
+@router.post("/requests/{change_id}/verify-effectiveness", response_model=ChangeRequestResponse)
+def verify_change_effectiveness(
+    change_id: uuid.UUID,
+    is_effective: bool = Query(..., description="Xác nhận thay đổi có hiệu lực và an toàn thực phẩm được duy trì"),
+    effectiveness_notes: str = Query(..., description="Chi tiết kết quả thẩm tra hiệu lực sau triển khai"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "fst_leader", "fs_team_leader")),
+):
+    """
+    Xác nhận hiệu lực sau khi triển khai thay đổi (ISO 22000:2018 Clause 8.5.4 & 8.6)
+    Đánh giá lại xem thay đổi có gây ảnh hưởng tiêu cực đến CCP, oPRP hoặc cần tái thẩm tra kế hoạch HACCP không.
+    """
+    cr = db.query(ChangeRequest).filter(ChangeRequest.change_id == change_id).first()
+    if not cr:
+        raise HTTPException(status_code=404, detail="Không tìm thấy phiếu yêu cầu thay đổi")
+
+    if cr.review_status != "IMPLEMENTED":
+        raise HTTPException(
+            status_code=400,
+            detail=f"Chỉ có thể xác nhận hiệu lực sau khi thay đổi đã được áp dụng vào thực tế (Trạng thái hiện tại: '{cr.review_status}', cần là 'IMPLEMENTED').",
+        )
+
+    actor = current_user.full_name or current_user.username
+    today_str = date.today().strftime("%d/%m/%Y")
+    status_label = "ĐẠT HIỆU LỰC (EFFECTIVE)" if is_effective else "KHÔNG ĐẠT (CẦN MỞ CAPA)"
+    cr.verified_by_name = actor
+    cr.verification_result = (
+        f"[{status_label} - Ngày {today_str} bởi {actor}]: {effectiveness_notes}"
+    )
+
+    db.commit()
+    db.refresh(cr)
+    return format_change_request(cr)

@@ -1,0 +1,218 @@
+CÔNG TY ...
+
+
+
+
+QUY TRÌNH
+KIỂM SOÁT SỰ KHÔNG PHÙ HỢP 
+
+Số hiệu          : QT - SKPH  
+Số soát xét	: 00
+Ngày hiệu lực	: …  
+
+Người soạn thảo
+Người phê duyệt
+Chức vụ
+Kế toán 
+Giám đốc
+Xác nhận
+
+
+Họ và tên
+
+
+	
+Lịch sử sửa đổi tài liệu
+Stt
+Nội dung sửa đổi
+Ngày sửa đổi
+Số soát xét
+Ngày hiệu lực
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+QUY TRÌNH:
+Mục đích:
+Quy định một cách thống nhất trách nhiệm và phương pháp kiểm soát sự không phù hợp và hành động khắc phục, phòng ngừa nhằm giải quyết những vấn đề tồn tại, tiềm ẩn trong quá trình sản xuất và thực hiện hệ thống quản lý chất lượng, an toàn thực phẩm, an toàn lao động, môi trường.
+Phạm vi áp dụng:
+Áp dụng cho tất cả các quá trình liên quan đến hệ thống Quản lý chất lượng, an toàn thực phẩm, an toàn lao động, môi trường của Công ty.
+Tài liệu liên quan: 
+Tiêu chuẩn ISO 9000:2015;  ISO 22000:2018 
+Các tài liệu của công ty.
+Định nghĩa/chữ viết tắt:
+4.1. Định nghĩa: 
+Sản phẩm: là kết quả của một quá trình sản xuất sản phẩm dự kiến cung cấp cho khách hàng.
+Bán thành phẩm: là kết quả của một hoạt động trong quá trình sản xuất sản phẩm dự kiến cung cấp cho hoạt động sau đó.
+Sự không phù hợp: là sự không đáp ứng yêu cầu đã được đề ra theo tiêu chuẩn, theo quy trình, quy định đã ban hành. Yêu cầu được hiểu như sau:
+Yêu cầu từ ban lãnh đạo công ty đã công bố như chính sách, mục tiêu...
+Yêu cầu từ thủ tục, quy trình, quy định của công ty
+Yêu cầu của khách hàng
+Yêu cầu pháp lý có liên quan
+Sự khắc phục: là hành động được thực hiện nhằm lọai bỏ sự không phù hợp.
+Hành động khắc phục: là hành động được thực hiện để loại bỏ nguyên nhân của sự không phù hơp. Hành động khắc phục được tiến hành để ngăn ngừa sự không phù hợp tái diễn.
+Hành động phòng ngừa: là bất kỳ hành động nào được thực hiện để loại bỏ nguyên nhân của sự không phù hơp tiềm tàng hay các tình trạng không mong muốn tiềm tàng khác. Hành động phòng ngừa được tiến hành để ngăn chặn sự không phù hợp xảy ra.
+4.2. Chữ viết tắt 
+SP: Sản phẩm.
+KPH: Không phù hợp.
+KP/PN: Khắc phục/phòng ngừa.
+QLCL & ATTP: Quản lý chất lượng và an toàn thực phẩm.
+CAR: Correctiv Action Request - Phiếu yêu cầu hành động khắc phục/ phòng ngừa.
+Nội dung.
+5.1. Kiểm soát sự không phù hợp 
+5.1.2. Lưu đồ:
+Bước
+Trách nhiệm
+Lưu đồ các bước thực hiện
+Hồ sơ
+1
+Đơn vị/người phát hiện sự KPH
+ SHAPE  \* MERGEFORMAT 
+
+2
+Đơn vị phát hiện sự KPH
+BM01-SKPH
+3
+Đơn vị thực hiện hành động KP - PN
+BM01-SKPH
+4
+Đơn vị phát hành phiếu CAR xem xét
+Trưởng ban QLCL & ATTP xem xét
+Phê duyệt
+BM01-SKPH
+5
+Đơn vị thực hiện
+
+6
+Đơn vị phát hành phiếu CAR
+BM01-SKPH
+7
+Trưởng ban QLCL & ATTP
+BM01-SKPH
+8
+Các đơn vị liên quan
+Trưởng ban QLCL & ATTP
+BM01-SKPH
+BM02-SKPH
+5.1.3. Diễn giải lưu đồ:
+Bước 1: Sự không phù hợp được phát hiện
+Khi những sự việc không phù hợp so với các quy định, quy trình liên quan đến hoạt động sản xuất, kinh doanh cũng như các hoạt động liên quan đến chất lượng, an toàn thực phẩm, an toàn lao động, môi trường…được phát hiện, công ty sẽ tiến hành các hành động khắc phục/phòng ngừa.
+Các trường hợp phải thực hiện khắc phục:
+Khi phát hiện sản phẩm không phù hợp
+Khi có khiếu nại của khách hàng liên quan đến chất lượng sản phẩm, an toàn thực phẩm
+Khi xảy ra các sự cố về tai nạn lao động, sự cố môi trường, sự cố cháy nổ
+Khi mục tiêu chất lượng đặt ra nhưng không đạt, cần phải thiết lập hành động khắc phục
+Khi có các cuộc đánh giá nội bộ phát hiện sự không phù hợp (áp dụng theo quy trình đánh giá nôi bộ)
+Các cuộc đánh giá của các tổ chức bên ngoài: Đánh giá của các tổ chức chứng nhận, đánh giá của khách hàng, hoặc của cơ quan nhà nước phát hiện sự không phù hợp
+Khi phát hiện không tuân thủ các quy trình, quy định của công ty mà có thể dẫn đến những rủi ro làm ảnh hưởng nghiêm trọng đến hoạt động của hệ thống, có thể dẫn đến sự vi phạm các yêu cầu của luật pháp và chính sách chất lượng
+Các trường hợp phải thực hiện phòng ngừa:
+Khi xảy ra sự không phù hợp
+Khi tại các đơn vị khác ngoài công ty đã xảy ra sự không phù hợp mà xét thấy sự không phù hợp này cần thiết phải rút kinh nghiệm cho đơn vị mình/công ty thì phải thiết lập các hành động phòng ngừa cho đơn vị mình/công ty
+Khi có những khuyến cáo, kiến nghị từ các cơ quan chuyên môn, khách hàng, các chuyên gia kỹ thuật
+Khi có các ý kiến đề xuất cải tiến hệ thống chất lượng
+Khi các kết quả đánh giá rủi ro về an toàn thực phẩm, môi trường, an toàn lao động cho thấy các rủi ro này có thể xảy ra nhưng chưa được nhận diện, đánh giá, phân tích cũng như chưa có biện pháp kiểm soát
+Khi các cuộc đánh giá nội bộ/bên ngoài đưa ra các khuyến cáo về những sự không phù hợp có thể xảy ra và vượt ngưỡng hoặc vượt chuẩn theo quy định cho phép
+Bước 2: Phát hành phiếu yêu cầu hành động khắc phục - phòng ngừa (CAR)
+Căn cứ vào các sự việc nêu trên các đơn vị/người phát hiện sự không phù hợp tiến hành lập biên bản sự việc (BM01 - SPKH) (nếu cần) và phát hành phiếu CAR theo biểu mẫu “Phiếu yêu cầu hành động KP/ PN (BM01 - SKPH)” gửi đến đơn vị có liên quan đến sự KPH để thực hiện hành động khắc phục phòng ngừa. Đồng thời đơn vị phát hiện sự không phù hợp báo cáo đến trưởng ban QLCL & ATTP. Thực hiện theo dõi tình trạng phiếu CAR và cập nhật vào biểu mẫu “Sổ theo dõi sự KPH (BM02 - SKPH)” để tiến hành phân tích xu hướng cũng như mức độ gia tăng của sự KPH.
+Tại mục mô tả vấn đề trong phiếu CAR, đơn vị phát hành phiếu CAR phải nêu rõ vấn đề không phù hợp là gì, không phù hợp với yêu cầu nào (chính sách, tiêu chuẩn, quy định, luật định…) giúp đơn vị thực hiện hành động KP/PN nắm bắt để xem xét, phê duyệt và thực hiện.  
+Bước 3: Phân tích nguyên nhân, đề xuất hành động khắc phục - phòng ngừa (CAR)
+	Đơn vị thực hiện hành động KP - PN sự không phù hợp, tiến hành phân tích nguyên nhân gây ra sự không phù hợp, ghi rõ nguyên nhân và đề xuất hành động khắc phục phòng ngừa vào phiếu CAR (BM01 - SKPH) để trưởng đơn vị xem xét và phân công người thực hiện cũng như tiến độ thực hiện.
+Bước 4: Xem xét - phê duyệt hành động khắc phục/ phòng ngừa (CAR)
+Xem xét hành động KP/PN:
+	Các nguyên nhân và hành động KP/PN phải được xem xét lại bởi trưởng đơn vị ban hành phiếu CAR và trưởng ban QLCL & ATTP
+Phê duyệt hành động KP/PN:
+Phó Giám Đốc phê duyệt hành động khắc phục phòng ngừa
+Bước 5: Thực hiện hành động khắc phục/ phòng ngừa (CAR)
+	Sau khi thực hiện hành động KP/PN được phê duyệt, đơn vị thực hiện hành động KP/PN sẽ tiến hành thực hiện theo thời gian quy định trong phiếu CAR
+Bước 6: Đánh giá hiệu quả hành động KP/PN (CAR)
+Đơn vị phát hành phiếu CAR sẽ đánh giá kết quả thực hiện
+Nếu hành động KP/PN không hiệu quả sẽ yêu cầu thực hiện lại
+Nếu hành động KP/PN đạt yêu cầu sẽ chuyển đến trưởng ban QLCL & ATTP để xác nhận
+Bước 7: Xác nhận
+	Trưởng ban QLCL & ATTP sẽ xem xét tính hiệu quả của hành động KP/PN đã được thực hiện để xác nhận tình trạng KP/PN và cho đóng phiếu CAR hoặc yêu cầu lập lại phiếu CAR khác nếu hành động KP/PN không hiệu quả
+Bước 8: Lưu hồ sơ
+Các đơn vị liên quan lưu hồ sơ theo quy trình kiểm soát hồ sơ
+Biểu mẫu đính kèm.
+Stt
+Biểu mẫu 
+Số hiệu
+Trách nhiệm lưu
+Thời gian lưu
+   1
+Báo cáo sự KPH và hành động KP/PN
+BM01 - SKPH
+Đơn vị liên quan
+2 năm
+ 2
+Sổ theo dõi sự KPH
+BM02 - SKPH
+Đơn vị liên quan
+Ban QLCL & ATTP
+2 năm
+Danh sách phân phối tài liệu.
+ Phòng Sản xuất - Thiết bị					 Phòng QLCL
+
+
+
+
+
+
+
+
+
+CÔNG TY …  
+QUY TRÌNH
+KIỂM SOÁT SỰ KHÔNG 
+PHÙ HỢP 
+Số hiệu        : QT - SKPH
+Số soát xét  : 00
+Ngày hiệu lực : 
+Trang:  PAGE 6 /  NUMPAGES 6
+
+
+
+
+yes
+
+No
+
+Sự KPH được phát hiện
+
+Báo cáo sự KPH (Phiếu CAR)
+
+Phân tích nguyên nhân và hành động KP - PN
+
+Xem xét
+Phê duyệt
+
+Thực hiện hành động KP - PN
+
+Đánh giá hiệu quả hành động KP - PN
+
+
+Xác nhận
+
+Lưu hồ sơ
+
+yes
+
+No
+
+
+

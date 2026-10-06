@@ -1,12 +1,13 @@
 import uuid
 from typing import List, Optional, Any, Dict
-from datetime import datetime, date, timezone
+from datetime import datetime, date, timezone, timedelta
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 from sqlalchemy import select, desc, func, and_, or_
 
 from app.core.database import get_db
+from app.core.demo_data import demo_seed_enabled
 from app.modules.haccp.models import (
     HACCPPlan,
     ProcessStep,
@@ -16,7 +17,20 @@ from app.modules.haccp.models import (
     PRPProgram,
     PRPChecklistLog,
     HACCPPlanReview,
+    MetalDetectorLog,
+    InProcessQCLog,
+    PestControlLog,
+    AllergenControl,
+    VisitorHealthDeclaration,
+    FirstAidLog,
+    VehicleInspectionLog,
+    WaterSafetyRecord,
+    ChemicalRecord,
+    WasteLog,
+    EnvironmentalMonitoringSchedule,
 )
+from app.modules.inventory.models import VehicleInspection, ProductionBatch, WarehouseInventory
+from app.modules.capa.models import NonConformance
 from app.modules.auth.models import User
 from app.modules.haccp.schemas import (
     HACCPPlanCreate,
@@ -52,6 +66,36 @@ from app.modules.haccp.schemas import (
     SyncFlowStepItem,
     SaveWorkflowAndStepsRequest,
     SaveWorkflowAndStepsResponse,
+    MetalDetectorLogCreate,
+    MetalDetectorLogUpdate,
+    MetalDetectorLogResponse,
+    InProcessQCLogCreate,
+    InProcessQCLogUpdate,
+    InProcessQCLogResponse,
+    PestControlLogCreate,
+    PestControlLogUpdate,
+    PestControlLogResponse,
+    AllergenControlCreate,
+    AllergenControlUpdate,
+    AllergenControlResponse,
+    VisitorHealthDeclarationCreate,
+    VisitorHealthDeclarationUpdate,
+    VisitorHealthDeclarationResponse,
+    FirstAidLogCreate,
+    FirstAidLogUpdate,
+    FirstAidLogResponse,
+    VehicleInspectionLogCreate,
+    VehicleInspectionLogUpdate,
+    VehicleInspectionLogResponse,
+    WaterSafetyRecordCreate,
+    WaterSafetyRecordResponse,
+    ChemicalRecordCreate,
+    ChemicalRecordUpdate,
+    ChemicalRecordResponse,
+    WasteLogCreate,
+    WasteLogResponse,
+    EnvironmentalMonitoringScheduleCreate,
+    EnvironmentalMonitoringScheduleResponse,
 )
 from app.modules.builder.models import DynamicWorkflowTemplate
 from app.modules.builder.schemas import WorkflowNode, WorkflowEdge, validate_workflow_structure
@@ -242,7 +286,241 @@ def format_prp_log_out(l: Any) -> PRPChecklistLogResponse:
     )
 
 
+def auto_handle_ccp_deviation(
+    db: Session,
+    batch_number: str,
+    title: str,
+    description: str,
+    source: str = "HACCP_CCP",
+    severity: str = "CRITICAL",
+    location: Optional[str] = None,
+    immediate_action: Optional[str] = None,
+    reported_by_id: Optional[uuid.UUID] = None,
+    reporter_name: Optional[str] = None,
+):
+    """
+    Tự động xử lý sự cố lệch ngưỡng tới hạn CCP / Metal Detector / QC Quá trình:
+    1. Khóa mẻ sản xuất ProductionBatch sang trạng thái HOLD (Cô lập / Biệt trữ).
+    2. Khóa lô tồn kho WarehouseInventory (nếu đã nhập kho) sang trạng thái HOLD.
+    3. Tự động sinh phiếu NonConformance (Sự không phù hợp) theo Điều khoản 8.9 ISO 22000:2018.
+    """
+    if not batch_number:
+        return None
+
+    clean_batch = batch_number.strip()
+
+    # 1. Khóa mẻ sản xuất
+    batch = db.query(ProductionBatch).filter(ProductionBatch.batch_number == clean_batch).first()
+    if batch:
+        batch.status = "HOLD"
+        lock_note = f"[ISO 22000 AUTO-LOCK] Khóa mẻ do vi phạm an toàn thực phẩm: {title} ({datetime.now().strftime('%d/%m/%Y %H:%M')})"
+        batch.notes = f"{batch.notes or ''}\n{lock_note}".strip()
+
+    # 2. Khóa tồn kho nếu có
+    stocks = db.query(WarehouseInventory).filter(WarehouseInventory.lot_number == clean_batch).all()
+    for s in stocks:
+        s.status = "HOLD"
+        s.notes = f"{s.notes or ''} | [HACCP QUARANTINE] {title}".strip()
+
+    # 3. Tạo NonConformance (nếu chưa có phiếu NC mở trùng batch và source trong ngày)
+    today = date.today()
+    existing_nc = db.query(NonConformance).filter(
+        NonConformance.affected_lot_number == clean_batch,
+        NonConformance.source == source,
+        NonConformance.occurred_date == today,
+    ).first()
+
+    if not existing_nc:
+        now_ts = datetime.now().strftime("%Y%m%d%H%M%S")
+        prefix = "NC-CCP" if source == "HACCP_CCP" else ("NC-MD" if "MD" in title else "NC-IPQC")
+        nc_num = f"{prefix}-{now_ts}"
+        new_nc = NonConformance(
+            nc_number=nc_num,
+            title=title[:255],
+            source=source,
+            severity=severity,
+            occurred_date=today,
+            occurred_location=location or "Xưởng chế biến sản xuất",
+            description=description,
+            immediate_action=immediate_action or "Cô lập mẻ hàng, dán nhãn biệt trữ HOLD, tạm dừng dây chuyền chờ đội ATTP thẩm tra.",
+            affected_lot_number=clean_batch,
+            affected_quantity=f"{batch.actual_quantity} {batch.unit}" if batch else "Toàn bộ mẻ phát sinh",
+            reported_by=reported_by_id,
+            reported_by_name=reporter_name or "Hệ thống giám sát ISO 22000",
+            status="NEW",
+        )
+        db.add(new_nc)
+        db.flush()
+        return new_nc
+
+    return existing_nc
+
+
+def seed_specialized_prp_if_empty(db: Session):
+    need_commit = False
+    if db.scalar(select(func.count(WaterSafetyRecord.record_id))) == 0:
+        ws1 = WaterSafetyRecord(
+            record_code="WSR-2026-001",
+            sampling_point="Đầu ra hệ thống lọc RO cấp xưởng chế biến",
+            sampling_date=date.today(),
+            sampling_time="07:00",
+            ph_level=7.2,
+            chlorine_ppm=0.6,
+            turbidity_ntu=0.3,
+            sensory_result="Trong suốt, không màu, không mùi vị lạ",
+            coliform_cfu=0.0,
+            e_coli_cfu=0.0,
+            overall_status="PASS",
+            tested_by_name="Kỹ thuật Cơ điện",
+            verified_by_name="QA Kiểm tra",
+            notes="Chất lượng nước đạt chuẩn QCVN 01-1:2018/BYT",
+        )
+        ws2 = WaterSafetyRecord(
+            record_code="WSR-2026-002",
+            sampling_point="Bồn làm đá vảy bảo quản cá",
+            sampling_date=date.today(),
+            sampling_time="07:30",
+            ph_level=7.1,
+            chlorine_ppm=0.5,
+            turbidity_ntu=0.4,
+            sensory_result="Đá vảy sạch, không vẩn đục",
+            coliform_cfu=0.0,
+            e_coli_cfu=0.0,
+            overall_status="PASS",
+            tested_by_name="Kỹ thuật Cơ điện",
+            verified_by_name="QA Kiểm tra",
+            notes="Đá vảy đạt tiêu chuẩn vi sinh",
+        )
+        db.add_all([ws1, ws2])
+        need_commit = True
+
+    if db.scalar(select(func.count(ChemicalRecord.chemical_id))) == 0:
+        ch1 = ChemicalRecord(
+            chemical_code="HC-CLO-01",
+            chemical_name="Chlorine Nippon Hi-Chlon 70%",
+            purpose="Khử trùng nước sản xuất và ngâm rửa bề mặt dụng cụ",
+            is_food_grade=True,
+            supplier_name="Công ty Hóa chất & Thiết bị Khoa học An Giang",
+            msds_document_url="/uploads/documents/MSDS_Chlorine_HiChlon.pdf",
+            msds_file_name="MSDS_Chlorine_HiChlon.pdf",
+            msds_expiry_date=date.today() + timedelta(days=365),
+            dilution_ratio="1:1000 (pha nồng độ 100-200 ppm)",
+            storage_location="Kho hóa chất chuyên dụng tầng 1 (có khóa riêng)",
+            approval_status="APPROVED",
+            current_stock_kg=120.0,
+            safety_instructions="Bắt buộc trang bị găng tay cao su, kính bảo hộ và khẩu trang hoạt tính khi pha chế",
+            approved_by="Đội trưởng Đội ATTP",
+        )
+        ch2 = ChemicalRecord(
+            chemical_code="HC-XUT-01",
+            chemical_name="Xút vảy NaOH 99% Food Grade",
+            purpose="Tẩy rửa hệ thống đường ống tuần hoàn CIP",
+            is_food_grade=True,
+            supplier_name="Công ty CP Hóa chất Miền Nam",
+            msds_document_url="/uploads/documents/MSDS_NaOH_FoodGrade.pdf",
+            msds_file_name="MSDS_NaOH_FoodGrade.pdf",
+            msds_expiry_date=date.today() + timedelta(days=500),
+            dilution_ratio="1-2% nồng độ dung dịch tẩy rửa",
+            storage_location="Kho hóa chất chuyên dụng tầng 1 (có khóa riêng)",
+            approval_status="APPROVED",
+            current_stock_kg=250.0,
+            safety_instructions="Hóa chất ăn mòn mạnh, bắt buộc mang ủng cao su, tạp dề chống hóa chất và kính chắn giọt bắn",
+            approved_by="Đội trưởng Đội ATTP",
+        )
+        ch3 = ChemicalRecord(
+            chemical_code="HC-CON-01",
+            chemical_name="Cồn thực phẩm Ethanol 70 độ",
+            purpose="Sát khuẩn tay công nhân và dao thớt trước khi chế biến",
+            is_food_grade=True,
+            supplier_name="Công ty Cồn Rượu Miền Tây",
+            msds_document_url="/uploads/documents/MSDS_Ethanol_70.pdf",
+            msds_file_name="MSDS_Ethanol_70.pdf",
+            msds_expiry_date=date.today() + timedelta(days=700),
+            dilution_ratio="Dùng trực tiếp không pha loãng",
+            storage_location="Tủ hóa chất phòng thay đồ công nhân & cửa vào xưởng",
+            approval_status="APPROVED",
+            current_stock_kg=80.0,
+            safety_instructions="Dung dịch dễ bắt cháy, để xa nguồn nhiệt, cấm hút thuốc",
+            approved_by="Đội trưởng Đội ATTP",
+        )
+        db.add_all([ch1, ch2, ch3])
+        need_commit = True
+
+    if db.scalar(select(func.count(WasteLog.waste_id))) == 0:
+        w1 = WasteLog(
+            log_code="WST-2026-001",
+            log_date=date.today(),
+            waste_type="ORGANIC_BYPRODUCT",
+            description="Phụ phẩm đầu xương da mỡ cá tra chế biến fillet",
+            quantity_kg=850.0,
+            storage_area="Nhà chứa phụ phẩm khép kín có điều hòa nhiệt độ",
+            disposal_contractor="Nhà máy Chế biến Thức ăn Thủy sản & Bột cá Châu Phú",
+            transfer_note_code="BBBG-PP-20260801",
+            status="TRANSFERRED",
+            handled_by_name="Tổ Vệ sinh Môi trường",
+            notes="Chuyển giao xe bồn kín chuyên dụng lúc 11:30",
+        )
+        w2 = WasteLog(
+            log_code="WST-2026-002",
+            log_date=date.today(),
+            waste_type="SOLID_DOMESTIC",
+            description="Rác sinh hoạt xưởng chế biến và khu văn phòng",
+            quantity_kg=45.0,
+            storage_area="Thùng rác có nắp đậy khu tập kết rác thải",
+            disposal_contractor="Công ty Môi trường Đô thị An Giang",
+            transfer_note_code="BBBG-RSH-20260801",
+            status="TRANSFERRED",
+            handled_by_name="Tổ Vệ sinh Môi trường",
+            notes="Thu gom chuyển giao hàng ngày",
+        )
+        db.add_all([w1, w2])
+        need_commit = True
+
+    if db.scalar(select(func.count(EnvironmentalMonitoringSchedule.schedule_id))) == 0:
+        s1 = EnvironmentalMonitoringSchedule(
+            item_code="ENV-SCH-01",
+            target_object="Nước sản xuất & Nước đá vảy",
+            parameters="Chỉ tiêu vi sinh: Coliform, E.coli, Pseudomonas, Kim loại nặng",
+            frequency="1 tháng/lần",
+            testing_unit="Trung tâm Y tế Dự phòng & Kiểm nghiệm Pasteur",
+            last_tested_date=date.today() - timedelta(days=20),
+            next_due_date=date.today() + timedelta(days=10),
+            status="SCHEDULED",
+            last_result="PASSED",
+        )
+        s2 = EnvironmentalMonitoringSchedule(
+            item_code="ENV-SCH-02",
+            target_object="Bề mặt tiếp xúc thực phẩm (Băng tải, Dao thớt fillet)",
+            parameters="Tổng số vi sinh vật hiếu khí, Coliforms, Salmonella, S. aureus",
+            frequency="2 tuần/lần",
+            testing_unit="Phòng Lab Vi sinh Nhà máy (nội bộ)",
+            last_tested_date=date.today() - timedelta(days=5),
+            next_due_date=date.today() + timedelta(days=9),
+            status="SCHEDULED",
+            last_result="PASSED",
+        )
+        s3 = EnvironmentalMonitoringSchedule(
+            item_code="ENV-SCH-03",
+            target_object="Không khí phòng đóng gói thành phẩm",
+            parameters="Vi nấm, tổng số nấm men nấm mốc, bụi lắng",
+            frequency="1 tháng/lần",
+            testing_unit="Trung tâm Kỹ thuật Tiêu chuẩn Đo lường Chất lượng 3 (QUATEST 3)",
+            last_tested_date=date.today() - timedelta(days=25),
+            next_due_date=date.today() + timedelta(days=5),
+            status="SCHEDULED",
+            last_result="PASSED",
+        )
+        db.add_all([s1, s2, s3])
+        need_commit = True
+
+    if need_commit:
+        db.commit()
+
+
 def seed_haccp_data_if_empty(db: Session):
+    if not demo_seed_enabled():
+        return
+    seed_specialized_prp_if_empty(db)
     return
 
     # 0. Seed HACCP Plan
@@ -699,6 +977,7 @@ def seed_haccp_data_if_empty(db: Session):
         finding_notes="Duy trì 5S đạt loại xuất sắc",
     )
     db.add_all([ck1, ck2, ck3, ck4, ck5, ck6])
+
     db.commit()
 
 
@@ -823,6 +1102,91 @@ def update_haccp_plan(plan_id: UUID, payload: HACCPPlanUpdate, db: Session = Dep
     if payload.status is not None:
         plan.status = payload.status
 
+    db.commit()
+    db.refresh(plan)
+    return format_plan_out(plan)
+
+
+@router.post("/plans/{plan_id}/approve", response_model=HACCPPlanResponse)
+def approve_haccp_plan(
+    plan_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "fst_leader", "fs_team_leader", "haccp_leader")),
+):
+    """
+    Phê duyệt chính thức Kế hoạch HACCP tổng thể (ISO 22000:2018 Clause 8.5.4)
+    Bắt buộc thực hiện bởi Trưởng ban HACCP / Đội trưởng Đội ATTP hoặc Giám đốc Nhà máy
+    """
+    plan = db.get(HACCPPlan, plan_id)
+    if not plan:
+        raise HTTPException(status_code=404, detail="Không tìm thấy kế hoạch HACCP cần phê duyệt")
+
+    approver = current_user.full_name or current_user.username
+    plan.status = "APPROVED"
+    plan.approved_by = approver
+    plan.effective_date = date.today()
+
+    # Tự động tạo bản ghi thẩm định/thẩm tra ban hành vào HACCPPlanReview
+    review_code = f"REV-{plan.plan_code}-{datetime.now().strftime('%Y%m%d%H%M')}"
+    review = HACCPPlanReview(
+        review_code=review_code,
+        plan_id=plan.plan_id,
+        review_date=date.today(),
+        review_type="PERIODIC",
+        reviewed_by_name=approver,
+        scope_of_review=f"Phê duyệt thẩm tra toàn diện kế hoạch kiểm soát mối nguy {plan.plan_code} theo ISO 22000",
+        findings="Đã hoàn tất phân tích mối nguy, xác định giới hạn tới hạn CCP và quy trình thẩm định. Kế hoạch đủ điều kiện ban hành áp dụng.",
+        changes_required=False,
+        plan_version_before=plan.version,
+        plan_version_after=plan.version,
+        approval_status="APPROVED",
+        approved_by_name=approver,
+    )
+    db.add(review)
+
+    db.commit()
+    db.refresh(plan)
+    return format_plan_out(plan)
+
+
+@router.post("/plans/{plan_id}/verify", response_model=HACCPPlanResponse)
+def verify_and_revise_haccp_plan(
+    plan_id: UUID,
+    scope_of_review: str = Query(..., description="Phạm vi thẩm tra: Sau sự cố hoặc sau thay đổi quy trình"),
+    findings: str = Query(..., description="Kết luận thẩm tra"),
+    new_version: Optional[str] = Query(None, description="Phiên bản mới nếu có sửa đổi"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "fst_leader", "fs_team_leader", "haccp_leader")),
+):
+    """
+    Kiểm soát sửa đổi & thẩm tra kế hoạch HACCP sau thẩm định hoặc thay đổi công nghệ (Clause 8.6 & 8.8)
+    """
+    plan = db.get(HACCPPlan, plan_id)
+    if not plan:
+        raise HTTPException(status_code=404, detail="Không tìm thấy kế hoạch HACCP")
+
+    ver_before = plan.version
+    ver_after = new_version.strip() if new_version else plan.version
+    if new_version:
+        plan.version = ver_after
+
+    approver = current_user.full_name or current_user.username
+    review_code = f"REV-{plan.plan_code}-{datetime.now().strftime('%Y%m%d%H%M')}"
+    review = HACCPPlanReview(
+        review_code=review_code,
+        plan_id=plan.plan_id,
+        review_date=date.today(),
+        review_type="TRIGGERED_BY_CHANGE" if new_version else "PERIODIC",
+        reviewed_by_name=approver,
+        scope_of_review=scope_of_review,
+        findings=findings,
+        changes_required=bool(new_version and new_version != ver_before),
+        plan_version_before=ver_before,
+        plan_version_after=ver_after,
+        approval_status="APPROVED",
+        approved_by_name=approver,
+    )
+    db.add(review)
     db.commit()
     db.refresh(plan)
     return format_plan_out(plan)
@@ -1259,6 +1623,7 @@ def delete_hazard(hazard_id: UUID, db: Session = Depends(get_db)):
 
 
 # ==================== 4. CCP DEFINITIONS CRUD ====================
+@router.get("/ccps", response_model=List[CCPDefinitionResponse], include_in_schema=False)
 @router.get("/ccp-definitions", response_model=List[CCPDefinitionResponse])
 def get_ccp_definitions(
     status_filter: Optional[str] = None,
@@ -1424,6 +1789,22 @@ def create_ccp_log(payload: CCPMonitoringLogCreate, db: Session = Depends(get_db
         notes=payload.notes,
     )
     db.add(log_entry)
+
+    # Tự động khóa mẻ và sinh phiếu NC nếu vi phạm ngưỡng tới hạn CCP (ISO 22000 Điều 8.9)
+    if is_breached or log_status in ["CRITICAL", "DEVIATION"]:
+        auto_handle_ccp_deviation(
+            db=db,
+            batch_number=payload.batch_number,
+            title=f"Vi phạm ngưỡng tới hạn CCP {ccp.ccp_code} ({ccp.name}) - Mẻ {payload.batch_number}",
+            description=f"Giá trị đo đạc = {val} {payload.unit} vượt ngưỡng tới hạn quy định ({ccp.critical_limit}). Ghi nhận lúc: {payload.test_time or datetime.now()}.",
+            source="HACCP_CCP",
+            severity="CRITICAL",
+            location=getattr(ccp, "location", ccp.name) or "Khu vực kiểm soát CCP",
+            immediate_action=payload.deviation_action,
+            reported_by_id=current_user.user_id,
+            reporter_name=current_user.full_name or current_user.username,
+        )
+
     db.commit()
     db.refresh(log_entry)
     return format_ccp_log_out(log_entry)
@@ -1841,3 +2222,1036 @@ def delete_haccp_plan_review(review_id: UUID, db: Session = Depends(get_db)):
     db.commit()
     return {"message": "Đã xóa biên bản thẩm tra thành công"}
 
+
+# ==================== 11. METAL DETECTOR LOGS ENDPOINTS (BM06-KSQT) ====================
+
+@router.get("/metal-detector-logs", response_model=List[MetalDetectorLogResponse])
+def get_metal_detector_logs(
+    date_from: Optional[date] = None,
+    date_to: Optional[date] = None,
+    machine_code: Optional[str] = None,
+    test_result: Optional[str] = None,
+    search: Optional[str] = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "qc", "production", "operator", "fst_leader", "fs_team_leader")),
+):
+    query = db.query(MetalDetectorLog)
+    if date_from:
+        query = query.filter(MetalDetectorLog.log_date >= date_from)
+    if date_to:
+        query = query.filter(MetalDetectorLog.log_date <= date_to)
+    if machine_code and machine_code != "ALL":
+        query = query.filter(MetalDetectorLog.machine_code == machine_code)
+    if test_result and test_result != "ALL":
+        query = query.filter(MetalDetectorLog.test_result == test_result)
+    if search:
+        s = f"%{search}%"
+        query = query.filter(
+            or_(
+                MetalDetectorLog.batch_number.ilike(s),
+                MetalDetectorLog.product_name.ilike(s),
+                MetalDetectorLog.checked_by_name.ilike(s),
+                MetalDetectorLog.machine_code.ilike(s),
+            )
+        )
+    return query.order_by(desc(MetalDetectorLog.log_date), desc(MetalDetectorLog.created_at)).all()
+
+
+@router.post("/metal-detector-logs", response_model=MetalDetectorLogResponse, status_code=status.HTTP_201_CREATED)
+def create_metal_detector_log(
+    payload: MetalDetectorLogCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "qc", "production", "operator", "fst_leader", "fs_team_leader")),
+):
+    # Tự động tính toán kết quả kiểm tra
+    is_passed = payload.fe_detected and payload.sus_detected and payload.rejection_mechanism_working
+    result_status = "PASSED" if is_passed else "FAILED"
+    checker = payload.checked_by_name or current_user.full_name or current_user.username
+
+    log = MetalDetectorLog(
+        machine_code=payload.machine_code,
+        machine_name=payload.machine_name,
+        log_date=payload.log_date,
+        check_time=payload.check_time,
+        shift_name=payload.shift_name,
+        batch_number=payload.batch_number,
+        product_name=payload.product_name,
+        fe_standard_mm=payload.fe_standard_mm,
+        fe_detected=payload.fe_detected,
+        sus_standard_mm=payload.sus_standard_mm,
+        sus_detected=payload.sus_detected,
+        rejection_mechanism_working=payload.rejection_mechanism_working,
+        metal_detected_count=payload.metal_detected_count,
+        test_result=result_status,
+        corrective_action=payload.corrective_action,
+        checked_by_name=checker,
+        verified_by_name=payload.verified_by_name,
+        notes=payload.notes,
+    )
+    db.add(log)
+
+    # Tự động khóa mẻ và mở NC nếu máy dò kim loại lỗi hoặc phát hiện dị vật kim loại (CCP 2)
+    if result_status == "FAILED" or (payload.metal_detected_count and payload.metal_detected_count > 0):
+        auto_handle_ccp_deviation(
+            db=db,
+            batch_number=payload.batch_number,
+            title=f"Lỗi kiểm tra máy dò kim loại {payload.machine_code} - Mẻ {payload.batch_number}",
+            description=f"Máy dò {payload.machine_code} không phát hiện mẫu chuẩn Fe={payload.fe_detected}, SUS={payload.sus_detected} hoặc phát hiện {payload.metal_detected_count} sản phẩm lẫn kim loại trong ca.",
+            source="HACCP_CCP",
+            severity="CRITICAL",
+            location="Khu vực đóng gói & rà kim loại",
+            immediate_action=payload.corrective_action or "Dừng chuyền, cho chạy lại 100% sản phẩm qua máy dò chuẩn, cô lập mẻ hàng.",
+            reported_by_id=current_user.user_id,
+            reporter_name=checker,
+        )
+
+    db.commit()
+    db.refresh(log)
+    return log
+
+
+@router.put("/metal-detector-logs/{log_id}", response_model=MetalDetectorLogResponse)
+def update_metal_detector_log(
+    log_id: UUID,
+    payload: MetalDetectorLogUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "qc", "production", "fst_leader", "fs_team_leader")),
+):
+    log = db.query(MetalDetectorLog).filter(MetalDetectorLog.log_id == log_id).first()
+    if not log:
+        raise HTTPException(status_code=404, detail="Không tìm thấy nhật ký máy dò kim loại")
+
+    update_data = payload.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(log, field, value)
+
+    # Tự động đồng bộ lại test_result
+    is_passed = log.fe_detected and log.sus_detected and log.rejection_mechanism_working
+    log.test_result = "PASSED" if is_passed else "FAILED"
+
+    db.commit()
+    db.refresh(log)
+    return log
+
+
+@router.delete("/metal-detector-logs/{log_id}")
+def delete_metal_detector_log(
+    log_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "fst_leader", "fs_team_leader")),
+):
+    log = db.query(MetalDetectorLog).filter(MetalDetectorLog.log_id == log_id).first()
+    if not log:
+        raise HTTPException(status_code=404, detail="Không tìm thấy nhật ký máy dò kim loại")
+    db.delete(log)
+    db.commit()
+    return {"message": "Đã xóa nhật ký máy dò kim loại thành công"}
+
+
+# ==================== 12. IN-PROCESS QC LOGS ENDPOINTS (BM01-BM05 KSQT) ====================
+
+@router.get("/in-process-qc-logs", response_model=List[InProcessQCLogResponse])
+def get_in_process_qc_logs(
+    stage_code: Optional[str] = None,
+    overall_status: Optional[str] = None,
+    batch_number: Optional[str] = None,
+    search: Optional[str] = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "qc", "production", "operator", "fst_leader", "fs_team_leader")),
+):
+    query = db.query(InProcessQCLog)
+    if stage_code and stage_code != "ALL":
+        query = query.filter(InProcessQCLog.stage_code == stage_code)
+    if overall_status and overall_status != "ALL":
+        query = query.filter(InProcessQCLog.overall_status == overall_status)
+    if batch_number:
+        query = query.filter(InProcessQCLog.batch_number == batch_number)
+    if search:
+        s = f"%{search}%"
+        query = query.filter(
+            or_(
+                InProcessQCLog.inspection_code.ilike(s),
+                InProcessQCLog.product_name.ilike(s),
+                InProcessQCLog.batch_number.ilike(s),
+                InProcessQCLog.stage_name.ilike(s),
+                InProcessQCLog.inspector_name.ilike(s),
+            )
+        )
+    return query.order_by(desc(InProcessQCLog.log_date), desc(InProcessQCLog.created_at)).all()
+
+
+@router.post("/in-process-qc-logs", response_model=InProcessQCLogResponse, status_code=status.HTTP_201_CREATED)
+def create_in_process_qc_log(
+    payload: InProcessQCLogCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "qc", "production", "operator", "fst_leader", "fs_team_leader")),
+):
+    code = payload.inspection_code
+    if not code:
+        year = payload.log_date.year if payload.log_date else datetime.now().year
+        count = db.query(InProcessQCLog).count() + 1
+        code = f"IPQC-{year}-{count:03d}"
+
+    inspector = payload.inspector_name or current_user.full_name or current_user.username
+
+    log = InProcessQCLog(
+        inspection_code=code,
+        stage_code=payload.stage_code,
+        stage_name=payload.stage_name,
+        log_date=payload.log_date,
+        check_time=payload.check_time,
+        shift_name=payload.shift_name,
+        batch_number=payload.batch_number,
+        product_name=payload.product_name,
+        criteria_data=payload.criteria_data,
+        overall_status=payload.overall_status or "PASS",
+        deviations=payload.deviations,
+        corrective_actions=payload.corrective_actions,
+        inspector_name=inspector,
+        supervisor_name=payload.supervisor_name,
+        notes=payload.notes,
+    )
+    db.add(log)
+
+    # Tự động khóa mẻ và mở NC nếu kiểm tra KCS công đoạn không đạt (FAIL)
+    if (payload.overall_status and payload.overall_status.upper() == "FAIL") or (payload.deviations and len(payload.deviations.strip()) > 0 and payload.overall_status != "PASS"):
+        auto_handle_ccp_deviation(
+            db=db,
+            batch_number=payload.batch_number,
+            title=f"KCS kiểm tra công đoạn {payload.stage_code} ({payload.stage_name}) KHÔNG ĐẠT - Mẻ {payload.batch_number}",
+            description=f"Phiếu kiểm tra {code}: Công đoạn {payload.stage_name} không đạt tiêu chuẩn kỹ thuật. Sai lệch: {payload.deviations or 'Không đạt chỉ tiêu'}.",
+            source="IPQC_DEVIATION",
+            severity="MAJOR",
+            location=payload.stage_name,
+            immediate_action=payload.corrective_actions or "Biệt trữ mẻ hàng tại công đoạn chờ xử lý kỹ thuật",
+            reported_by_id=current_user.user_id,
+            reporter_name=inspector,
+        )
+
+    db.commit()
+    db.refresh(log)
+    return log
+
+
+@router.get("/in-process-qc/inspection-stages")
+def get_in_process_qc_stages():
+    """
+    Ánh xạ chính thức danh mục biểu mẫu BM01-BM06 KSQT và quy tắc tần suất lấy mẫu
+    theo Hệ thống tài liệu Kiểm soát Quá trình Chế biến Thủy hải sản (ISO 22000 / HACCP)
+    """
+    return [
+        {
+            "form_code": "BM01-KSQT",
+            "stage_code": "MATERIAL_RECEIVING",
+            "stage_name": "Kiểm tra tiếp nhận cá tươi nguyên liệu",
+            "standard_frequency": "100% các chuyến ghe / lô cá nhập về cảng bến",
+            "sample_size": "5 cá thể ngẫu nhiên / 1 tấn cá",
+            "criteria": [
+                {"criterion": "Nhiệt độ bảo quản cá tươi bằng đá lạnh", "limit": "≤ 4°C", "method": "Nhiệt kế kim calibrated đâm thân cá 5 vị trí"},
+                {"criterion": "Chất lượng cảm quan (mắt trong, mang đỏ, cơ thịt đàn hồi)", "limit": "Loại 1 / Không ươn hỏng", "method": "Quan sát cảm quan theo TCVN 5289"},
+                {"criterion": "Định lượng tồn dư tạp chất & kháng sinh nhanh", "limit": "Âm tính / Không phát hiện", "method": "Test kit ELISA nhanh"}
+            ]
+        },
+        {
+            "form_code": "BM02-KSQT",
+            "stage_code": "WASH_CUT",
+            "stage_name": "Sơ chế, fillet, lạng da & rửa bán thành phẩm",
+            "standard_frequency": "Mỗi 30 phút / lần trong suốt ca sản xuất",
+            "sample_size": "1 kg bán thành phẩm sau rửa",
+            "criteria": [
+                {"criterion": "Nhiệt độ nước rửa bán thành phẩm", "limit": "≤ 8°C", "method": "Nhiệt kế đo bồn rửa"},
+                {"criterion": "Hàm lượng Clo dư trong nước rửa", "limit": "0.5 - 1.0 ppm", "method": "Bộ so màu Clo dư"},
+                {"criterion": "Tỷ lệ sót xương, sót da, sót mỡ đỏ", "limit": "< 0.1%", "method": "Kiểm tra bàn soi đèn"}
+            ]
+        },
+        {
+            "form_code": "BM03-KSQT",
+            "stage_code": "GRIND_MIX",
+            "stage_name": "Xay nhuyễn, định lượng gia vị & phối trộn (oPRP)",
+            "standard_frequency": "Mỗi mẻ phối trộn cối xay",
+            "sample_size": "Toàn bộ cối xay (kiểm tra liên tục)",
+            "criteria": [
+                {"criterion": "Nhiệt độ khối thịt trong cối xay", "limit": "≤ 10°C", "method": "Đo nhiệt kế đâm tâm"},
+                {"criterion": "Khối lượng phụ gia an toàn (Polyphosphate, muối, tiêu)", "limit": "Đúng định lượng công thức", "method": "Cân điện tử calibrated"},
+                {"criterion": "Độ dẻo dai và đồng nhất của nhũ tương chả cá", "limit": "Đạt chuẩn công nghệ", "method": "Thử cảm quan cấu trúc"}
+            ]
+        },
+        {
+            "form_code": "BM04-KSQT",
+            "stage_code": "COOK_STEAM",
+            "stage_name": "Định hình & Hấp / Chiên chín (CCP 1)",
+            "standard_frequency": "Mỗi mẻ hấp liên tục (Ghi log mỗi 15 phút)",
+            "sample_size": "3 miếng chả cá ở 3 vị trí khay hấp",
+            "criteria": [
+                {"criterion": "Nhiệt độ tâm sản phẩm tại thời điểm kết thúc hấp", "limit": "≥ 85°C", "method": "Nhiệt kế kim calibrated tại tâm miếng chả cá"},
+                {"criterion": "Thời gian giữ nhiệt hấp buồng hơi", "limit": "≥ 15 phút", "method": "Đồng hồ bấm giờ / SCADA"},
+                {"criterion": "Áp lực hơi cấp buồng hấp", "limit": "1.5 - 2.0 bar", "method": "Áp kế buồng"}
+            ]
+        },
+        {
+            "form_code": "BM05-KSQT",
+            "stage_code": "COOL_IQF",
+            "stage_name": "Làm nguội & Cấp đông nhanh băng chuyền IQF (CCP 3)",
+            "standard_frequency": "Mỗi 1 giờ / lần trong ca",
+            "sample_size": "5 gói chả cá ra khỏi cửa băng chuyền IQF",
+            "criteria": [
+                {"criterion": "Nhiệt độ buồng cấp đông IQF", "limit": "≤ -35°C", "method": "Cảm biến SCADA ghi nhận tự động"},
+                {"criterion": "Nhiệt độ tâm sản phẩm sau khi ra khỏi băng chuyền IQF", "limit": "≤ -18°C", "method": "Nhiệt kế kim đâm tâm"},
+                {"criterion": "Thời gian làm nguội trước khi vào IQF", "limit": "< 30 phút", "method": "Kiểm tra phòng đệm"}
+            ]
+        },
+        {
+            "form_code": "BM06-KSQT",
+            "stage_code": "PACK_METAL_DETECT",
+            "stage_name": "Đóng gói hút chân không, in date & Rà kim loại (CCP 2)",
+            "standard_frequency": "Mỗi 15 phút kiểm tra bao bì / Mỗi 2 giờ test que thử máy dò",
+            "sample_size": "100% bao gói qua máy dò / 10 gói ngẫu nhiên kiểm bao bì",
+            "criteria": [
+                {"criterion": "Que thử chuẩn Sắt Fe", "limit": "0.5 mm (Phát hiện 100%)", "method": "Cho thanh que thử qua cổng dò"},
+                {"criterion": "Que thử chuẩn Inox SUS 304", "limit": "0.8 mm (Phát hiện 100%)", "method": "Cho thanh que thử qua cổng dò"},
+                {"criterion": "Cơ cấu tự động loại bỏ / dừng băng tải", "limit": "Hoạt động chính xác", "method": "Kiểm tra thực tế"},
+                {"criterion": "Độ kín đường ép nhiệt túi chân không & độ chính xác in Date", "limit": "Kín tuyệt đối / Rõ nét đúng NSX-HSD", "method": "Thử ngâm nước hút chân không"}
+            ]
+        }
+    ]
+
+
+@router.put("/in-process-qc-logs/{log_id}", response_model=InProcessQCLogResponse)
+def update_in_process_qc_log(
+    log_id: UUID,
+    payload: InProcessQCLogUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "qc", "production", "fst_leader", "fs_team_leader")),
+):
+    log = db.query(InProcessQCLog).filter(InProcessQCLog.log_id == log_id).first()
+    if not log:
+        raise HTTPException(status_code=404, detail="Không tìm thấy nhật ký kiểm soát công đoạn")
+
+    update_data = payload.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(log, field, value)
+
+    db.commit()
+    db.refresh(log)
+    return log
+
+
+@router.delete("/in-process-qc-logs/{log_id}")
+def delete_in_process_qc_log(
+    log_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "fst_leader", "fs_team_leader")),
+):
+    log = db.query(InProcessQCLog).filter(InProcessQCLog.log_id == log_id).first()
+    if not log:
+        raise HTTPException(status_code=404, detail="Không tìm thấy nhật ký kiểm soát công đoạn")
+    db.delete(log)
+    db.commit()
+    return {"message": "Đã xóa nhật ký kiểm soát công đoạn thành công"}
+
+
+# ==================== 10. PEST CONTROL LOGS (BM01-SVGH) ====================
+@router.get("/pest-control-logs", response_model=List[PestControlLogResponse])
+def get_pest_control_logs(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "qc", "production", "fst_leader", "fs_team_leader", "viewer")),
+):
+    return db.query(PestControlLog).order_by(desc(PestControlLog.check_date), desc(PestControlLog.created_at)).all()
+
+
+@router.post("/pest-control-logs", response_model=PestControlLogResponse, status_code=status.HTTP_201_CREATED)
+def create_pest_control_log(
+    payload: PestControlLogCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "qc", "production", "fst_leader", "fs_team_leader")),
+):
+    data = payload.model_dump()
+    if not data.get("log_code"):
+        today_str = datetime.now().strftime("%Y%m%d")
+        count = db.query(PestControlLog).filter(PestControlLog.check_date == date.today()).count() + 1
+        data["log_code"] = f"PCL-{today_str}-{count:02d}"
+
+    # Auto sum pests caught across traps
+    total_caught = 0
+    for trap in data.get("trap_locations", []):
+        try:
+            total_caught += int(trap.get("pests_caught", 0))
+        except (ValueError, TypeError):
+            pass
+    data["total_pests_caught"] = total_caught
+
+    log = PestControlLog(**data)
+    db.add(log)
+    db.commit()
+    db.refresh(log)
+    return log
+
+
+@router.put("/pest-control-logs/{log_id}", response_model=PestControlLogResponse)
+def update_pest_control_log(
+    log_id: UUID,
+    payload: PestControlLogUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "qc", "production", "fst_leader", "fs_team_leader")),
+):
+    log = db.query(PestControlLog).filter(PestControlLog.log_id == log_id).first()
+    if not log:
+        raise HTTPException(status_code=404, detail="Không tìm thấy nhật ký kiểm tra bẫy côn trùng")
+
+    update_data = payload.model_dump(exclude_unset=True)
+    if "trap_locations" in update_data and update_data["trap_locations"]:
+        total_caught = 0
+        for trap in update_data["trap_locations"]:
+            try:
+                total_caught += int(trap.get("pests_caught", 0))
+            except (ValueError, TypeError):
+                pass
+        update_data["total_pests_caught"] = total_caught
+
+    for field, value in update_data.items():
+        setattr(log, field, value)
+
+    db.commit()
+    db.refresh(log)
+    return log
+
+
+@router.delete("/pest-control-logs/{log_id}")
+def delete_pest_control_log(
+    log_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "fst_leader", "fs_team_leader")),
+):
+    log = db.query(PestControlLog).filter(PestControlLog.log_id == log_id).first()
+    if not log:
+        raise HTTPException(status_code=404, detail="Không tìm thấy nhật ký kiểm tra bẫy côn trùng")
+    db.delete(log)
+    db.commit()
+    return {"message": "Đã xóa nhật ký kiểm tra bẫy côn trùng thành công"}
+
+
+# ==================== 11. ALLERGEN CONTROLS (BM01-CGDU) ====================
+@router.get("/allergen-controls", response_model=List[AllergenControlResponse])
+def get_allergen_controls(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "qc", "production", "fst_leader", "fs_team_leader", "viewer")),
+):
+    return db.query(AllergenControl).order_by(desc(AllergenControl.created_at)).all()
+
+
+@router.post("/allergen-controls", response_model=AllergenControlResponse, status_code=status.HTTP_201_CREATED)
+def create_allergen_control(
+    payload: AllergenControlCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "qc", "production", "fst_leader", "fs_team_leader")),
+):
+    data = payload.model_dump()
+    if not data.get("allergen_code"):
+        count = db.query(AllergenControl).count() + 1
+        data["allergen_code"] = f"ALG-{count:03d}"
+
+    item = AllergenControl(**data)
+    db.add(item)
+    db.commit()
+    db.refresh(item)
+    return item
+
+
+@router.put("/allergen-controls/{allergen_id}", response_model=AllergenControlResponse)
+def update_allergen_control(
+    allergen_id: UUID,
+    payload: AllergenControlUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "qc", "production", "fst_leader", "fs_team_leader")),
+):
+    item = db.query(AllergenControl).filter(AllergenControl.allergen_id == allergen_id).first()
+    if not item:
+        raise HTTPException(status_code=404, detail="Không tìm thấy danh mục kiểm soát dị nguyên")
+
+    for field, value in payload.model_dump(exclude_unset=True).items():
+        setattr(item, field, value)
+
+    db.commit()
+    db.refresh(item)
+    return item
+
+
+@router.delete("/allergen-controls/{allergen_id}")
+def delete_allergen_control(
+    allergen_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "fst_leader", "fs_team_leader")),
+):
+    item = db.query(AllergenControl).filter(AllergenControl.allergen_id == allergen_id).first()
+    if not item:
+        raise HTTPException(status_code=404, detail="Không tìm thấy danh mục kiểm soát dị nguyên")
+    db.delete(item)
+    db.commit()
+    return {"message": "Đã xóa danh mục kiểm soát dị nguyên thành công"}
+
+
+# ==================== 12. VISITOR HEALTH DECLARATIONS (BM03-KSSK) ====================
+@router.get("/visitor-health-declarations", response_model=List[VisitorHealthDeclarationResponse])
+def get_visitor_health_declarations(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "qc", "production", "fst_leader", "fs_team_leader", "viewer")),
+):
+    return db.query(VisitorHealthDeclaration).order_by(desc(VisitorHealthDeclaration.visit_date), desc(VisitorHealthDeclaration.created_at)).all()
+
+
+@router.post("/visitor-health-declarations", response_model=VisitorHealthDeclarationResponse, status_code=status.HTTP_201_CREATED)
+def create_visitor_health_declaration(
+    payload: VisitorHealthDeclarationCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "qc", "production", "fst_leader", "fs_team_leader")),
+):
+    data = payload.model_dump()
+    if not data.get("declaration_code"):
+        today_str = datetime.now().strftime("%Y%m%d")
+        count = db.query(VisitorHealthDeclaration).filter(VisitorHealthDeclaration.visit_date == date.today()).count() + 1
+        data["declaration_code"] = f"VHD-{today_str}-{count:02d}"
+
+    # Auto check eligibility: If ANY symptom is True, not approved
+    has_symptoms = any([
+        data.get("has_diarrhea", False),
+        data.get("has_fever_cough", False),
+        data.get("has_open_wound", False),
+        data.get("visited_epidemic_area", False)
+    ])
+    data["is_approved_entry"] = not has_symptoms
+
+    item = VisitorHealthDeclaration(**data)
+    db.add(item)
+    db.commit()
+    db.refresh(item)
+    return item
+
+
+@router.put("/visitor-health-declarations/{declaration_id}", response_model=VisitorHealthDeclarationResponse)
+def update_visitor_health_declaration(
+    declaration_id: UUID,
+    payload: VisitorHealthDeclarationUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "qc", "production", "fst_leader", "fs_team_leader")),
+):
+    item = db.query(VisitorHealthDeclaration).filter(VisitorHealthDeclaration.declaration_id == declaration_id).first()
+    if not item:
+        raise HTTPException(status_code=404, detail="Không tìm thấy phiếu khai báo y tế khách tham quan")
+
+    update_data = payload.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(item, field, value)
+
+    # Re-evaluate eligibility
+    has_symptoms = any([
+        item.has_diarrhea,
+        item.has_fever_cough,
+        item.has_open_wound,
+        item.visited_epidemic_area
+    ])
+    item.is_approved_entry = not has_symptoms
+
+    db.commit()
+    db.refresh(item)
+    return item
+
+
+@router.delete("/visitor-health-declarations/{declaration_id}")
+def delete_visitor_health_declaration(
+    declaration_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "fst_leader", "fs_team_leader")),
+):
+    item = db.query(VisitorHealthDeclaration).filter(VisitorHealthDeclaration.declaration_id == declaration_id).first()
+    if not item:
+        raise HTTPException(status_code=404, detail="Không tìm thấy phiếu khai báo y tế khách tham quan")
+    db.delete(item)
+    db.commit()
+    return {"message": "Đã xóa phiếu khai báo y tế thành công"}
+
+
+# ==================== 13. FIRST AID CABINET LOGS (BM01-KSSK) ====================
+@router.get("/first-aid-logs", response_model=List[FirstAidLogResponse])
+def get_first_aid_logs(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "qc", "production", "fst_leader", "fs_team_leader", "viewer")),
+):
+    return db.query(FirstAidLog).order_by(desc(FirstAidLog.issue_date), desc(FirstAidLog.created_at)).all()
+
+
+@router.post("/first-aid-logs", response_model=FirstAidLogResponse, status_code=status.HTTP_201_CREATED)
+def create_first_aid_log(
+    payload: FirstAidLogCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "qc", "production", "fst_leader", "fs_team_leader")),
+):
+    data = payload.model_dump()
+    if not data.get("log_code"):
+        today_str = datetime.now().strftime("%Y%m%d")
+        count = db.query(FirstAidLog).filter(FirstAidLog.issue_date == date.today()).count() + 1
+        data["log_code"] = f"FAL-{today_str}-{count:02d}"
+
+    item = FirstAidLog(**data)
+    db.add(item)
+    db.commit()
+    db.refresh(item)
+    return item
+
+
+@router.put("/first-aid-logs/{log_id}", response_model=FirstAidLogResponse)
+def update_first_aid_log(
+    log_id: UUID,
+    payload: FirstAidLogUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "qc", "production", "fst_leader", "fs_team_leader")),
+):
+    item = db.query(FirstAidLog).filter(FirstAidLog.log_id == log_id).first()
+    if not item:
+        raise HTTPException(status_code=404, detail="Không tìm thấy bản ghi cấp phát tủ thuốc sơ cứu")
+
+    for field, value in payload.model_dump(exclude_unset=True).items():
+        setattr(item, field, value)
+
+    db.commit()
+    db.refresh(item)
+    return item
+
+
+@router.delete("/first-aid-logs/{log_id}")
+def delete_first_aid_log(
+    log_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "fst_leader", "fs_team_leader")),
+):
+    item = db.query(FirstAidLog).filter(FirstAidLog.log_id == log_id).first()
+    if not item:
+        raise HTTPException(status_code=404, detail="Không tìm thấy bản ghi cấp phát tủ thuốc sơ cứu")
+    db.delete(item)
+    db.commit()
+    return {"message": "Đã xóa bản ghi cấp phát tủ thuốc thành công"}
+
+
+# ==================== 14. VEHICLE INSPECTION LOGS (BM01-PTVC: NGUỒN DỮ LIỆU HỢP NHẤT) ====================
+@router.get("/vehicle-inspections", response_model=List[VehicleInspectionLogResponse])
+def get_vehicle_inspections(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "qc", "production", "fst_leader", "fs_team_leader", "viewer")),
+):
+    """
+    Lấy danh sách kiểm tra xe vận chuyển hợp nhất (Single Source of Truth) từ bảng vehicle_inspections
+    """
+    records = db.query(VehicleInspection).order_by(desc(VehicleInspection.inspection_date), desc(VehicleInspection.created_at)).all()
+    out = []
+    for r in records:
+        insp_date = r.inspection_date.date() if isinstance(r.inspection_date, datetime) else (r.inspection_date or date.today())
+        out.append(VehicleInspectionLogResponse(
+            inspection_id=uuid.uuid5(uuid.NAMESPACE_DNS, f"vehicle-inspection-{r.id}"),
+            inspection_code=r.inspection_code,
+            inspection_date=insp_date,
+            customer_name=r.customer_name or "Khách hàng công ty",
+            vehicle_type=r.vehicle_type or "Xe tải thùng kín",
+            license_plate=r.vehicle_plate,
+            driver_name=r.driver_name,
+            check_registration_valid=r.valid_registration_check,
+            check_clean_floor=r.clean_dry_check,
+            check_no_odor=r.no_odor_check,
+            check_no_pests=r.pest_free_check,
+            check_enclosed_tarp=r.cargo_integrity_check,
+            overall_result="PASSED" if r.inspection_result.upper() in ["PASS", "PASSED"] else "REJECTED",
+            inspector_name=r.inspector_name,
+            corrective_action=r.corrective_action,
+            created_at=r.created_at
+        ))
+    return out
+
+
+@router.post("/vehicle-inspections", response_model=VehicleInspectionLogResponse, status_code=status.HTTP_201_CREATED)
+def create_vehicle_inspection(
+    payload: VehicleInspectionLogCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "qc", "production", "fst_leader", "fs_team_leader")),
+):
+    """
+    Ghi nhận biên bản kiểm tra xe vận chuyển vào bảng hợp nhất vehicle_inspections
+    """
+    data = payload.model_dump()
+    if not data.get("inspection_code"):
+        today_str = datetime.now().strftime("%Y%m%d")
+        count = db.query(VehicleInspection).count() + 1
+        data["inspection_code"] = f"VIC-{today_str}-{count:02d}"
+
+    # Auto pass only when all 5 conditions are True
+    is_passed = all([
+        data.get("check_registration_valid", True),
+        data.get("check_clean_floor", True),
+        data.get("check_no_odor", True),
+        data.get("check_no_pests", True),
+        data.get("check_enclosed_tarp", True),
+    ])
+    result = "PASS" if is_passed else "FAIL"
+
+    insp_dt = datetime.combine(data["inspection_date"], datetime.min.time()) if isinstance(data.get("inspection_date"), date) else datetime.now()
+
+    v_item = VehicleInspection(
+        inspection_code=data["inspection_code"],
+        inspection_date=insp_dt,
+        vehicle_plate=data["license_plate"],
+        driver_name=data["driver_name"],
+        customer_name=data["customer_name"],
+        vehicle_type=data.get("vehicle_type", "Xe tải thùng kín"),
+        valid_registration_check=data.get("check_registration_valid", True),
+        cargo_integrity_check=data.get("check_enclosed_tarp", True),
+        clean_dry_check=data.get("check_clean_floor", True),
+        no_odor_check=data.get("check_no_odor", True),
+        pest_free_check=data.get("check_no_pests", True),
+        inspection_result=result,
+        inspector_name=data["inspector_name"],
+        corrective_action=data.get("corrective_action"),
+    )
+    db.add(v_item)
+    db.commit()
+    db.refresh(v_item)
+
+    return VehicleInspectionLogResponse(
+        inspection_id=uuid.uuid5(uuid.NAMESPACE_DNS, f"vehicle-inspection-{v_item.id}"),
+        inspection_code=v_item.inspection_code,
+        inspection_date=v_item.inspection_date.date() if isinstance(v_item.inspection_date, datetime) else v_item.inspection_date,
+        customer_name=v_item.customer_name or "Khách hàng công ty",
+        vehicle_type=v_item.vehicle_type or "Xe tải thùng kín",
+        license_plate=v_item.vehicle_plate,
+        driver_name=v_item.driver_name,
+        check_registration_valid=v_item.valid_registration_check,
+        check_clean_floor=v_item.clean_dry_check,
+        check_no_odor=v_item.no_odor_check,
+        pest_free_check=v_item.pest_free_check,
+        check_enclosed_tarp=v_item.cargo_integrity_check,
+        overall_result="PASSED" if result == "PASS" else "REJECTED",
+        inspector_name=v_item.inspector_name,
+        corrective_action=v_item.corrective_action,
+        created_at=v_item.created_at,
+    )
+
+
+@router.put("/vehicle-inspections/{inspection_id}", response_model=VehicleInspectionLogResponse)
+def update_vehicle_inspection(
+    inspection_id: UUID,
+    payload: VehicleInspectionLogUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "qc", "production", "fst_leader", "fs_team_leader")),
+):
+    # Tìm kiếm theo UUID hoặc inspection_code tương ứng
+    records = db.query(VehicleInspection).all()
+    target = None
+    for r in records:
+        if uuid.uuid5(uuid.NAMESPACE_DNS, f"vehicle-inspection-{r.id}") == inspection_id:
+            target = r
+            break
+
+    if not target:
+        raise HTTPException(status_code=404, detail="Không tìm thấy biên bản kiểm tra xe vận chuyển")
+
+    data = payload.model_dump(exclude_unset=True)
+    if "license_plate" in data:
+        target.vehicle_plate = data["license_plate"]
+    if "driver_name" in data:
+        target.driver_name = data["driver_name"]
+    if "customer_name" in data:
+        target.customer_name = data["customer_name"]
+    if "vehicle_type" in data:
+        target.vehicle_type = data["vehicle_type"]
+    if "check_registration_valid" in data:
+        target.valid_registration_check = data["check_registration_valid"]
+    if "check_clean_floor" in data:
+        target.clean_dry_check = data["check_clean_floor"]
+    if "check_no_odor" in data:
+        target.no_odor_check = data["check_no_odor"]
+    if "check_no_pests" in data:
+        target.pest_free_check = data["check_no_pests"]
+    if "check_enclosed_tarp" in data:
+        target.cargo_integrity_check = data["check_enclosed_tarp"]
+    if "inspector_name" in data:
+        target.inspector_name = data["inspector_name"]
+    if "corrective_action" in data:
+        target.corrective_action = data["corrective_action"]
+
+    # Re-evaluate
+    is_passed = all([
+        target.valid_registration_check,
+        target.clean_dry_check,
+        target.no_odor_check,
+        target.pest_free_check,
+        target.cargo_integrity_check,
+    ])
+    target.inspection_result = "PASS" if is_passed else "FAIL"
+
+    db.commit()
+    db.refresh(target)
+
+    return VehicleInspectionLogResponse(
+        inspection_id=uuid.uuid5(uuid.NAMESPACE_DNS, f"vehicle-inspection-{target.id}"),
+        inspection_code=target.inspection_code,
+        inspection_date=target.inspection_date.date() if isinstance(target.inspection_date, datetime) else target.inspection_date,
+        customer_name=target.customer_name or "Khách hàng công ty",
+        vehicle_type=target.vehicle_type or "Xe tải thùng kín",
+        license_plate=target.vehicle_plate,
+        driver_name=target.driver_name,
+        check_registration_valid=target.valid_registration_check,
+        check_clean_floor=target.clean_dry_check,
+        check_no_odor=target.no_odor_check,
+        pest_free_check=target.pest_free_check,
+        check_enclosed_tarp=target.cargo_integrity_check,
+        overall_result="PASSED" if target.inspection_result == "PASS" else "REJECTED",
+        inspector_name=target.inspector_name,
+        corrective_action=target.corrective_action,
+        created_at=target.created_at,
+    )
+
+
+@router.delete("/vehicle-inspections/{inspection_id}")
+def delete_vehicle_inspection(
+    inspection_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "fst_leader", "fs_team_leader")),
+):
+    records = db.query(VehicleInspection).all()
+    target = None
+    for r in records:
+        if uuid.uuid5(uuid.NAMESPACE_DNS, f"vehicle-inspection-{r.id}") == inspection_id:
+            target = r
+            break
+
+    if not target:
+        raise HTTPException(status_code=404, detail="Không tìm thấy biên bản kiểm tra xe vận chuyển")
+    db.delete(target)
+    db.commit()
+    return {"message": "Đã xóa biên bản kiểm tra xe vận chuyển thành công"}
+
+
+# ==================== 15. WATER SAFETY RECORDS (BM01-SSOP-NUOC) ====================
+def water_measurements_failed(payload: WaterSafetyRecordCreate) -> bool:
+    """Return whether a water/ice sample violates the limits recorded in BM01-SSOP-NUOC.
+
+    The status supplied by the operator is retained for other observations, but it
+    must never override an objectively failed measurement.
+    """
+    return (
+        payload.ph_level < 6.5
+        or payload.ph_level > 8.5
+        or payload.chlorine_ppm < 0.2
+        or payload.chlorine_ppm > 1.0
+        or payload.turbidity_ntu > 2.0
+        or (payload.coliform_cfu is not None and payload.coliform_cfu > 0)
+        or (payload.e_coli_cfu is not None and payload.e_coli_cfu > 0)
+    )
+
+
+@router.get("/water-logs", response_model=List[WaterSafetyRecordResponse])
+def get_water_safety_logs(
+    start_date: Optional[date] = None,
+    end_date: Optional[date] = None,
+    overall_status: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
+    seed_haccp_data_if_empty(db)
+    stmt = select(WaterSafetyRecord).order_by(WaterSafetyRecord.sampling_date.desc(), WaterSafetyRecord.sampling_time.desc())
+    if start_date:
+        stmt = stmt.where(WaterSafetyRecord.sampling_date >= start_date)
+    if end_date:
+        stmt = stmt.where(WaterSafetyRecord.sampling_date <= end_date)
+    if overall_status:
+        stmt = stmt.where(WaterSafetyRecord.overall_status == overall_status)
+    return db.scalars(stmt).all()
+
+
+@router.post("/water-logs", response_model=WaterSafetyRecordResponse, status_code=status.HTTP_201_CREATED)
+def create_water_safety_log(
+    payload: WaterSafetyRecordCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "fst_leader", "fs_team_leader", "maintenance", "production"))
+):
+    code = payload.record_code or f"WSR-{datetime.now().strftime('%Y%m%d')}-{uuid.uuid4().hex[:4].upper()}"
+    code = code.strip()
+    duplicate = db.scalar(select(WaterSafetyRecord).where(WaterSafetyRecord.record_code == code))
+    if duplicate:
+        raise HTTPException(status_code=409, detail=f"Mã phiếu kiểm nước '{code}' đã tồn tại")
+    st = "FAIL" if water_measurements_failed(payload) else payload.overall_status
+    log = WaterSafetyRecord(
+        record_code=code,
+        sampling_point=payload.sampling_point,
+        sampling_date=payload.sampling_date,
+        sampling_time=payload.sampling_time,
+        ph_level=payload.ph_level,
+        chlorine_ppm=payload.chlorine_ppm,
+        turbidity_ntu=payload.turbidity_ntu,
+        sensory_result=payload.sensory_result,
+        coliform_cfu=payload.coliform_cfu,
+        e_coli_cfu=payload.e_coli_cfu,
+        overall_status=st,
+        tested_by_name=payload.tested_by_name or current_user.full_name,
+        verified_by_name=payload.verified_by_name,
+        corrective_action=payload.corrective_action,
+        notes=payload.notes,
+    )
+    db.add(log)
+    db.commit()
+    db.refresh(log)
+    return log
+
+
+# ==================== 16. APPROVED CHEMICAL LIST & MSDS (BM01-SSOP-HOACHAT) ====================
+@router.get("/chemicals", response_model=List[ChemicalRecordResponse])
+def get_approved_chemicals(
+    approval_status: Optional[str] = None,
+    is_food_grade: Optional[bool] = None,
+    q: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
+    seed_haccp_data_if_empty(db)
+    stmt = select(ChemicalRecord).order_by(ChemicalRecord.chemical_code.asc())
+    if approval_status:
+        stmt = stmt.where(ChemicalRecord.approval_status == approval_status)
+    if is_food_grade is not None:
+        stmt = stmt.where(ChemicalRecord.is_food_grade == is_food_grade)
+    if q:
+        stmt = stmt.where(or_(
+            ChemicalRecord.chemical_code.ilike(f"%{q.strip()}%"),
+            ChemicalRecord.chemical_name.ilike(f"%{q.strip()}%"),
+            ChemicalRecord.purpose.ilike(f"%{q.strip()}%"),
+        ))
+    return db.scalars(stmt).all()
+
+
+@router.post("/chemicals", response_model=ChemicalRecordResponse, status_code=status.HTTP_201_CREATED)
+def create_chemical_record(
+    payload: ChemicalRecordCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "fst_leader", "fs_team_leader"))
+):
+    dup = db.scalar(select(ChemicalRecord).where(ChemicalRecord.chemical_code == payload.chemical_code.strip()))
+    if dup:
+        raise HTTPException(status_code=400, detail=f"Mã hóa chất '{payload.chemical_code}' đã tồn tại")
+    chem = ChemicalRecord(
+        chemical_code=payload.chemical_code.strip(),
+        chemical_name=payload.chemical_name.strip(),
+        purpose=payload.purpose.strip(),
+        is_food_grade=payload.is_food_grade,
+        supplier_name=payload.supplier_name.strip(),
+        msds_document_url=payload.msds_document_url,
+        msds_file_name=payload.msds_file_name,
+        msds_expiry_date=payload.msds_expiry_date,
+        dilution_ratio=payload.dilution_ratio,
+        storage_location=payload.storage_location,
+        approval_status=payload.approval_status,
+        current_stock_kg=payload.current_stock_kg,
+        safety_instructions=payload.safety_instructions,
+        approved_by=payload.approved_by or current_user.full_name,
+    )
+    db.add(chem)
+    db.commit()
+    db.refresh(chem)
+    return chem
+
+
+@router.put("/chemicals/{chemical_id}", response_model=ChemicalRecordResponse)
+def update_chemical_record(
+    chemical_id: UUID,
+    payload: ChemicalRecordUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "fst_leader", "fs_team_leader"))
+):
+    chem = db.get(ChemicalRecord, chemical_id)
+    if not chem:
+        raise HTTPException(status_code=404, detail="Không tìm thấy hóa chất")
+    for field, val in payload.model_dump(exclude_unset=True).items():
+        setattr(chem, field, val)
+    db.commit()
+    db.refresh(chem)
+    return chem
+
+
+# ==================== 17. WASTE MANAGEMENT LOGS (BM01-SSOP-RACTHAI) ====================
+@router.get("/waste-logs", response_model=List[WasteLogResponse])
+def get_waste_logs(
+    waste_type: Optional[str] = None,
+    start_date: Optional[date] = None,
+    end_date: Optional[date] = None,
+    db: Session = Depends(get_db)
+):
+    seed_haccp_data_if_empty(db)
+    stmt = select(WasteLog).order_by(WasteLog.log_date.desc(), WasteLog.created_at.desc())
+    if waste_type:
+        stmt = stmt.where(WasteLog.waste_type == waste_type)
+    if start_date:
+        stmt = stmt.where(WasteLog.log_date >= start_date)
+    if end_date:
+        stmt = stmt.where(WasteLog.log_date <= end_date)
+    return db.scalars(stmt).all()
+
+
+@router.post("/waste-logs", response_model=WasteLogResponse, status_code=status.HTTP_201_CREATED)
+def create_waste_log(
+    payload: WasteLogCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "fst_leader", "fs_team_leader", "production"))
+):
+    code = payload.log_code or f"WST-{datetime.now().strftime('%Y%m%d')}-{uuid.uuid4().hex[:4].upper()}"
+    code = code.strip()
+    duplicate = db.scalar(select(WasteLog).where(WasteLog.log_code == code))
+    if duplicate:
+        raise HTTPException(status_code=409, detail=f"Mã nhật ký chất thải '{code}' đã tồn tại")
+    log = WasteLog(
+        log_code=code,
+        log_date=payload.log_date,
+        waste_type=payload.waste_type,
+        description=payload.description,
+        quantity_kg=payload.quantity_kg,
+        storage_area=payload.storage_area,
+        disposal_contractor=payload.disposal_contractor,
+        transfer_note_code=payload.transfer_note_code,
+        status=payload.status,
+        handled_by_name=payload.handled_by_name or current_user.full_name,
+        notes=payload.notes,
+    )
+    db.add(log)
+    db.commit()
+    db.refresh(log)
+    return log
+
+
+# ==================== 18. ENVIRONMENTAL MONITORING SCHEDULES ====================
+@router.get("/environmental-schedules", response_model=List[EnvironmentalMonitoringScheduleResponse])
+def get_environmental_schedules(
+    status_filter: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
+    seed_haccp_data_if_empty(db)
+    stmt = select(EnvironmentalMonitoringSchedule).order_by(EnvironmentalMonitoringSchedule.next_due_date.asc())
+    if status_filter:
+        stmt = stmt.where(EnvironmentalMonitoringSchedule.status == status_filter)
+    return db.scalars(stmt).all()
+
+
+@router.post("/environmental-schedules", response_model=EnvironmentalMonitoringScheduleResponse, status_code=status.HTTP_201_CREATED)
+def create_environmental_schedule(
+    payload: EnvironmentalMonitoringScheduleCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "fst_leader", "fs_team_leader"))
+):
+    dup = db.scalar(select(EnvironmentalMonitoringSchedule).where(EnvironmentalMonitoringSchedule.item_code == payload.item_code.strip()))
+    if dup:
+        raise HTTPException(status_code=400, detail=f"Mã lịch kiểm nghiệm '{payload.item_code}' đã tồn tại")
+    sch = EnvironmentalMonitoringSchedule(
+        item_code=payload.item_code.strip(),
+        target_object=payload.target_object.strip(),
+        parameters=payload.parameters.strip(),
+        frequency=payload.frequency.strip(),
+        testing_unit=payload.testing_unit.strip(),
+        last_tested_date=payload.last_tested_date,
+        next_due_date=payload.next_due_date,
+        status=payload.status,
+        last_result=payload.last_result,
+    )
+    db.add(sch)
+    db.commit()
+    db.refresh(sch)
+    return sch

@@ -1,0 +1,126 @@
+CÔNG TY …
+
+
+QUY TRÌNH
+KIỂM SOÁT HỒ SƠ
+
+Số hiệu           : QT - KSHS  
+Số soát xét	: 00
+Ngày hiệu lực	: …  
+
+
+Người soạn thảo
+Người phê duyệt
+Chức vụ
+Kế toán 
+Giám đốc
+
+Xác nhận
+
+
+Họ và tên
+
+
+	
+
+Lịch sử sửa đổi tài liệu
+Stt
+Nội dung sửa đổi
+Ngày sửa đổi
+Số soát xét
+Ngày hiệu lực
+1
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ QUY TRÌNH:
+Mục đích
+Quy trình này quy định cách thức thống nhất để lập, phân loại, ký mã hiệu, sử dụng, lưu giữ và huỷ bỏ các hồ sơ chất lượng, an toàn thực phẩm, môi trường và an toàn lao động của công ty
+Phạm vi áp dụng
+Quy trình này được áp dụng cho việc kiểm soát tất cả các loại hồ sơ thuộc hệ thống quản lý chất lượng, an toàn thực phẩm, môi trường và an toàn lao động của Công ty
+Tài liệu tham khảo
+Tiêu chuẩn ISO 9000:2015 & ISO 22000:2018
+Định nghĩa/chữ viết tắt
+Hồ sơ là các tài liệu cung cấp những bằng chứng khách quan của các hoạt động đã được thực hiện hoặc các kết quả đã đạt được
+Nội dung.
+5.1. Yêu cầu đối với hoạt động ghi nhận hồ sơ
+Hồ sơ phải ghi rõ ngày và có thể là thời gian của hoạt động ghi nhận
+Hồ sơ phải được tạo ra cùng thời điểm thực hiện hoạt động đã được ghi nhận 
+Hồ sơ phải ghi chính xác, dễ đọc, không tẩy xóa (không sử dụng bút tẩy, xóa, khi ghi sai thì có thể gạch chéo nhưng không làm mất thông tin cũ)
+Không sử dụng bút chì để ghi nhận hồ sơ
+Hồ sơ phải có chữ ký xác nhận của người thực hiện
+5.2 Lập và phân loại hồ sơ
+Trưởng các bộ phận căn cứ vào phạm vi hoạt động, xác định các loại hồ sơ chất lượng của đơn vị mình. Cử một nhân viên quản lý hồ sơ của đơn vị mình
+Việc lập hồ sơ chất lượng được quy định cụ thể trong các tài liệu (quy trình) của hệ thống. Nhân viên quản lý hồ sơ có trách nhiệm phân loại, sắp xếp hồ sơ theo từng hoạt động cụ thể
+5.3. Cập nhật danh mục hồ sơ
+Nhân viên quản lý hồ sơ có trách nhiệm cập nhật danh mục hồ sơ của bộ phận mình vào biểu mẫu ( - BM01 - KSHS)
+Trưởng đơn vị phải chỉ rõ trong danh mục hồ sơ: tên hồ sơ, người chịu trách nhiệm lưu hồ sơ, phương pháp lưu trữ, nơi lưu giữ, tên hồ sơ, thời gian lưu trữ
+5.4. Sử dụng hồ sơ
+Mọi cán bộ, công nhân viên trong Công ty đều được phép sử dụng hồ sơ thuộc quyền quản lý của đơn vị mình. Khi có nhu cầu sử dụng hồ sơ do bộ phận khác quản lý, phải được sự đồng ý của trưởng đơn vị đó
+Người mượn, sử dụng hồ sơ phải có trách nhiệm bảo quản và hoàn trả hồ sơ đầy đủ, đúng hạn
+Khi đối tượng là người ngoài công ty (khách hàng, cơ quan quản lý Nhà nước…) có yêu cầu tham khảo, xem xét hồ sơ chất lượng, phải được sự đồng ý của Ban Lãnh Đạo công ty
+5.5. Lưu trữ, bảo quản
+Thời gian lưu trữ hồ sơ phải tuân theo quy định của pháp luật đối với hồ sơ liên quan đến tài chính, và tuân theo quy định của công ty, riêng các hồ sơ liên quan đến tính an toàn của sản phẩm phải lưu trữ ít nhất 2 năm
+Nhân viên quản lý hồ sơ phải sắp xếp, lưu hồ sơ theo đúng trình tự, thời gian quy định trong danh mục hồ sơ, sắp xếp thuận tiện cho tìm kiếm, sử dụng
+Mọi hồ sơ phải được bảo quản trong các phương tiện thích hợp tránh hư hỏng, mất mát
+Từng cặp hồ sơ cần có dấu hiệu nhận biết và được phổ biến cho cán bộ công nhân viên thực hiện
+Mọi hồ sơ sau khi sử dụng phải được để đúng nơi quy định
+Các hồ sơ đang được lưu giữ nghiêm cấm tẩy xoá, sửa đổi
+Các hồ sơ điện tử cẩn có biện pháp kiểm soát an toàn thông qua việc cấp quyền truy cập, lập mật khẩu bảo vệ, khi lưu trữ phải được sao lưu định kỳ để bảo vệ dữ liệu.
+5.6. Hủy bỏ hồ sơ
+Khi hết thời hạn lưu trữ hồ sơ trưởng đơn vị lập phiếu đề nghị hủy hồ sơ ( - BM02 - KSHS) và trình Ban Lãnh Đạo công ty phê duyệt, chỉ khi có ý kiến chấp thuận thì mới được hủy bỏ hồ sơ
+Biểu mẫu đính kèm
+Stt
+Biểu mẫu 
+Số hiệu
+Trách nhiệm lưu
+Thời gian lưu
+
+Danh mục hồ sơ
+ BM01 - KSHS
+Đơn vị liên quan
+2 năm
+
+Phiếu đề nghị hủy hồ sơ
+ BM02 - KSHS
+Đơn vị liên quan
+2 năm
+Danh sách phân phối tài liệu
+ Phòng HCNS - KT			 Phòng Sản xuất
+ Phòng QLCL				 Phòng Thiết bị
+
+
+
+
+
+
+
+
+CÔNG TY …  
+QUY TRÌNH
+KIỂM SOÁT HỒ SƠ
+Số hiệu               : QT - KSHS
+Số soát xét         : 00
+Ngày hiệu lực    : 
+Trang:  PAGE 4 /  NUMPAGES 4
+
+
+
+
+

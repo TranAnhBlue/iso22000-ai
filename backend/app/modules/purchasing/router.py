@@ -7,6 +7,8 @@ from datetime import date, datetime, timedelta
 import random
 
 from app.core.database import get_db
+from app.core.demo_data import demo_seed_enabled
+from app.core.dependencies import require_roles
 from app.modules.purchasing.models import Supplier, MaterialLot, IQCInspection, SupplierEvaluationPlan, SupplierEvaluation
 from app.modules.auth.models import User
 from app.modules.purchasing.schemas import (
@@ -276,7 +278,10 @@ SEED_SUPPLIERS = [
 ]
 
 def seed_purchasing_data_if_empty(db: Session) -> None:
-    return
+    if not demo_seed_enabled():
+        return
+    if db.query(Supplier).count() > 0:
+        return
 
     admin_user = db.query(User).first()
     admin_id = admin_user.user_id if admin_user else None
@@ -635,6 +640,54 @@ def delete_supplier(supplier_id: UUID, db: Session = Depends(get_db)):
     return {"message": f"Đã xóa thành công nhà cung cấp '{supplier.supplier_name}'."}
 
 
+@router.post("/suppliers/{supplier_id}/approve", response_model=SupplierResponse)
+def approve_supplier_asl(
+    supplier_id: UUID,
+    approval_notes: Optional[str] = Query(None, description="Ghi chú phê duyệt ASL"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "fst_leader", "fs_team_leader")),
+):
+    """
+    Phê duyệt chính thức Nhà Cung Cấp vào Danh Mục ASL (Approved Supplier List - ISO 22000 Clause 7.1.6)
+    """
+    supplier = db.get(Supplier, supplier_id)
+    if not supplier:
+        raise HTTPException(status_code=404, detail="Không tìm thấy nhà cung cấp.")
+
+    supplier.status = "APPROVED"
+    supplier.evaluation_date = date.today()
+    if approval_notes:
+        supplier.evaluation_notes = f"{supplier.evaluation_notes or ''}\n[PHÊ DUYỆT ASL] {approval_notes} ({date.today().strftime('%d/%m/%Y')})".strip()
+
+    db.commit()
+    db.refresh(supplier)
+    lots_count = db.query(MaterialLot).filter(MaterialLot.supplier_id == supplier.supplier_id).count()
+    return format_supplier_out(supplier, lots_count=lots_count, iqc_pass_rate=100.0)
+
+
+@router.post("/suppliers/{supplier_id}/suspend", response_model=SupplierResponse)
+def suspend_supplier_asl(
+    supplier_id: UUID,
+    reason: str = Query(..., description="Lý do tạm đình chỉ nhà cung cấp (chất lượng/chứng chỉ hết hạn)"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "fst_leader", "fs_team_leader")),
+):
+    """
+    Đình chỉ / Khóa Nhà Cung Cấp trong ASL (Tự động CHẶN nhập mọi lô hàng mới)
+    """
+    supplier = db.get(Supplier, supplier_id)
+    if not supplier:
+        raise HTTPException(status_code=404, detail="Không tìm thấy nhà cung cấp.")
+
+    supplier.status = "SUSPENDED"
+    supplier.evaluation_notes = f"{supplier.evaluation_notes or ''}\n[ĐÌNH CHỈ ASL] {reason} ({date.today().strftime('%d/%m/%Y')})".strip()
+
+    db.commit()
+    db.refresh(supplier)
+    lots_count = db.query(MaterialLot).filter(MaterialLot.supplier_id == supplier.supplier_id).count()
+    return format_supplier_out(supplier, lots_count=lots_count, iqc_pass_rate=100.0)
+
+
 # ==================== MATERIAL LOT ENDPOINTS ====================
 @router.get("/lots", response_model=List[MaterialLotResponse])
 def get_material_lots(
@@ -696,6 +749,22 @@ def create_material_lot(lot_in: MaterialLotCreate, db: Session = Depends(get_db)
         admin_user = db.query(User).first()
         if admin_user:
             creator_id = admin_user.user_id
+
+    # Kiểm tra tính hợp lệ của Nhà Cung Cấp trong ASL (ISO 22000 Clause 7.1.6)
+    if lot_in.supplier_id:
+        supplier = db.get(Supplier, lot_in.supplier_id)
+        if not supplier:
+            raise HTTPException(status_code=404, detail="Nhà cung cấp được chọn không tồn tại.")
+        if supplier.status == "SUSPENDED":
+            raise HTTPException(
+                status_code=400,
+                detail=f"Nhà cung cấp '{supplier.supplier_name}' ({supplier.supplier_code}) đang bị ĐÌNH CHỈ (SUSPENDED) trong Danh mục ASL. Hệ thống TỰ ĐỘNG CHẶN tiếp nhận lô nguyên liệu mới theo ISO 22000.",
+            )
+        if supplier.status == "REJECTED":
+            raise HTTPException(
+                status_code=400,
+                detail=f"Nhà cung cấp '{supplier.supplier_name}' đã bị TỪ CHỐI (REJECTED) trong Danh mục ASL. Không được phép tiếp nhận nguyên liệu.",
+            )
 
     lot = MaterialLot(
         lot_number=lot_code,
@@ -1606,4 +1675,3 @@ def delete_supplier_evaluation(
     db.delete(e)
     db.commit()
     return {"message": "Đã xóa phiếu đánh giá NCC thành công."}
-

@@ -31,3 +31,31 @@ class DepartmentOption(BaseModel):
     role_code: str
     role_name: str
     description: Optional[str] = None
+
+
+class ChangePasswordRequest(BaseModel):
+    old_password: str = Field(..., min_length=1)
+    new_password: str = Field(..., min_length=6, description="Mật khẩu mới tối thiểu 6 ký tự")
+
+
+class ResetPasswordRequest(BaseModel):
+    username: str = Field(..., min_length=2)
+    new_password: Optional[str] = Field(default="123456", min_length=6)
+
+
+from datetime import datetime
+from uuid import UUID
+
+class AuditLogResponse(BaseModel):
+    log_id: UUID
+    user_id: Optional[UUID] = None
+    username: str
+    action: str
+    entity_type: str
+    entity_id: Optional[str] = None
+    details: Optional[dict] = None
+    ip_address: Optional[str] = None
+    created_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True

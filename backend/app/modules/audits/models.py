@@ -117,3 +117,57 @@ class HealthDeclarationRecord(Base):
     supervisor_name: Mapped[str] = mapped_column(String(100), nullable=False, default="Giám Sát Vệ Sinh Ca")
     notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow, server_default=text("CURRENT_TIMESTAMP"))
+
+
+# ==================== TRAINING REQUESTS (BM01-QTĐT PHIẾU YÊU CẦU ĐÀO TẠO) ====================
+class TrainingRequest(Base):
+    """
+    Biểu mẫu BM01-QTĐT - Phiếu yêu cầu/đề xuất đào tạo từ các phòng ban
+    """
+    __tablename__ = "training_requests"
+
+    request_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, server_default=text("uuid_generate_v4()")
+    )
+    request_code: Mapped[str] = mapped_column(String(50), unique=True, index=True, nullable=False)  # YCDT-2026-001
+    department: Mapped[str] = mapped_column(String(100), nullable=False)
+    proposer_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    course_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    training_reason: Mapped[str] = mapped_column(Text, nullable=False)
+    expected_duration: Mapped[str] = mapped_column(String(50), default="0.5 ngày", nullable=False)
+    attendee_count: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    target_participants: Mapped[str] = mapped_column(Text, nullable=False)
+    expected_outcomes: Mapped[str] = mapped_column(Text, nullable=False)
+    request_date: Mapped[date] = mapped_column(Date, default=date.today, nullable=False)
+    status: Mapped[str] = mapped_column(String(50), default="SUBMITTED", nullable=False)  # SUBMITTED, APPROVED, REJECTED, COMPLETED
+    approver_name: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    approval_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
+    approval_note: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow, server_default=text("CURRENT_TIMESTAMP"))
+
+
+# ==================== TRAINING EVALUATIONS (BM04-QTĐT ĐÁNH GIÁ HIỆU QUẢ SAU ĐÀO TẠO) ====================
+class TrainingEvaluation(Base):
+    """
+    Biểu mẫu BM04-QTĐT - Đánh giá chất lượng nhân sự sau đào tạo (sau 1-3 tháng)
+    """
+    __tablename__ = "training_evaluations"
+
+    evaluation_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, server_default=text("uuid_generate_v4()")
+    )
+    course_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), ForeignKey("training_courses.course_id", ondelete="SET NULL"), nullable=True)
+    employee_code: Mapped[str] = mapped_column(String(50), nullable=False)
+    employee_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    department: Mapped[str] = mapped_column(String(100), nullable=False)
+    evaluator_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    evaluation_date: Mapped[date] = mapped_column(Date, default=date.today, nullable=False)
+
+    knowledge_score: Mapped[int] = mapped_column(Integer, default=4, nullable=False)  # 1 - 5 điểm
+    skill_application_score: Mapped[int] = mapped_column(Integer, default=4, nullable=False)  # 1 - 5 điểm
+    attitude_awareness_score: Mapped[int] = mapped_column(Integer, default=5, nullable=False)  # 1 - 5 điểm
+    overall_rating: Mapped[str] = mapped_column(String(30), default="DAT", nullable=False)  # DAT, KHONG_DAT, XUAT_SAC
+
+    supervisor_feedback: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    need_retraining: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow, server_default=text("CURRENT_TIMESTAMP"))

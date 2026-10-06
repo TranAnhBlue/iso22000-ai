@@ -45,6 +45,17 @@ import {
   FileDown,
   Download,
   GitFork,
+  Send,
+  Share2,
+  Globe,
+  RotateCcw,
+  CheckCheck,
+  BadgeAlert,
+  FileWarning,
+  History,
+  ShieldAlert,
+  Archive,
+  FolderArchive,
 } from "lucide-react";
 import api from "@/lib/api";
 import logoImg from "@/assets/logo.png";
@@ -52,6 +63,13 @@ import { WorkflowBuilder, type WorkflowTemplateData } from "@/components/builder
 import { useModuleAccess } from "@/lib/rbac";
 import { EmptyState } from "@/components/EmptyState";
 import { ModuleGuideModal } from "@/components/ModuleGuideModal";
+import { ChangeRequestsTab } from "@/components/documents/ChangeRequestsTab";
+import { DistributionsTab } from "@/components/documents/DistributionsTab";
+import { ExternalDocumentsTab } from "@/components/documents/ExternalDocumentsTab";
+import { PeriodicReviewTab } from "@/components/documents/PeriodicReviewTab";
+import { RecordsRetentionTab } from "@/components/documents/RecordsRetentionTab";
+import { generateMasterDocumentListHtml } from "@/components/documents/dmsPrintHelpers";
+
 
 export const Route = createFileRoute("/documents")({
   head: () => ({
@@ -70,7 +88,7 @@ export const Route = createFileRoute("/documents")({
   ),
 });
 
-// Định nghĩa Cấu trúc Dữ liệu Tài liệu
+// Định nghĩa Cấu trúc Dữ liệu Tài liệu Nội bộ
 export interface DocumentItem {
   id?: string; // mapped from document_id
   document_id: string;
@@ -86,10 +104,128 @@ export interface DocumentItem {
   approved_by?: string | null;
   approver_name?: string | null;
   effective_date?: string | null;
+  review_due_date?: string | null;
+  last_reviewed_date?: string | null;
+  review_frequency_years?: number;
+  drafter_name?: string | null;
+  reviewer_name?: string | null;
+  security_level?: string;
   created_at?: string | null;
 }
 
+// BM01-KSTL: Phiếu Yêu Cầu Xem Xét Tài Liệu
+export interface DocumentChangeRequest {
+  request_id: string;
+  request_code: string;
+  document_id?: string | null;
+  doc_code: string;
+  doc_title: string;
+  change_type: string; // NEW, REVISION, OBSOLETE, OTHER
+  department: string;
+  requested_by?: string | null;
+  requested_by_name: string;
+  request_date: string;
+  reason: string;
+  proposed_content?: string | null;
+  target_completion_date?: string | null;
+  assigned_drafter?: string | null;
+  dept_head_opinion?: string | null;
+  dept_head_comment?: string | null;
+  dept_head_signed_at?: string | null;
+  dept_head_signer_name?: string | null;
+  qa_head_opinion?: string | null;
+  qa_head_comment?: string | null;
+  qa_head_signed_at?: string | null;
+  qa_head_signer_name?: string | null;
+  director_approval?: string | null;
+  director_comment?: string | null;
+  director_signed_at?: string | null;
+  director_signer_name?: string | null;
+  status: string; // SUBMITTED, DEPT_REVIEWED, QA_REVIEWED, APPROVED, REJECTED
+  created_at?: string | null;
+}
+
+// BM02-KSTL: Thông Báo Thay Đổi & Sổ Phân Phối
+export interface DocumentDistribution {
+  distribution_id: string;
+  notice_code: string;
+  document_id: string;
+  doc_code: string;
+  doc_title: string;
+  version: string;
+  effective_date: string;
+  change_summary?: string | null;
+  department_recipient: string;
+  distribution_method: string; // PORTAL, HARDCOPY_CONTROLLED
+  copy_number: number;
+  distributed_by_name: string;
+  distribution_date: string;
+  acknowledged: boolean;
+  acknowledged_by_name?: string | null;
+  acknowledged_at?: string | null;
+  obsolete_copy_retrieved: boolean;
+  retrieval_date?: string | null;
+  notes?: string | null;
+  created_at?: string | null;
+}
+
+// BM04-KSTL: Danh Mục Tài Liệu Nguồn Gốc Bên Ngoài
+export interface ExternalDocument {
+  external_doc_id: string;
+  doc_code: string;
+  doc_title: string;
+  category: string; // LAW_REGULATION, STANDARD_TCVN_ISO, TECHNICAL_SPEC_CUSTOMER, INDUSTRY_GUIDELINE
+  issuing_body: string;
+  published_date?: string | null;
+  effective_date?: string | null;
+  status: string; // EFFECTIVE, EXPIRED, SUPERSEDED
+  superseded_by?: string | null;
+  department_in_charge: string;
+  review_frequency: string;
+  last_checked_date?: string | null;
+  checked_by_name?: string | null;
+  file_url?: string | null;
+  notes?: string | null;
+  created_at?: string | null;
+}
+
+// BM05-KSTL: Lịch Soát Xét Định Kỳ 3 Năm
+export interface PeriodicReviewItem {
+  document_id: string;
+  doc_code: string;
+  doc_title: string;
+  doc_type: string;
+  department: string;
+  current_version: string;
+  effective_date?: string | null;
+  last_reviewed_date?: string | null;
+  review_due_date?: string | null;
+  days_remaining?: number | null;
+  review_status: "VALID" | "DUE_SOON" | "OVERDUE";
+  review_frequency_years: number;
+}
+
+// BM01/BM02-KSHS: Danh Mục Hồ Sơ Lưu Trữ & Tiêu Hủy (QT-KSHS An Giang)
+export interface RecordRetention {
+  retention_id: string;
+  record_code: string;
+  record_name: string;
+  department: string;
+  storage_location: string;
+  retention_period: string;
+  disposal_method?: string | null;
+  responsible_person?: string | null;
+  status: "RETAINED" | "READY_FOR_DISPOSAL" | "DISPOSED";
+  disposal_date?: string | null;
+  disposal_council?: string | null;
+  disposal_minutes_code?: string | null;
+  notes?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+}
+
 import { useDepartments, DEFAULT_DEPARTMENTS } from "@/lib/departments";
+
 
 // Danh sách phòng ban chuẩn hóa từ CSDL
 export const DEPARTMENTS = DEFAULT_DEPARTMENTS;
@@ -298,6 +434,103 @@ function DocumentsPage() {
   const [selectedStatus, setSelectedStatus] = useState<string>("ALL");
   const [selectedDept, setSelectedDept] = useState<string>("ALL");
   const [showGuide, setShowGuide] = useState(false);
+
+  // Phân hệ Tabs nghiệp vụ DMS & KSHS An Giang
+  type DocumentSubTab =
+    | "INTERNAL_DOCS"
+    | "CHANGE_REQUESTS"
+    | "DISTRIBUTIONS"
+    | "EXTERNAL_DOCS"
+    | "PERIODIC_REVIEWS"
+    | "RETENTION_RECORDS";
+
+  const [activeTab, setActiveTab] = useState<DocumentSubTab>("INTERNAL_DOCS");
+
+  // Dữ liệu cho các tab nghiệp vụ
+  const [changeRequests, setChangeRequests] = useState<DocumentChangeRequest[]>([]);
+  const [loadingCR, setLoadingCR] = useState(false);
+
+  const [distributions, setDistributions] = useState<DocumentDistribution[]>([]);
+  const [loadingDist, setLoadingDist] = useState(false);
+
+  const [externalDocs, setExternalDocs] = useState<ExternalDocument[]>([]);
+  const [loadingExt, setLoadingExt] = useState(false);
+
+  const [periodicReviews, setPeriodicReviews] = useState<PeriodicReviewItem[]>([]);
+  const [loadingPR, setLoadingPR] = useState(false);
+
+  const [retentionRecords, setRetentionRecords] = useState<RecordRetention[]>([]);
+  const [loadingRetention, setLoadingRetention] = useState(false);
+
+  const fetchChangeRequests = async () => {
+    setLoadingCR(true);
+    try {
+      const res = await api.get("/documents/change-requests");
+      setChangeRequests(res.data || []);
+    } catch (err) {
+      console.error("Lỗi khi tải yêu cầu xem xét tài liệu:", err);
+    } finally {
+      setLoadingCR(false);
+    }
+  };
+
+  const fetchDistributions = async () => {
+    setLoadingDist(true);
+    try {
+      const res = await api.get("/documents/distributions");
+      setDistributions(res.data || []);
+    } catch (err) {
+      console.error("Lỗi khi tải sổ phân phối tài liệu:", err);
+    } finally {
+      setLoadingDist(false);
+    }
+  };
+
+  const fetchExternalDocs = async () => {
+    setLoadingExt(true);
+    try {
+      const res = await api.get("/documents/external-documents");
+      setExternalDocs(res.data || []);
+    } catch (err) {
+      console.error("Lỗi khi tải tài liệu bên ngoài:", err);
+    } finally {
+      setLoadingExt(false);
+    }
+  };
+
+  const fetchPeriodicReviews = async () => {
+    setLoadingPR(true);
+    try {
+      const res = await api.get("/documents/periodic-reviews");
+      setPeriodicReviews(res.data || []);
+    } catch (err) {
+      console.error("Lỗi khi tải kế hoạch soát xét tài liệu:", err);
+    } finally {
+      setLoadingPR(false);
+    }
+  };
+
+  const fetchRetentionRecords = async () => {
+    setLoadingRetention(true);
+    try {
+      const res = await api.get("/documents/retention");
+      setRetentionRecords(res.data || []);
+    } catch (err) {
+      console.error("Lỗi khi tải danh mục hồ sơ lưu trữ:", err);
+    } finally {
+      setLoadingRetention(false);
+    }
+  };
+
+  // Tự động tải dữ liệu khi chuyển tab
+  useEffect(() => {
+    if (activeTab === "CHANGE_REQUESTS") fetchChangeRequests();
+    else if (activeTab === "DISTRIBUTIONS") fetchDistributions();
+    else if (activeTab === "EXTERNAL_DOCS") fetchExternalDocs();
+    else if (activeTab === "PERIODIC_REVIEWS") fetchPeriodicReviews();
+    else if (activeTab === "RETENTION_RECORDS") fetchRetentionRecords();
+  }, [activeTab]);
+
 
   // Modal States
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -981,75 +1214,166 @@ KÝ DUYỆT VĂN BẢN:
     return { checks, passedCount, total: checks.length, percentage };
   };
 
+  // In danh mục tài liệu nội bộ BM03-KSTL
+  const handlePrintInternalMasterList = () => {
+    const html = generateMasterDocumentListHtml(documents);
+    printHtml(html);
+  };
+
   return (
     <div className="space-y-6">
       {/* Header và Nút hành động */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <PageHeader
-          title="Hệ thống Tài liệu & Quy trình (SOP)"
-          description="Quản lý tài liệu 5 cấp theo ISO 22000:2018. Kết nối cơ sở dữ liệu thực tế, kiểm tra tuân thủ động và trợ lý AI."
+          title="Hệ thống Tài liệu & Hồ sơ (DMS & KSHS)"
+          description="Quản lý tài liệu 5 cấp (QT-01-KSTL) và danh mục kiểm soát hồ sơ lưu trữ & tiêu hủy (QT-KSHS) theo tiêu chuẩn ISO 22000:2018 An Giang."
         />
 
-        <div className="flex flex-wrap items-center gap-2.5">
-          <Button
-            onClick={() => setShowGuide(true)}
-            variant="outline"
-            size="sm"
-            className="gap-1.5 border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 text-xs font-bold"
-          >
-            <BookOpen className="h-3.5 w-3.5 text-emerald-600" />
-            Hướng Dẫn Nghiệp Vụ
-          </Button>
+        {activeTab === "INTERNAL_DOCS" && (
+          <div className="flex flex-wrap items-center gap-2.5">
+            <Button
+              onClick={() => setShowGuide(true)}
+              variant="outline"
+              size="sm"
+              className="gap-1.5 border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 text-xs font-bold"
+            >
+              <BookOpen className="h-3.5 w-3.5 text-emerald-600" />
+              Hướng Dẫn Nghiệp Vụ
+            </Button>
 
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleOpenSopWorkflow}
-            className="gap-1.5 border-purple-300 bg-purple-50 text-purple-700 hover:bg-purple-100 text-xs font-semibold"
-          >
-            <GitFork className="h-3.5 w-3.5 text-purple-600" />
-            Lưu Đồ Phê Duyệt SOP (Workflow)
-          </Button>
-
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={fetchDocuments}
-            disabled={loading}
-            className="gap-1.5 text-xs"
-          >
-            <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin text-primary" : ""}`} />
-            Làm mới
-          </Button>
-
-          {canEdit && (
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setIsAIAssistantOpen(true)}
-              className="gap-1.5 border-primary/30 bg-primary/5 text-xs text-primary hover:bg-primary/10"
+              onClick={handleOpenSopWorkflow}
+              className="gap-1.5 border-purple-300 bg-purple-50 text-purple-700 hover:bg-purple-100 text-xs font-semibold"
             >
-              <Sparkles className="h-3.5 w-3.5 text-primary" />
-              Trợ lý AI soạn thảo SOP
+              <GitFork className="h-3.5 w-3.5 text-purple-600" />
+              Lưu Đồ Phê Duyệt SOP
             </Button>
-          )}
 
-          {canEdit && (
-            <Button onClick={handleOpenCreate} size="sm" className="gap-1.5 text-xs">
-              <Plus className="h-4 w-4" />
-              Tạo tài liệu mới
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handlePrintInternalMasterList}
+              className="gap-1.5 text-xs"
+            >
+              <Printer className="h-3.5 w-3.5" />
+              In Sổ BM03-KSTL
             </Button>
-          )}
-        </div>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={fetchDocuments}
+              disabled={loading}
+              className="gap-1.5 text-xs"
+            >
+              <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin text-primary" : ""}`} />
+              Làm mới
+            </Button>
+
+            {canEdit && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsAIAssistantOpen(true)}
+                className="gap-1.5 border-primary/30 bg-primary/5 text-xs text-primary hover:bg-primary/10"
+              >
+                <Sparkles className="h-3.5 w-3.5 text-primary" />
+                Trợ lý AI
+              </Button>
+            )}
+
+            {canEdit && (
+              <Button onClick={handleOpenCreate} size="sm" className="gap-1.5 text-xs">
+                <Plus className="h-4 w-4" />
+                Tạo tài liệu mới
+              </Button>
+            )}
+          </div>
+        )}
       </div>
 
-      {/* Thẻ Thống kê 5 Cấp Tài liệu */}
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
+      {/* Navigation Tab Bar Phân hệ QT-KSTL & QT-KSHS An Giang */}
+      <div className="flex items-center gap-1.5 border-b pb-1 overflow-x-auto text-xs scrollbar-thin">
         {[
           {
-            level: "Cấp 1",
-            title: "Chính sách",
-            count: counts.policy,
+            id: "INTERNAL_DOCS",
+            label: "Tài liệu nội bộ (BM03-KSTL)",
+            icon: FileText,
+            badge: documents.length,
+          },
+          {
+            id: "CHANGE_REQUESTS",
+            label: "Yêu cầu xem xét (BM01-KSTL)",
+            icon: History,
+            badge: changeRequests.filter((c) => c.status !== "APPROVED" && c.status !== "REJECTED").length || undefined,
+          },
+          {
+            id: "DISTRIBUTIONS",
+            label: "Sổ phân phối & Thu hồi (BM02-KSTL)",
+            icon: Share2,
+            badge: distributions.filter((d) => !d.acknowledged).length || undefined,
+          },
+          {
+            id: "EXTERNAL_DOCS",
+            label: "Tài liệu bên ngoài (BM04-KSTL)",
+            icon: Globe,
+            badge: externalDocs.length || undefined,
+          },
+          {
+            id: "PERIODIC_REVIEWS",
+            label: "Soát xét định kỳ (BM05-KSTL)",
+            icon: Clock,
+            badge: periodicReviews.filter((p) => p.review_status === "OVERDUE" || p.review_status === "DUE_SOON").length || undefined,
+          },
+          {
+            id: "RETENTION_RECORDS",
+            label: "Hồ sơ lưu trữ (BM01/BM02-KSHS)",
+            icon: Archive,
+            badge: retentionRecords.length || undefined,
+          },
+        ].map((tab) => {
+          const Icon = tab.icon;
+          const isActive = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id as DocumentSubTab)}
+              className={`flex items-center gap-2 px-3.5 py-2 font-medium rounded-t-lg transition border-b-2 whitespace-nowrap ${
+                isActive
+                  ? "border-primary text-primary bg-primary/5 font-semibold"
+                  : "border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/40"
+              }`}
+            >
+              <Icon className={`h-4 w-4 ${isActive ? "text-primary" : "text-muted-foreground"}`} />
+              <span>{tab.label}</span>
+              {typeof tab.badge === "number" && tab.badge > 0 && (
+                <span
+                  className={`rounded-full px-1.5 py-0.2 text-[10px] font-bold ${
+                    isActive
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted text-muted-foreground"
+                  }`}
+                >
+                  {tab.badge}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {activeTab === "INTERNAL_DOCS" && (
+        <>
+          {/* Thẻ Thống kê 5 Cấp Tài liệu */}
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
+            {[
+              {
+                level: "Cấp 1",
+                title: "Chính sách",
+                count: counts.policy,
+
             code: "POLICY",
             tone: "border-purple-200 bg-purple-500/5 text-purple-700 dark:text-purple-300",
             badge: "bg-purple-500/10 text-purple-700",
@@ -1399,9 +1723,72 @@ KÝ DUYỆT VĂN BẢN:
         </div>
       </div>
       )}
+        </>
+      )}
+
+      {/* Tab BM01-KSTL: Phiếu Yêu Cầu Xem Xét & Sửa Đổi Tài Liệu */}
+      {activeTab === "CHANGE_REQUESTS" && (
+        <ChangeRequestsTab
+          changeRequests={changeRequests}
+          loading={loadingCR}
+          onRefresh={fetchChangeRequests}
+          internalDocs={documents}
+          canEdit={canEdit}
+          isManagement={isManagement}
+        />
+      )}
+
+      {/* Tab BM02-KSTL: Sổ Phân Phối & Xác Nhận Thu Hồi Bản Cũ */}
+      {activeTab === "DISTRIBUTIONS" && (
+        <DistributionsTab
+          distributions={distributions}
+          loading={loadingDist}
+          onRefresh={fetchDistributions}
+          internalDocs={documents}
+          canEdit={canEdit}
+          isManagement={isManagement}
+        />
+      )}
+
+      {/* Tab BM04-KSTL: Danh Mục Tài Liệu Nguồn Gốc Bên Ngoài */}
+      {activeTab === "EXTERNAL_DOCS" && (
+        <ExternalDocumentsTab
+          externalDocs={externalDocs}
+          loading={loadingExt}
+          onRefresh={fetchExternalDocs}
+          canEdit={canEdit}
+          isManagement={isManagement}
+        />
+      )}
+
+      {/* Tab BM05-KSTL: Kế Hoạch & Báo Cáo Soát Xét Định Kỳ 3 Năm */}
+      {activeTab === "PERIODIC_REVIEWS" && (
+        <PeriodicReviewTab
+          periodicReviews={periodicReviews}
+          loading={loadingPR}
+          onRefresh={fetchPeriodicReviews}
+          canEdit={canEdit}
+          isManagement={isManagement}
+          onCreateChangeRequestForDoc={() => {
+            setActiveTab("CHANGE_REQUESTS");
+          }}
+        />
+      )}
+
+      {/* Tab BM01/BM02-KSHS: Danh Mục Kiểm Soát Hồ Sơ Lưu Trữ & Tiêu Hủy An Giang */}
+      {activeTab === "RETENTION_RECORDS" && (
+        <RecordsRetentionTab
+          retentionRecords={retentionRecords}
+          loading={loadingRetention}
+          onRefresh={fetchRetentionRecords}
+          canEdit={canEdit}
+          isManagement={isManagement}
+        />
+      )}
 
       {/* Modal Thêm / Chỉnh Sửa Tài Liệu */}
       <Dialog
+
         open={isCreateOpen}
         onOpenChange={(open) => {
           setIsCreateOpen(open);

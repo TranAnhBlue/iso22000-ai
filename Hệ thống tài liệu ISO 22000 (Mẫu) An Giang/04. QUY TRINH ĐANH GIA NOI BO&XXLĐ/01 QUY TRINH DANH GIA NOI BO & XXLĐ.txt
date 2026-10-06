@@ -1,0 +1,416 @@
+CÔNG TY …
+
+
+QUY TRÌNH
+ĐÁNH GIÁ NỘI BỘ
+
+Số hiệu          :  QT - ĐGNB  
+Số soát xét	: 01
+Ngày hiệu lực	: …  
+
+Người soạn thảo
+Người phê duyệt
+Chức vụ
+Kế toán 
+Giám đốc
+
+Xác nhận
+
+
+Họ và tên
+
+
+	
+Lịch sử sửa đổi tài liệu
+Stt
+Nội dung sửa đổi
+Ngày sửa đổi
+Số soát xét
+Ngày hiệu lực
+1
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ QUY TRÌNH:
+Mục đích:
+Quy trình này thiết lập cách thức đánh giá sự phù hợp và xem xét hiệu lực, hiệu quả của hệ thống quản lý so với tiêu chuẩn và các yêu cầu pháp luật đang áp dụng tại công ty.
+Phạm vi áp dụng:
+Áp dụng đối với tất cả các hoạt động đánh giá nội bộ, xem xét lãnh đạo liên quan đến hệ thống quản lý chất lượng, an toàn thực phẩm công ty đang áp dụng.
+Tài liệu tham khảo: 
+Tiêu chuẩn ISO 22000 : 2018
+Các tài liệu của công ty.
+Định nghĩa/chữ viết tắt:
+4.1. Định nghĩa 
+Đánh giá nội bộ: 
+Là quá trình có hệ thống, độc lập và được lập thành văn bản để nhận được bằng chứng đánh giá và và xem xét đánh giá chúng một cách khách quan để xác định mức độ thực hiện các chuẩn mực đã thoả thuận.
+Là hoạt động của công ty với mục đích nội bộ nhằm đưa ra các khuyến nghị khách quan phục phụ công tác phòng ngừa, nhằm gia tăng giá trị và cải tiến hoạt động của tổ chức.
+Đánh giá viên nội bộ: Là nhân viên công ty, có đủ năng lực, độc lập với bộ phận được đánh giá.
+Đánh giá nội bộ định kỳ: Là quá trình đánh giá dựa theo kế hoạch đánh giá nội bộ đã được phê duyệt
+Đánh giá nội bộ đột xuất (khi cần): là quá trình đánh giá được thiết lập dựa vào:
+Kết quả của đánh giá lần trước mà đơn vị/phòng ban có kết quả thực hiện không tốt.
+Yêu cầu của Giám Đốc, trưởng ban quản lý hệ thống chất lượng và ATTP.
+ Sự không phù hợp: 
+Là sự không đáp ứng một yêu cầu đã định.
+Sự không phù hợp có thể xuất phát từ việc không tuân thủ yêu cầu luật định, an toàn thực phẩm. 
+Điểm quan sát: 
+Là các khuyến nghị hoặc các vấn đề tiềm năng trong tương lai được khuyến cáo quan tâm, xem xét.
+Không phải là sự không phù hợp nên không cần khắc phục. Tuy nhiên nó có rủi ro mà khả năng dẫn đến sự không phù hợp trong tương lai.
+Ví dụ: 
+Nhiều tập quán tốt nhưng không được thực hiện
+Không rõ chuẩn cứ
+Sự khắc phục: Hành động để loại bỏ sự không phù hợp được phát hiện
+Hành động khắc phục: Hành động để loại bỏ nguyên nhân của sự không phù hợp đã phát hiện hay tình trạng không mong muốn khác.
+Xem xét, đánh giá hệ thống quản lý của Công ty … đảm bảo hệ thống luôn vận hành phù hợp với các yêu cầu pháp luật và các tiêu chuẩn đang áp dụng
+4.2. Chữa viết tắt:
+ĐGNB: Đánh giá nội bộ
+XXLĐ: Xem xét lãnh đạo
+CAR (corrective action request): Phiếu yêu cầu khắc phục - phòng ngừa.
+KPPN: Khắc phục - phòng ngừa
+ĐQS: Điểm quan sát
+KPH: Không phù hợp
+QLCL & ATTP: Quản lý chất lượng và an toàn thực phẩm
+Nội dung:
+5.1. Quy trình đánh giá nội bộ
+5.1.1 Lưu đồ:
+
+
+Bước
+Lưu đồ các bước công việc
+Trách nhiệm
+Hồ sơ 
+1
+ SHAPE  \* MERGEFORMAT 
+Trưởng ban QLCL & ATTP
+ - BM01 - ĐGNB
+2
+Giám Đốc
+ - BM01 - ĐGNB
+3
+Trưởng ban QLCL & ATTP
+ - BM02 - ĐGNB
+4
+Giám Đốc
+ - BM02 - ĐGNB
+5
+Trưởng ban QLCL & ATTP
+Đánh giá viên
+ - BM02 - ĐGNB
+ - BM03 - ĐGNB
+6
+Trường đoàn đánh giá
+Đánh giá viên
+ - BM03 - ĐGNB
+ - BM04 - ĐGNB
+7
+Trưởng đoàn đánh giá
+ - BM04 - ĐGNB
+ - BM05 - ĐGNB
+8
+Trường ban QLCL & ATTP
+ - BM06 - ĐGNB
+9
+Trưởng đơn vị được đánh giá
+Trường ban QLCL & ATTP
+ - BM06 - ĐGNB
+
+
+5.1.2. Diễn giải lưu đồ:
+BƯỚC
+HOẠT ĐỘNG
+TRÁCH NHIỆM
+BIỂU MẪU
+1
+Lập chương trình đánh giá nội bộ:
+Định kỳ vào tháng 12 hàng năm, Trưởng ban QLCL & ATTP tiến hành thiết lập chương trình đánh giá nội bộ cho năm tiếp theo
+Trường hợp thấy cần thiết phải đánh giá nội bộ đột xuất hoặc yêu cầu từ Giám Đốc, Trưởng ban QLCL & ATTP tiến hành lập kế hoạch đánh giá trình lãnh đạo phê duyệt
+Ghi chú: Chương trình đánh giá có thể lập hoặc không, tùy thuộc vào quy mô của đơn vị
+Trưởng ban QLCL & ATTP
+Chương trình đánh giá nội bộ ( - BM01 - ĐGNB)
+3
+Lập Kế hoạch ĐGNB:
+Căn cứ vào chương trình đánh giá nội bộ được phê duyệt, trưởng ban QLCL & ATTP tiến hành thiết lập kế hoạch đánh giá nội bộ, bao gồm:
+Thiết lập đoàn đánh giá: Gồm trưởng đoàn đánh giá và các thành viên.
+Kế hoạch ĐGNB bao gồm: thời gian tiến hành đánh giá, nội dung của cuộc đánh giá, phạm vi đánh giá, người tiến hành đánh giá, trưởng đoàn đánh giá…
+Trưởng ban QLCL & ATTP
+Kế hoạch đánh giá nội bộ  ( - BM02 - ĐGNB)
+4
+Phê duyệt:
+Giám Đốc phê duyệt kế hoạch đánh giá nội bộ và chương trình đánh giá nội bộ.
+
+Giám Đốc
+
+Chương trình đánh giá nội bộ ( - BM01 - ĐGNB)
+Kế hoạch đánh giá nội  bộ ( - BM02 - ĐGNB)
+5
+Chuẩn bị đánh giá:
+Thông báo chương trình đánh giá đã được phê duyệt đến các đơn vị được đánh giá. 
+Các đánh giá viên chuẩn bị các checklist để tạo điều kiện thuận lợi cho cuộc đánh giá (nếu cần).
+
+Trưởng ban QLCL & ATTP
+Đánh giá viên
+Kế hoạch đánh giá nội  bộ ( - BM02 - ĐGNB)
+Checklist đánh giá nội bộ ( - BM03 - ĐGNB)
+6
+Tiến hành đánh giá: 
+Trước khi tiến hành đánh giá, trưởng đoàn đánh giá tiến hành họp khai mạc để giới thiệu chương trình đánh giá trong đó bao gồm: thành phần nhóm đánh giá, mục đích, phạm vi đánh giá,… cho đại diện đơn vị được đánh giá.
+Dựa vào các hoạt động đang thực hiện, các chuẩn cứ đánh giá đã được xác định, các đánh giá viên sẽ tiến hành đánh giá để khẳng định mức độ phù hợp của hệ thống.
+Trong quá trình đánh giá các nhóm đánh giá/đánh giá viên sẽ tự hoàn tất báo cáo đánh giá để cung cấp cho trưởng đoàn.
+Cá nhân: Checklist đánh giá ( - BM03 - ĐGNB)
+Nhóm: Báo cáo đánh giá nội bộ ( - BM04 - ĐGNB)
+Thảo luận các điểm không phù hợp phát hiện trong nội bộ đoàn đánh giá trước khi lập báo cáo.
+Trưởng đoàn đánh giá sẽ lập “phiếu CAR” cho các điểm KPH. 
+Trường đoàn đánh giá
+Đánh giá viên
+Checklist đánh giá ( - BM03 - ĐGNB)
+Báo cáo đánh giá nội bộ ( - BM04 - ĐGNB)
+7
+Kết thúc đánh giá nội bộ:
+Tổng hợp báo cáo đánh giá đánh giá nội bộ ( - BM04 - ĐGNB) và “phiếu CAR” ( - BM05 - ĐGNB) gửi tới đơn vị được đánh giá
+Trưởng đoàn đánh giá
+Báo cáo đánh giá nội bộ ( - BM04 - ĐGNB)
+Phiếu CAR ( - BM05 - ĐGNB)
+Xem xét báo cáo làm rõ những điểm KPH (nếu có) trước khi xác nhận vào Báo cáo đánh giá nội bộ ( - BM04 - ĐGNB) và Phiếu CAR ( - BM05 - ĐGNB)
+Trưởng đơn vị được đánh giá
+Báo cáo đánh giá nội bộ ( - BM04 - ĐGNB)
+Phiếu CAR ( - BM05 - ĐGNB)
+Phân tích nguyên nhân, trách nhiệm thực hiện và xác định thời hạn hoàn thành đối với điểm KPH và gửi lại cho trưởng đoàn đánh giá
+Xác đinh thời hạn hoàn thành khắc phục hoặc thời hạn hoàn thành đề xuất khắc phục (trường hợp phải đầu tư tài sản) tối đa không quá 30 ngày từ lúc nhận được báo cáo. 
+Trưởng đơn vị được đánh giá
+Báo cáo đánh giá nội bộ ( - BM04 - ĐGNB)
+Phiếu CAR ( - BM05 - ĐGNB)
+Lập báo cáo tổng kết kết quả đánh giá gửi đến Giám Đốc và các đơn vị có liên quan
+Trưởng đoàn đánh giá
+Báo cáo đánh giá nội bộ ( - BM04 - ĐGNB)
+Xem xét kết quả khắc phục của báo cáo đánh giá nội bộ ( - BM04 - ĐGNB) và phiếu CAR ( - BM05 - ĐGNB) để đóng báo cáo và yêu cầu bên được đánh giá thực hiện lại biện pháp khắc phục các điểm KPH nếu biện pháp khắc phục chưa thõa đáng.
+Trường ban QLCL & ATTP
+Báo cáo đánh giá nội bộ ( - BM04 - ĐGNB)
+Phiếu CAR ( - BM05 - ĐGNB)
+8
+Theo dõi hành động KPPN
+Trưởng ban QLCL & ATTP tiến hành lập sổ theo dõi “phiếu CAR” ( - BM06 - ĐGNB) để theo dõi hành động KPPN của các đơn vị liên quan.
+Trường ban QLCL & ATTP
+Sổ theo dõi “phiếu CAR” ( - BM06 - ĐGNB)
+9
+Lưu hồ sơ
+Hồ sơ chương trình và kết quả đánh giá nội bộ lưu theo thủ tục kiểm soát hồ sơ.
+Trường ban QLCL & ATTP
+ - BM01 - ĐGNB
+ - BM02 - ĐGNB
+Báo cáo đánh giá nội bộ ( - BM04 - ĐGNB)
+Phiếu CAR ( - BM05 - ĐGNB)
+
+
+
+
+5.2 Quy trình xem xét của lãnh đạo
+5.2.1 Lưu đồ
+Bước
+Lưu đồ các bước công việc
+Trách nhiệm
+Hồ sơ 
+1
+ SHAPE  \* MERGEFORMAT 
+Trưởng ban QLCL & ATTP
+BM01 - ĐGNB
+2
+Trưởng ban QLCL & ATTP
+
+3
+Trưởng ban QLCL & ATTP
+Các bộ phận liên quan
+
+4
+Giám đốc
+Ban QLCL & ATTP
+BM01 - XXLĐ
+5
+Trưởng ban QLCL & ATTP
+
+
+5.2.2 Diễn giải lưu đồ
+BƯỚC
+HOẠT ĐỘNG
+TRÁCH NHIỆM
+BIỂU MẪU
+1
+Lập kế hoạch xem xét lãnh đạo:
+Để đảm bảo tính hiệu lực của Hệ thống quản lý chất lượng và an toản thực phẩm, lãnh đạo Công ty (GĐ) tổ chức cuộc họp xem lãnh đạo định kỳ hàng năm.
+Dựa trên tình hình thực tế hoạt động trưởng ban QLCL & ATTP đề xuất lịch họp tới Giám đốc.
+
+Giám đốc
+
+
+
+Trưởng ban QLCL & ATTP
+
+2
+Thông báo kế hoạch họp xem xét lãnh đạo:
+Sau khi kế hoạch họp xem xét lãnh đạo được Giám đốc đồng ý, trưởng ban QLCL & ATTP thông báo tới Giám đốc và các bộ phận liên quan về thời gian, địa điểm và nội dung cuộc họp tới các đơn vị/ bộ phận liên quan trước ít nhất 1 tuần để chuẩn bị báo cáo
+
+Trưởng ban QLCL & ATTP
+
+
+3
+Chuẩn bị báo cáo cuộc họp: 
+Trưởng các bộ phận sau khi nhận được thông báo có trách nhiệm chuẩn bị báo cáo nội dung cuộc họp theo sự phân công của trưởng ban QLCL & ATTP
+Báo cáo của các bộ phận sau khi hoàn thiện gửi tới trưởng ban QLCL & ATTP để xem xét, chuẩn bị cho cuộc họp 
+
+Các bộ phân liên quan
+Trưởng ban QLCL & ATTP
+
+4
+Tiến hành họp xem xét lãnh đạo:
+Các trưởng bộ phận sẽ báo cáo tới Giám đốc các nội dung thuộc bộ phận phụ trách quản lý.
+Báo cáo xem xét lãnh đạo bao gồm các nội dung sau:
+4.1. Báo cáo tình hình hoạt động 
+4.1.1. Tình hình sản xuất, kinh doanh 
+4.1.2. Tình hình nhân sự, đào tạo 
+4.1.3. Tình hình máy móc, thiết bị 
+4.1.4. Tình hình chất lượng nguyên vật liệu, bán thành phẩm, thành phẩm 
+4.1.5. Công tác quản lý an toàn, môi trường (bao gồm tai nạn lao động, điều tra tai nạn/sự cố, quản lý chất thải …) 
+4.1.6. Xây dựng cơ bản, dự án, công tác phát triển thiết bị …
+4.2. Báo cáo tình trạng các hoạt động tồn đọng từ lần XXLĐ trước.
+4.3. Các thay đổi bên trong và bên ngoài có tác động đến mục đích, định hướng, chiến lược của công ty, liên quan đến hệ thống quản lý chất lượng, an toàn thực phẩm, an toàn lao động …: 
+4.3.1. Các yếu tố tích cực và tiêu cực hoặc điều kiện để xem xét 
+4.3.2. Các vấn đề phát sinh từ môi trường pháp lý, công nghệ, cạnh tranh, thị trường, văn hoá, xã hội và kinh tế của quốc tế, quốc gia, khu vực hoặc địa phương 
+4.3.3. Các vấn đề liên quan đến giá trị, văn hóa, kiến thức và kết quả hoạt động của tổ chức
+4.4. Thông tin về kế hoạch thực hiện và hiệu lực, cũng như xu hướng của:
+ 4.4.1. Sự thoả mãn khách hàng (khiếu nại, khảo sát, yêu cầu mới từ khách hàng và phản hồi/nhu cầu/mong đợi từ các bên quan tâm có liên quan (ví dụ, sự thay đổi luật định, tiêu chuẩn áp dụng, điều kiện tác động từ bên trong và bên ngoài) 
+4.4.2. Mức độ đạt được của mục tiêu chất lượng 
+4.4.3. Việc thực hiện các quá trình và sự phù hợp của sản phẩm 
+4.4.4. Những sự không phù hợp và hành động khắc phục 
+4.4.5. Kết quả giám sát và đo lường, kết quả thẩm tra hệ thống an toàn thực phẩm theo HACCP kết quả xem xét năng lực thực hiện hệ thống quản lý an toàn lao động, … 
+4.4.6. Kết quả các cuộc đánh giá (bên thứ nhất, thứ hai, thứ ba), đánh giá sự tuân thủ luật pháp về an toàn lao động, các tham vấn bên trong và bên ngoài về chất lượng, an toàn thực phẩm, an toàn sức khoẻ nghề nghiệp … 
+4.4.7. Kết quả thực hiện của các nhà cung cấp bên ngoài 
+4.5. Tính thoả đáng của các nguồn lực.
+4.6. Hiệu lực của các hành động để xử lý các rủi ro và cơ hội thông qua việc đánh giá tính thích hợp của các biện pháp đã được hoạch định với các tác động tiềm ẩn đối với sự phù hợp của sản phẩm. Các biện pháp xử lý rủi ro bao gồm tránh, chấp nhận để theo đuổi một cơ hội, loại bỏ, thay đổi khả năng hoặc hậu quả, chia sẻ hoặc quyết định chấp nhận rủi ro. Cơ hội có thể là áp dụng các phương pháp mới, đưa ra sản phẩm mới, xây dựng quan hệ với đối tác, các hoạt động khả thi khác để giải quyết nhu cầu và mong đợi của các bên quan tâm có liên quan.
+4.7. Các cơ hội cải tiến, các nghiên cứu triển khai công nghệ mới thông báo đề xuất (nếu có).
+4.8. Xem xét các thông tin về phát triển khoa học - kỹ thuật, quy tắc thực hành công nghiệp, rủi ro mới về tính xác thực và khả năng thay thế/giả mạo của nguyên liệu, tất cả các luật định liên quan áp dụng tại quốc gia sản xuất và cung ứng nguyên liệu và khi cần thiết là luật của quốc gia mà sản phẩm được bán ra. 
+Giám đốc
+Các bộ phận
+BM01 - XXLĐ
+6
+Hồ sơ “xem xét lãnh đạo” là một thông tin dạng văn bản, được lư trữ theo “Quy trình kiểm soát hồ sơ” (QT - KSHS). 
+Các đề xuất liên quan đến đầu ra được phê duyệt của Giám đốc cho các cá nhân/đơn vị chức năng.
+Các cá nhân/đơn vị liên quan chịu trách nhiệm thực hiện các đề xuất, theo dõi các hành động được nêu trong hồ sơ “xem xét lãnh đạo”. Khi cần thiết, phổ biến đến các nhân sự có liên quan
+
+
+
+Biểu mẫu đính kèm.
+Stt
+Biểu mẫu 
+Số hiệu
+Trách nhiệm lưu
+Thời gian lưu
+
+Chương trình đánh giá nội bộ
+ - BM01 - ĐGNB
+Ban QLCL & ATTP
+2 năm
+
+Kế hoạch đánh gia nội bộ
+ - BM02 - ĐGNB
+Ban QLCL & ATTP
+2 năm
+
+Checklist đánh giá nội bộ
+ - BM03 - ĐGNB
+Đơn vị liên quan
+2 năm
+
+Báo cáo đánh giá nội bộ
+ - BM04 - ĐGNB
+Ban QLCL & ATTP, đơn vị liên quan
+2 năm
+
+Phiếu CAR
+- BM05 - ĐGNB
+Ban QLCL & ATTP, đơn vị liên quan
+2 năm
+
+Sổ theo dõi phiếu CAR
+ - BM06 - ĐGNB
+Ban QLCL & ATTP
+2 năm
+
+Biên bản xem xét lãnh đạo năm
+BM07 - XXLĐ
+Ban QLCL & ATTP
+2 năm
+Danh sách phân phối tài liệu.
+ Phòng HCKT				 Phòng thiết bị	
+ Phòng QLCL				
+
+
+
+
+
+
+
+
+
+CÔNG TY …  
+QUY TRÌNH
+ĐÁNH GIÁ NỘI BỘ
+Số hiệu            :  QT - ĐGNB
+Số soát xét      : 01
+Ngày hiệu lực : …  
+Trang:  PAGE 7 /  NUMPAGES 8
+
+
+
+
+Chuẩn bị ĐGNB
+
+Lập hồ sơ ĐGNB 
+
+Lập chương trình ĐGNB
+
+Thực hiện và theo dõi hành động khắc phục
+
+Xem xét, phê duyệt
+
+Lập kế hoạch ĐGNB
+
+Xem xét, phê duyệt
+
+Tiến hành ĐGNB
+
+Theo dõi hành động KPPN 
+
+Đồng ý
+
+Đồng ý
+
+Không đồng ý
+
+Không đồng ý
+
+Chuẩn bị báo cáo cuộc họp
+
+Lập kế hoạch và chương trình xem xét lãnh đạo
+
+Thực hiện và theo dõi hành động khắc phục
+
+Thông báo kế hoạch và chương trình XXLĐ
+
+Tiến hành họp xem xét
+
+
+

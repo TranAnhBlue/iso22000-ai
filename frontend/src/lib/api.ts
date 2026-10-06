@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { getToken } from './auth';
+import { clearSession, getToken } from './auth';
 
 // Tự động chuẩn hóa Base URL nếu người dùng chỉ nhập domain trên Vercel
 function resolveBaseUrl(): string {
@@ -33,6 +33,11 @@ api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const config = error.config;
+    // Phiên hết hạn/không hợp lệ: xoá JWT cũ để các tác vụ nền (đặc biệt poll
+    // thông báo) không tiếp tục gửi request 401. Không áp dụng cho lỗi đăng nhập.
+    if (error.response?.status === 401 && !String(config?.url || '').includes('/auth/login')) {
+      clearSession();
+    }
     if (config && !config._isRetry && (error.code === 'ERR_NETWORK' || !error.response)) {
       config._isRetry = true;
       // Chờ 2.5s để server Render hoàn tất khởi động rồi thử lại

@@ -7,7 +7,9 @@ from sqlalchemy.orm import Session
 from sqlalchemy import desc, asc, func, or_
 
 from app.core.database import get_db
+from app.core.demo_data import demo_seed_enabled
 from app.modules.emergency.models import EmergencyContact, EmergencyProcedure, EmergencyDrill
+from app.modules.capa.models import NonConformance, CAPARecord
 from app.modules.emergency.schemas import (
     EmergencyContactCreate,
     EmergencyContactUpdate,
@@ -26,6 +28,8 @@ router = APIRouter(tags=["Emergency Preparedness & Response"])
 
 # ==================== SEED DATA HELPER ====================
 def seed_emergency_data_if_empty(db: Session):
+    if not demo_seed_enabled():
+        return
     return
 
     # 1. Seed Contacts
@@ -608,6 +612,41 @@ def create_emergency_drill(drill_in: EmergencyDrillCreate, db: Session = Depends
 
     drill = EmergencyDrill(**drill_in.model_dump())
     db.add(drill)
+
+    # Bắt buộc mở NC & CAPA nếu kết quả diễn tập tình huống khẩn cấp không đạt (ISO 22000 Clause 8.4)
+    if drill.evaluation_result in ["NEEDS_IMPROVEMENT", "FAILED", "KHONG_DAT"]:
+        now_ts = datetime.now().strftime("%Y%m%d%H%M")
+        nc_num = f"NC-EMERGENCY-{now_ts}"
+        new_nc = NonConformance(
+            nc_number=nc_num,
+            title=f"Diễn tập sự cố không đạt yêu cầu: {drill.title} ({drill.drill_code})",
+            source="EMERGENCY_INCIDENT",
+            severity="MAJOR",
+            occurred_date=drill.drill_date,
+            occurred_location=drill.location,
+            description=f"Kết quả diễn tập ứng phó tình huống '{drill.scenario_type}' tại '{drill.location}' đánh giá là {drill.evaluation_result}. Thời gian phản ứng thực tế: {drill.response_time_minutes or 'Chưa xác định'} phút. Đánh giá sai lệch: {drill.corrective_actions_needed or 'Quy trình ứng phó chưa đạt mục tiêu thời gian và thao tác an toàn'}.",
+            immediate_action="Họp rút kinh nghiệm Đội PCCC & Ứng phó khẩn cấp, rà soát lại lưu đồ phản ứng.",
+            reported_by_name=drill.drill_leader or "Chỉ huy diễn tập",
+            status="ACTION_REQUIRED",
+        )
+        db.add(new_nc)
+        db.flush()
+
+        capa_num = f"CAPA-EMERGENCY-{now_ts}"
+        new_capa = CAPARecord(
+            capa_number=capa_num,
+            nc_id=new_nc.nc_id,
+            title=f"Khắc phục lỗ hổng kịch bản diễn tập khẩn cấp: {drill.drill_code}",
+            root_cause_method="5_WHYS",
+            root_cause_summary=f"Nhân sự chưa thuần thục thao tác hoặc trang thiết bị ứng phó tại chỗ chưa được kiểm tra sẵn sàng.",
+            corrective_action=drill.corrective_actions_needed or "Huấn luyện lại đội phản ứng nhanh và diễn tập bổ sung trong vòng 30 ngày.",
+            assigned_dept="Đội PCCC & ATTP",
+            target_date=date.today() + timedelta(days=30),
+            status="IN_PROGRESS",
+            verification_status="PENDING_VERIFY",
+        )
+        db.add(new_capa)
+
     db.commit()
     db.refresh(drill)
     return drill

@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { AppShell } from "@/components/AppShell";
 import { PageHeader, AIBadge } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -154,6 +154,45 @@ interface TrainingParticipant {
   created_at?: string;
 }
 
+interface TrainingRequest {
+  request_id: string;
+  request_code: string;
+  department: string;
+  requested_by: string;
+  request_date: string;
+  training_topic: string;
+  target_audience?: string;
+  expected_participants_count: number;
+  reason_and_objective: string;
+  expected_timeframe?: string;
+  estimated_cost: number;
+  proposed_trainer?: string;
+  approval_status: "PENDING" | "APPROVED" | "REJECTED";
+  approved_by?: string;
+  approval_date?: string;
+  approval_notes?: string;
+  created_at?: string;
+}
+
+interface TrainingEvaluation {
+  evaluation_id: string;
+  course_id?: string;
+  evaluation_code: string;
+  evaluation_date: string;
+  evaluator_name: string;
+  evaluator_position?: string;
+  evaluated_employee_name: string;
+  department: string;
+  post_training_period: "1_MONTH" | "3_MONTHS" | "6_MONTHS";
+  criteria_ratings?: Record<string, any>;
+  overall_rating: number;
+  is_effective: boolean;
+  improvements_observed?: string;
+  further_actions_needed?: string;
+  reviewed_by?: string;
+  created_at?: string;
+}
+
 interface HealthDeclaration {
   declaration_id: string;
   employee_code: string;
@@ -233,12 +272,93 @@ function AuditManagementPage() {
   const [healthLogs, setHealthLogs] = useState<HealthDeclaration[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Training sub-tabs and records
+  const [trainingSubTab, setTrainingSubTab] = useState<"courses" | "requests" | "evaluations">("courses");
+  const [trainingRequests, setTrainingRequests] = useState<TrainingRequest[]>([]);
+  const [trainingEvaluations, setTrainingEvaluations] = useState<TrainingEvaluation[]>([]);
+
+  // Request Filters & Modal
+  const [requestSearch, setRequestSearch] = useState("");
+  const [requestStatusFilter, setRequestStatusFilter] = useState("ALL");
+  const [showRequestModal, setShowRequestModal] = useState(false);
+  const [editingRequest, setEditingRequest] = useState<TrainingRequest | null>(null);
+  const [requestForm, setRequestForm] = useState({
+    request_code: "",
+    department: "Phòng Quản Lý Chất Lượng (QA)",
+    requested_by: "Trần Thị QA",
+    request_date: new Date().toISOString().split("T")[0],
+    training_topic: "Cập nhật tiêu chuẩn FSSC 22000 Version 6.0 & Giám sát dị nguyên",
+    target_audience: "Đội HACCP, KCS, Trưởng ca sản xuất",
+    expected_participants_count: 12,
+    reason_and_objective: "Nâng cao năng lực nhận diện rủi ro chéo dị nguyên và đáp ứng yêu cầu khách hàng xuất khẩu",
+    expected_timeframe: "Tháng 04/2026 (2 ngày)",
+    estimated_cost: 15000000,
+    proposed_trainer: "Viện Đào Tạo Tiêu Chuẩn Chất Lượng",
+    approval_status: "PENDING" as "PENDING" | "APPROVED" | "REJECTED",
+    approved_by: "",
+    approval_notes: "",
+  });
+
+  // Evaluation Filters & Modal
+  const [evalSearch, setEvalSearch] = useState("");
+  const [evalEffectiveFilter, setEvalEffectiveFilter] = useState("ALL");
+  const [showEvalModal, setShowEvalModal] = useState(false);
+  const [editingEvaluation, setEditingEvaluation] = useState<TrainingEvaluation | null>(null);
+  const [evalForm, setEvalForm] = useState({
+    course_id: "",
+    evaluation_code: "",
+    evaluation_date: new Date().toISOString().split("T")[0],
+    evaluator_name: "Lê Văn Trưởng Xưởng",
+    evaluator_position: "Trưởng Xưởng Chế Biến",
+    evaluated_employee_name: "Nguyễn Văn Kiểm",
+    department: "Tổ Sơ Chế & Rửa",
+    post_training_period: "1_MONTH" as "1_MONTH" | "3_MONTHS" | "6_MONTHS",
+    criteria_ratings_str: JSON.stringify({
+      work_quality: 5,
+      compliance_sop: 5,
+      problem_handling: 4,
+      hygiene_discipline: 5
+    }, null, 2),
+    overall_rating: 4.8,
+    is_effective: true,
+    improvements_observed: "Thao tác gọt vỏ, phân loại nguyên liệu chuẩn xác; tuân thủ quy định thay găng tay đúng tần suất.",
+    further_actions_needed: "Duy trì giám sát chéo giữa các ca sản xuất",
+    reviewed_by: "Ban Giám Đốc",
+  });
+
   // Filters
   const [searchQuery, setSearchQuery] = useState("");
   const [auditTypeFilter, setAuditTypeFilter] = useState("ALL");
   const [auditStatusFilter, setAuditStatusFilter] = useState("ALL");
   const [courseCatFilter, setCourseCatFilter] = useState("ALL");
   const [healthStatusFilter, setHealthStatusFilter] = useState("ALL");
+
+  const filteredRequests = useMemo(() => {
+    return trainingRequests.filter(req => {
+      const matchSearch =
+        req.request_code.toLowerCase().includes(requestSearch.toLowerCase()) ||
+        req.training_topic.toLowerCase().includes(requestSearch.toLowerCase()) ||
+        req.department.toLowerCase().includes(requestSearch.toLowerCase()) ||
+        req.requested_by.toLowerCase().includes(requestSearch.toLowerCase());
+      const matchStatus = requestStatusFilter === "ALL" || req.approval_status === requestStatusFilter;
+      return matchSearch && matchStatus;
+    });
+  }, [trainingRequests, requestSearch, requestStatusFilter]);
+
+  const filteredEvaluations = useMemo(() => {
+    return trainingEvaluations.filter(ev => {
+      const matchSearch =
+        ev.evaluation_code.toLowerCase().includes(evalSearch.toLowerCase()) ||
+        ev.evaluated_employee_name.toLowerCase().includes(evalSearch.toLowerCase()) ||
+        ev.department.toLowerCase().includes(evalSearch.toLowerCase()) ||
+        ev.evaluator_name.toLowerCase().includes(evalSearch.toLowerCase());
+      const matchEff =
+        evalEffectiveFilter === "ALL" ||
+        (evalEffectiveFilter === "EFFECTIVE" && ev.is_effective) ||
+        (evalEffectiveFilter === "NOT_EFFECTIVE" && !ev.is_effective);
+      return matchSearch && matchEff;
+    });
+  }, [trainingEvaluations, evalSearch, evalEffectiveFilter]);
 
   // Modals
   const [showAuditModal, setShowAuditModal] = useState(false);
@@ -346,16 +466,20 @@ function AuditManagementPage() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [statsRes, auditsRes, coursesRes, healthRes] = await Promise.all([
+      const [statsRes, auditsRes, coursesRes, healthRes, requestsRes, evaluationsRes] = await Promise.all([
         api.get("/audits/stats"),
         api.get("/audits/audits"),
         api.get("/audits/training/courses"),
         api.get("/audits/health-declarations"),
+        api.get("/audits/training/requests"),
+        api.get("/audits/training/evaluations"),
       ]);
       setStats(statsRes.data);
       setAudits(auditsRes.data);
       setCourses(coursesRes.data);
       setHealthLogs(healthRes.data);
+      setTrainingRequests(requestsRes.data || []);
+      setTrainingEvaluations(evaluationsRes.data || []);
 
       if (auditsRes.data.length > 0 && !selectedAudit) {
         setSelectedAudit(auditsRes.data[0]);
@@ -801,6 +925,453 @@ function AuditManagementPage() {
       </html>
     `;
     printHtml(htmlContent);
+  };
+
+  const triggerPrintTrainingRequest = (req: TrainingRequest) => {
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>BM01-QTĐT - Phiếu Đề Xuất Đào Tạo [${req.request_code}]</title>
+        <meta charset="utf-8" />
+        <style>
+          @page { size: A4 portrait; margin: 15mm; }
+          body { font-family: 'Times New Roman', Times, serif; padding: 8px; color: #111; line-height: 1.5; font-size: 13px; background: #fff; }
+          .header-table { width: 100%; border: 2px solid #0f172a; border-collapse: collapse; margin-bottom: 16px; }
+          .header-table td { border: 1px solid #0f172a; padding: 8px 10px; vertical-align: middle; }
+          .logo-box { width: 25%; text-align: center; background-color: #f8fafc; }
+          .title-box { width: 50%; text-align: center; }
+          .title-main { font-size: 14px; font-weight: 900; color: #0f172a; text-transform: uppercase; margin-top: 3px; }
+          .meta-box { width: 25%; font-size: 11px; background-color: #f8fafc; line-height: 1.4; }
+          .doc-title { text-align: center; margin-bottom: 16px; }
+          .doc-title h2 { margin: 0; font-size: 16px; font-weight: 900; text-transform: uppercase; color: #0f172a; }
+          .doc-title p { margin: 4px 0 0; font-size: 12px; color: #475569; font-style: italic; }
+          .info-table { width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 13px; }
+          .info-table td { border: 1px solid #cbd5e1; padding: 8px 10px; }
+          .sig-box { display: flex; justify-content: space-between; margin-top: 32px; page-break-inside: avoid; }
+          .sig-col { width: 30%; text-align: center; font-size: 12px; line-height: 1.35; }
+          .footer-note { margin-top: 32px; border-top: 1px dashed #cbd5e1; padding-top: 6px; font-size: 10px; color: #64748b; text-align: center; }
+        </style>
+      </head>
+      <body>
+        <table class="header-table">
+          <tr>
+            <td class="logo-box">
+              <img src="${origin}/logo.png" style="height: 48px; width: auto; object-contain; margin-bottom: 2px;" /><br/>
+              <span style="font-size: 13px; font-weight: 900; color: #7e22ce;">WCERT FSMS</span><br/>
+              <span style="font-size: 9.5px; color: #475569; font-weight: 700;">Human Resource & Training</span>
+            </td>
+            <td class="title-box">
+              <div style="font-size: 11px; font-weight: bold; color: #334155;">CÔNG TY CỔ PHẦN CHẾ BIẾN THỰC PHẨM WCERT</div>
+              <div class="title-main">PHIẾU ĐỀ XUẤT ĐÀO TẠO</div>
+              <div style="font-size: 11px; font-style: italic; color: #475569; margin-top: 2px;">Quy trình đào tạo - Thư mục 14 An Giang</div>
+            </td>
+            <td class="meta-box">
+              <b>Mã Biểu Mẫu:</b> BM01-QTĐT<br/>
+              <b>Mã Đề Xuất:</b> <span style="font-weight: bold; color: #7e22ce;">${req.request_code}</span><br/>
+              <b>Ngày lập:</b> ${req.request_date}<br/>
+              <b>Trạng thái:</b> <b>${req.approval_status}</b>
+            </td>
+          </tr>
+        </table>
+
+        <div class="doc-title">
+          <h2>PHIẾU ĐỀ XUẤT ĐÀO TẠO NĂNG LỰC NHÂN SỰ</h2>
+          <p>Kính gửi: Ban Giám Đốc & Phòng Hành Chính Nhân Sự</p>
+        </div>
+
+        <table class="info-table">
+          <tr>
+            <td style="width: 50%;"><b>Đơn vị / Bộ phận đề xuất:</b> ${req.department}</td>
+            <td style="width: 50%;"><b>Người đề xuất:</b> ${req.requested_by}</td>
+          </tr>
+          <tr>
+            <td colspan="2"><b>Chuyên đề / Nội dung đào tạo đề xuất:</b><br/>
+              <div style="font-weight: bold; color: #0f172a; margin-top: 4px; font-size: 14px;">${req.training_topic}</div>
+            </td>
+          </tr>
+          <tr>
+            <td colspan="2"><b>Lý do & Mục tiêu đào tạo:</b><br/>
+              <div style="margin-top: 4px; color: #334155;">${req.reason_and_objective}</div>
+            </td>
+          </tr>
+          <tr>
+            <td><b>Đối tượng tham gia:</b> ${req.target_audience || "Toàn bộ nhân sự liên quan"}</td>
+            <td><b>Số lượng dự kiến:</b> ${req.expected_participants_count} Người</td>
+          </tr>
+          <tr>
+            <td><b>Thời gian dự kiến tổ chức:</b> ${req.expected_timeframe || "Theo kế hoạch quý"}</td>
+            <td><b>Chi phí ước tính:</b> ${new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(req.estimated_cost)}</td>
+          </tr>
+          <tr>
+            <td colspan="2"><b>Đơn vị / Giảng viên đề xuất:</b> ${req.proposed_trainer || "Đào tạo nội bộ / Chuyên gia chỉ định"}</td>
+          </tr>
+          <tr>
+            <td colspan="2"><b>Ý kiến phê duyệt của Lãnh đạo:</b><br/>
+              <div style="margin-top: 4px; color: #047857; font-weight: bold;">
+                ${req.approval_status === "APPROVED" ? `✓ ĐỒNG Ý PHÊ DUYỆT. Người duyệt: ${req.approved_by || "Ban Giám Đốc"} (Ngày: ${req.approval_date || req.request_date}). Ghi chú: ${req.approval_notes || "Tiến hành tổ chức theo quy trình."}` : req.approval_status === "REJECTED" ? `✗ KHÔNG PHÊ DUYỆT. Lý do: ${req.approval_notes || "Chưa phù hợp kế hoạch ngân sách."}` : "⏳ Đang chờ Ban Giám Đốc xem xét và phê duyệt."}
+              </div>
+            </td>
+          </tr>
+        </table>
+
+        <div class="sig-box">
+          <div class="sig-col">
+            <b>NGƯỜI ĐỀ XUẤT</b><br/>
+            <i>(Ký và ghi rõ họ tên)</i><br/><br/><br/><br/>
+            <b>${req.requested_by}</b>
+          </div>
+          <div class="sig-col">
+            <b>TRƯỞNG PHÒNG NHÂN SỰ</b><br/>
+            <i>(Xem xét và thẩm tra)</i><br/><br/><br/><br/>
+            <b>Trưởng Ban Nhân Sự</b>
+          </div>
+          <div class="sig-col">
+            <b>BAN GIÁM ĐỐC DUYỆT</b><br/>
+            <i>(Phê duyệt chi phí & kế hoạch)</i><br/><br/><br/><br/>
+            <b>${req.approved_by || "Tổng Giám Đốc"}</b>
+          </div>
+        </div>
+
+        <div class="footer-note">
+          WCERT FSMS • HỆ THỐNG QUẢN LÝ AN TOÀN THỰC PHẨM THEO TIÊU CHUẨN ISO 22000:2018 (BM01-QTĐT)
+        </div>
+      </body>
+      </html>
+    `;
+    printHtml(htmlContent);
+  };
+
+  const triggerPrintTrainingEvaluation = (ev: TrainingEvaluation) => {
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
+    const periodMap: Record<string, string> = {
+      "1_MONTH": "01 Tháng sau đào tạo",
+      "3_MONTHS": "03 Tháng sau đào tạo",
+      "6_MONTHS": "06 Tháng sau đào tạo",
+    };
+    const criteriaRows = ev.criteria_ratings ? Object.entries(ev.criteria_ratings).map(([k, v], idx) => `
+      <tr>
+        <td style="text-align: center; font-family: monospace;">${idx + 1}</td>
+        <td><b>${k}</b></td>
+        <td style="text-align: center; font-weight: bold; color: #7e22ce;">${v} / 5</td>
+        <td>${Number(v) >= 4 ? "Đáp ứng tốt yêu cầu thực tế sản xuất" : "Cần bồi dưỡng bổ sung thêm"}</td>
+      </tr>
+    `).join("") : "";
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>BM04-QTĐT - Đánh Giá Chất Lượng Sau Đào Tạo [${ev.evaluation_code}]</title>
+        <meta charset="utf-8" />
+        <style>
+          @page { size: A4 portrait; margin: 15mm; }
+          body { font-family: 'Times New Roman', Times, serif; padding: 8px; color: #111; line-height: 1.5; font-size: 13px; background: #fff; }
+          .header-table { width: 100%; border: 2px solid #0f172a; border-collapse: collapse; margin-bottom: 16px; }
+          .header-table td { border: 1px solid #0f172a; padding: 8px 10px; vertical-align: middle; }
+          .logo-box { width: 25%; text-align: center; background-color: #f8fafc; }
+          .title-box { width: 50%; text-align: center; }
+          .title-main { font-size: 14px; font-weight: 900; color: #0f172a; text-transform: uppercase; margin-top: 3px; }
+          .meta-box { width: 25%; font-size: 11px; background-color: #f8fafc; line-height: 1.4; }
+          .doc-title { text-align: center; margin-bottom: 16px; }
+          .doc-title h2 { margin: 0; font-size: 16px; font-weight: 900; text-transform: uppercase; color: #0f172a; }
+          .doc-title p { margin: 4px 0 0; font-size: 12px; color: #475569; font-style: italic; }
+          table.data-table { width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 12px; }
+          table.data-table th, table.data-table td { border: 1px solid #0f172a; padding: 6px 8px; text-align: left; vertical-align: middle; }
+          table.data-table th { background-color: #f1f5f9; font-weight: bold; text-align: center; }
+          .info-table { width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 13px; }
+          .info-table td { border: 1px solid #cbd5e1; padding: 8px 10px; }
+          .sig-box { display: flex; justify-content: space-between; margin-top: 32px; page-break-inside: avoid; }
+          .sig-col { width: 48%; text-align: center; font-size: 12px; line-height: 1.35; }
+          .footer-note { margin-top: 32px; border-top: 1px dashed #cbd5e1; padding-top: 6px; font-size: 10px; color: #64748b; text-align: center; }
+        </style>
+      </head>
+      <body>
+        <table class="header-table">
+          <tr>
+            <td class="logo-box">
+              <img src="${origin}/logo.png" style="height: 48px; width: auto; object-contain; margin-bottom: 2px;" /><br/>
+              <span style="font-size: 13px; font-weight: 900; color: #7e22ce;">WCERT FSMS</span><br/>
+              <span style="font-size: 9.5px; color: #475569; font-weight: 700;">Human Resource & Training</span>
+            </td>
+            <td class="title-box">
+              <div style="font-size: 11px; font-weight: bold; color: #334155;">CÔNG TY CỔ PHẦN CHẾ BIẾN THỰC PHẨM WCERT</div>
+              <div class="title-main">ĐÁNH GIÁ CHẤT LƯỢNG SAU ĐÀO TẠO</div>
+              <div style="font-size: 11px; font-style: italic; color: #475569; margin-top: 2px;">Quy trình đào tạo - Thư mục 14 An Giang</div>
+            </td>
+            <td class="meta-box">
+              <b>Mã Biểu Mẫu:</b> BM04-QTĐT<br/>
+              <b>Mã Đánh Giá:</b> <span style="font-weight: bold; color: #7e22ce;">${ev.evaluation_code}</span><br/>
+              <b>Ngày đánh giá:</b> ${ev.evaluation_date}<br/>
+              <b>Thời điểm:</b> ${periodMap[ev.post_training_period] || ev.post_training_period}
+            </td>
+          </tr>
+        </table>
+
+        <div class="doc-title">
+          <h2>PHIẾU ĐÁNH GIÁ HIỆU QUẢ ỨNG DỤNG SAU ĐÀO TẠO</h2>
+          <p>Kiểm tra mức độ áp dụng kiến thức vào thực tế công việc sản xuất</p>
+        </div>
+
+        <table class="info-table">
+          <tr>
+            <td style="width: 50%;"><b>Nhân sự được đánh giá:</b> <span style="font-weight: bold; color: #0f172a;">${ev.evaluated_employee_name}</span></td>
+            <td style="width: 50%;"><b>Bộ phận công tác:</b> ${ev.department}</td>
+          </tr>
+          <tr>
+            <td><b>Người đánh giá trực tiếp:</b> ${ev.evaluator_name}</td>
+            <td><b>Chức vụ người đánh giá:</b> ${ev.evaluator_position || "Quản lý trực tiếp"}</td>
+          </tr>
+          <tr>
+            <td><b>Điểm đánh giá trung bình:</b> <span style="font-size: 15px; font-weight: bold; color: #7e22ce;">${ev.overall_rating} / 5.0</span></td>
+            <td><b>Kết luận hiệu quả:</b> ${ev.is_effective ? '<span style="color: #047857; font-weight: bold; background: #d1fae5; padding: 2px 8px; border-radius: 4px;">✓ ĐẠT HIỆU QUẢ</span>' : '<span style="color: #b91c1c; font-weight: bold; background: #fee2e2; padding: 2px 8px; border-radius: 4px;">✗ CHƯA ĐẠT HIỆU QUẢ</span>'}</td>
+          </tr>
+        </table>
+
+        ${criteriaRows ? `
+        <div style="font-weight: bold; font-size: 12px; text-transform: uppercase; margin-bottom: 6px; color: #0f172a;">
+          CHI TIẾT ĐIỂM SỐ THEO TIÊU CHÍ:
+        </div>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th style="width: 40px;">STT</th>
+              <th>Tiêu chí đánh giá thực tế</th>
+              <th style="width: 100px;">Điểm số</th>
+              <th>Nhận xét của người quản lý</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${criteriaRows}
+          </tbody>
+        </table>
+        ` : ''}
+
+        <table class="info-table">
+          <tr>
+            <td><b>Tiến bộ & thay đổi tích cực quan sát được:</b><br/>
+              <div style="margin-top: 4px; color: #047857;">${ev.improvements_observed || "Nhân viên thao tác chuẩn xác, tuân thủ nghiêm ngặt quy định ATTP."}</div>
+            </td>
+          </tr>
+          <tr>
+            <td><b>Biện pháp khắc phục / Kế hoạch tiếp theo (nếu cần):</b><br/>
+              <div style="margin-top: 4px; color: #334155;">${ev.further_actions_needed || "Duy trì kiểm tra định kỳ."}</div>
+            </td>
+          </tr>
+        </table>
+
+        <div class="sig-box">
+          <div class="sig-col">
+            <b>NGƯỜI ĐÁNH GIÁ TRỰC TIẾP</b><br/>
+            <i>(Ký và ghi rõ họ tên)</i><br/><br/><br/><br/>
+            <b>${ev.evaluator_name}</b><br/>
+            <span style="font-size: 10px; color: #64748b;">${ev.evaluator_position || "Quản lý trực tiếp"}</span>
+          </div>
+          <div class="sig-col">
+            <b>BAN GIÁM ĐỐC / TRƯỞNG BỘ PHẬN QA</b><br/>
+            <i>(Xem xét và xác nhận hồ sơ năng lực)</i><br/><br/><br/><br/>
+            <b>${ev.reviewed_by || "Ban Giám Đốc"}</b><br/>
+            <span style="font-size: 10px; color: #64748b;">Lưu hồ sơ đào tạo nhân sự</span>
+          </div>
+        </div>
+
+        <div class="footer-note">
+          WCERT FSMS • HỆ THỐNG QUẢN LÝ AN TOÀN THỰC PHẨM THEO TIÊU CHUẨN ISO 22000:2018 (BM04-QTĐT)
+        </div>
+      </body>
+      </html>
+    `;
+    printHtml(htmlContent);
+  };
+
+  // Request CRUD Handlers
+  const handleOpenCreateRequest = () => {
+    setEditingRequest(null);
+    setRequestForm({
+      request_code: `REQ-TRAIN-2026-0${trainingRequests.length + 1}`,
+      department: "Phòng Quản Lý Chất Lượng (QA)",
+      requested_by: "Trần Thị QA",
+      request_date: new Date().toISOString().split("T")[0],
+      training_topic: "Cập nhật tiêu chuẩn FSSC 22000 Version 6.0 & Giám sát dị nguyên",
+      target_audience: "Đội HACCP, KCS, Trưởng ca sản xuất",
+      expected_participants_count: 12,
+      reason_and_objective: "Nâng cao năng lực nhận diện rủi ro chéo dị nguyên và đáp ứng yêu cầu khách hàng xuất khẩu",
+      expected_timeframe: "Tháng 04/2026 (2 ngày)",
+      estimated_cost: 15000000,
+      proposed_trainer: "Viện Đào Tạo Tiêu Chuẩn Chất Lượng",
+      approval_status: "PENDING",
+      approved_by: "",
+      approval_notes: "",
+    });
+    setShowRequestModal(true);
+  };
+
+  const handleOpenEditRequest = (req: TrainingRequest) => {
+    setEditingRequest(req);
+    setRequestForm({
+      request_code: req.request_code,
+      department: req.department,
+      requested_by: req.requested_by,
+      request_date: req.request_date,
+      training_topic: req.training_topic,
+      target_audience: req.target_audience || "",
+      expected_participants_count: req.expected_participants_count,
+      reason_and_objective: req.reason_and_objective,
+      expected_timeframe: req.expected_timeframe || "",
+      estimated_cost: req.estimated_cost,
+      proposed_trainer: req.proposed_trainer || "",
+      approval_status: req.approval_status,
+      approved_by: req.approved_by || "",
+      approval_notes: req.approval_notes || "",
+    });
+    setShowRequestModal(true);
+  };
+
+  const handleSaveRequest = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      if (editingRequest) {
+        const res = await api.put(`/audits/training/requests/${editingRequest.request_id}`, requestForm);
+        setTrainingRequests(prev => prev.map(r => r.request_id === editingRequest.request_id ? res.data : r));
+        toast.success("Cập nhật phiếu đề xuất đào tạo thành công");
+      } else {
+        const res = await api.post("/audits/training/requests", requestForm);
+        setTrainingRequests(prev => [res.data, ...prev]);
+        toast.success("Lập phiếu đề xuất đào tạo (BM01-QTĐT) thành công");
+      }
+      setShowRequestModal(false);
+    } catch (err: any) {
+      toast.error("Lỗi lưu phiếu đề xuất: " + (err.response?.data?.detail || err.message));
+    }
+  };
+
+  const handleDeleteRequest = async (requestId: string) => {
+    if (!confirm("Bạn có chắc chắn muốn xóa phiếu đề xuất đào tạo này?")) return;
+    try {
+      await api.delete(`/audits/training/requests/${requestId}`);
+      setTrainingRequests(prev => prev.filter(r => r.request_id !== requestId));
+      toast.success("Đã xóa phiếu đề xuất đào tạo");
+    } catch (err: any) {
+      toast.error("Lỗi xóa phiếu đề xuất: " + (err.response?.data?.detail || err.message));
+    }
+  };
+
+  const handleApproveRequest = async (req: TrainingRequest, newStatus: "APPROVED" | "REJECTED") => {
+    const approverName = prompt("Nhập tên người phê duyệt:", "Ban Giám Đốc") || "Ban Giám Đốc";
+    const notes = prompt("Ghi chú phê duyệt:", newStatus === "APPROVED" ? "Đồng ý tổ chức theo kế hoạch" : "Chưa phê duyệt đợt này") || "";
+    try {
+      const res = await api.put(`/audits/training/requests/${req.request_id}`, {
+        approval_status: newStatus,
+        approved_by: approverName,
+        approval_date: new Date().toISOString().split("T")[0],
+        approval_notes: notes,
+      });
+      setTrainingRequests(prev => prev.map(r => r.request_id === req.request_id ? res.data : r));
+      toast.success(`Đã cập nhật trạng thái phiếu: ${newStatus === "APPROVED" ? "PHÊ DUYỆT" : "TỪ CHỐI"}`);
+    } catch (err: any) {
+      toast.error("Lỗi cập nhật trạng thái: " + (err.response?.data?.detail || err.message));
+    }
+  };
+
+  // Evaluation CRUD Handlers
+  const handleOpenCreateEval = () => {
+    setEditingEvaluation(null);
+    setEvalForm({
+      course_id: courses[0]?.course_id || "",
+      evaluation_code: `EVAL-TRAIN-2026-0${trainingEvaluations.length + 1}`,
+      evaluation_date: new Date().toISOString().split("T")[0],
+      evaluator_name: "Lê Văn Trưởng Xưởng",
+      evaluator_position: "Trưởng Xưởng Chế Biến",
+      evaluated_employee_name: "Nguyễn Văn Kiểm",
+      department: "Tổ Sơ Chế & Rửa",
+      post_training_period: "1_MONTH",
+      criteria_ratings_str: JSON.stringify({
+        work_quality: 5,
+        compliance_sop: 5,
+        problem_handling: 4,
+        hygiene_discipline: 5
+      }, null, 2),
+      overall_rating: 4.8,
+      is_effective: true,
+      improvements_observed: "Thao tác gọt vỏ, phân loại nguyên liệu chuẩn xác; tuân thủ quy định thay găng tay đúng tần suất.",
+      further_actions_needed: "Duy trì giám sát chéo giữa các ca sản xuất",
+      reviewed_by: "Ban Giám Đốc",
+    });
+    setShowEvalModal(true);
+  };
+
+  const handleOpenEditEval = (ev: TrainingEvaluation) => {
+    setEditingEvaluation(ev);
+    setEvalForm({
+      course_id: ev.course_id || "",
+      evaluation_code: ev.evaluation_code,
+      evaluation_date: ev.evaluation_date,
+      evaluator_name: ev.evaluator_name,
+      evaluator_position: ev.evaluator_position || "",
+      evaluated_employee_name: ev.evaluated_employee_name,
+      department: ev.department,
+      post_training_period: ev.post_training_period,
+      criteria_ratings_str: JSON.stringify(ev.criteria_ratings || {}, null, 2),
+      overall_rating: ev.overall_rating,
+      is_effective: ev.is_effective,
+      improvements_observed: ev.improvements_observed || "",
+      further_actions_needed: ev.further_actions_needed || "",
+      reviewed_by: ev.reviewed_by || "",
+    });
+    setShowEvalModal(true);
+  };
+
+  const handleSaveEval = async (e: React.FormEvent) => {
+    e.preventDefault();
+    let parsedCriteria = {};
+    try {
+      parsedCriteria = JSON.parse(evalForm.criteria_ratings_str);
+    } catch {
+      toast.error("Định dạng JSON tiêu chí đánh giá không hợp lệ");
+      return;
+    }
+    const payload = {
+      course_id: evalForm.course_id || undefined,
+      evaluation_code: evalForm.evaluation_code,
+      evaluation_date: evalForm.evaluation_date,
+      evaluator_name: evalForm.evaluator_name,
+      evaluator_position: evalForm.evaluator_position,
+      evaluated_employee_name: evalForm.evaluated_employee_name,
+      department: evalForm.department,
+      post_training_period: evalForm.post_training_period,
+      criteria_ratings: parsedCriteria,
+      overall_rating: Number(evalForm.overall_rating),
+      is_effective: Boolean(evalForm.is_effective),
+      improvements_observed: evalForm.improvements_observed,
+      further_actions_needed: evalForm.further_actions_needed,
+      reviewed_by: evalForm.reviewed_by,
+    };
+    try {
+      if (editingEvaluation) {
+        const res = await api.put(`/audits/training/evaluations/${editingEvaluation.evaluation_id}`, payload);
+        setTrainingEvaluations(prev => prev.map(ev => ev.evaluation_id === editingEvaluation.evaluation_id ? res.data : ev));
+        toast.success("Cập nhật đánh giá chất lượng sau đào tạo thành công");
+      } else {
+        const res = await api.post("/audits/training/evaluations", payload);
+        setTrainingEvaluations(prev => [res.data, ...prev]);
+        toast.success("Lập đánh giá chất lượng sau đào tạo (BM04-QTĐT) thành công");
+      }
+      setShowEvalModal(false);
+    } catch (err: any) {
+      toast.error("Lỗi lưu đánh giá: " + (err.response?.data?.detail || err.message));
+    }
+  };
+
+  const handleDeleteEval = async (evalId: string) => {
+    if (!confirm("Bạn có chắc chắn muốn xóa bản ghi đánh giá sau đào tạo này?")) return;
+    try {
+      await api.delete(`/audits/training/evaluations/${evalId}`);
+      setTrainingEvaluations(prev => prev.filter(ev => ev.evaluation_id !== evalId));
+      toast.success("Đã xóa bản ghi đánh giá");
+    } catch (err: any) {
+      toast.error("Lỗi xóa bản ghi: " + (err.response?.data?.detail || err.message));
+    }
   };
 
   const triggerPrintHealthLog = (logs: HealthDeclaration[]) => {
@@ -1450,7 +2021,46 @@ function AuditManagementPage() {
       {/* ==================== TAB 2: TRAINING & COMPETENCE ==================== */}
       {activeTab === "training" && (
         <div className="space-y-6">
-          {/* Filter Bar */}
+          {/* Sub-Tabs: Courses (BM02/03) | Requests (BM01) | Evaluations (BM04) */}
+          <div className="flex border-b border-slate-200 gap-2 pb-1 overflow-x-auto">
+            <button
+              onClick={() => setTrainingSubTab("courses")}
+              className={`pb-3 px-4 text-xs font-bold border-b-2 flex items-center gap-2 transition-all whitespace-nowrap ${
+                trainingSubTab === "courses"
+                  ? "border-purple-600 text-purple-700 bg-purple-50/50 rounded-t-lg"
+                  : "border-transparent text-slate-500 hover:text-slate-800"
+              }`}
+            >
+              <GraduationCap className="w-4 h-4" />
+              BM02 & BM03: Kế Hoạch & Điểm Danh Học Viên ({courses.length})
+            </button>
+            <button
+              onClick={() => setTrainingSubTab("requests")}
+              className={`pb-3 px-4 text-xs font-bold border-b-2 flex items-center gap-2 transition-all whitespace-nowrap ${
+                trainingSubTab === "requests"
+                  ? "border-purple-600 text-purple-700 bg-purple-50/50 rounded-t-lg"
+                  : "border-transparent text-slate-500 hover:text-slate-800"
+              }`}
+            >
+              <FileText className="w-4 h-4" />
+              BM01-QTĐT: Phiếu Đề Xuất Đào Tạo ({trainingRequests.length})
+            </button>
+            <button
+              onClick={() => setTrainingSubTab("evaluations")}
+              className={`pb-3 px-4 text-xs font-bold border-b-2 flex items-center gap-2 transition-all whitespace-nowrap ${
+                trainingSubTab === "evaluations"
+                  ? "border-purple-600 text-purple-700 bg-purple-50/50 rounded-t-lg"
+                  : "border-transparent text-slate-500 hover:text-slate-800"
+              }`}
+            >
+              <Award className="w-4 h-4" />
+              BM04-QTĐT: Đánh Giá Hiệu Quả Sau Đào Tạo ({trainingEvaluations.length})
+            </button>
+          </div>
+
+          {trainingSubTab === "courses" && (
+            <div className="space-y-6">
+              {/* Filter Bar */}
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-card p-4 rounded-2xl border shadow-sm">
             <div className="relative w-full sm:w-80">
               <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -1680,6 +2290,434 @@ function AuditManagementPage() {
               )}
             </div>
           </div>
+          )}
+          </div>
+          )}
+
+          {/* ==================== SUB-TAB: TRAINING REQUESTS (BM01-QTĐT) ==================== */}
+          {trainingSubTab === "requests" && (
+            <div className="space-y-6">
+              {/* Filter Bar */}
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-card p-4 rounded-2xl border shadow-sm">
+                <div className="relative w-full sm:w-80">
+                  <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Tìm mã đề xuất, chuyên đề, bộ phận..."
+                    className="pl-9 text-xs"
+                    value={requestSearch}
+                    onChange={(e) => setRequestSearch(e.target.value)}
+                  />
+                </div>
+                <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                  <select
+                    className="border rounded-xl px-3 py-2 text-xs bg-background text-foreground font-semibold"
+                    value={requestStatusFilter}
+                    onChange={(e) => setRequestStatusFilter(e.target.value)}
+                  >
+                    <option value="ALL">Tất cả trạng thái duyệt</option>
+                    <option value="PENDING">Chờ phê duyệt</option>
+                    <option value="APPROVED">Đã phê duyệt</option>
+                    <option value="REJECTED">Từ chối duyệt</option>
+                  </select>
+                  <Button
+                    size="sm"
+                    onClick={handleOpenCreateRequest}
+                    className="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs"
+                  >
+                    <Plus className="w-4 h-4 mr-1.5" />
+                    + Lập Phiếu Đề Xuất (BM01)
+                  </Button>
+                </div>
+              </div>
+
+              {/* Stats overview */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div className="bg-card p-4 rounded-2xl border shadow-sm flex items-center justify-between">
+                  <div>
+                    <p className="text-[11px] font-bold text-muted-foreground">Tổng phiếu đề xuất</p>
+                    <h3 className="text-xl font-extrabold text-foreground mt-0.5">{trainingRequests.length}</h3>
+                  </div>
+                  <div className="w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600">
+                    <FileText className="w-5 h-5" />
+                  </div>
+                </div>
+                <div className="bg-card p-4 rounded-2xl border shadow-sm flex items-center justify-between">
+                  <div>
+                    <p className="text-[11px] font-bold text-amber-600">Đang chờ phê duyệt</p>
+                    <h3 className="text-xl font-extrabold text-amber-700 mt-0.5">
+                      {trainingRequests.filter(r => r.approval_status === "PENDING").length}
+                    </h3>
+                  </div>
+                  <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center text-amber-600">
+                    <Clock className="w-5 h-5" />
+                  </div>
+                </div>
+                <div className="bg-card p-4 rounded-2xl border shadow-sm flex items-center justify-between">
+                  <div>
+                    <p className="text-[11px] font-bold text-emerald-600">Đã phê duyệt</p>
+                    <h3 className="text-xl font-extrabold text-emerald-700 mt-0.5">
+                      {trainingRequests.filter(r => r.approval_status === "APPROVED").length}
+                    </h3>
+                  </div>
+                  <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600">
+                    <CheckCircle2 className="w-5 h-5" />
+                  </div>
+                </div>
+                <div className="bg-card p-4 rounded-2xl border shadow-sm flex items-center justify-between">
+                  <div>
+                    <p className="text-[11px] font-bold text-muted-foreground">Tổng dự toán kinh phí</p>
+                    <h3 className="text-xl font-extrabold text-foreground mt-0.5">
+                      {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND", maximumFractionDigits: 0 }).format(
+                        trainingRequests.reduce((sum, r) => sum + (r.estimated_cost || 0), 0)
+                      )}
+                    </h3>
+                  </div>
+                  <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600">
+                    <Award className="w-5 h-5" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Requests Table */}
+              <div className="bg-card rounded-2xl border shadow-sm overflow-hidden">
+                <div className="p-4 border-b flex items-center justify-between">
+                  <div>
+                    <h3 className="text-sm font-bold text-foreground">Danh Sách Phiếu Đề Xuất Đào Tạo (Biểu mẫu BM01-QTĐT)</h3>
+                    <p className="text-[11px] text-muted-foreground">Theo quy trình đào tạo Thư mục 14 Hệ thống ISO 22000 An Giang</p>
+                  </div>
+                  <span className="text-xs font-semibold text-muted-foreground">Hiển thị {filteredRequests.length} phiếu</span>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="bg-muted/50 border-b text-muted-foreground">
+                        <th className="py-3 px-4 text-left font-bold">Mã Phiếu & Ngày Lập</th>
+                        <th className="py-3 px-4 text-left font-bold">Chuyên Đề & Lý Do Đề Xuất</th>
+                        <th className="py-3 px-4 text-left font-bold">Bộ Phận & Người Đề Xuất</th>
+                        <th className="py-3 px-4 text-center font-bold">Số Lượng & Thời Gian</th>
+                        <th className="py-3 px-4 text-right font-bold">Dự Toán Chi Phí</th>
+                        <th className="py-3 px-4 text-center font-bold">Trạng Thái Duyệt</th>
+                        <th className="py-3 px-4 text-right font-bold">Thao Tác</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border">
+                      {filteredRequests.length === 0 ? (
+                        <tr>
+                          <td colSpan={7} className="py-8 text-center text-muted-foreground italic">
+                            Không tìm thấy phiếu đề xuất đào tạo nào phù hợp.
+                          </td>
+                        </tr>
+                      ) : (
+                        filteredRequests.map((req) => (
+                          <tr key={req.request_id} className="hover:bg-muted/30 transition-colors">
+                            <td className="py-3 px-4">
+                              <span className="font-mono font-bold text-purple-700 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/40 px-2 py-0.5 rounded border border-purple-200">
+                                {req.request_code}
+                              </span>
+                              <div className="text-[11px] text-muted-foreground mt-1 flex items-center gap-1">
+                                <Calendar className="w-3 h-3" />
+                                {req.request_date}
+                              </div>
+                            </td>
+                            <td className="py-3 px-4 max-w-xs">
+                              <p className="font-bold text-foreground text-xs">{req.training_topic}</p>
+                              <p className="text-[11px] text-muted-foreground line-clamp-1 mt-0.5">{req.reason_and_objective}</p>
+                              {req.proposed_trainer && (
+                                <span className="inline-block mt-1 text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-1.5 py-0.5 rounded">
+                                  Giảng viên: {req.proposed_trainer}
+                                </span>
+                              )}
+                            </td>
+                            <td className="py-3 px-4">
+                              <div className="font-semibold text-foreground flex items-center gap-1">
+                                <Building2 className="w-3 h-3 text-muted-foreground" />
+                                {req.department}
+                              </div>
+                              <div className="text-[11px] text-muted-foreground mt-0.5 flex items-center gap-1">
+                                <User className="w-3 h-3" />
+                                {req.requested_by}
+                              </div>
+                            </td>
+                            <td className="py-3 px-4 text-center">
+                              <span className="font-bold text-foreground">{req.expected_participants_count}</span>
+                              <span className="text-[11px] text-muted-foreground"> người</span>
+                              <div className="text-[11px] text-muted-foreground mt-0.5">
+                                {req.expected_timeframe || "-"}
+                              </div>
+                            </td>
+                            <td className="py-3 px-4 text-right font-mono font-bold text-foreground">
+                              {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(req.estimated_cost)}
+                            </td>
+                            <td className="py-3 px-4 text-center">
+                              {req.approval_status === "APPROVED" && (
+                                <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">
+                                  <Check className="w-3 h-3" /> Đã duyệt
+                                </span>
+                              )}
+                              {req.approval_status === "PENDING" && (
+                                <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300">
+                                  <Clock className="w-3 h-3" /> Chờ duyệt
+                                </span>
+                              )}
+                              {req.approval_status === "REJECTED" && (
+                                <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-rose-100 text-rose-800 border border-rose-300">
+                                  <X className="w-3 h-3" /> Từ chối
+                                </span>
+                              )}
+                              {req.approved_by && (
+                                <div className="text-[10px] text-muted-foreground mt-1">Duyệt: {req.approved_by}</div>
+                              )}
+                            </td>
+                            <td className="py-3 px-4 text-right">
+                              <div className="flex items-center justify-end gap-1">
+                                {req.approval_status === "PENDING" && (
+                                  <>
+                                    <button
+                                      title="Phê duyệt phiếu"
+                                      onClick={() => handleApproveRequest(req, "APPROVED")}
+                                      className="p-1 rounded text-emerald-600 hover:bg-emerald-50 border border-emerald-200"
+                                    >
+                                      <Check className="w-3.5 h-3.5" />
+                                    </button>
+                                    <button
+                                      title="Từ chối phê duyệt"
+                                      onClick={() => handleApproveRequest(req, "REJECTED")}
+                                      className="p-1 rounded text-rose-600 hover:bg-rose-50 border border-rose-200"
+                                    >
+                                      <X className="w-3.5 h-3.5" />
+                                    </button>
+                                  </>
+                                )}
+                                <button
+                                  title="In biểu mẫu BM01-QTĐT"
+                                  onClick={() => triggerPrintTrainingRequest(req)}
+                                  className="p-1 rounded text-blue-600 hover:bg-blue-50 border border-blue-200"
+                                >
+                                  <Printer className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  title="Chỉnh sửa"
+                                  onClick={() => handleOpenEditRequest(req)}
+                                  className="p-1 rounded text-slate-600 hover:bg-slate-100 border border-slate-200"
+                                >
+                                  <Edit className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  title="Xóa"
+                                  onClick={() => handleDeleteRequest(req.request_id)}
+                                  className="p-1 rounded text-rose-600 hover:bg-rose-50 border border-rose-200"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ==================== SUB-TAB: TRAINING EVALUATIONS (BM04-QTĐT) ==================== */}
+          {trainingSubTab === "evaluations" && (
+            <div className="space-y-6">
+              {/* Filter Bar */}
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-card p-4 rounded-2xl border shadow-sm">
+                <div className="relative w-full sm:w-80">
+                  <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Tìm mã ĐG, nhân viên, bộ phận, người ĐG..."
+                    className="pl-9 text-xs"
+                    value={evalSearch}
+                    onChange={(e) => setEvalSearch(e.target.value)}
+                  />
+                </div>
+                <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                  <select
+                    className="border rounded-xl px-3 py-2 text-xs bg-background text-foreground font-semibold"
+                    value={evalEffectiveFilter}
+                    onChange={(e) => setEvalEffectiveFilter(e.target.value)}
+                  >
+                    <option value="ALL">Tất cả kết luận hiệu quả</option>
+                    <option value="EFFECTIVE">Đạt hiệu quả sau đào tạo</option>
+                    <option value="NOT_EFFECTIVE">Chưa đạt hiệu quả</option>
+                  </select>
+                  <Button
+                    size="sm"
+                    onClick={handleOpenCreateEval}
+                    className="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs"
+                  >
+                    <Plus className="w-4 h-4 mr-1.5" />
+                    + Đánh Giá Sau ĐT (BM04)
+                  </Button>
+                </div>
+              </div>
+
+              {/* Stats overview */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div className="bg-card p-4 rounded-2xl border shadow-sm flex items-center justify-between">
+                  <div>
+                    <p className="text-[11px] font-bold text-muted-foreground">Tổng bản ghi đánh giá</p>
+                    <h3 className="text-xl font-extrabold text-foreground mt-0.5">{trainingEvaluations.length}</h3>
+                  </div>
+                  <div className="w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600">
+                    <Award className="w-5 h-5" />
+                  </div>
+                </div>
+                <div className="bg-card p-4 rounded-2xl border shadow-sm flex items-center justify-between">
+                  <div>
+                    <p className="text-[11px] font-bold text-emerald-600">Đạt hiệu quả ứng dụng</p>
+                    <h3 className="text-xl font-extrabold text-emerald-700 mt-0.5">
+                      {trainingEvaluations.filter(e => e.is_effective).length}
+                    </h3>
+                  </div>
+                  <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600">
+                    <CheckCircle2 className="w-5 h-5" />
+                  </div>
+                </div>
+                <div className="bg-card p-4 rounded-2xl border shadow-sm flex items-center justify-between">
+                  <div>
+                    <p className="text-[11px] font-bold text-blue-600">Tỷ lệ đạt hiệu quả</p>
+                    <h3 className="text-xl font-extrabold text-blue-700 mt-0.5">
+                      {trainingEvaluations.length > 0
+                        ? `${Math.round((trainingEvaluations.filter(e => e.is_effective).length / trainingEvaluations.length) * 100)}%`
+                        : "0%"}
+                    </h3>
+                  </div>
+                  <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600">
+                    <GraduationCap className="w-5 h-5" />
+                  </div>
+                </div>
+                <div className="bg-card p-4 rounded-2xl border shadow-sm flex items-center justify-between">
+                  <div>
+                    <p className="text-[11px] font-bold text-muted-foreground">Điểm đánh giá TB</p>
+                    <h3 className="text-xl font-extrabold text-purple-700 dark:text-purple-400 mt-0.5">
+                      {trainingEvaluations.length > 0
+                        ? (trainingEvaluations.reduce((sum, e) => sum + (e.overall_rating || 0), 0) / trainingEvaluations.length).toFixed(1)
+                        : "0.0"} / 5.0
+                    </h3>
+                  </div>
+                  <div className="w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600">
+                    <Award className="w-5 h-5" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Evaluations Table */}
+              <div className="bg-card rounded-2xl border shadow-sm overflow-hidden">
+                <div className="p-4 border-b flex items-center justify-between">
+                  <div>
+                    <h3 className="text-sm font-bold text-foreground">Bảng Đánh Giá Chất Lượng Sau Đào Tạo (Biểu mẫu BM04-QTĐT)</h3>
+                    <p className="text-[11px] text-muted-foreground">Theo dõi khả năng ứng dụng thực tế sau 1 - 3 - 6 tháng tại vị trí làm việc</p>
+                  </div>
+                  <span className="text-xs font-semibold text-muted-foreground">Hiển thị {filteredEvaluations.length} bản ghi</span>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="bg-muted/50 border-b text-muted-foreground">
+                        <th className="py-3 px-4 text-left font-bold">Mã ĐG & Ngày ĐG</th>
+                        <th className="py-3 px-4 text-left font-bold">Nhân Sự & Bộ Phận</th>
+                        <th className="py-3 px-4 text-center font-bold">Thời Điểm</th>
+                        <th className="py-3 px-4 text-center font-bold">Điểm TB</th>
+                        <th className="py-3 px-4 text-center font-bold">Kết Luận Hiệu Quả</th>
+                        <th className="py-3 px-4 text-left font-bold">Người ĐG & Tiến Bộ Quan Sát</th>
+                        <th className="py-3 px-4 text-right font-bold">Thao Tác</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border">
+                      {filteredEvaluations.length === 0 ? (
+                        <tr>
+                          <td colSpan={7} className="py-8 text-center text-muted-foreground italic">
+                            Chưa có bản ghi đánh giá chất lượng sau đào tạo nào.
+                          </td>
+                        </tr>
+                      ) : (
+                        filteredEvaluations.map((ev) => (
+                          <tr key={ev.evaluation_id} className="hover:bg-muted/30 transition-colors">
+                            <td className="py-3 px-4">
+                              <span className="font-mono font-bold text-purple-700 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/40 px-2 py-0.5 rounded border border-purple-200">
+                                {ev.evaluation_code}
+                              </span>
+                              <div className="text-[11px] text-muted-foreground mt-1 flex items-center gap-1">
+                                <Calendar className="w-3 h-3" />
+                                {ev.evaluation_date}
+                              </div>
+                            </td>
+                            <td className="py-3 px-4">
+                              <p className="font-bold text-foreground text-xs flex items-center gap-1">
+                                <User className="w-3 h-3 text-muted-foreground" />
+                                {ev.evaluated_employee_name}
+                              </p>
+                              <p className="text-[11px] text-muted-foreground flex items-center gap-1 mt-0.5">
+                                <Building2 className="w-3 h-3 text-muted-foreground" />
+                                {ev.department}
+                              </p>
+                            </td>
+                            <td className="py-3 px-4 text-center font-semibold">
+                              <span className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[11px]">
+                                {ev.post_training_period === "1_MONTH" ? "1 Tháng" : ev.post_training_period === "3_MONTHS" ? "3 Tháng" : "6 Tháng"}
+                              </span>
+                            </td>
+                            <td className="py-3 px-4 text-center">
+                              <span className="text-sm font-extrabold text-purple-700 dark:text-purple-400">
+                                {ev.overall_rating}
+                              </span>
+                              <span className="text-[10px] text-muted-foreground"> / 5.0</span>
+                            </td>
+                            <td className="py-3 px-4 text-center">
+                              {ev.is_effective ? (
+                                <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">
+                                  <Check className="w-3 h-3" /> ĐẠT HIỆU QUẢ
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-rose-100 text-rose-800 border border-rose-300">
+                                  <X className="w-3 h-3" /> CHƯA ĐẠT
+                                </span>
+                              )}
+                            </td>
+                            <td className="py-3 px-4 max-w-xs">
+                              <p className="font-bold text-foreground text-xs">{ev.evaluator_name}</p>
+                              <p className="text-[11px] text-muted-foreground line-clamp-1 mt-0.5">
+                                {ev.improvements_observed || ev.further_actions_needed || "Tuân thủ tốt quy trình"}
+                              </p>
+                            </td>
+                            <td className="py-3 px-4 text-right">
+                              <div className="flex items-center justify-end gap-1">
+                                <button
+                                  title="In biểu mẫu BM04-QTĐT"
+                                  onClick={() => triggerPrintTrainingEvaluation(ev)}
+                                  className="p-1 rounded text-blue-600 hover:bg-blue-50 border border-blue-200"
+                                >
+                                  <Printer className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  title="Chỉnh sửa"
+                                  onClick={() => handleOpenEditEval(ev)}
+                                  className="p-1 rounded text-slate-600 hover:bg-slate-100 border border-slate-200"
+                                >
+                                  <Edit className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  title="Xóa"
+                                  onClick={() => handleDeleteEval(ev.evaluation_id)}
+                                  className="p-1 rounded text-rose-600 hover:bg-rose-50 border border-rose-200"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
           )}
         </div>
       )}
@@ -2501,6 +3539,345 @@ function AuditManagementPage() {
               </Button>
               <Button type="submit" className="bg-primary text-primary-foreground font-bold">
                 Lưu Học Viên
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* ==================== MODAL: TRAINING REQUEST (BM01-QTĐT) ==================== */}
+      <Dialog open={showRequestModal} onOpenChange={setShowRequestModal}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {editingRequest ? "Chỉnh Sửa Phiếu Đề Xuất Đào Tạo (BM01)" : "Lập Phiếu Đề Xuất Đào Tạo Mới (BM01-QTĐT)"}
+            </DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSaveRequest} className="space-y-4 text-xs">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs">Mã phiếu đề xuất *</Label>
+                <Input
+                  required
+                  value={requestForm.request_code}
+                  onChange={(e) => setRequestForm({ ...requestForm, request_code: e.target.value })}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Ngày đề xuất *</Label>
+                <Input
+                  type="date"
+                  required
+                  value={requestForm.request_date}
+                  onChange={(e) => setRequestForm({ ...requestForm, request_date: e.target.value })}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <Label className="text-xs">Chuyên đề đào tạo kiến nghị *</Label>
+              <Input
+                required
+                placeholder="VD: Kiểm soát mối nguy vật lý và vận hành máy dò kim loại"
+                value={requestForm.training_topic}
+                onChange={(e) => setRequestForm({ ...requestForm, training_topic: e.target.value })}
+              />
+            </div>
+
+            <div className="space-y-1">
+              <Label className="text-xs">Lý do & Mục tiêu đào tạo *</Label>
+              <Textarea
+                rows={2}
+                required
+                placeholder="Mô tả nhu cầu phát sinh, rủi ro an toàn thực phẩm cần khắc phục hoặc mục tiêu nâng cao tay nghề..."
+                value={requestForm.reason_and_objective}
+                onChange={(e) => setRequestForm({ ...requestForm, reason_and_objective: e.target.value })}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs">Bộ phận đề xuất</Label>
+                <select
+                  className="w-full border rounded-md px-3 py-2 text-xs bg-background font-semibold"
+                  value={requestForm.department}
+                  onChange={(e) => setRequestForm({ ...requestForm, department: e.target.value })}
+                >
+                  {departments.map((d) => (
+                    <option key={d} value={d}>{d}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Người lập đề xuất *</Label>
+                <Input
+                  required
+                  value={requestForm.requested_by}
+                  onChange={(e) => setRequestForm({ ...requestForm, requested_by: e.target.value })}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs">Đối tượng tham gia</Label>
+                <Input
+                  placeholder="VD: Công nhân vận hành, KTV QA"
+                  value={requestForm.target_audience}
+                  onChange={(e) => setRequestForm({ ...requestForm, target_audience: e.target.value })}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Số lượng dự kiến (người)</Label>
+                <Input
+                  type="number"
+                  min="1"
+                  value={requestForm.expected_participants_count}
+                  onChange={(e) => setRequestForm({ ...requestForm, expected_participants_count: parseInt(e.target.value) || 1 })}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs">Thời gian dự kiến</Label>
+                <Input
+                  placeholder="VD: Tháng 03/2026"
+                  value={requestForm.expected_timeframe}
+                  onChange={(e) => setRequestForm({ ...requestForm, expected_timeframe: e.target.value })}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Đơn vị / Giảng viên dự kiến</Label>
+                <Input
+                  placeholder="VD: Đội trưởng HACCP"
+                  value={requestForm.proposed_trainer}
+                  onChange={(e) => setRequestForm({ ...requestForm, proposed_trainer: e.target.value })}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Dự toán chi phí (VNĐ)</Label>
+                <Input
+                  type="number"
+                  step="50000"
+                  value={requestForm.estimated_cost}
+                  onChange={(e) => setRequestForm({ ...requestForm, estimated_cost: parseFloat(e.target.value) || 0 })}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-3 pt-2 border-t">
+              <div className="space-y-1">
+                <Label className="text-xs">Trạng thái phê duyệt</Label>
+                <select
+                  className="w-full border rounded-md px-3 py-2 text-xs bg-background font-semibold"
+                  value={requestForm.approval_status}
+                  onChange={(e) => setRequestForm({ ...requestForm, approval_status: e.target.value })}
+                >
+                  <option value="PENDING">Chờ phê duyệt</option>
+                  <option value="APPROVED">Đã phê duyệt</option>
+                  <option value="REJECTED">Từ chối duyệt</option>
+                </select>
+              </div>
+              <div className="space-y-1 col-span-2">
+                <Label className="text-xs">Người duyệt / Ý kiến phê duyệt</Label>
+                <Input
+                  placeholder="VD: Giám Đốc Điều Hành - Đã duyệt triển khai theo kế hoạch"
+                  value={requestForm.approved_by || ""}
+                  onChange={(e) => setRequestForm({ ...requestForm, approved_by: e.target.value, approval_comments: e.target.value })}
+                />
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setShowRequestModal(false)}>
+                Hủy
+              </Button>
+              <Button type="submit" className="bg-purple-600 hover:bg-purple-700 text-white font-bold">
+                {editingRequest ? "Cập Nhật Phiếu" : "Lưu Phiếu Đề Xuất"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* ==================== MODAL: TRAINING EVALUATION (BM04-QTĐT) ==================== */}
+      <Dialog open={showEvalModal} onOpenChange={setShowEvalModal}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {editingEval ? "Chỉnh Sửa Bản Đánh Giá Sau Đào Tạo (BM04)" : "Lập Đánh Giá Chất Lượng Sau Đào Tạo (BM04-QTĐT)"}
+            </DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSaveEval} className="space-y-4 text-xs">
+            <div className="grid grid-cols-3 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs">Mã đánh giá *</Label>
+                <Input
+                  required
+                  value={evalForm.evaluation_code}
+                  onChange={(e) => setEvalForm({ ...evalForm, evaluation_code: e.target.value })}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Ngày đánh giá *</Label>
+                <Input
+                  type="date"
+                  required
+                  value={evalForm.evaluation_date}
+                  onChange={(e) => setEvalForm({ ...evalForm, evaluation_date: e.target.value })}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Thời điểm đánh giá</Label>
+                <select
+                  className="w-full border rounded-md px-3 py-2 text-xs bg-background font-semibold"
+                  value={evalForm.post_training_period}
+                  onChange={(e) => setEvalForm({ ...evalForm, post_training_period: e.target.value })}
+                >
+                  <option value="1_MONTH">1 Tháng sau đào tạo</option>
+                  <option value="3_MONTHS">3 Tháng sau đào tạo</option>
+                  <option value="6_MONTHS">6 Tháng sau đào tạo</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <Label className="text-xs">Khóa đào tạo liên kết (Nếu có)</Label>
+              <select
+                className="w-full border rounded-md px-3 py-2 text-xs bg-background font-semibold"
+                value={evalForm.course_id || ""}
+                onChange={(e) => setEvalForm({ ...evalForm, course_id: e.target.value ? parseInt(e.target.value) : undefined })}
+              >
+                <option value="">-- Chọn khóa học thực hiện --</option>
+                {courses.map((c) => (
+                  <option key={c.course_id} value={c.course_id}>
+                    [{c.course_code}] {c.title} ({c.schedule_date})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="grid grid-cols-3 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs">Mã NV được đánh giá *</Label>
+                <Input
+                  required
+                  value={evalForm.employee_code}
+                  onChange={(e) => setEvalForm({ ...evalForm, employee_code: e.target.value })}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Họ tên nhân viên *</Label>
+                <Input
+                  required
+                  value={evalForm.evaluated_employee_name}
+                  onChange={(e) => setEvalForm({ ...evalForm, evaluated_employee_name: e.target.value })}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Bộ phận</Label>
+                <select
+                  className="w-full border rounded-md px-3 py-2 text-xs bg-background font-semibold"
+                  value={evalForm.department}
+                  onChange={(e) => setEvalForm({ ...evalForm, department: e.target.value })}
+                >
+                  {departments.map((d) => (
+                    <option key={d} value={d}>{d}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs">Người đánh giá (Trưởng bộ phận) *</Label>
+                <Input
+                  required
+                  value={evalForm.evaluator_name}
+                  onChange={(e) => setEvalForm({ ...evalForm, evaluator_name: e.target.value })}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Chức danh người đánh giá</Label>
+                <Input
+                  value={evalForm.evaluator_title}
+                  onChange={(e) => setEvalForm({ ...evalForm, evaluator_title: e.target.value })}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 p-3 bg-purple-50/50 dark:bg-purple-950/20 rounded-xl border border-purple-100">
+              <div className="space-y-1">
+                <Label className="text-xs font-bold text-purple-900 dark:text-purple-200">Điểm đánh giá tổng thể (Thang 1-5)</Label>
+                <Input
+                  type="number"
+                  step="0.1"
+                  min="1"
+                  max="5"
+                  required
+                  value={evalForm.overall_rating}
+                  onChange={(e) => {
+                    const rating = parseFloat(e.target.value) || 0;
+                    setEvalForm({
+                      ...evalForm,
+                      overall_rating: rating,
+                      is_effective: rating >= 3.5,
+                    });
+                  }}
+                />
+              </div>
+              <div className="space-y-1 flex flex-col justify-end">
+                <Label className="text-xs font-bold text-purple-900 dark:text-purple-200">Kết luận hiệu quả ứng dụng</Label>
+                <div className="flex items-center gap-2 mt-2">
+                  <input
+                    type="checkbox"
+                    id="is_effective_check"
+                    checked={evalForm.is_effective}
+                    onChange={(e) => setEvalForm({ ...evalForm, is_effective: e.target.checked })}
+                    className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500"
+                  />
+                  <label htmlFor="is_effective_check" className="text-xs font-bold text-foreground cursor-pointer">
+                    {evalForm.is_effective ? "✅ ĐẠT HIỆU QUẢ SAU ĐÀO TẠO" : "❌ CHƯA ĐẠT HIỆU QUẢ"}
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <Label className="text-xs">Những tiến bộ cụ thể quan sát được trong công việc</Label>
+              <Textarea
+                rows={2}
+                placeholder="VD: Thao tác đúng quy trình SOP, kiểm soát tốt mối nguy, không xảy ra sai sót..."
+                value={evalForm.improvements_observed}
+                onChange={(e) => setEvalForm({ ...evalForm, improvements_observed: e.target.value })}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs">Biện pháp cần thực hiện thêm (nếu có)</Label>
+                <Input
+                  placeholder="VD: Kèm cặp thực hành thêm 1 tuần"
+                  value={evalForm.further_actions_needed}
+                  onChange={(e) => setEvalForm({ ...evalForm, further_actions_needed: e.target.value })}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Cấp xem xét / Ban Giám Đốc</Label>
+                <Input
+                  value={evalForm.reviewed_by}
+                  onChange={(e) => setEvalForm({ ...evalForm, reviewed_by: e.target.value })}
+                />
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setShowEvalModal(false)}>
+                Hủy
+              </Button>
+              <Button type="submit" className="bg-purple-600 hover:bg-purple-700 text-white font-bold">
+                {editingEval ? "Cập Nhật Đánh Giá" : "Lưu Đánh Giá BM04"}
               </Button>
             </DialogFooter>
           </form>

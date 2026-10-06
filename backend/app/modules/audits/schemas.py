@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, computed_field
 from typing import Optional, List, Dict, Any
 from datetime import date, datetime
 import uuid
@@ -156,6 +156,106 @@ class TrainingParticipantOut(TrainingParticipantBase):
 
     class Config:
         from_attributes = True
+
+
+# ==================== TRAINING REQUESTS (BM01-QTĐT) ====================
+class TrainingRequestBase(BaseModel):
+    request_code: Optional[str] = None
+    department: str
+    proposer_name: str
+    course_name: str
+    training_reason: str
+    expected_duration: str = "0.5 ngày"
+    attendee_count: int = 1
+    target_participants: str
+    expected_outcomes: str
+    request_date: date = Field(default_factory=date.today)
+    status: str = "SUBMITTED"  # SUBMITTED, APPROVED, REJECTED, COMPLETED
+    approver_name: Optional[str] = None
+    approval_date: Optional[date] = None
+    approval_note: Optional[str] = None
+
+class TrainingRequestCreate(TrainingRequestBase):
+    pass
+
+class TrainingRequestUpdate(BaseModel):
+    department: Optional[str] = None
+    proposer_name: Optional[str] = None
+    course_name: Optional[str] = None
+    training_reason: Optional[str] = None
+    expected_duration: Optional[str] = None
+    attendee_count: Optional[int] = None
+    target_participants: Optional[str] = None
+    expected_outcomes: Optional[str] = None
+    request_date: Optional[date] = None
+    status: Optional[str] = None
+    approver_name: Optional[str] = None
+    approval_date: Optional[date] = None
+    approval_note: Optional[str] = None
+
+class TrainingRequestOut(TrainingRequestBase):
+    request_id: uuid.UUID
+    created_at: Optional[datetime] = None
+
+    @computed_field
+    @property
+    def target_audience_description(self) -> str:
+        return self.target_participants
+
+    @computed_field
+    @property
+    def requested_by_name(self) -> str:
+        return self.proposer_name
+
+    @computed_field
+    @property
+    def proposed_training_topics(self) -> str:
+        return self.course_name
+
+    class Config:
+        from_attributes = True
+
+
+# ==================== TRAINING EVALUATIONS (BM04-QTĐT) ====================
+class TrainingEvaluationBase(BaseModel):
+    course_id: Optional[uuid.UUID] = None
+    employee_code: str
+    employee_name: str
+    department: str
+    evaluator_name: Optional[str] = None
+    evaluation_date: date = Field(default_factory=date.today)
+    knowledge_score: int = Field(default=4, ge=1, le=5)
+    skill_application_score: int = Field(default=4, ge=1, le=5)
+    attitude_awareness_score: int = Field(default=5, ge=1, le=5)
+    overall_rating: str = "DAT"  # DAT, KHONG_DAT, XUAT_SAC
+    supervisor_feedback: Optional[str] = None
+    need_retraining: bool = False
+
+class TrainingEvaluationCreate(TrainingEvaluationBase):
+    pass
+
+class TrainingEvaluationUpdate(BaseModel):
+    course_id: Optional[uuid.UUID] = None
+    employee_code: Optional[str] = None
+    employee_name: Optional[str] = None
+    department: Optional[str] = None
+    evaluator_name: Optional[str] = None
+    evaluation_date: Optional[date] = None
+    knowledge_score: Optional[int] = None
+    skill_application_score: Optional[int] = None
+    attitude_awareness_score: Optional[int] = None
+    overall_rating: Optional[str] = None
+    supervisor_feedback: Optional[str] = None
+    need_retraining: Optional[bool] = None
+
+class TrainingEvaluationOut(TrainingEvaluationBase):
+    evaluation_id: uuid.UUID
+    course_title: Optional[str] = None
+    created_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
 
 
 # ==================== HEALTH DECLARATIONS ====================

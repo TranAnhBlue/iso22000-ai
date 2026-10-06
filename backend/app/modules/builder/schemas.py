@@ -41,6 +41,10 @@ class DynamicFormTemplateUpdate(BaseModel):
 
 class DynamicFormTemplateResponse(DynamicFormTemplateBase):
     template_id: UUID
+    is_approved: bool = True
+    approved_by_name: Optional[str] = None
+    approved_at: Optional[datetime] = None
+    change_history: Optional[List[Any]] = []
     created_by: Optional[UUID] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
@@ -289,6 +293,10 @@ class DynamicWorkflowTemplateUpdate(BaseModel):
 
 class DynamicWorkflowTemplateResponse(DynamicWorkflowTemplateBase):
     workflow_id: Optional[Union[UUID, str]] = None
+    is_approved: bool = True
+    approved_by_name: Optional[str] = None
+    approved_at: Optional[datetime] = None
+    change_history: Optional[List[Any]] = []
     created_by: Optional[UUID] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None

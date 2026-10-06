@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.dependencies import require_roles
+from app.core.demo_data import demo_seed_enabled
 from app.modules.auth.models import User
 from app.modules.capa.models import NonConformance, CAPARecord
 from app.modules.capa.schemas import (
@@ -166,6 +167,13 @@ def create_non_conformance(payload: NonConformanceCreate, db: Session = Depends(
     if existing:
         raise HTTPException(status_code=400, detail=f"Mã phiếu NC '{payload.nc_number}' đã tồn tại")
 
+    # Bắt buộc liên kết lô hàng / mẻ sản xuất khi nguồn sự cố từ CCP, KSQT hoặc IQC (Điều khoản 8.9 ISO 22000)
+    if payload.source in ["HACCP_CCP", "IPQC_DEVIATION", "IQC_INCOMING"] and not (payload.affected_lot_number and payload.affected_lot_number.strip()):
+        raise HTTPException(
+            status_code=400,
+            detail=f"Nguồn sự cố '{payload.source}' bắt buộc phải khai báo số lô/mẻ sản xuất bị ảnh hưởng (affected_lot_number) để đảm bảo tính truy xuất nguồn gốc.",
+        )
+
     new_nc = NonConformance(
         nc_number=payload.nc_number.strip(),
         title=payload.title.strip(),
@@ -243,6 +251,14 @@ def delete_non_conformance(
     nc = db.get(NonConformance, nc_id)
     if not nc:
         raise HTTPException(status_code=404, detail="Không tìm thấy bản ghi sự không phù hợp")
+
+    # Khóa chặt hồ sơ đã đóng: cấm xóa hồ sơ đã thẩm tra xong
+    if nc.status == "CLOSED":
+        raise HTTPException(
+            status_code=400,
+            detail="Hồ sơ sự không phù hợp đã ĐÓNG (CLOSED) không được phép xóa nhằm bảo vệ toàn vẹn bằng chứng thẩm tra đánh giá ISO 22000.",
+        )
+
     db.delete(nc)
     db.commit()
     return {"message": "Đã xóa sự không phù hợp thành công", "nc_id": str(nc_id)}
@@ -423,9 +439,84 @@ def delete_capa_record(
     c = db.get(CAPARecord, capa_id)
     if not c:
         raise HTTPException(status_code=404, detail="Không tìm thấy hồ sơ CAPA")
+
+    # Khóa chặt hồ sơ đã hoàn thành: cấm xóa CAPA đã thẩm tra hiệu lực
+    if c.status == "COMPLETED" or c.verification_status == "EFFECTIVE":
+        raise HTTPException(
+            status_code=400,
+            detail="Hồ sơ CAPA đã hoàn thành thẩm tra hiệu lực (COMPLETED/EFFECTIVE) không được phép xóa nhằm duy trì lịch sử truy vết cải tiến liên tục.",
+        )
+
     db.delete(c)
     db.commit()
     return {"message": "Đã xóa hồ sơ CAPA thành công", "capa_id": str(capa_id)}
+
+
+@router.get("/sla-warnings")
+def get_capa_sla_warnings(db: Session = Depends(get_db)):
+    """
+    Theo dõi quy tắc SLA & Cảnh báo quá hạn theo ISO 22000:2018:
+    - SLA Khắc phục tức thời (Corrections - Clause 8.9.2): Phiếu NC mới quá 48h chưa phân công CAPA.
+    - SLA Hành động khắc phục & Phòng ngừa (CAPA - Clause 10.1): Hồ sơ quá hạn target_date hoặc sắp đến hạn trong vòng 3 ngày.
+    """
+    today = date.today()
+    warnings = []
+
+    # 1. Kiểm tra NC mở
+    open_ncs = db.scalars(
+        select(NonConformance).where(NonConformance.status.in_(["NEW", "INVESTIGATING"]))
+    ).all()
+
+    for nc in open_ncs:
+        days_open = (today - nc.occurred_date).days if nc.occurred_date else 0
+        if days_open >= 2:  # Quá 48h
+            warnings.append({
+                "type": "NC_SLA_BREACH",
+                "severity": "CRITICAL" if nc.severity == "CRITICAL" else "MAJOR",
+                "code": str(nc.nc_number),
+                "title": str(nc.title),
+                "source": str(nc.source),
+                "occurred_date": str(nc.occurred_date),
+                "days_overdue": days_open - 2,
+                "message": f"Sự cố NC '{nc.nc_number}' đã mở {days_open} ngày (> 48h) nhưng chưa hoàn thành lập kế hoạch CAPA theo ISO 22000 Clause 8.9.2.",
+            })
+
+    # 2. Kiểm tra CAPA chưa hoàn tất
+    pending_capas = db.scalars(
+        select(CAPARecord).where(CAPARecord.status.in_(["DRAFT", "IN_PROGRESS", "PENDING_VERIFICATION"]))
+    ).all()
+
+    for capa in pending_capas:
+        if not capa.target_date:
+            continue
+        delta_days = (capa.target_date - today).days
+        if delta_days < 0:
+            warnings.append({
+                "type": "CAPA_OVERDUE",
+                "severity": "CRITICAL",
+                "code": str(capa.capa_number),
+                "title": str(capa.title),
+                "target_date": str(capa.target_date),
+                "days_overdue": abs(delta_days),
+                "message": f"Hồ sơ CAPA '{capa.capa_number}' đã QUÁ HẠN {abs(delta_days)} ngày (Hạn chót: {capa.target_date}) - Phụ trách: {capa.assigned_to_name or 'Chưa phân công'}.",
+            })
+        elif delta_days <= 3:
+            warnings.append({
+                "type": "CAPA_EXPIRING_SOON",
+                "severity": "WARNING",
+                "code": str(capa.capa_number),
+                "title": str(capa.title),
+                "target_date": str(capa.target_date),
+                "days_remaining": delta_days,
+                "message": f"Hồ sơ CAPA '{capa.capa_number}' sắp đến hạn trong {delta_days} ngày tới ({capa.target_date}).",
+            })
+
+    return {
+        "total_warnings": len(warnings),
+        "critical_sla_count": sum(1 for w in warnings if w["severity"] == "CRITICAL"),
+        "warning_count": sum(1 for w in warnings if w["severity"] == "WARNING"),
+        "warnings": warnings,
+    }
 
 
 # ==================== 4. AI ASSISTANTS ====================
@@ -575,6 +666,8 @@ def seed_capa_defaults(
     """
     Tự động nạp 5 kịch bản sự cố NC & CAPA mẫu thực tế chuẩn nhà máy thủy sản/thực phẩm.
     """
+    if not demo_seed_enabled():
+        raise HTTPException(status_code=404, detail="Demo data seeding is disabled")
     existing_count = db.scalar(select(func.count(NonConformance.nc_id)))
     if existing_count and existing_count > 0:
         return {"message": f"Hệ thống đã có sẵn {existing_count} bản ghi sự cố NC", "seeded": 0}
