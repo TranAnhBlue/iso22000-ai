@@ -98,6 +98,7 @@ app.include_router(documents.router, prefix="/api/v1", dependencies=default_auth
 app.include_router(purchasing.router, prefix="/api/v1", dependencies=default_auth)
 app.include_router(haccp.router, prefix="/api/v1", dependencies=default_auth)
 app.include_router(change_management.router, prefix="/api/v1/change-management", tags=["Change Management"], dependencies=default_auth)
+app.include_router(change_management.router, prefix="/api/v1/changes", tags=["Change Management Alias"], dependencies=default_auth)
 app.include_router(equipment.router, prefix="/api/v1/equipment", tags=["Equipment & Maintenance"], dependencies=default_auth)
 app.include_router(inventory.router, prefix="/api/v1/inventory", tags=["Warehouse & Inventory FEFO"], dependencies=default_auth)
 app.include_router(traceability.router, prefix="/api/v1/traceability", tags=["Traceability & Mock Recall"], dependencies=default_auth)
@@ -105,9 +106,10 @@ app.include_router(capa.router, prefix="/api/v1/capa", tags=["CAPA & Non-Conform
 app.include_router(audits.router, prefix="/api/v1/audits", tags=["Internal Audit, Training & Health"], dependencies=default_auth)
 app.include_router(dashboard.router, prefix="/api/v1/dashboard", tags=["Executive Dashboard & Management Review"], dependencies=default_auth)
 app.include_router(emergency.router, prefix="/api/v1/emergency", tags=["Emergency Preparedness & Response"], dependencies=default_auth)
-app.include_router(builder.router, prefix="/api/v1", dependencies=default_auth)
+app.include_router(builder.router, prefix="/api/v1/builders", tags=["Dynamic Form & Workflow Builders"], dependencies=default_auth)
+app.include_router(builder.router, prefix="/api/v1/builder", tags=["Dynamic Form & Workflow Builders Alias"], dependencies=default_auth)
 
-@app.api_route("/", methods=["GET", "HEAD"])
+@app.get("/")
 def root():
     return {
         "status": "online",
@@ -116,6 +118,6 @@ def root():
         "docs": "/docs",
     }
 
-@app.api_route("/health", methods=["GET", "HEAD"])
+@app.get("/health")
 def health():
     return {"status": "healthy"}

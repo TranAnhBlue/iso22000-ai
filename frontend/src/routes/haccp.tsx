@@ -240,6 +240,49 @@ interface AIHazardItem {
   recommended_classification: string;
 }
 
+export interface MetalDetectorLog {
+  log_id: string;
+  machine_code: string;
+  machine_name: string;
+  log_date: string;
+  check_time: string;
+  shift_name: string;
+  batch_number: string;
+  product_name: string;
+  fe_standard_mm: number;
+  fe_detected: boolean;
+  sus_standard_mm: number;
+  sus_detected: boolean;
+  rejection_mechanism_working: boolean;
+  metal_detected_count: number;
+  test_result: string;
+  corrective_action?: string;
+  checked_by_name: string;
+  verified_by_name?: string;
+  notes?: string;
+  created_at?: string;
+}
+
+export interface InProcessQCLog {
+  log_id: string;
+  inspection_code: string;
+  stage_code: string;
+  stage_name: string;
+  log_date: string;
+  check_time: string;
+  shift_name: string;
+  batch_number: string;
+  product_name: string;
+  criteria_data: Record<string, any>;
+  overall_status: string;
+  deviations?: string;
+  corrective_actions?: string;
+  inspector_name: string;
+  supervisor_name?: string;
+  notes?: string;
+  created_at?: string;
+}
+
 // Preset samples for AI tools
 const AI_STEP_PRESETS = [
   {
@@ -300,7 +343,7 @@ const AI_DEVIATION_PRESETS = [
 
 // ==================== MAIN COMPONENT ====================
 function HACCPModule() {
-  const [activeTab, setActiveTab] = useState<"flowchart" | "ccp_plan" | "hazards" | "logs" | "reviews" | "ai">("flowchart");
+  const [activeTab, setActiveTab] = useState<"flowchart" | "ccp_plan" | "hazards" | "logs" | "reviews" | "ipqc" | "ai">("flowchart");
   const [showGuide, setShowGuide] = useState(false);
   const [showWfGuide, setShowWfGuide] = useState(false);
 
@@ -314,7 +357,65 @@ function HACCPModule() {
   const [logs, setLogs] = useState<CCPMonitoringLog[]>([]);
   const [reviews, setReviews] = useState<HACCPPlanReview[]>([]);
   const [changeRequests, setChangeRequests] = useState<any[]>([]);
+  const [metalDetectorLogs, setMetalDetectorLogs] = useState<MetalDetectorLog[]>([]);
+  const [inProcessLogs, setInProcessLogs] = useState<InProcessQCLog[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+
+  // IPQC Filters & Modals
+  const [ipqcSubTab, setIpqcSubTab] = useState<"metal_detector" | "process_stages">("metal_detector");
+  const [mdSearch, setMdSearch] = useState("");
+  const [mdResultFilter, setMdResultFilter] = useState("ALL");
+  const [stageSearch, setStageSearch] = useState("");
+  const [stageFilter, setStageFilter] = useState("ALL");
+  const [stageStatusFilter, setStageStatusFilter] = useState("ALL");
+
+  const [showMDModal, setShowMDModal] = useState(false);
+  const [editingMDLog, setEditingMDLog] = useState<MetalDetectorLog | null>(null);
+  const [mdForm, setMdForm] = useState({
+    machine_code: "MD-01",
+    machine_name: "Máy dò kim loại băng tải tự động Sesotec",
+    log_date: new Date().toISOString().split("T")[0],
+    check_time: "08:00",
+    shift_name: "Ca 1",
+    batch_number: "",
+    product_name: "Gạo lứt đỏ sấy ăn liền 250g",
+    fe_standard_mm: 0.5,
+    fe_detected: true,
+    sus_standard_mm: 0.8,
+    sus_detected: true,
+    rejection_mechanism_working: true,
+    metal_detected_count: 0,
+    corrective_action: "",
+    checked_by_name: "Nguyễn Văn Kiểm",
+    verified_by_name: "Trần Thị QA",
+    notes: "",
+  });
+
+  const [showStageModal, setShowStageModal] = useState(false);
+  const [editingStageLog, setEditingStageLog] = useState<InProcessQCLog | null>(null);
+  const [stageForm, setStageForm] = useState({
+    inspection_code: "",
+    stage_code: "DRYING_COOLING",
+    stage_name: "Công đoạn sấy & làm nguội",
+    log_date: new Date().toISOString().split("T")[0],
+    check_time: "09:30",
+    shift_name: "Ca 1",
+    batch_number: "",
+    product_name: "Gạo lứt đỏ sấy ăn liền",
+    criteria_data_str: JSON.stringify({
+      drying_temp_c: 85,
+      drying_time_min: 45,
+      moisture_percent: 11.5,
+      cooling_temp_c: 28,
+      appearance: "Hạt nở đều, giòn rụm, màu nâu đỏ tự nhiên"
+    }, null, 2),
+    overall_status: "PASSED",
+    deviations: "",
+    corrective_actions: "",
+    inspector_name: "Nguyễn Văn Kiểm",
+    supervisor_name: "Trần Thị QA",
+    notes: "",
+  });
 
   // Reviews Filters & Modal
   const [reviewSearch, setReviewSearch] = useState("");
@@ -462,7 +563,7 @@ function HACCPModule() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [sRes, plRes, stRes, hzRes, ccpRes, lgRes, revRes, crRes] = await Promise.all([
+      const [sRes, plRes, stRes, hzRes, ccpRes, lgRes, revRes, crRes, mdRes, ipqcRes] = await Promise.all([
         api.get("/haccp/stats"),
         api.get("/haccp/plans"),
         api.get("/haccp/process-steps"),
@@ -471,6 +572,8 @@ function HACCPModule() {
         api.get("/haccp/ccp-logs"),
         api.get("/haccp/reviews"),
         api.get("/change-management/requests"),
+        api.get("/haccp/metal-detector-logs"),
+        api.get("/haccp/in-process-qc-logs"),
       ]);
       setStats(sRes.data);
       setPlans(plRes.data);
@@ -483,6 +586,8 @@ function HACCPModule() {
       setLogs(lgRes.data);
       setReviews(revRes.data);
       setChangeRequests(crRes.data);
+      setMetalDetectorLogs(mdRes.data);
+      setInProcessLogs(ipqcRes.data);
     } catch (err: any) {
       console.error(err);
       toast.error("Không thể tải dữ liệu HACCP: " + (err.response?.data?.detail || err.message));
@@ -982,6 +1087,458 @@ function HACCPModule() {
       return matchType && matchConclusion && matchSearch;
     });
   }, [reviews, reviewFilterType, reviewFilterConclusion, reviewSearch]);
+
+  // Filtered Metal Detector Logs
+  const filteredMDLogs = useMemo(() => {
+    return metalDetectorLogs.filter((l) => {
+      const matchSearch =
+        !mdSearch.trim() ||
+        l.machine_code.toLowerCase().includes(mdSearch.toLowerCase()) ||
+        l.machine_name.toLowerCase().includes(mdSearch.toLowerCase()) ||
+        l.batch_number.toLowerCase().includes(mdSearch.toLowerCase()) ||
+        l.product_name.toLowerCase().includes(mdSearch.toLowerCase()) ||
+        l.checked_by_name.toLowerCase().includes(mdSearch.toLowerCase());
+      const matchResult = mdResultFilter === "ALL" || l.test_result === mdResultFilter;
+      return matchSearch && matchResult;
+    });
+  }, [metalDetectorLogs, mdSearch, mdResultFilter]);
+
+  // Filtered Stage QC Logs
+  const filteredStageLogs = useMemo(() => {
+    return inProcessLogs.filter((l) => {
+      const matchSearch =
+        !stageSearch.trim() ||
+        l.inspection_code.toLowerCase().includes(stageSearch.toLowerCase()) ||
+        l.stage_name.toLowerCase().includes(stageSearch.toLowerCase()) ||
+        l.batch_number.toLowerCase().includes(stageSearch.toLowerCase()) ||
+        l.product_name.toLowerCase().includes(stageSearch.toLowerCase()) ||
+        l.inspector_name.toLowerCase().includes(stageSearch.toLowerCase());
+      const matchStage = stageFilter === "ALL" || l.stage_code === stageFilter;
+      const matchStatus = stageStatusFilter === "ALL" || l.overall_status === stageStatusFilter;
+      return matchSearch && matchStage && matchStatus;
+    });
+  }, [inProcessLogs, stageSearch, stageFilter, stageStatusFilter]);
+
+  // ==================== ACTIONS: IPQC - METAL DETECTOR LOGS ====================
+  const handleOpenCreateMDLog = () => {
+    setEditingMDLog(null);
+    setMdForm({
+      machine_code: "MD-01",
+      machine_name: "Máy dò kim loại băng tải tự động Sesotec",
+      log_date: new Date().toISOString().split("T")[0],
+      check_time: new Date().toTimeString().slice(0, 5),
+      shift_name: "Ca 1",
+      batch_number: `LOT-2026-B0${Math.floor(Math.random() * 8 + 1)}`,
+      product_name: "Gạo lứt đỏ sấy ăn liền 250g",
+      fe_standard_mm: 0.5,
+      fe_detected: true,
+      sus_standard_mm: 0.8,
+      sus_detected: true,
+      rejection_mechanism_working: true,
+      metal_detected_count: 0,
+      corrective_action: "",
+      checked_by_name: "Nguyễn Văn Kiểm",
+      verified_by_name: "Trần Thị QA",
+      notes: "Kiểm tra đầu ca đạt yêu cầu",
+    });
+    setShowMDModal(true);
+  };
+
+  const handleOpenEditMDLog = (log: MetalDetectorLog) => {
+    setEditingMDLog(log);
+    setMdForm({
+      machine_code: log.machine_code,
+      machine_name: log.machine_name,
+      log_date: log.log_date,
+      check_time: log.check_time,
+      shift_name: log.shift_name,
+      batch_number: log.batch_number,
+      product_name: log.product_name,
+      fe_standard_mm: log.fe_standard_mm,
+      fe_detected: log.fe_detected,
+      sus_standard_mm: log.sus_standard_mm,
+      sus_detected: log.sus_detected,
+      rejection_mechanism_working: log.rejection_mechanism_working,
+      metal_detected_count: log.metal_detected_count,
+      corrective_action: log.corrective_action || "",
+      checked_by_name: log.checked_by_name,
+      verified_by_name: log.verified_by_name || "",
+      notes: log.notes || "",
+    });
+    setShowMDModal(true);
+  };
+
+  const handleSaveMDLog = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      if (editingMDLog) {
+        await api.put(`/haccp/metal-detector-logs/${editingMDLog.log_id}`, mdForm);
+        toast.success("Cập nhật nhật ký kiểm tra máy dò kim loại thành công!");
+      } else {
+        await api.post("/haccp/metal-detector-logs", mdForm);
+        toast.success("Thêm nhật ký kiểm tra máy dò kim loại thành công!");
+      }
+      setShowMDModal(false);
+      fetchData();
+    } catch (err: any) {
+      console.error(err);
+      toast.error("Lỗi lưu nhật ký máy dò: " + (err.response?.data?.detail || err.message));
+    }
+  };
+
+  const handleDeleteMDLog = async (logId: string) => {
+    if (!confirm("Bạn có chắc chắn muốn xóa nhật ký kiểm tra máy dò này?")) return;
+    try {
+      await api.delete(`/haccp/metal-detector-logs/${logId}`);
+      toast.success("Đã xóa nhật ký máy dò kim loại!");
+      fetchData();
+    } catch (err: any) {
+      console.error(err);
+      toast.error("Lỗi khi xóa nhật ký: " + (err.response?.data?.detail || err.message));
+    }
+  };
+
+  const handlePrintMDLog = (log: MetalDetectorLog) => {
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>BM06-KSQT: Nhật Ký Kiểm Tra Máy Dò Kim Loại - ${log.batch_number}</title>
+        <style>
+          @page { size: A4 landscape; margin: 15mm; }
+          body { font-family: 'Times New Roman', serif; font-size: 13px; color: #1e293b; line-height: 1.4; margin: 0; }
+          .header-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+          .header-table td { border: 1px solid #334155; padding: 8px; vertical-align: middle; }
+          .logo-box { width: 90px; text-align: center; }
+          .title-box { text-align: center; font-weight: bold; }
+          .title-box h2 { margin: 0; font-size: 16px; text-transform: uppercase; color: #0f172a; }
+          .title-box p { margin: 4px 0 0 0; font-size: 11px; font-weight: normal; color: #475569; }
+          .code-box { width: 170px; font-size: 11px; }
+          .info-grid { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+          .info-grid td { padding: 5px 8px; font-size: 12px; }
+          .data-table { width: 100%; border-collapse: collapse; margin-top: 10px; margin-bottom: 20px; }
+          .data-table th, .data-table td { border: 1px solid #334155; padding: 8px; text-align: center; font-size: 12px; }
+          .data-table th { background-color: #f1f5f9; font-weight: bold; }
+          .status-pass { color: #047857; font-weight: bold; }
+          .status-fail { color: #b91c1c; font-weight: bold; }
+          .sig-table { width: 100%; border-collapse: collapse; margin-top: 25px; }
+          .sig-table td { text-align: center; width: 50%; vertical-align: top; }
+          .footer-note { margin-top: 20px; font-size: 10px; text-align: center; color: #64748b; font-style: italic; border-top: 1px dashed #cbd5e1; padding-top: 6px; }
+        </style>
+      </head>
+      <body>
+        <table class="header-table">
+          <tr>
+            <td class="logo-box">
+              <img src="${logoImg}" alt="Logo" style="height: 50px; object-fit: contain;" />
+            </td>
+            <td class="title-box">
+              <h2>HỆ THỐNG QUẢN LÝ AN TOÀN THỰC PHẨM ISO 22000 / HACCP</h2>
+              <p>QUY TRÌNH KIỂM SOÁT QUÁ TRÌNH (BM06-KSQT)</p>
+              <h3 style="margin: 6px 0 0 0; font-size: 14px; color: #1e3a8a;">NHẬT KÝ KIỂM TRA MÁY DÒ KIM LOẠI (CCP)</h3>
+            </td>
+            <td class="code-box">
+              <b>Mã hiệu:</b> BM06-KSQT<br/>
+              <b>Lần ban hành:</b> 01<br/>
+              <b>Ngày ban hành:</b> 15/06/2024<br/>
+              <b>Trang:</b> 1/1
+            </td>
+          </tr>
+        </table>
+
+        <table class="info-grid">
+          <tr>
+            <td width="33%"><b>Thiết bị:</b> ${log.machine_name} (${log.machine_code})</td>
+            <td width="33%"><b>Ngày kiểm tra:</b> ${log.log_date} | ${log.check_time}</td>
+            <td width="34%"><b>Ca sản xuất:</b> ${log.shift_name}</td>
+          </tr>
+          <tr>
+            <td><b>Số lô (Lot/Batch):</b> ${log.batch_number}</td>
+            <td colspan="2"><b>Tên sản phẩm:</b> ${log.product_name}</td>
+          </tr>
+        </table>
+
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th rowspan="2">Thông số kiểm tra</th>
+              <th colspan="2">Thanh thử chuẩn (Test Piece)</th>
+              <th rowspan="2">Cơ cấu loại bỏ sản phẩm</th>
+              <th rowspan="2">Số lần phát hiện kim loại thực tế</th>
+              <th rowspan="2">Kết luận</th>
+              <th rowspan="2">Hành động khắc phục (nếu có)</th>
+            </tr>
+            <tr>
+              <th>Fe (Sắt) Ø ${log.fe_standard_mm} mm</th>
+              <th>SUS (Inox) Ø ${log.sus_standard_mm} mm</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><b>Thử nghiệm độ nhạy máy dò</b></td>
+              <td class="${log.fe_detected ? 'status-pass' : 'status-fail'}">
+                ${log.fe_detected ? "✓ ĐÃ PHÁT HIỆN" : "✗ KHÔNG PHÁT HIỆN"}
+              </td>
+              <td class="${log.sus_detected ? 'status-pass' : 'status-fail'}">
+                ${log.sus_detected ? "✓ ĐÃ PHÁT HIỆN" : "✗ KHÔNG PHÁT HIỆN"}
+              </td>
+              <td class="${log.rejection_mechanism_working ? 'status-pass' : 'status-fail'}">
+                ${log.rejection_mechanism_working ? "✓ HOẠT ĐỘNG TỐT" : "✗ KHÔNG HOẠT ĐỘNG"}
+              </td>
+              <td><b>${log.metal_detected_count}</b> lần</td>
+              <td class="${log.test_result === 'PASSED' ? 'status-pass' : 'status-fail'}">
+                ${log.test_result === 'PASSED' ? 'ĐẠT TIÊU CHUẨN' : 'KHÔNG ĐẠT'}
+              </td>
+              <td>${log.corrective_action || "Không có sự cố"}</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div style="font-size: 11px; margin-bottom: 10px;">
+          <b>Ghi chú:</b> ${log.notes || "Máy dò vận hành ổn định, không có can thiệp bất thường."}
+        </div>
+
+        <table class="sig-table">
+          <tr>
+            <td>
+              <b>NGƯỜI KIỂM TRA (QC/VẬN HÀNH)</b><br/>
+              <i>(Ký và ghi rõ họ tên)</i><br/><br/><br/><br/>
+              <b>${log.checked_by_name}</b>
+            </td>
+            <td>
+              <b>TRƯỞNG CA / TRƯỞNG BAN HACCP</b><br/>
+              <i>(Xác nhận & ký duyệt)</i><br/><br/><br/><br/>
+              <b>${log.verified_by_name || "Trần Thị QA"}</b>
+            </td>
+          </tr>
+        </table>
+
+        <div class="footer-note">
+          Hồ sơ kiểm soát quá trình theo tiêu chuẩn ISO 22000:2018 - Điểm CCP Dò kim loại - Lưu trữ tối thiểu 2 năm.
+        </div>
+      </body>
+      </html>
+    `;
+    printHtml(html);
+  };
+
+  // ==================== ACTIONS: IPQC - STAGE QC LOGS ====================
+  const handleOpenCreateStageLog = () => {
+    setEditingStageLog(null);
+    setStageForm({
+      inspection_code: `IPQC-2026-${String(inProcessLogs.length + 1).padStart(3, "0")}`,
+      stage_code: "DRYING_COOLING",
+      stage_name: "Công đoạn sấy & làm nguội",
+      log_date: new Date().toISOString().split("T")[0],
+      check_time: new Date().toTimeString().slice(0, 5),
+      shift_name: "Ca 1",
+      batch_number: `LOT-2026-B0${Math.floor(Math.random() * 8 + 1)}`,
+      product_name: "Gạo lứt đỏ sấy ăn liền",
+      criteria_data_str: JSON.stringify({
+        drying_temp_c: 85,
+        drying_time_min: 45,
+        moisture_percent: 11.5,
+        cooling_temp_c: 28,
+        appearance: "Hạt nở đều, giòn rụm, màu nâu đỏ tự nhiên"
+      }, null, 2),
+      overall_status: "PASSED",
+      deviations: "",
+      corrective_actions: "",
+      inspector_name: "Nguyễn Văn Kiểm",
+      supervisor_name: "Trần Thị QA",
+      notes: "Các thông số đều nằm trong dải kiểm soát cho phép",
+    });
+    setShowStageModal(true);
+  };
+
+  const handleOpenEditStageLog = (log: InProcessQCLog) => {
+    setEditingStageLog(log);
+    setStageForm({
+      inspection_code: log.inspection_code,
+      stage_code: log.stage_code,
+      stage_name: log.stage_name,
+      log_date: log.log_date,
+      check_time: log.check_time,
+      shift_name: log.shift_name,
+      batch_number: log.batch_number,
+      product_name: log.product_name,
+      criteria_data_str: JSON.stringify(log.criteria_data || {}, null, 2),
+      overall_status: log.overall_status,
+      deviations: log.deviations || "",
+      corrective_actions: log.corrective_actions || "",
+      inspector_name: log.inspector_name,
+      supervisor_name: log.supervisor_name || "",
+      notes: log.notes || "",
+    });
+    setShowStageModal(true);
+  };
+
+  const handleSaveStageLog = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      let parsedCriteria = {};
+      try {
+        parsedCriteria = JSON.parse(stageForm.criteria_data_str);
+      } catch (e) {
+        toast.error("Dữ liệu thông số kỹ thuật (JSON) không hợp lệ!");
+        return;
+      }
+
+      const payload = {
+        inspection_code: stageForm.inspection_code,
+        stage_code: stageForm.stage_code,
+        stage_name: stageForm.stage_name,
+        log_date: stageForm.log_date,
+        check_time: stageForm.check_time,
+        shift_name: stageForm.shift_name,
+        batch_number: stageForm.batch_number,
+        product_name: stageForm.product_name,
+        criteria_data: parsedCriteria,
+        overall_status: stageForm.overall_status,
+        deviations: stageForm.deviations,
+        corrective_actions: stageForm.corrective_actions,
+        inspector_name: stageForm.inspector_name,
+        supervisor_name: stageForm.supervisor_name,
+        notes: stageForm.notes,
+      };
+
+      if (editingStageLog) {
+        await api.put(`/haccp/in-process-qc-logs/${editingStageLog.log_id}`, payload);
+        toast.success("Cập nhật phiếu kiểm soát công đoạn thành công!");
+      } else {
+        await api.post("/haccp/in-process-qc-logs", payload);
+        toast.success("Thêm phiếu kiểm soát công đoạn thành công!");
+      }
+      setShowStageModal(false);
+      fetchData();
+    } catch (err: any) {
+      console.error(err);
+      toast.error("Lỗi lưu phiếu kiểm soát: " + (err.response?.data?.detail || err.message));
+    }
+  };
+
+  const handleDeleteStageLog = async (logId: string) => {
+    if (!confirm("Bạn có chắc chắn muốn xóa phiếu kiểm soát công đoạn này?")) return;
+    try {
+      await api.delete(`/haccp/in-process-qc-logs/${logId}`);
+      toast.success("Đã xóa phiếu kiểm soát công đoạn!");
+      fetchData();
+    } catch (err: any) {
+      console.error(err);
+      toast.error("Lỗi khi xóa phiếu: " + (err.response?.data?.detail || err.message));
+    }
+  };
+
+  const handlePrintStageLog = (log: InProcessQCLog) => {
+    const criteriaRows = Object.entries(log.criteria_data || {}).map(([key, val]) => `
+      <tr>
+        <td style="font-weight: 600; text-align: left; padding: 6px 10px;">${key}</td>
+        <td style="font-weight: bold; color: #0284c7; padding: 6px 10px;">${typeof val === 'boolean' ? (val ? 'ĐẠT (YES)' : 'KHÔNG (NO)') : val}</td>
+      </tr>
+    `).join("");
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Phiếu Kiểm Soát Quá Trình - ${log.inspection_code}</title>
+        <style>
+          @page { size: A4 portrait; margin: 15mm; }
+          body { font-family: 'Times New Roman', serif; font-size: 13px; color: #1e293b; line-height: 1.5; margin: 0; }
+          .header-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+          .header-table td { border: 1px solid #334155; padding: 8px; vertical-align: middle; }
+          .logo-box { width: 90px; text-align: center; }
+          .title-box { text-align: center; font-weight: bold; }
+          .title-box h2 { margin: 0; font-size: 15px; text-transform: uppercase; color: #0f172a; }
+          .title-box p { margin: 4px 0 0 0; font-size: 11px; font-weight: normal; color: #475569; }
+          .code-box { width: 170px; font-size: 11px; }
+          .info-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+          .info-table td { border: 1px solid #cbd5e1; padding: 6px 8px; font-size: 12px; }
+          .param-table { width: 100%; border-collapse: collapse; margin-top: 10px; margin-bottom: 15px; }
+          .param-table th, .param-table td { border: 1px solid #334155; padding: 6px 8px; text-align: center; font-size: 12px; }
+          .param-table th { background-color: #f1f5f9; }
+          .status-badge { display: inline-block; padding: 4px 10px; border-radius: 4px; font-weight: bold; }
+          .status-passed { background: #dcfce7; color: #15803d; }
+          .status-failed { background: #fee2e2; color: #b91c1c; }
+          .status-warning { background: #fef3c7; color: #b45309; }
+          .sig-table { width: 100%; border-collapse: collapse; margin-top: 30px; }
+          .sig-table td { text-align: center; width: 50%; vertical-align: top; }
+        </style>
+      </head>
+      <body>
+        <table class="header-table">
+          <tr>
+            <td class="logo-box">
+              <img src="${logoImg}" alt="Logo" style="height: 50px; object-fit: contain;" />
+            </td>
+            <td class="title-box">
+              <h2>HỆ THỐNG QUẢN LÝ CHẤT LƯỢNG & AN TOÀN THỰC PHẨM</h2>
+              <p>QUY TRÌNH KIỂM SOÁT QUÁ TRÌNH SẢN XUẤT (IPQC)</p>
+              <h3 style="margin: 6px 0 0 0; font-size: 14px; color: #0284c7;">PHIẾU KIỂM SOÁT CÔNG ĐOẠN CHẾ BIẾN</h3>
+            </td>
+            <td class="code-box">
+              <b>Mã phiếu:</b> ${log.inspection_code}<br/>
+              <b>Công đoạn:</b> ${log.stage_code}<br/>
+              <b>Ngày:</b> ${log.log_date}<br/>
+              <b>Trang:</b> 1/1
+            </td>
+          </tr>
+        </table>
+
+        <table class="info-table">
+          <tr>
+            <td width="50%"><b>Tên công đoạn:</b> ${log.stage_name}</td>
+            <td width="50%"><b>Thời gian kiểm tra:</b> ${log.check_time} | ${log.shift_name}</td>
+          </tr>
+          <tr>
+            <td><b>Số lô / Mẻ (Batch):</b> ${log.batch_number}</td>
+            <td><b>Sản phẩm:</b> ${log.product_name}</td>
+          </tr>
+          <tr>
+            <td><b>Trạng thái kiểm tra:</b> <span class="status-badge status-${log.overall_status.toLowerCase()}">${log.overall_status}</span></td>
+            <td><b>Người phụ trách giám sát:</b> ${log.supervisor_name || "Trần Thị QA"}</td>
+          </tr>
+        </table>
+
+        <h4 style="margin: 15px 0 5px 0; font-size: 13px; text-transform: uppercase;">1. Các thông số kỹ thuật công đoạn đo kiểm thực tế</h4>
+        <table class="param-table">
+          <thead>
+            <tr>
+              <th width="50%">Chỉ tiêu / Thông số kiểm tra</th>
+              <th width="50%">Giá trị đo thực tế</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${criteriaRows || '<tr><td colspan="2">Không có thông số đo</td></tr>'}
+          </tbody>
+        </table>
+
+        <h4 style="margin: 15px 0 5px 0; font-size: 13px; text-transform: uppercase;">2. Sai lệch & Hành động khắc phục</h4>
+        <div style="border: 1px solid #cbd5e1; padding: 8px 12px; font-size: 12px; margin-bottom: 10px; background-color: #f8fafc;">
+          <p style="margin: 0 0 4px 0;"><b>Sai lệch ghi nhận:</b> ${log.deviations || "Không phát hiện sai lệch so với tiêu chuẩn."}</p>
+          <p style="margin: 0 0 4px 0;"><b>Hành động khắc phục (CAPA):</b> ${log.corrective_actions || "Duy trì chế độ vận hành chuẩn."}</p>
+          <p style="margin: 0;"><b>Ghi chú thêm:</b> ${log.notes || "Công đoạn đáp ứng yêu cầu chất lượng."}</p>
+        </div>
+
+        <table class="sig-table">
+          <tr>
+            <td>
+              <b>KCS / NHÂN VIÊN KIỂM SOÁT (IPQC)</b><br/>
+              <i>(Ký và ghi rõ họ tên)</i><br/><br/><br/><br/>
+              <b>${log.inspector_name}</b>
+            </td>
+            <td>
+              <b>QUẢN ĐỐC / TRƯỞNG CA SẢN XUẤT</b><br/>
+              <i>(Xác nhận & ký duyệt)</i><br/><br/><br/><br/>
+              <b>${log.supervisor_name || "Trần Thị QA"}</b>
+            </td>
+          </tr>
+        </table>
+      </body>
+      </html>
+    `;
+    printHtml(html);
+  };
 
   // ==================== ACTIONS: HACCP PLANS ====================
   const handleOpenCreatePlan = () => {
@@ -1695,6 +2252,18 @@ function HACCPModule() {
           >
             <ShieldCheck className="h-4 w-4 shrink-0" />
             Thẩm Tra Kế Hoạch ({reviews.length})
+          </button>
+
+          <button
+            onClick={() => setActiveTab("ipqc")}
+            className={`pb-3 px-4 text-xs sm:text-sm font-bold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap ${
+              activeTab === "ipqc"
+                ? "border-indigo-600 text-indigo-700"
+                : "border-transparent text-slate-500 hover:text-slate-900"
+            }`}
+          >
+            <ScanLine className="h-4 w-4 shrink-0" />
+            Kiểm Soát Quá Trình (IPQC) & Máy Dò ({metalDetectorLogs.length + inProcessLogs.length})
           </button>
 
           <button
@@ -2686,6 +3255,853 @@ function HACCPModule() {
           )}
         </div>
       )}
+
+      {/* ==================== TAB 7: KIỂM SOÁT QUÁ TRÌNH (IPQC) & MÁY DÒ KIM LOẠI ==================== */}
+      {activeTab === "ipqc" && (
+        <div className="space-y-6">
+          {/* Header Card */}
+          <div className="bg-gradient-to-r from-indigo-900 via-blue-900 to-slate-900 text-white rounded-2xl p-5 shadow-lg flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div className="flex items-center gap-3.5">
+              <div className="w-12 h-12 rounded-xl bg-white/10 backdrop-blur border border-white/20 flex items-center justify-center text-indigo-300 shadow-inner">
+                <ScanLine className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold flex items-center gap-2">
+                  Kiểm Soát Quá Trình (IPQC) & Máy Dò Kim Loại
+                  <span className="text-[10px] font-semibold bg-indigo-500/30 text-indigo-200 border border-indigo-400/30 px-2 py-0.5 rounded-full">
+                    Thư mục 09 An Giang
+                  </span>
+                </h3>
+                <p className="text-xs text-slate-200 mt-1 max-w-2xl leading-relaxed">
+                  Giám sát điểm kiểm soát CCP máy dò kim loại với thanh chuẩn Fe 0.5mm, SUS 0.8mm (BM06-KSQT) và kiểm soát chất lượng các công đoạn chế biến (BM01-05 KSQT).
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center gap-2 shrink-0">
+              <Button
+                onClick={handleOpenCreateMDLog}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md flex items-center gap-1.5"
+              >
+                <Plus className="w-4 h-4" />
+                Ghi Nhật Ký Máy Dò (BM06)
+              </Button>
+              <Button
+                onClick={handleOpenCreateStageLog}
+                className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-md flex items-center gap-1.5"
+              >
+                <Plus className="w-4 h-4" />
+                Ghi Phiếu Công Đoạn (IPQC)
+              </Button>
+            </div>
+          </div>
+
+          {/* Sub-Tabs Switcher */}
+          <div className="flex border-b border-slate-200">
+            <button
+              onClick={() => setIpqcSubTab("metal_detector")}
+              className={`pb-3 px-5 text-xs font-bold border-b-2 flex items-center gap-2 transition-all ${
+                ipqcSubTab === "metal_detector"
+                  ? "border-indigo-600 text-indigo-700"
+                  : "border-transparent text-slate-500 hover:text-slate-800"
+              }`}
+            >
+              <Cpu className="w-4 h-4" />
+              BM06-KSQT: Nhật Ký Máy Dò Kim Loại ({metalDetectorLogs.length})
+            </button>
+            <button
+              onClick={() => setIpqcSubTab("process_stages")}
+              className={`pb-3 px-5 text-xs font-bold border-b-2 flex items-center gap-2 transition-all ${
+                ipqcSubTab === "process_stages"
+                  ? "border-blue-600 text-blue-700"
+                  : "border-transparent text-slate-500 hover:text-slate-800"
+              }`}
+            >
+              <Layers className="w-4 h-4" />
+              BM01-05: Kiểm Soát Công Đoạn Chế Biến ({inProcessLogs.length})
+            </button>
+          </div>
+
+          {/* SUB-TAB 1: METAL DETECTOR LOGS */}
+          {ipqcSubTab === "metal_detector" && (
+            <div className="space-y-4">
+              {/* Filter bar */}
+              <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm">
+                <div className="flex flex-wrap items-center gap-3 flex-1 min-w-[280px]">
+                  <div className="relative flex-1 min-w-[200px] max-w-sm">
+                    <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
+                    <Input
+                      value={mdSearch}
+                      onChange={(e) => setMdSearch(e.target.value)}
+                      placeholder="Tìm mã máy, số lô, sản phẩm, người kiểm..."
+                      className="pl-9 text-xs bg-slate-50 border-slate-200 text-slate-800"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2 text-xs">
+                    <span className="text-slate-500 font-medium">Kết quả:</span>
+                    <select
+                      value={mdResultFilter}
+                      onChange={(e) => setMdResultFilter(e.target.value)}
+                      className="h-9 px-3 py-1 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    >
+                      <option value="ALL">Tất cả kết quả</option>
+                      <option value="PASSED">Đạt chuẩn (Passed)</option>
+                      <option value="FAILED">Không đạt (Failed)</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="text-xs text-slate-500 font-semibold">
+                  Hiển thị <span className="text-indigo-600 font-bold">{filteredMDLogs.length}</span> bản ghi
+                </div>
+              </div>
+
+              {/* Table */}
+              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse text-xs">
+                    <thead>
+                      <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 uppercase tracking-wider font-bold text-[11px]">
+                        <th className="p-3.5">Thiết Bị & Thời Gian</th>
+                        <th className="p-3.5">Số Lô & Sản Phẩm</th>
+                        <th className="p-3.5 text-center">Thanh Chuẩn Fe (0.5mm)</th>
+                        <th className="p-3.5 text-center">Thanh Chuẩn SUS (0.8mm)</th>
+                        <th className="p-3.5 text-center">Cơ Cấu Loại Bỏ</th>
+                        <th className="p-3.5 text-center">Kim Loại Phát Hiện</th>
+                        <th className="p-3.5 text-center">Kết Luận</th>
+                        <th className="p-3.5">Người Kiểm Tra</th>
+                        <th className="p-3.5 text-right">Thao Tác</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {filteredMDLogs.length === 0 ? (
+                        <tr>
+                          <td colSpan={9} className="text-center py-12 text-slate-400 italic">
+                            Chưa có nhật ký kiểm tra máy dò kim loại nào phù hợp bộ lọc.
+                          </td>
+                        </tr>
+                      ) : (
+                        filteredMDLogs.map((log) => (
+                          <tr key={log.log_id} className="hover:bg-slate-50/80 transition-colors">
+                            <td className="p-3.5">
+                              <div className="font-bold text-slate-900 flex items-center gap-1.5">
+                                <Cpu className="w-3.5 h-3.5 text-indigo-600" />
+                                {log.machine_name}
+                              </div>
+                              <div className="text-[11px] text-slate-500 font-mono mt-0.5">
+                                {log.machine_code} • {log.log_date} {log.check_time} ({log.shift_name})
+                              </div>
+                            </td>
+                            <td className="p-3.5">
+                              <div className="font-semibold text-slate-800">{log.product_name}</div>
+                              <div className="text-[11px] font-mono text-indigo-700 font-bold mt-0.5">
+                                Lô: {log.batch_number}
+                              </div>
+                            </td>
+                            <td className="p-3.5 text-center">
+                              {log.fe_detected ? (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                  <Check className="w-3 h-3 text-emerald-600" />
+                                  Đạt (Ø{log.fe_standard_mm}mm)
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-200">
+                                  <XCircle className="w-3 h-3 text-rose-600" />
+                                  Không đạt
+                                </span>
+                              )}
+                            </td>
+                            <td className="p-3.5 text-center">
+                              {log.sus_detected ? (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                  <Check className="w-3 h-3 text-emerald-600" />
+                                  Đạt (Ø{log.sus_standard_mm}mm)
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-200">
+                                  <XCircle className="w-3 h-3 text-rose-600" />
+                                  Không đạt
+                                </span>
+                              )}
+                            </td>
+                            <td className="p-3.5 text-center">
+                              {log.rejection_mechanism_working ? (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800 border border-blue-200">
+                                  <Check className="w-3 h-3 text-blue-600" />
+                                  Hoạt động tốt
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-200">
+                                  <AlertTriangle className="w-3 h-3 text-rose-600" />
+                                  Hỏng hóc
+                                </span>
+                              )}
+                            </td>
+                            <td className="p-3.5 text-center font-bold font-mono">
+                              {log.metal_detected_count > 0 ? (
+                                <span className="text-rose-600 bg-rose-50 px-2 py-0.5 rounded border border-rose-200">
+                                  {log.metal_detected_count} lần
+                                </span>
+                              ) : (
+                                <span className="text-slate-500">0 lần</span>
+                              )}
+                            </td>
+                            <td className="p-3.5 text-center">
+                              {log.test_result === "PASSED" ? (
+                                <span className="inline-block px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-300">
+                                  PASSED
+                                </span>
+                              ) : (
+                                <span className="inline-block px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-wider bg-rose-100 text-rose-800 border border-rose-300">
+                                  FAILED
+                                </span>
+                              )}
+                            </td>
+                            <td className="p-3.5">
+                              <div className="font-semibold text-slate-800">{log.checked_by_name}</div>
+                              <div className="text-[11px] text-slate-500">Duyệt: {log.verified_by_name || "-"}</div>
+                            </td>
+                            <td className="p-3.5 text-right">
+                              <div className="flex items-center justify-end gap-1">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handlePrintMDLog(log)}
+                                  title="In nhật ký BM06-KSQT"
+                                  className="h-7 w-7 p-0 text-slate-600 hover:text-indigo-700 hover:bg-indigo-50"
+                                >
+                                  <Printer className="w-3.5 h-3.5" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleOpenEditMDLog(log)}
+                                  title="Sửa nhật ký"
+                                  className="h-7 w-7 p-0 text-slate-600 hover:text-blue-700 hover:bg-blue-50"
+                                >
+                                  <Pencil className="w-3.5 h-3.5" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleDeleteMDLog(log.log_id)}
+                                  title="Xóa nhật ký"
+                                  className="h-7 w-7 p-0 text-slate-600 hover:text-rose-700 hover:bg-rose-50"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </Button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* SUB-TAB 2: PROCESS STAGE QC LOGS (BM01-05) */}
+          {ipqcSubTab === "process_stages" && (
+            <div className="space-y-4">
+              {/* Filter bar */}
+              <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm">
+                <div className="flex flex-wrap items-center gap-3 flex-1 min-w-[280px]">
+                  <div className="relative flex-1 min-w-[200px] max-w-sm">
+                    <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
+                    <Input
+                      value={stageSearch}
+                      onChange={(e) => setStageSearch(e.target.value)}
+                      placeholder="Tìm mã phiếu, công đoạn, mẻ, KCS..."
+                      className="pl-9 text-xs bg-slate-50 border-slate-200 text-slate-800"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2 text-xs">
+                    <span className="text-slate-500 font-medium">Công đoạn:</span>
+                    <select
+                      value={stageFilter}
+                      onChange={(e) => setStageFilter(e.target.value)}
+                      className="h-9 px-3 py-1 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="ALL">Tất cả công đoạn (BM01-05)</option>
+                      <option value="PREPARATION">BM01: Sơ chế, rửa & thái</option>
+                      <option value="DRYING_COOLING">BM02: Sấy & làm nguội</option>
+                      <option value="GRINDING_SIEVING">BM03: Nghiền & rây sàng</option>
+                      <option value="GELATINIZATION">BM04: Nấu chín / Hồ hóa</option>
+                      <option value="PACKAGING">BM05: Đóng gói & niêm phong</option>
+                    </select>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs">
+                    <span className="text-slate-500 font-medium">Trạng thái:</span>
+                    <select
+                      value={stageStatusFilter}
+                      onChange={(e) => setStageStatusFilter(e.target.value)}
+                      className="h-9 px-3 py-1 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="ALL">Tất cả trạng thái</option>
+                      <option value="PASSED">Đạt (Passed)</option>
+                      <option value="WARNING">Cảnh báo (Warning)</option>
+                      <option value="FAILED">Không đạt (Failed)</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="text-xs text-slate-500 font-semibold">
+                  Hiển thị <span className="text-blue-600 font-bold">{filteredStageLogs.length}</span> bản ghi
+                </div>
+              </div>
+
+              {/* Table */}
+              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse text-xs">
+                    <thead>
+                      <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 uppercase tracking-wider font-bold text-[11px]">
+                        <th className="p-3.5">Mã Phiếu & Công Đoạn</th>
+                        <th className="p-3.5">Lô Mẻ & Sản Phẩm</th>
+                        <th className="p-3.5">Thông Số Kỹ Thuật Thực Tế</th>
+                        <th className="p-3.5 text-center">Trạng Thái</th>
+                        <th className="p-3.5">Ghi Nhận Sai Lệch</th>
+                        <th className="p-3.5">Người Giám Sát</th>
+                        <th className="p-3.5 text-right">Thao Tác</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {filteredStageLogs.length === 0 ? (
+                        <tr>
+                          <td colSpan={7} className="text-center py-12 text-slate-400 italic">
+                            Chưa có phiếu kiểm soát công đoạn nào phù hợp bộ lọc.
+                          </td>
+                        </tr>
+                      ) : (
+                        filteredStageLogs.map((log) => (
+                          <tr key={log.log_id} className="hover:bg-slate-50/80 transition-colors">
+                            <td className="p-3.5">
+                              <div className="font-bold text-slate-900 font-mono text-blue-700">
+                                {log.inspection_code}
+                              </div>
+                              <div className="font-semibold text-slate-800 mt-0.5">{log.stage_name}</div>
+                              <div className="text-[11px] text-slate-500">
+                                {log.log_date} {log.check_time} ({log.shift_name})
+                              </div>
+                            </td>
+                            <td className="p-3.5">
+                              <div className="font-semibold text-slate-800">{log.product_name}</div>
+                              <div className="text-[11px] font-mono text-slate-600 font-bold mt-0.5">
+                                Lô: {log.batch_number}
+                              </div>
+                            </td>
+                            <td className="p-3.5">
+                              <div className="flex flex-wrap gap-1 max-w-sm">
+                                {Object.entries(log.criteria_data || {}).map(([k, v]) => (
+                                  <span
+                                    key={k}
+                                    className="inline-block px-1.5 py-0.5 bg-slate-100 border border-slate-200 rounded text-[10px] text-slate-700 font-medium"
+                                  >
+                                    <b>{k}:</b> {String(v)}
+                                  </span>
+                                ))}
+                              </div>
+                            </td>
+                            <td className="p-3.5 text-center">
+                              {log.overall_status === "PASSED" ? (
+                                <span className="inline-block px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-300">
+                                  PASSED
+                                </span>
+                              ) : log.overall_status === "WARNING" ? (
+                                <span className="inline-block px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-wider bg-amber-100 text-amber-800 border border-amber-300">
+                                  WARNING
+                                </span>
+                              ) : (
+                                <span className="inline-block px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-wider bg-rose-100 text-rose-800 border border-rose-300">
+                                  FAILED
+                                </span>
+                              )}
+                            </td>
+                            <td className="p-3.5 max-w-xs">
+                              {log.deviations ? (
+                                <div className="text-amber-800 bg-amber-50 p-1.5 rounded border border-amber-200 text-[11px]">
+                                  {log.deviations}
+                                </div>
+                              ) : (
+                                <div className="text-slate-400 italic text-[11px]">Không có sai lệch</div>
+                              )}
+                            </td>
+                            <td className="p-3.5">
+                              <div className="font-semibold text-slate-800">{log.inspector_name}</div>
+                              <div className="text-[11px] text-slate-500">Giám sát: {log.supervisor_name || "-"}</div>
+                            </td>
+                            <td className="p-3.5 text-right">
+                              <div className="flex items-center justify-end gap-1">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handlePrintStageLog(log)}
+                                  title="In phiếu kiểm soát công đoạn"
+                                  className="h-7 w-7 p-0 text-slate-600 hover:text-blue-700 hover:bg-blue-50"
+                                >
+                                  <Printer className="w-3.5 h-3.5" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleOpenEditStageLog(log)}
+                                  title="Sửa phiếu"
+                                  className="h-7 w-7 p-0 text-slate-600 hover:text-blue-700 hover:bg-blue-50"
+                                >
+                                  <Pencil className="w-3.5 h-3.5" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleDeleteStageLog(log.log_id)}
+                                  title="Xóa phiếu"
+                                  className="h-7 w-7 p-0 text-slate-600 hover:text-rose-700 hover:bg-rose-50"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </Button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ==================== MODAL: METAL DETECTOR LOG (BM06-KSQT) ==================== */}
+      <Dialog open={showMDModal} onOpenChange={setShowMDModal}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white border-slate-200 text-slate-900 shadow-2xl p-6">
+          <DialogHeader>
+            <DialogTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
+              <Cpu className="w-5 h-5 text-indigo-600" />
+              {editingMDLog ? "Cập Nhật Nhật Ký Kiểm Tra Máy Dò Kim Loại (BM06)" : "Ghi Nhật Ký Kiểm Tra Máy Dò Kim Loại Mới (BM06)"}
+            </DialogTitle>
+          </DialogHeader>
+
+          <form onSubmit={handleSaveMDLog} className="space-y-4 py-2 text-xs">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <Label className="text-slate-700 font-bold">Mã Thiết Bị *</Label>
+                <Input
+                  value={mdForm.machine_code}
+                  onChange={(e) => setMdForm({ ...mdForm, machine_code: e.target.value })}
+                  placeholder="VD: MD-01"
+                  className="mt-1 text-xs bg-white border-slate-300 font-mono font-bold"
+                  required
+                />
+              </div>
+              <div>
+                <Label className="text-slate-700 font-bold">Tên Máy Dò Kim Loại *</Label>
+                <Input
+                  value={mdForm.machine_name}
+                  onChange={(e) => setMdForm({ ...mdForm, machine_name: e.target.value })}
+                  placeholder="VD: Máy dò kim loại Sesotec băng tải"
+                  className="mt-1 text-xs bg-white border-slate-300 font-semibold"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div>
+                <Label className="text-slate-700 font-bold">Ngày Kiểm Tra *</Label>
+                <Input
+                  type="date"
+                  value={mdForm.log_date}
+                  onChange={(e) => setMdForm({ ...mdForm, log_date: e.target.value })}
+                  className="mt-1 text-xs bg-white border-slate-300"
+                  required
+                />
+              </div>
+              <div>
+                <Label className="text-slate-700 font-bold">Giờ Kiểm Tra *</Label>
+                <Input
+                  type="time"
+                  value={mdForm.check_time}
+                  onChange={(e) => setMdForm({ ...mdForm, check_time: e.target.value })}
+                  className="mt-1 text-xs bg-white border-slate-300"
+                  required
+                />
+              </div>
+              <div>
+                <Label className="text-slate-700 font-bold">Ca Sản Xuất *</Label>
+                <select
+                  value={mdForm.shift_name}
+                  onChange={(e) => setMdForm({ ...mdForm, shift_name: e.target.value })}
+                  className="w-full mt-1 h-9 px-3 bg-white border border-slate-300 rounded-md text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                >
+                  <option value="Ca 1">Ca 1 (06:00 - 14:00)</option>
+                  <option value="Ca 2">Ca 2 (14:00 - 22:00)</option>
+                  <option value="Ca 3">Ca 3 (22:00 - 06:00)</option>
+                  <option value="Ca Hành chính">Ca Hành chính</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <Label className="text-slate-700 font-bold">Số Lô Hàng (Batch/Lot) *</Label>
+                <Input
+                  value={mdForm.batch_number}
+                  onChange={(e) => setMdForm({ ...mdForm, batch_number: e.target.value })}
+                  placeholder="VD: LOT-2026-B01"
+                  className="mt-1 text-xs bg-white border-slate-300 font-mono font-bold"
+                  required
+                />
+              </div>
+              <div>
+                <Label className="text-slate-700 font-bold">Tên Sản Phẩm *</Label>
+                <Input
+                  value={mdForm.product_name}
+                  onChange={(e) => setMdForm({ ...mdForm, product_name: e.target.value })}
+                  placeholder="VD: Gạo lứt đỏ sấy ăn liền 250g"
+                  className="mt-1 text-xs bg-white border-slate-300 font-semibold"
+                  required
+                />
+              </div>
+            </div>
+
+            {/* Test Piece Sensitivity Check (An Giang standard) */}
+            <div className="p-3.5 bg-indigo-50/70 border border-indigo-200 rounded-xl space-y-3">
+              <span className="font-bold text-indigo-900 uppercase text-[11px] block flex items-center gap-1.5">
+                <CheckCircle2 className="w-4 h-4 text-indigo-600" />
+                Kiểm Thử Độ Nhạy Với Thanh Thử Chuẩn (Test Pieces) & Cơ Cấu Loại Bỏ
+              </span>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="flex items-center justify-between p-2.5 bg-white border border-indigo-100 rounded-lg">
+                  <div>
+                    <div className="font-bold text-slate-800">Thanh thử Fe (Kim loại sắt)</div>
+                    <div className="text-[11px] text-slate-500">Đường kính chuẩn: Ø {mdForm.fe_standard_mm} mm</div>
+                  </div>
+                  <label className="flex items-center gap-2 cursor-pointer font-bold text-slate-700 text-xs">
+                    <input
+                      type="checkbox"
+                      checked={mdForm.fe_detected}
+                      onChange={(e) => setMdForm({ ...mdForm, fe_detected: e.target.checked })}
+                      className="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500"
+                    />
+                    Đã phát hiện
+                  </label>
+                </div>
+
+                <div className="flex items-center justify-between p-2.5 bg-white border border-indigo-100 rounded-lg">
+                  <div>
+                    <div className="font-bold text-slate-800">Thanh thử SUS (Kim loại Inox)</div>
+                    <div className="text-[11px] text-slate-500">Đường kính chuẩn: Ø {mdForm.sus_standard_mm} mm</div>
+                  </div>
+                  <label className="flex items-center gap-2 cursor-pointer font-bold text-slate-700 text-xs">
+                    <input
+                      type="checkbox"
+                      checked={mdForm.sus_detected}
+                      onChange={(e) => setMdForm({ ...mdForm, sus_detected: e.target.checked })}
+                      className="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500"
+                    />
+                    Đã phát hiện
+                  </label>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between p-2.5 bg-white border border-indigo-100 rounded-lg">
+                <div>
+                  <div className="font-bold text-slate-800">Cơ cấu gạt / thổi khí loại bỏ sản phẩm nhiễm kim loại</div>
+                  <div className="text-[11px] text-slate-500">Hệ thống cơ khí tự động đẩy sản phẩm lỗi ra thùng chứa cách ly</div>
+                </div>
+                <label className="flex items-center gap-2 cursor-pointer font-bold text-slate-700 text-xs">
+                  <input
+                    type="checkbox"
+                    checked={mdForm.rejection_mechanism_working}
+                    onChange={(e) => setMdForm({ ...mdForm, rejection_mechanism_working: e.target.checked })}
+                    className="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500"
+                  />
+                  Hoạt động bình thường
+                </label>
+              </div>
+
+              <div>
+                <Label className="text-slate-700 font-bold">Số Lần Phát Hiện Kim Loại Thực Tế Trong Ca</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  value={mdForm.metal_detected_count}
+                  onChange={(e) => setMdForm({ ...mdForm, metal_detected_count: parseInt(e.target.value) || 0 })}
+                  className="mt-1 text-xs bg-white border-slate-300 font-mono font-bold w-32"
+                />
+              </div>
+            </div>
+
+            <div>
+              <Label className="text-slate-700 font-bold">Hành Động Khắc Phục (Nếu máy dò không phát hiện hoặc cơ cấu hỏng)</Label>
+              <Input
+                value={mdForm.corrective_action}
+                onChange={(e) => setMdForm({ ...mdForm, corrective_action: e.target.value })}
+                placeholder="VD: Dừng dây chuyền, hiệu chuẩn lại độ nhạy, cách ly toàn bộ sản phẩm từ lần test trước..."
+                className="mt-1 text-xs bg-white border-slate-300"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <Label className="text-slate-700 font-bold">Người Kiểm Tra (QC/Vận hành) *</Label>
+                <Input
+                  value={mdForm.checked_by_name}
+                  onChange={(e) => setMdForm({ ...mdForm, checked_by_name: e.target.value })}
+                  placeholder="VD: Nguyễn Văn Kiểm"
+                  className="mt-1 text-xs bg-white border-slate-300 font-semibold"
+                  required
+                />
+              </div>
+              <div>
+                <Label className="text-slate-700 font-bold">Người Xác Nhận / Trưởng Ca</Label>
+                <Input
+                  value={mdForm.verified_by_name}
+                  onChange={(e) => setMdForm({ ...mdForm, verified_by_name: e.target.value })}
+                  placeholder="VD: Trần Thị QA"
+                  className="mt-1 text-xs bg-white border-slate-300 font-semibold"
+                />
+              </div>
+            </div>
+
+            <div>
+              <Label className="text-slate-700 font-bold">Ghi Chú Vận Hành</Label>
+              <textarea
+                rows={2}
+                value={mdForm.notes}
+                onChange={(e) => setMdForm({ ...mdForm, notes: e.target.value })}
+                placeholder="Ghi chú thêm về điều kiện môi trường, nhiệt độ buồng máy..."
+                className="w-full mt-1 bg-white border border-slate-300 rounded-md p-2 text-xs text-slate-800"
+              />
+            </div>
+
+            <DialogFooter className="pt-2">
+              <Button type="button" variant="outline" onClick={() => setShowMDModal(false)} className="text-xs">
+                Hủy bỏ
+              </Button>
+              <Button type="submit" className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold">
+                {editingMDLog ? "Lưu Cập Nhật" : "Lưu Nhật Ký Máy Dò"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* ==================== MODAL: IN-PROCESS STAGE QC LOG ==================== */}
+      <Dialog open={showStageModal} onOpenChange={setShowStageModal}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white border-slate-200 text-slate-900 shadow-2xl p-6">
+          <DialogHeader>
+            <DialogTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
+              <Layers className="w-5 h-5 text-blue-600" />
+              {editingStageLog ? "Cập Nhật Phiếu Kiểm Soát Quá Trình (IPQC)" : "Ghi Phiếu Kiểm Soát Quá Trình Mới (IPQC)"}
+            </DialogTitle>
+          </DialogHeader>
+
+          <form onSubmit={handleSaveStageLog} className="space-y-4 py-2 text-xs">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <Label className="text-slate-700 font-bold">Mã Phiếu Kiểm Soát *</Label>
+                <Input
+                  value={stageForm.inspection_code}
+                  onChange={(e) => setStageForm({ ...stageForm, inspection_code: e.target.value })}
+                  placeholder="VD: IPQC-2026-001"
+                  className="mt-1 text-xs bg-white border-slate-300 font-mono font-bold"
+                  required
+                />
+              </div>
+              <div>
+                <Label className="text-slate-700 font-bold">Công Đoạn Chế Biến *</Label>
+                <select
+                  value={stageForm.stage_code}
+                  onChange={(e) => {
+                    const code = e.target.value;
+                    let name = "Công đoạn chế biến";
+                    let sampleCriteria = {};
+                    if (code === "PREPARATION") {
+                      name = "Công đoạn sơ chế, rửa & thái";
+                      sampleCriteria = { wash_water_chlorine_ppm: 50, wash_water_temp_c: 18, cutting_size_mm: 5 };
+                    } else if (code === "DRYING_COOLING") {
+                      name = "Công đoạn sấy & làm nguội";
+                      sampleCriteria = { drying_temp_c: 85, drying_time_min: 45, moisture_percent: 11.5, cooling_temp_c: 28 };
+                    } else if (code === "GRINDING_SIEVING") {
+                      name = "Công đoạn nghiền & rây sàng";
+                      sampleCriteria = { sieve_mesh_mesh: 80, fineness_percent: 98.5, magnetic_trap_ok: true };
+                    } else if (code === "GELATINIZATION") {
+                      name = "Công đoạn nấu chín / Hồ hóa";
+                      sampleCriteria = { cooking_temp_c: 98, cooking_time_min: 25, brix_degree: 16.5, ph_level: 6.2 };
+                    } else if (code === "PACKAGING") {
+                      name = "Công đoạn đóng gói & niêm phong";
+                      sampleCriteria = { sealing_temp_c: 165, seal_leak_test: "PASSED", net_weight_g: 250, label_ok: true };
+                    }
+                    setStageForm({
+                      ...stageForm,
+                      stage_code: code,
+                      stage_name: name,
+                      criteria_data_str: JSON.stringify(sampleCriteria, null, 2),
+                    });
+                  }}
+                  className="w-full mt-1 h-9 px-3 bg-white border border-slate-300 rounded-md text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="PREPARATION">BM01: Sơ chế, rửa & thái</option>
+                  <option value="DRYING_COOLING">BM02: Sấy & làm nguội</option>
+                  <option value="GRINDING_SIEVING">BM03: Nghiền & rây sàng</option>
+                  <option value="GELATINIZATION">BM04: Nấu chín / Hồ hóa</option>
+                  <option value="PACKAGING">BM05: Đóng gói & niêm phong</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <Label className="text-slate-700 font-bold">Tên Công Đoạn Chi Tiết</Label>
+              <Input
+                value={stageForm.stage_name}
+                onChange={(e) => setStageForm({ ...stageForm, stage_name: e.target.value })}
+                className="mt-1 text-xs bg-white border-slate-300 font-semibold"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div>
+                <Label className="text-slate-700 font-bold">Ngày Kiểm Tra *</Label>
+                <Input
+                  type="date"
+                  value={stageForm.log_date}
+                  onChange={(e) => setStageForm({ ...stageForm, log_date: e.target.value })}
+                  className="mt-1 text-xs bg-white border-slate-300"
+                  required
+                />
+              </div>
+              <div>
+                <Label className="text-slate-700 font-bold">Giờ Kiểm Tra *</Label>
+                <Input
+                  type="time"
+                  value={stageForm.check_time}
+                  onChange={(e) => setStageForm({ ...stageForm, check_time: e.target.value })}
+                  className="mt-1 text-xs bg-white border-slate-300"
+                  required
+                />
+              </div>
+              <div>
+                <Label className="text-slate-700 font-bold">Ca Sản Xuất *</Label>
+                <select
+                  value={stageForm.shift_name}
+                  onChange={(e) => setStageForm({ ...stageForm, shift_name: e.target.value })}
+                  className="w-full mt-1 h-9 px-3 bg-white border border-slate-300 rounded-md text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="Ca 1">Ca 1</option>
+                  <option value="Ca 2">Ca 2</option>
+                  <option value="Ca 3">Ca 3</option>
+                  <option value="Ca Hành chính">Ca Hành chính</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <Label className="text-slate-700 font-bold">Số Lô Hàng / Mẻ (Batch) *</Label>
+                <Input
+                  value={stageForm.batch_number}
+                  onChange={(e) => setStageForm({ ...stageForm, batch_number: e.target.value })}
+                  placeholder="VD: LOT-2026-B01"
+                  className="mt-1 text-xs bg-white border-slate-300 font-mono font-bold"
+                  required
+                />
+              </div>
+              <div>
+                <Label className="text-slate-700 font-bold">Tên Sản Phẩm *</Label>
+                <Input
+                  value={stageForm.product_name}
+                  onChange={(e) => setStageForm({ ...stageForm, product_name: e.target.value })}
+                  placeholder="VD: Bột gạo lứt dinh dưỡng"
+                  className="mt-1 text-xs bg-white border-slate-300 font-semibold"
+                  required
+                />
+              </div>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <Label className="text-slate-700 font-bold">Thông Số Kỹ Thuật Công Đoạn Đo Kiểm (JSON)</Label>
+                <span className="text-[10px] text-slate-500">Định dạng JSON chứa các cặp chỉ tiêu & giá trị đo</span>
+              </div>
+              <textarea
+                rows={4}
+                value={stageForm.criteria_data_str}
+                onChange={(e) => setStageForm({ ...stageForm, criteria_data_str: e.target.value })}
+                className="w-full bg-slate-900 text-emerald-400 font-mono p-2.5 rounded-lg text-xs border border-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div>
+                <Label className="text-slate-700 font-bold">Trạng Thái Kết Luận *</Label>
+                <select
+                  value={stageForm.overall_status}
+                  onChange={(e) => setStageForm({ ...stageForm, overall_status: e.target.value })}
+                  className="w-full mt-1 h-9 px-3 bg-white border border-slate-300 rounded-md text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="PASSED">PASSED (Đạt tiêu chuẩn)</option>
+                  <option value="WARNING">WARNING (Cảnh báo sát ngưỡng)</option>
+                  <option value="FAILED">FAILED (Không đạt chuẩn)</option>
+                </select>
+              </div>
+              <div>
+                <Label className="text-slate-700 font-bold">Nhân Viên Kiểm Soát (KCS/IPQC) *</Label>
+                <Input
+                  value={stageForm.inspector_name}
+                  onChange={(e) => setStageForm({ ...stageForm, inspector_name: e.target.value })}
+                  placeholder="VD: Nguyễn Văn Kiểm"
+                  className="mt-1 text-xs bg-white border-slate-300 font-semibold"
+                  required
+                />
+              </div>
+              <div>
+                <Label className="text-slate-700 font-bold">Quản Đốc / Trưởng Ca</Label>
+                <Input
+                  value={stageForm.supervisor_name}
+                  onChange={(e) => setStageForm({ ...stageForm, supervisor_name: e.target.value })}
+                  placeholder="VD: Trần Thị QA"
+                  className="mt-1 text-xs bg-white border-slate-300 font-semibold"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <Label className="text-slate-700 font-bold">Sai Lệch Ghi Nhận (Nếu có)</Label>
+                <textarea
+                  rows={2}
+                  value={stageForm.deviations}
+                  onChange={(e) => setStageForm({ ...stageForm, deviations: e.target.value })}
+                  placeholder="Mô tả sai lệch về nhiệt độ, độ ẩm hoặc ngoại quan..."
+                  className="w-full mt-1 bg-white border border-slate-300 rounded-md p-2 text-xs text-slate-800"
+                />
+              </div>
+              <div>
+                <Label className="text-slate-700 font-bold">Hành Động Khắc Phục (CAPA)</Label>
+                <textarea
+                  rows={2}
+                  value={stageForm.corrective_actions}
+                  onChange={(e) => setStageForm({ ...stageForm, corrective_actions: e.target.value })}
+                  placeholder="Biện pháp xử lý ngay: điều chỉnh van gia nhiệt, sấy lại mẻ..."
+                  className="w-full mt-1 bg-white border border-slate-300 rounded-md p-2 text-xs text-slate-800"
+                />
+              </div>
+            </div>
+
+            <DialogFooter className="pt-2">
+              <Button type="button" variant="outline" onClick={() => setShowStageModal(false)} className="text-xs">
+                Hủy bỏ
+              </Button>
+              <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold">
+                {editingStageLog ? "Lưu Cập Nhật" : "Lưu Phiếu IPQC"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {/* ==================== MODAL: HACCP PLAN REVIEW ==================== */}
       <Dialog open={reviewModalOpen} onOpenChange={setReviewModalOpen}>

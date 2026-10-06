@@ -7,6 +7,7 @@ from sqlalchemy import desc, func, and_
 
 from app.core.database import get_db
 from app.core.dependencies import require_roles
+from app.core.demo_data import demo_seed_enabled
 from app.modules.auth.models import User
 from app.modules.audits.models import (
     InternalAudit,
@@ -14,6 +15,8 @@ from app.modules.audits.models import (
     TrainingCourse,
     TrainingParticipantRecord,
     HealthDeclarationRecord,
+    TrainingRequest,
+    TrainingEvaluation,
 )
 from app.modules.capa.models import NonConformance
 from app.modules.audits.schemas import (
@@ -33,6 +36,12 @@ from app.modules.audits.schemas import (
     HealthDeclarationUpdate,
     HealthDeclarationOut,
     AuditStatsOut,
+    TrainingRequestCreate,
+    TrainingRequestUpdate,
+    TrainingRequestOut,
+    TrainingEvaluationCreate,
+    TrainingEvaluationUpdate,
+    TrainingEvaluationOut,
     AIChecklistRequest,
     AIEvaluateFindingRequest,
     AIQuizRequest,
@@ -95,6 +104,7 @@ def get_audit_stats(db: Session = Depends(get_db)):
 
 # ==================== INTERNAL AUDITS (CRUD) ====================
 @router.get("/audits", response_model=List[InternalAuditOut])
+@router.get("/internal-audits", response_model=List[InternalAuditOut])
 def list_internal_audits(
     status: Optional[str] = None,
     audit_type: Optional[str] = None,
@@ -636,6 +646,211 @@ def delete_course_participant(participant_id: uuid.UUID, db: Session = Depends(g
     return {"message": "Đã xóa học viên"}
 
 
+# ==================== TRAINING REQUESTS (BM01-QTĐT) ====================
+@router.get("/training/requests", response_model=List[TrainingRequestOut])
+def list_training_requests(
+    department: Optional[str] = None,
+    status_filter: Optional[str] = None,
+    db: Session = Depends(get_db),
+):
+    q = db.query(TrainingRequest)
+    if department and department != "ALL":
+        q = q.filter(TrainingRequest.department == department)
+    if status_filter and status_filter != "ALL":
+        q = q.filter(TrainingRequest.status == status_filter)
+    return q.order_by(desc(TrainingRequest.request_date), desc(TrainingRequest.created_at)).all()
+
+
+@router.post("/training/requests", response_model=TrainingRequestOut)
+def create_training_request(
+    payload: TrainingRequestCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "fst_leader", "fs_team_leader", "production", "warehouse", "technical", "manager")),
+):
+    code = payload.request_code
+    if not code:
+        year = payload.request_date.year if payload.request_date else datetime.now().year
+        count = db.query(TrainingRequest).count() + 1
+        code = f"YCDT-{year}-{count:03d}"
+
+    req = TrainingRequest(
+        request_code=code,
+        department=payload.department,
+        proposer_name=payload.proposer_name or current_user.full_name or current_user.username,
+        course_name=payload.course_name,
+        training_reason=payload.training_reason,
+        expected_duration=payload.expected_duration,
+        attendee_count=payload.attendee_count,
+        target_participants=payload.target_participants,
+        expected_outcomes=payload.expected_outcomes,
+        request_date=payload.request_date or date.today(),
+        status=payload.status or "SUBMITTED",
+        approver_name=payload.approver_name,
+        approval_date=payload.approval_date,
+        approval_note=payload.approval_note,
+    )
+    db.add(req)
+    db.commit()
+    db.refresh(req)
+    return req
+
+
+@router.put("/training/requests/{request_id}", response_model=TrainingRequestOut)
+def update_training_request(
+    request_id: uuid.UUID,
+    payload: TrainingRequestUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "fst_leader", "fs_team_leader", "manager")),
+):
+    req = db.query(TrainingRequest).filter(TrainingRequest.request_id == request_id).first()
+    if not req:
+        raise HTTPException(status_code=404, detail="Không tìm thấy phiếu đề xuất đào tạo")
+
+    update_data = payload.dict(exclude_unset=True)
+    for k, v in update_data.items():
+        setattr(req, k, v)
+    db.commit()
+    db.refresh(req)
+    return req
+
+
+@router.delete("/training/requests/{request_id}")
+def delete_training_request(
+    request_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "fst_leader")),
+):
+    req = db.query(TrainingRequest).filter(TrainingRequest.request_id == request_id).first()
+    if not req:
+        raise HTTPException(status_code=404, detail="Không tìm thấy phiếu đề xuất đào tạo")
+    db.delete(req)
+    db.commit()
+    return {"message": "Đã xóa phiếu đề xuất đào tạo"}
+
+
+# ==================== TRAINING EVALUATIONS (BM04-QTĐT) ====================
+@router.get("/training/evaluations", response_model=List[TrainingEvaluationOut])
+def list_training_evaluations(
+    course_id: Optional[uuid.UUID] = None,
+    department: Optional[str] = None,
+    rating: Optional[str] = None,
+    db: Session = Depends(get_db),
+):
+    q = db.query(TrainingEvaluation)
+    if course_id:
+        q = q.filter(TrainingEvaluation.course_id == course_id)
+    if department and department != "ALL":
+        q = q.filter(TrainingEvaluation.department == department)
+    if rating and rating != "ALL":
+        q = q.filter(TrainingEvaluation.overall_rating == rating)
+
+    evals = q.order_by(desc(TrainingEvaluation.evaluation_date), desc(TrainingEvaluation.created_at)).all()
+    # Gắn thêm tên khóa học
+    results = []
+    course_map = {c.course_id: c.title for c in db.query(TrainingCourse).all()}
+    for ev in evals:
+        out = TrainingEvaluationOut.from_orm(ev)
+        out.course_title = course_map.get(ev.course_id, "Đào tạo chung")
+        results.append(out)
+    return results
+
+
+@router.post("/training/evaluations", response_model=TrainingEvaluationOut)
+def create_training_evaluation(
+    payload: TrainingEvaluationCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "fst_leader", "fs_team_leader", "manager", "production")),
+):
+    ev = TrainingEvaluation(
+        course_id=payload.course_id,
+        employee_code=payload.employee_code,
+        employee_name=payload.employee_name,
+        department=payload.department,
+        evaluator_name=payload.evaluator_name or current_user.full_name or current_user.username,
+        evaluation_date=payload.evaluation_date or date.today(),
+        knowledge_score=payload.knowledge_score,
+        skill_application_score=payload.skill_application_score,
+        attitude_awareness_score=payload.attitude_awareness_score,
+        overall_rating=payload.overall_rating or "DAT",
+        supervisor_feedback=payload.supervisor_feedback,
+        need_retraining=payload.need_retraining,
+    )
+    db.add(ev)
+
+    # Tự động kích hoạt Phiếu yêu cầu đào tạo lại (BM01-QTĐT) nếu đánh giá không đạt (Điều 7.2 ISO 22000)
+    course_name = "Khóa đào tạo nghiệp vụ"
+    if ev.course_id:
+        c_obj = db.query(TrainingCourse).filter(TrainingCourse.course_id == ev.course_id).first()
+        if c_obj:
+            course_name = c_obj.title
+
+    if payload.need_retraining or (payload.overall_rating and payload.overall_rating.upper() in ["KHONG_DAT", "FAILED", "KÉM"]):
+        req_code = f"TR-RE-{payload.employee_code}-{datetime.now().strftime('%Y%m%d%H%M')}"
+        retrain_req = TrainingRequest(
+            request_code=req_code,
+            department=payload.department,
+            proposer_name="Hệ thống Quản lý Đào tạo ISO 22000",
+            request_date=date.today(),
+            course_name=f"Tái đào tạo bắt buộc: {course_name}",
+            target_participants=f"Nhân viên {payload.employee_name} ({payload.employee_code})",
+            attendee_count=1,
+            training_reason=f"Tự động kích hoạt do đánh giá sau đào tạo BM04-QTĐT KHÔNG ĐẠT ({payload.overall_rating}). Phản hồi của giám sát: {payload.supervisor_feedback or 'Cần củng cố kiến thức trước khi tiếp tục thao tác vị trí'}.",
+            expected_duration="1 ngày",
+            expected_outcomes="Đạt yêu cầu kiến thức và kỹ năng thực hành vệ sinh ATTP theo quy chuẩn ISO 22000",
+            status="SUBMITTED",
+        )
+        db.add(retrain_req)
+
+    db.commit()
+    db.refresh(ev)
+
+    out = TrainingEvaluationOut.from_orm(ev)
+    if ev.course_id:
+        c = db.query(TrainingCourse).filter(TrainingCourse.course_id == ev.course_id).first()
+        if c:
+            out.course_title = c.title
+    return out
+
+
+@router.put("/training/evaluations/{evaluation_id}", response_model=TrainingEvaluationOut)
+def update_training_evaluation(
+    evaluation_id: uuid.UUID,
+    payload: TrainingEvaluationUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "fst_leader", "fs_team_leader", "manager")),
+):
+    ev = db.query(TrainingEvaluation).filter(TrainingEvaluation.evaluation_id == evaluation_id).first()
+    if not ev:
+        raise HTTPException(status_code=404, detail="Không tìm thấy phiếu đánh giá đào tạo")
+
+    update_data = payload.dict(exclude_unset=True)
+    for k, v in update_data.items():
+        setattr(ev, k, v)
+    db.commit()
+    db.refresh(ev)
+
+    out = TrainingEvaluationOut.from_orm(ev)
+    if ev.course_id:
+        c = db.query(TrainingCourse).filter(TrainingCourse.course_id == ev.course_id).first()
+        if c:
+            out.course_title = c.title
+    return out
+
+
+@router.delete("/training/evaluations/{evaluation_id}")
+def delete_training_evaluation(
+    evaluation_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "fst_leader")),
+):
+    ev = db.query(TrainingEvaluation).filter(TrainingEvaluation.evaluation_id == evaluation_id).first()
+    if not ev:
+        raise HTTPException(status_code=404, detail="Không tìm thấy phiếu đánh giá đào tạo")
+    db.delete(ev)
+    db.commit()
+    return {"message": "Đã xóa phiếu đánh giá đào tạo"}
+
+
 # ==================== HEALTH DECLARATIONS (CRUD) ====================
 @router.get("/health-declarations", response_model=List[HealthDeclarationOut])
 def list_health_declarations(
@@ -977,6 +1192,8 @@ def seed_default_audits(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_roles("admin")),
 ):
+    if not demo_seed_enabled():
+        raise HTTPException(status_code=404, detail="Demo data seeding is disabled")
     # 1. Seed Internal Audits
     if db.query(InternalAudit).count() == 0:
         aud1 = InternalAudit(

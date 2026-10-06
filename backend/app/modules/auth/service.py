@@ -1,8 +1,9 @@
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
+import uuid
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 from app.core.security import get_password_hash, verify_password, create_access_token
-from app.modules.auth.models import User, Role, Department
+from app.modules.auth.models import User, Role, Department, AuditLog
 from app.modules.auth.schemas import UserRegisterRequest, UserLoginRequest, TokenResponse, DepartmentOption
 
 def get_department_options(db: Session) -> List[DepartmentOption]:
@@ -91,6 +92,17 @@ def authenticate_user(db: Session, payload: UserLoginRequest) -> TokenResponse:
     if not user.is_active:
         raise HTTPException(status_code=403, detail="Tài khoản đã bị tạm khóa.")
 
+    # Ghi nhận Audit Log đăng nhập thành công
+    role_str = str(user.roles[0].role_code).lower() if user.roles else "user"
+    create_audit_log(
+        db,
+        username=user.username,
+        action="LOGIN",
+        entity_type="AUTH",
+        user_id=user.user_id,
+        details={"role": role_str, "status": "SUCCESS"}
+    )
+
     return format_user_profile(user)
 
 def format_user_profile(user: User) -> TokenResponse:
@@ -111,3 +123,31 @@ def format_user_profile(user: User) -> TokenResponse:
 
 def get_current_user_profile(user: User) -> TokenResponse:
     return format_user_profile(user)
+
+
+def create_audit_log(
+    db: Session,
+    username: str,
+    action: str,
+    entity_type: str,
+    user_id: Optional[uuid.UUID] = None,
+    entity_id: Optional[str] = None,
+    details: Optional[Dict[str, Any]] = None,
+    ip_address: Optional[str] = "127.0.0.1"
+) -> AuditLog:
+    """
+    Ghi vết nhật ký an toàn (Audit Trail) cho các thao tác hệ thống FSMS
+    """
+    log = AuditLog(
+        user_id=user_id,
+        username=username,
+        action=action,
+        entity_type=entity_type,
+        entity_id=entity_id,
+        details=details,
+        ip_address=ip_address,
+    )
+    db.add(log)
+    db.commit()
+    db.refresh(log)
+    return log

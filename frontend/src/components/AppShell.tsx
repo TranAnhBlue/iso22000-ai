@@ -1,6 +1,6 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useEffect, useState, type ReactNode } from "react";
-import { canView, clearSession, getSession, roleLabel, setSession, type ModuleKey, type Session } from "@/lib/auth";
+import { canView, clearSession, getSession, getToken, roleLabel, setSession, type ModuleKey, type Session } from "@/lib/auth";
 import { ModuleAccessProvider } from "@/lib/rbac";
 import logoImg from "@/assets/logo.png";
 import api from "@/lib/api";
@@ -174,6 +174,13 @@ export function AppShell({ children, module }: { children: ReactNode; module?: M
       navigate({ to: "/" });
       return;
     }
+    // Không giữ phiên localStorage cũ nếu JWT đã bị xoá/hết hạn. Nếu không,
+    // AppShell vẫn poll cảnh báo và tạo 401 liên tục.
+    if (!getToken()) {
+      clearSession();
+      navigate({ to: "/", replace: true });
+      return;
+    }
     setS(s);
 
     // Tự động đồng bộ chính xác dữ liệu từ CSDL (SĐT, phòng ban, vai trò thực tế)
@@ -212,6 +219,13 @@ export function AppShell({ children, module }: { children: ReactNode; module?: M
   useEffect(() => {
     if (!session) return;
     const fetchAlerts = async () => {
+      // Token có thể bị interceptor xoá sau khi hết hạn trong lúc đang mở trang.
+      // Dừng poll thay vì lặp lại request 401 mỗi 45 giây.
+      if (!getToken()) {
+        setAlerts([]);
+        setUnreadCount(0);
+        return;
+      }
       try {
         const [alertsRes, readIdsRes] = await Promise.allSettled([
           api.get<ExecutiveAlert[]>(`/dashboard/executive-alerts?role=${encodeURIComponent(session.role)}`),

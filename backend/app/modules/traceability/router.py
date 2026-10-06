@@ -7,6 +7,7 @@ from sqlalchemy import desc, func, or_, and_
 
 from app.core.database import get_db
 from app.core.dependencies import require_roles
+from app.core.demo_data import demo_seed_enabled
 from app.modules.auth.models import User
 from app.modules.inventory.models import (
     ProductionBatch,
@@ -349,6 +350,8 @@ def seed_traceability_demo_data(
     db: Session = Depends(get_db),
     admin_user: User = Depends(require_roles("admin")),
 ):
+    if not demo_seed_enabled():
+        raise HTTPException(status_code=404, detail="Demo data seeding is disabled")
     today = date.today()
 
     # 1. Đảm bảo có NCC và Lô Nguyên liệu
@@ -565,3 +568,90 @@ def seed_traceability_demo_data(
 
     db.commit()
     return {"message": "Đã khởi tạo bộ dữ liệu mẫu Truy xuất nguồn gốc và Kho FEFO chuẩn ISO 22000 thành công!"}
+
+
+# =========================================================================
+# 5. MOCK RECALL EVALUATION & NOTICES (ĐÁNH GIÁ DIỄN TẬP THU HỒI & MẪU THÔNG BÁO)
+# =========================================================================
+@router.get("/mock-recall-summary")
+def get_mock_recall_summary(
+    batch_number: Optional[str] = Query(None, description="Mã mẻ kiểm tra diễn tập"),
+    elapsed_minutes: int = Query(45, description="Thời gian hoàn tất diễn tập (phút)"),
+    db: Session = Depends(get_db),
+):
+    """
+    Biên bản kết quả & Hiệu lực diễn tập thu hồi sản phẩm (ISO 22000:2018 Clause 8.9.5)
+    Quy định: Thời gian truy vết hoàn tất < 120 phút và Tỷ lệ xác định vị trí sản phẩm >= 98%.
+    """
+    target_time_minutes = 120
+    is_time_compliant = elapsed_minutes <= target_time_minutes
+
+    target_batch = batch_number or "LOT-202608-B01"
+    dispatches = db.query(OrderDispatch).filter(OrderDispatch.batch_number == target_batch).all()
+    stocks = db.query(WarehouseInventory).filter(WarehouseInventory.lot_number == target_batch).all()
+
+    total_dispatched = sum(d.quantity_dispatched for d in dispatches)
+    total_in_stock = sum(float(s.quantity or 0.0) for s in stocks)
+    total_traced = total_dispatched + total_in_stock
+    target_production = total_traced if total_traced > 0 else 1000.0
+
+    trace_rate = round((total_traced / target_production * 100), 1) if target_production > 0 else 100.0
+    is_rate_compliant = trace_rate >= 98.0
+    is_effective = is_time_compliant and is_rate_compliant
+
+    return {
+        "drill_code": f"DRL-REC-{datetime.now().strftime('%Y%m%d')}",
+        "batch_number": target_batch,
+        "evaluation_standard": "ISO 22000:2018 Điều khoản 8.9.5 & Quy chuẩn HACCP",
+        "time_performance": {
+            "target_time_minutes": target_time_minutes,
+            "actual_time_minutes": elapsed_minutes,
+            "is_time_compliant": is_time_compliant,
+            "assessment": "ĐẠT MỤC TIÊU THỜI GIAN (< 120 phút)" if is_time_compliant else "KHÔNG ĐẠT (VƯỢT QUÁ 120 PHÚT)",
+        },
+        "reconciliation": {
+            "total_produced": float(target_production),
+            "quantity_in_warehouse": float(total_in_stock),
+            "quantity_at_distributors": float(total_dispatched),
+            "traceability_coverage_rate": f"{trace_rate}%",
+            "is_rate_compliant": is_rate_compliant,
+        },
+        "overall_evaluation": "EFFECTIVE (HIỆU LỰC CAO)" if is_effective else "NEEDS_IMPROVEMENT (CẦN CẢI TIẾN CAPA)",
+        "recommendation": "Quy trình truy xuất và liên hệ phân phối hoạt động trơn tru." if is_effective else "Cần nâng cấp tốc độ đối soát dữ liệu xuất kho và số dư đại lý.",
+    }
+
+
+@router.get("/mock-recall/notice-templates")
+def get_recall_notice_templates(
+    product_name: str = Query("Chả cá Ba Sa Thượng Hạng 500g"),
+    batch_number: str = Query("LOT-202608-B01"),
+    recall_reason: str = Query("Nghi ngờ lỗi đường hàn nhiệt bao bì và sai lệch nhiệt độ bảo quản"),
+):
+    """
+    Hệ thống mẫu văn bản thông báo thu hồi sản phẩm khẩn cấp gửi:
+    1. Khách hàng & Đại lý phân phối
+    2. Nhà cung cấp nguyên liệu
+    3. Cơ quan quản lý nhà nước (Chi cục ATVSTP)
+    """
+    today_str = date.today().strftime("%d/%m/%Y")
+    return {
+        "customer_notice": {
+            "title": f"THÔNG BÁO KHẨN CẤP VỀ VIỆC THU HỒI SẢN PHẨM: {product_name.upper()}",
+            "recipient": "Kính gửi: Quý Khách hàng, Siêu thị & Nhà Phân phối",
+            "content": f"Công ty xin trân trọng thông báo thu hồi tự nguyện lô sản phẩm '{product_name}', Số lô: '{batch_number}'. Lý do: '{recall_reason}'. Kính đề nghị Quý đối tác tạm ngưng kinh doanh lô hàng trên, dán nhãn biệt trữ cách ly tại kho và phối hợp với đội xe của chúng tôi để thu hồi trong vòng 24 giờ. Toàn bộ chi phí và bồi hoàn sẽ do công ty chịu trách nhiệm.",
+            "issued_date": today_str,
+            "contact_hotline": "1800-6868 (Đội trưởng Đội ATTP)",
+        },
+        "supplier_notice": {
+            "title": f"CÔNG VĂN YÊU CẦU TRUY XUẤT NGUỒN GỐC & TẠM NGƯNG LÔ NGUYÊN LIỆU",
+            "recipient": "Kính gửi: Ban Giám Đốc Nhà Cung Cấp Đối Tác",
+            "content": f"Liên quan đến sự cố an toàn thực phẩm tại lô sản xuất '{batch_number}', chúng tôi yêu cầu Quý đơn vị khẩn trương truy xuất nguồn gốc lô nguyên liệu đã cung ứng, phong tỏa các lô tồn kho cùng đợt và cung cấp kết quả kiểm nghiệm bổ sung trong vòng 12 giờ làm việc.",
+            "issued_date": today_str,
+        },
+        "authority_report": {
+            "title": f"BÁO CÁO NHANH VỀ VIỆC XỬ LÝ SỰ CỐ & THU HỒI SẢN PHẨM KHÔNG AN TOÀN",
+            "recipient": "Kính gửi: Chi cục An toàn Vệ sinh Thực phẩm Tỉnh / Sở An toàn Thực phẩm",
+            "content": f"Căn cứ Điều 55 Luật An toàn thực phẩm và Điều khoản 8.9.5 TCVN ISO 22000:2018, Công ty xin báo cáo đã phát hiện sự cố đối với lô sản phẩm '{product_name}' (Lô: {batch_number}). Công ty đã chủ động kích hoạt cơ chế thu hồi khẩn cấp, niêm phong toàn bộ tồn kho và thông báo đến 100% điểm phân phối. Chúng tôi cam kết báo cáo tiến độ thu hồi mỗi 12 giờ cho đến khi hoàn tất.",
+            "issued_date": today_str,
+        }
+    }

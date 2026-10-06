@@ -8,6 +8,7 @@ from sqlalchemy import select, desc, func, and_, or_
 
 from app.core.database import get_db
 from app.core.dependencies import get_current_user, require_roles
+from app.core.demo_data import demo_seed_enabled
 from app.modules.builder.models import (
     DynamicFormTemplate,
     DynamicFormSubmission,
@@ -32,7 +33,7 @@ from app.modules.builder.schemas import (
     validate_workflow_structure,
 )
 
-router = APIRouter(prefix="/builders", tags=["Dynamic Form & Workflow Builders"])
+router = APIRouter(tags=["Dynamic Form & Workflow Builders"])
 
 # ==================== HELPERS ====================
 def format_form_out(t: Any) -> DynamicFormTemplateResponse:
@@ -49,6 +50,10 @@ def format_form_out(t: Any) -> DynamicFormTemplateResponse:
         version=str(getattr(t, "version", "1.0")),
         fields=getattr(t, "fields", []),
         status=str(getattr(t, "status", "ACTIVE")),
+        is_approved=bool(getattr(t, "is_approved", True)),
+        approved_by_name=getattr(t, "approved_by_name", "Quản trị hệ thống"),
+        approved_at=getattr(t, "approved_at", None),
+        change_history=list(getattr(t, "change_history", []) or []),
         created_by=getattr(t, "created_by", None),
         created_at=getattr(t, "created_at", None),
         updated_at=getattr(t, "updated_at", None),
@@ -70,6 +75,10 @@ def format_wf_out(w: Any) -> DynamicWorkflowTemplateResponse:
         nodes=getattr(w, "nodes", []),
         edges=getattr(w, "edges", []),
         status=str(getattr(w, "status", "ACTIVE")),
+        is_approved=bool(getattr(w, "is_approved", True)),
+        approved_by_name=getattr(w, "approved_by_name", "Quản trị hệ thống"),
+        approved_at=getattr(w, "approved_at", None),
+        change_history=list(getattr(w, "change_history", []) or []),
         created_by=getattr(w, "created_by", None),
         created_at=getattr(w, "created_at", None),
         updated_at=getattr(w, "updated_at", None),
@@ -125,6 +134,8 @@ def create_form_template(payload: DynamicFormTemplateCreate, db: Session = Depen
         existing.version = payload.version.strip()
         existing.fields = [f.model_dump() for f in payload.fields]
         existing.status = payload.status
+        if payload.status == "DRAFT":
+            existing.is_approved = False
         db.commit()
         db.refresh(existing)
         return format_form_out(existing)
@@ -137,6 +148,7 @@ def create_form_template(payload: DynamicFormTemplateCreate, db: Session = Depen
         version=payload.version.strip(),
         fields=[f.model_dump() for f in payload.fields],
         status=payload.status,
+        is_approved=(payload.status != "DRAFT"),
         created_by=_user.user_id,
     )
     db.add(new_t)
@@ -169,6 +181,44 @@ def update_form_template(template_id: UUID, payload: DynamicFormTemplateUpdate, 
     if payload.status is not None:
         t.status = payload.status
 
+    # Ghi nhận audit trail lịch sử thay đổi phiên bản / trường biểu mẫu
+    hist = list(t.change_history or [])
+    hist.append({
+        "action": "UPDATE_TEMPLATE",
+        "version_before": t.version,
+        "version_after": payload.version or t.version,
+        "modified_at": datetime.now().isoformat(),
+        "modified_by": _user.full_name,
+        "fields_changed": payload.fields is not None,
+    })
+    t.change_history = hist
+
+    db.commit()
+    db.refresh(t)
+    return format_form_out(t)
+
+@router.post("/forms/{template_id}/approve", response_model=DynamicFormTemplateResponse)
+def approve_form_template(
+    template_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "fst_leader", "fs_team_leader"))
+):
+    """Phê duyệt chính thức biểu mẫu trước khi cho phép người dùng nhập liệu (ISO 22000 Điều 7.5.3)"""
+    t = db.get(DynamicFormTemplate, template_id)
+    if not t:
+        raise HTTPException(status_code=404, detail="Không tìm thấy biểu mẫu")
+    t.is_approved = True
+    t.status = "ACTIVE"
+    t.approved_by_name = current_user.full_name
+    t.approved_at = datetime.now()
+    hist = list(t.change_history or [])
+    hist.append({
+        "action": "APPROVE_TEMPLATE",
+        "version": t.version,
+        "approved_by": current_user.full_name,
+        "approved_at": datetime.now().isoformat(),
+    })
+    t.change_history = hist
     db.commit()
     db.refresh(t)
     return format_form_out(t)
@@ -241,10 +291,18 @@ def submit_form_data(payload: DynamicFormSubmissionCreate, db: Session = Depends
             title=f"Biểu Mẫu {target_tid}",
             fields=[],
             status="ACTIVE",
+            is_approved=True,
         )
         db.add(t)
         db.commit()
         db.refresh(t)
+    else:
+        # Chặn nhập liệu nếu mẫu chưa được phê duyệt hoặc đang là DRAFT
+        if t.status == "DRAFT" or not getattr(t, "is_approved", True):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Biểu mẫu '{t.title}' đang ở trạng thái DRAFT hoặc chưa được phê duyệt. Vui lòng phê duyệt trước khi nhập liệu."
+            )
 
     new_sub = DynamicFormSubmission(
         template_id=t.template_id,
@@ -318,6 +376,8 @@ def create_workflow_template(payload: DynamicWorkflowTemplateCreate, db: Session
         existing.nodes = [n.model_dump() for n in payload.nodes]
         existing.edges = [e.model_dump() for e in payload.edges]
         existing.status = payload.status
+        if payload.status == "DRAFT":
+            existing.is_approved = False
         db.commit()
         db.refresh(existing)
         return format_wf_out(existing)
@@ -331,6 +391,7 @@ def create_workflow_template(payload: DynamicWorkflowTemplateCreate, db: Session
         nodes=[n.model_dump() for n in payload.nodes],
         edges=[e.model_dump() for e in payload.edges],
         status=payload.status,
+        is_approved=(payload.status != "DRAFT"),
         created_by=_user.user_id,
     )
     db.add(new_w)
@@ -391,6 +452,45 @@ def update_workflow_template(workflow_id: UUID, payload: DynamicWorkflowTemplate
     if payload.status is not None:
         w.status = payload.status
 
+    # Ghi nhận audit trail thay đổi luồng quy trình
+    wf_hist = list(w.change_history or [])
+    wf_hist.append({
+        "action": "UPDATE_WORKFLOW",
+        "version_before": w.version,
+        "version_after": payload.version or w.version,
+        "modified_at": datetime.now().isoformat(),
+        "modified_by": _user.full_name,
+        "nodes_changed": payload.nodes is not None,
+        "edges_changed": payload.edges is not None,
+    })
+    w.change_history = wf_hist
+
+    db.commit()
+    db.refresh(w)
+    return format_wf_out(w)
+
+@router.post("/workflows/{workflow_id}/approve", response_model=DynamicWorkflowTemplateResponse)
+def approve_workflow_template(
+    workflow_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "fst_leader", "fs_team_leader"))
+):
+    """Phê duyệt chính thức sơ đồ lưu đồ quy trình trước khi ban hành (ISO 22000 Điều 8.5.1.2)"""
+    w = db.get(DynamicWorkflowTemplate, workflow_id)
+    if not w:
+        raise HTTPException(status_code=404, detail="Không tìm thấy quy trình workflow")
+    w.is_approved = True
+    w.status = "ACTIVE"
+    w.approved_by_name = current_user.full_name
+    w.approved_at = datetime.now()
+    wf_hist = list(w.change_history or [])
+    wf_hist.append({
+        "action": "APPROVE_WORKFLOW",
+        "version": w.version,
+        "approved_by": current_user.full_name,
+        "approved_at": datetime.now().isoformat(),
+    })
+    w.change_history = wf_hist
     db.commit()
     db.refresh(w)
     return format_wf_out(w)
@@ -721,6 +821,8 @@ def seed_default_builders(
     admin_user: User = Depends(require_roles("admin")),
 ):
     """Tự động nạp các biểu mẫu và quy trình mẫu chuẩn ISO 22000:2018 cho toàn bộ các phân hệ."""
+    if not demo_seed_enabled():
+        raise HTTPException(status_code=404, detail="Demo data seeding is disabled")
     
     # 1. Mẫu Form GMP-01 (Checklist Vệ sinh Nhà xưởng)
     f_gmp = db.scalar(select(DynamicFormTemplate).where(DynamicFormTemplate.code == "FORM-GMP-01"))

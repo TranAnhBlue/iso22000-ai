@@ -7,6 +7,7 @@ import uuid
 
 from app.core.database import get_db
 from app.core.dependencies import get_current_user, require_roles
+from app.core.demo_data import demo_seed_enabled
 from app.modules.auth.models import User
 from app.modules.dashboard.models import QualityObjective, ManagementReview, UserReadAlert
 from app.modules.documents.models import Document
@@ -403,8 +404,8 @@ def get_executive_alerts(
             alert_id=f"DOC-{doc.document_id}",
             category="DOCUMENT",
             severity="INFO",
-            title=f"Tài liệu / SOP chờ duyệt ban hành: {doc.document_code}",
-            description=f"{doc.title} (Soạn thảo bởi: {doc.department_name or 'Ban QLCL'})",
+            title=f"Tài liệu / SOP chờ duyệt ban hành: {doc.doc_code}",
+            description=f"{doc.doc_title} (Đơn vị phụ trách: {doc.department or 'Ban QLCL'})",
             action_url="/documents",
             timestamp="Chờ duyệt",
         ))
@@ -526,6 +527,14 @@ def update_management_review(review_id: uuid.UUID, payload: ManagementReviewUpda
     rev = db.query(ManagementReview).filter(ManagementReview.review_id == review_id).first()
     if not rev:
         raise HTTPException(status_code=404, detail="Không tìm thấy biên bản xem xét lãnh đạo.")
+
+    # Khóa chặt biên bản MRM đã phê duyệt
+    if rev.status == "APPROVED":
+        raise HTTPException(
+            status_code=400,
+            detail="Biên bản xem xét của lãnh đạo (MRM) đã được PHÊ DUYỆT CHÍNH THỨC (APPROVED) và có giá trị pháp lý FSMS. Không được phép chỉnh sửa.",
+        )
+
     for field, val in payload.model_dump(exclude_unset=True).items():
         setattr(rev, field, val)
     db.commit()
@@ -538,9 +547,93 @@ def delete_management_review(review_id: uuid.UUID, db: Session = Depends(get_db)
     rev = db.query(ManagementReview).filter(ManagementReview.review_id == review_id).first()
     if not rev:
         raise HTTPException(status_code=404, detail="Không tìm thấy biên bản xem xét lãnh đạo.")
+
+    if rev.status == "APPROVED":
+        raise HTTPException(
+            status_code=400,
+            detail="Biên bản xem xét của lãnh đạo (MRM) đã được PHÊ DUYỆT (APPROVED) không được phép xóa nhằm bảo vệ toàn vẹn bằng chứng đánh giá ISO 22000.",
+        )
+
     db.delete(rev)
     db.commit()
     return {"message": "Đã xóa biên bản xem xét lãnh đạo thành công."}
+
+
+@router.post("/management-reviews/{review_id}/approve", response_model=ManagementReviewResponse)
+def approve_management_review(
+    review_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    admin_user: User = Depends(require_roles("admin", "fst_leader", "fs_team_leader", "manager")),
+):
+    """
+    Phê duyệt chính thức Biên bản cuộc họp Xem xét của Lãnh đạo (ISO 22000:2018 Clause 9.3)
+    Sau khi phê duyệt, biên bản sẽ được khóa chặt không cho phép sửa đổi hoặc xóa.
+    """
+    rev = db.query(ManagementReview).filter(ManagementReview.review_id == review_id).first()
+    if not rev:
+        raise HTTPException(status_code=404, detail="Không tìm thấy biên bản xem xét lãnh đạo.")
+
+    rev.status = "APPROVED"
+    db.commit()
+    db.refresh(rev)
+    return rev
+
+
+@router.get("/management-reviews/{review_id}/actions-tracking")
+def track_management_review_actions(review_id: uuid.UUID, db: Session = Depends(get_db)):
+    """
+    Theo dõi chi tiết các hành động & quyết định đầu ra sau cuộc họp MRM (ISO 22000 Clause 9.3.3 Outputs)
+    Bao gồm tiến độ, người chịu trách nhiệm, thời hạn và cảnh báo quá hạn.
+    """
+    rev = db.query(ManagementReview).filter(ManagementReview.review_id == review_id).first()
+    if not rev:
+        raise HTTPException(status_code=404, detail="Không tìm thấy biên bản xem xét lãnh đạo.")
+
+    actions_raw = rev.decisions_and_actions or []
+    if isinstance(actions_raw, dict):
+        actions_raw = actions_raw.get("actions", [])
+
+    today = date.today()
+    tracked_actions = []
+
+    for idx, act in enumerate(actions_raw):
+        decision_text = act.get("decision_text") or act.get("action") or f"Hành động {idx+1}"
+        assigned_to = act.get("assigned_to") or "Ban ATTP"
+        deadline_str = act.get("deadline") or act.get("target_date")
+        act_status = act.get("status") or "IN_PROGRESS"
+
+        days_left = None
+        is_overdue = False
+        if deadline_str:
+            try:
+                dl = date.fromisoformat(str(deadline_str).split("T")[0])
+                days_left = (dl - today).days
+                if days_left < 0 and act_status != "DONE":
+                    is_overdue = True
+                    act_status = "OVERDUE"
+            except Exception:
+                pass
+
+        tracked_actions.append({
+            "action_id": act.get("action_id", idx + 1),
+            "decision_text": decision_text,
+            "assigned_to": assigned_to,
+            "deadline": deadline_str,
+            "days_remaining": days_left,
+            "is_overdue": is_overdue,
+            "status": act_status,
+            "resources_allocated": act.get("resources_allocated", "Ngân sách thường niên"),
+        })
+
+    return {
+        "review_code": rev.review_code,
+        "meeting_date": str(rev.meeting_date),
+        "review_status": rev.status,
+        "total_actions": len(tracked_actions),
+        "overdue_count": sum(1 for a in tracked_actions if a["is_overdue"]),
+        "completed_count": sum(1 for a in tracked_actions if a["status"] == "DONE"),
+        "actions": tracked_actions,
+    }
 
 
 # ==================== 5. SEED DEFAULT DASHBOARD DATA ====================
@@ -553,6 +646,8 @@ def seed_default_dashboard_data(
     Nạp dữ liệu mẫu chất lượng cao cho Mục tiêu chất lượng (Clause 6.2)
     và Biên bản họp Xem xét của Lãnh đạo (Clause 9.3).
     """
+    if not demo_seed_enabled():
+        raise HTTPException(status_code=404, detail="Demo data seeding is disabled")
     # 1. Seed Quality Objectives
     if db.query(QualityObjective).count() == 0:
         o1 = QualityObjective(

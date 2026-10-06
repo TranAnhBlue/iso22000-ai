@@ -423,6 +423,8 @@ class VehicleInspectionBase(BaseModel):
     driver_name: str = Field(..., description="Tên tài xế")
     driver_phone: Optional[str] = None
     transport_company: Optional[str] = "Đội xe Công ty"
+    customer_name: Optional[str] = Field(None, description="Khách hàng nhận hàng")
+    vehicle_type: Optional[str] = Field("Xe tải thùng kín", description="Loại xe vận chuyển")
     
     # 5 TIÊU CHÍ NGUYÊN BẢN THEO BIỂU MẪU BM01-PTVC (Pass/Fail)
     valid_registration_check: bool = Field(True, description="1. Xe còn niên hạn sử dụng / được đăng kiểm cho phép lưu hành")
@@ -433,6 +435,7 @@ class VehicleInspectionBase(BaseModel):
     
     inspection_result: str = Field("PASS", description="PASS, FAIL")
     inspector_name: str = Field("Thủ kho xuất hàng", description="Người kiểm tra")
+    corrective_action: Optional[str] = Field(None, description="Hành động khắc phục nếu có")
     notes: Optional[str] = None
 
 class VehicleInspectionCreate(VehicleInspectionBase):
@@ -443,6 +446,8 @@ class VehicleInspectionUpdate(BaseModel):
     driver_name: Optional[str] = None
     driver_phone: Optional[str] = None
     transport_company: Optional[str] = None
+    customer_name: Optional[str] = None
+    vehicle_type: Optional[str] = None
     valid_registration_check: Optional[bool] = None
     cargo_integrity_check: Optional[bool] = None
     clean_dry_check: Optional[bool] = None
@@ -450,6 +455,7 @@ class VehicleInspectionUpdate(BaseModel):
     pest_free_check: Optional[bool] = None
     inspection_result: Optional[str] = None
     inspector_name: Optional[str] = None
+    corrective_action: Optional[str] = None
     notes: Optional[str] = None
 
 class VehicleInspectionResponse(VehicleInspectionBase):

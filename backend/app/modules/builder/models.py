@@ -23,6 +23,10 @@ class DynamicFormTemplate(Base):
     fields: Mapped[Any] = mapped_column(JSONB, nullable=False)
     
     status: Mapped[str] = mapped_column(String(30), default="ACTIVE", nullable=False)  # ACTIVE, DRAFT, ARCHIVED
+    is_approved: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    approved_by_name: Mapped[Optional[str]] = mapped_column(String(100), default="Quản trị hệ thống", nullable=True)
+    approved_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    change_history: Mapped[Any] = mapped_column(JSONB, default=list, nullable=False)
     created_by: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), ForeignKey("users.user_id", ondelete="SET NULL"), nullable=True)
     created_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
@@ -70,6 +74,10 @@ class DynamicWorkflowTemplate(Base):
     edges: Mapped[Any] = mapped_column(JSONB, nullable=False)
     
     status: Mapped[str] = mapped_column(String(30), default="ACTIVE", nullable=False)  # ACTIVE, DRAFT, ARCHIVED
+    is_approved: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    approved_by_name: Mapped[Optional[str]] = mapped_column(String(100), default="Quản trị hệ thống", nullable=True)
+    approved_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    change_history: Mapped[Any] = mapped_column(JSONB, default=list, nullable=False)
     created_by: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), ForeignKey("users.user_id", ondelete="SET NULL"), nullable=True)
     created_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())

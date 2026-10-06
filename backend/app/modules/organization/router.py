@@ -290,6 +290,7 @@ def format_risk_out(r: Any) -> ContextRiskResponse:
     target_date_str = r.target_date.strftime("%Y-%m-%d") if r.target_date else None
     return ContextRiskResponse(
         id=int(r.id),
+        risk_id=int(r.id),
         code=str(r.code),
         issue_category=str(r.issue_category),
         issue_description=str(r.issue_description),
@@ -312,6 +313,7 @@ def format_risk_out(r: Any) -> ContextRiskResponse:
         updated_at=r.updated_at.strftime("%Y-%m-%d %H:%M") if r.updated_at else None,
     )
 
+@router.get("/risks", response_model=List[ContextRiskResponse])
 @router.get("/context-risks", response_model=List[ContextRiskResponse])
 def get_context_risks(
     issue_category: Optional[str] = None,
@@ -682,3 +684,264 @@ def delete_food_safety_team_member(member_id: uuid.UUID, db: Session = Depends(g
     db.delete(member)
     db.commit()
     return {"message": "Đã xóa thành viên khỏi đội ATTP thành công"}
+
+
+# ==================== MA TRẬN NĂNG LỰC & QUYẾT ĐỊNH ĐỘI ATTP (CLAUSE 5.3 & 7.2) ====================
+
+@router.get("/competency-matrix")
+def get_competency_matrix():
+    """
+    Ma trận năng lực theo vị trí công việc trong Hệ thống Quản lý ATTP (ISO 22000:2018 Điều khoản 7.2)
+    Quy định rõ yêu cầu học vấn, kinh nghiệm, chứng chỉ bắt buộc và chu kỳ tái đào tạo định kỳ.
+    """
+    return [
+        {
+            "position_code": "FS_TEAM_LEADER",
+            "position_title": "Đội trưởng Đội An toàn thực phẩm (FS Team Leader)",
+            "department": "Ban Giám Đốc / Ban QLCL",
+            "education_requirement": "Đại học chuyên ngành Công nghệ thực phẩm, Thủy sản hoặc Sinh học/Hóa học",
+            "experience_years": 3,
+            "mandatory_certifications": [
+                "Chứng chỉ Trưởng ban / Đánh giá viên trưởng ISO 22000:2018",
+                "Chứng chỉ Chuyên sâu HACCP Codex & Đánh giá mối nguy",
+                "Giấy xác nhận tập huấn kiến thức ATTP của Chi cục ATVSTP"
+            ],
+            "key_competencies": [
+                "Xây dựng và thẩm định Kế hoạch HACCP, PRP/oPRP",
+                "Chỉ huy diễn tập thu hồi sản phẩm khẩn cấp và giải quyết khủng hoảng ATTP",
+                "Chủ trì cuộc họp Đánh giá nội bộ và Xem xét của Lãnh đạo (MRM)"
+            ],
+            "retraining_frequency_months": 12,
+            "medical_check_frequency_months": 6
+        },
+        {
+            "position_code": "FS_TEAM_MEMBER",
+            "position_title": "Đội viên Đội An toàn thực phẩm",
+            "department": "QA, QC, Sản xuất, Cơ điện, Kho",
+            "education_requirement": "Cao đẳng hoặc Đại học kỹ thuật, chế biến",
+            "experience_years": 1,
+            "mandatory_certifications": [
+                "Chứng chỉ Nhận thức & Đánh giá nội bộ ISO 22000:2018",
+                "Chứng chỉ 7 nguyên tắc HACCP Codex"
+            ],
+            "key_competencies": [
+                "Nhận diện mối nguy thực tế tại khu vực phụ trách",
+                "Thẩm tra hồ sơ giám sát CCP và báo cáo sai lệch"
+            ],
+            "retraining_frequency_months": 12,
+            "medical_check_frequency_months": 6
+        },
+        {
+            "position_code": "QC_INSPECTOR",
+            "position_title": "Kiểm nghiệm viên / KCS quá trình (QC Inspector)",
+            "department": "Phòng Quản lý Chất lượng (QC)",
+            "education_requirement": "Trung cấp hoặc Cao đẳng Công nghệ thực phẩm / Sinh hóa",
+            "experience_years": 1,
+            "mandatory_certifications": [
+                "Chứng chỉ Kỹ thuật lấy mẫu và kiểm nghiệm nhanh ATTP",
+                "Giấy tập huấn an toàn thực phẩm định kỳ"
+            ],
+            "key_competencies": [
+                "Sử dụng thành thạo các thiết bị đo lường (Nhiệt kế kim, Test kit nhanh, Khúc xạ kế)",
+                "Lập biên bản KSQT BM01-BM06 và kích hoạt thẻ đỏ khi có sản phẩm không phù hợp"
+            ],
+            "retraining_frequency_months": 12,
+            "medical_check_frequency_months": 6
+        },
+        {
+            "position_code": "CCP_OPERATOR",
+            "position_title": "Công nhân vận hành điểm kiểm soát tới hạn (CCP 1/2/3)",
+            "department": "Xưởng sản xuất chế biến",
+            "education_requirement": "Tốt nghiệp THPT / Đào tạo nghề",
+            "experience_years": 0.5,
+            "mandatory_certifications": [
+                "Chứng chỉ Đào tạo thao tác chuẩn tại điểm CCP (Hấp chín / Dò kim loại / Cấp đông IQF)",
+                "Giấy khám sức khỏe đủ điều kiện tiếp xúc trực tiếp thực phẩm (Thông tư 14/BYT)"
+            ],
+            "key_competencies": [
+                "Ghi chép chính xác nhật ký đo đạc theo đúng tần suất quy định",
+                "Thao tác ngay lập tức hành động khắc phục tức thời khi thông số chạm ngưỡng cảnh báo",
+                "Vận hành que thử chuẩn máy dò kim loại Fe 0.5mm / SUS 0.8mm"
+            ],
+            "retraining_frequency_months": 6,
+            "medical_check_frequency_months": 6
+        },
+        {
+            "position_code": "MAINTENANCE_TECH",
+            "position_title": "Kỹ thuật viên Cơ điện & Bảo trì",
+            "department": "Phòng Kỹ thuật - Cơ điện",
+            "education_requirement": "Trung cấp nghề Cơ điện / Tự động hóa",
+            "experience_years": 1,
+            "mandatory_certifications": [
+                "Chứng nhận tập huấn Quy chuẩn dầu bôi trơn thực phẩm NSF H1",
+                "Quy trình vệ sinh & khử trùng trả lại hiện trường sau bảo dưỡng"
+            ],
+            "key_competencies": [
+                "Thực hiện bảo trì phòng ngừa PM theo đúng chu kỳ",
+                "Hiệu chuẩn nội bộ hoặc gửi kiểm định các thiết bị đo lường áp suất/nhiệt độ"
+            ],
+            "retraining_frequency_months": 12,
+            "medical_check_frequency_months": 12
+        },
+        {
+            "position_code": "WAREHOUSE_KEEPER",
+            "position_title": "Thủ kho Nguyên liệu / Thành phẩm đông lạnh",
+            "department": "Bộ phận Kho & Logistics",
+            "education_requirement": "Trung cấp Quản trị kho / Kế toán / Kỹ thuật",
+            "experience_years": 1,
+            "mandatory_certifications": [
+                "Tập huấn nguyên tắc quản lý hàng tồn kho FEFO (Hết hạn trước - Xuất trước)",
+                "Kiểm soát nhiệt độ kho lạnh (-18°C) và cách ly hàng biệt trữ HOLD"
+            ],
+            "key_competencies": [
+                "Đối soát chính xác tồn kho thực tế và hệ thống",
+                "Kiểm tra điều kiện vệ sinh thùng xe vận chuyển trước khi xuất hàng"
+            ],
+            "retraining_frequency_months": 12,
+            "medical_check_frequency_months": 12
+        },
+        {
+            "position_code": "SSOP_CLEANER",
+            "position_title": "Nhân viên Vệ sinh công nghiệp & Xử lý nước (SSOP/PRP)",
+            "department": "Tổ Vệ sinh & Môi trường",
+            "education_requirement": "Lao động phổ thông được đào tạo nội bộ",
+            "experience_years": 0.5,
+            "mandatory_certifications": [
+                "Tập huấn an toàn hóa chất tẩy rửa khử trùng (MSDS)",
+                "Quy trình kiểm soát nồng độ Clo dư và phân loại rác thải nhà xưởng"
+            ],
+            "key_competencies": [
+                "Pha hóa chất khử trùng đúng nồng độ định lượng an toàn",
+                "Thực hiện vệ sinh khử trùng nhà xưởng trước ca và cuối ca đạt chuẩn ATP swab test"
+            ],
+            "retraining_frequency_months": 6,
+            "medical_check_frequency_months": 6
+        }
+    ]
+
+
+@router.post("/fs-team/issue-decision")
+def issue_fs_team_decision(
+    decision_code: str = Query("02/QĐ-ATTP-2026", description="Số quyết định ban hành"),
+    signer_name: str = Query("Lê Hoàng Quân", description="Họ tên người ký (Tổng Giám Đốc)"),
+    title: str = Query("Quyết định Kiện toàn Đội An toàn thực phẩm Nhà máy", description="Tiêu đề quyết định"),
+    db: Session = Depends(get_db),
+    admin_user: User = Depends(require_roles("admin", "fst_leader", "fs_team_leader")),
+):
+    """
+    Workflow Ban hành Quyết định thành lập / Kiện toàn Đội ATTP (Điều khoản 5.3 ISO 22000:2018)
+    """
+    members = db.query(FoodSafetyTeamMember).all()
+    if not members:
+        # Tự động khởi tạo danh sách Đội ATTP chuẩn nếu chưa có
+        today = date.today()
+        default_members = [
+            FoodSafetyTeamMember(
+                member_name="Lê Hoàng Nam",
+                role_in_team="LEADER",
+                department="Ban Quản lý Chất lượng (QA/QC)",
+                current_position="Trưởng phòng QA/QC",
+                qualification_and_training="Kỹ sư Công nghệ Thực phẩm; Lead Auditor ISO 22000 & FSSC 22000",
+                responsibility_description="Chịu trách nhiệm chung về toàn bộ hệ thống FSMS, chủ trì thẩm tra HACCP",
+                appointment_decision_code=decision_code.strip(),
+                appointment_date=today,
+                status="ACTIVE",
+            ),
+            FoodSafetyTeamMember(
+                member_name="Nguyễn Văn An",
+                role_in_team="MEMBER",
+                department="Phòng Sản xuất",
+                current_position="Quản đốc Phân xưởng Chế biến",
+                qualification_and_training="Kỹ sư Chế biến Thủy sản; Đào tạo GMP/SSOP thực hành",
+                responsibility_description="Kiểm soát thực thi quy chuẩn vệ sinh, giám sát vận hành các điểm kiểm soát CCP",
+                appointment_decision_code=decision_code.strip(),
+                appointment_date=today,
+                status="ACTIVE",
+            ),
+            FoodSafetyTeamMember(
+                member_name="Phạm Hùng Cường",
+                role_in_team="MEMBER",
+                department="Phòng Cơ điện & Bảo trì",
+                current_position="Trưởng bộ phận Cơ điện",
+                qualification_and_training="Kỹ sư Cơ điện; Chứng chỉ hiệu chuẩn và bảo dưỡng thiết bị đo lường",
+                responsibility_description="Bảo trì dây chuyền máy móc, thiết bị đo nhiệt độ, máy dò kim loại",
+                appointment_decision_code=decision_code.strip(),
+                appointment_date=today,
+                status="ACTIVE",
+            ),
+            FoodSafetyTeamMember(
+                member_name="Hoàng Thị Mai",
+                role_in_team="SECRETARY",
+                department="Ban Quản lý Chất lượng (QA/QC)",
+                current_position="Chuyên viên QA",
+                qualification_and_training="Cử nhân Vi sinh Thực phẩm; Đào tạo HACCP nâng cao",
+                responsibility_description="Thư ký Đội ATTP, lập biên bản họp xem xét hệ thống, lưu trữ hồ sơ",
+                appointment_decision_code=decision_code.strip(),
+                appointment_date=today,
+                status="ACTIVE",
+            ),
+        ]
+        db.add_all(default_members)
+        db.commit()
+        members = db.query(FoodSafetyTeamMember).all()
+
+
+    today = date.today()
+    for m in members:
+        m.appointment_decision_code = decision_code.strip()
+        m.appointment_date = today
+
+    db.commit()
+
+    return {
+        "message": f"Ban Giám Đốc đã phê duyệt và ban hành thành công {decision_code}",
+        "decision_code": decision_code,
+        "title": title,
+        "signed_by": signer_name,
+        "issued_date": str(today),
+        "total_appointed_members": len(members),
+        "effective_status": "VALID_ENFORCED",
+    }
+
+
+@router.post("/risks/{risk_id}/evaluate-effectiveness")
+@router.post("/context-risks/{risk_id}/evaluate-effectiveness")
+def evaluate_risk_treatment_effectiveness(
+    risk_id: int,
+    residual_likelihood: Optional[int] = Query(2, ge=1, le=5, description="Khả năng sau xử lý (1-5)"),
+    residual_severity: Optional[int] = Query(2, ge=1, le=5, description="Mức độ nghiêm trọng sau xử lý (1-5)"),
+    effectiveness_notes: Optional[str] = Query(None, description="Đánh giá hiệu lực của các biện pháp ứng phó"),
+    notes: Optional[str] = Query(None, description="Ghi chú đánh giá hiệu lực"),
+    is_effective: Optional[bool] = Query(True, description="Biện pháp có hiệu lực hay không"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "fst_leader", "fs_team_leader")),
+):
+    """
+    Đánh giá hiệu lực của các biện pháp xử lý rủi ro bối cảnh sau thời hạn xử lý (Điều 4.1 & 6.1 ISO 22000)
+    Tính toán lại điểm rủi ro còn lại (Residual Risk Score) và cập nhật trạng thái kiểm soát.
+    """
+    risk = db.query(ContextRisk).filter(ContextRisk.id == risk_id).first()
+    if not risk:
+        raise HTTPException(status_code=404, detail="Không tìm thấy rủi ro bối cảnh.")
+
+    res_score = residual_likelihood * residual_severity
+    risk.residual_likelihood = residual_likelihood
+    risk.residual_severity = residual_severity
+    risk.residual_risk_score = res_score
+    risk.status = "CONTROLLED" if res_score <= 6 else "TREATING"
+
+    final_notes = effectiveness_notes or notes or "Biện pháp kiểm soát đạt hiệu lực tốt."
+    evaluator = current_user.full_name or current_user.username
+    risk.action_plan = f"{risk.action_plan or ''}\n[ĐÁNH GIÁ HIỆU LỰC {date.today().strftime('%d/%m/%Y')} bởi {evaluator}]: {final_notes} (Điểm rủi ro còn lại: {res_score})".strip()
+
+    db.commit()
+    db.refresh(risk)
+
+    return {
+        "message": "Đã ghi nhận đánh giá hiệu lực biện pháp kiểm soát rủi ro thành công.",
+        "risk_code": risk.code,
+        "previous_risk_score": risk.risk_score,
+        "residual_risk_score": res_score,
+        "status": risk.status,
+        "is_effective": res_score < risk.risk_score,
+    }

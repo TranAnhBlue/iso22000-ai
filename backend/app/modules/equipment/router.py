@@ -1,11 +1,15 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile, File
 from sqlalchemy.orm import Session
 from sqlalchemy import select, func, or_, and_, desc
 from typing import List, Optional
 from uuid import UUID
 from datetime import date, datetime, timedelta, timezone
+import os
+import shutil
+import re
 
 from app.core.database import get_db
+from app.core.demo_data import demo_seed_enabled
 from app.core.dependencies import require_roles
 from app.modules.equipment.models import Equipment, EquipmentMaintenanceLog, EquipmentCalibrationLog
 from app.modules.auth.models import User
@@ -22,6 +26,8 @@ router = APIRouter()
 
 # ==================== HELPER: AUTO-SEED IF EMPTY ====================
 def seed_default_equipments_if_empty(db: Session):
+    if not demo_seed_enabled():
+        return
     return
 
     today = date.today()
@@ -1138,3 +1144,99 @@ def ai_evaluate_calibration(payload: AIEvaluateCalibrationRequest):
             product_isolation_required=True,
             iso_clause_reference="ISO 22000:2018 Điều khoản 7.1.5.2 (Đánh giá lại tính hợp lệ của kết quả đo trước đó khi thiết bị không đạt chuẩn).",
         )
+
+
+@router.get("/ccp-devices")
+def get_ccp_devices(db: Session = Depends(get_db)):
+    """
+    Liên kết thiết bị đo lường với các điểm kiểm soát tới hạn CCP/oPRP (ISO 22000:2018 Điều khoản 7.1.5.2)
+    Tự động KHÓA SỬ DỤNG (is_locked_from_ccp=True) nếu thiết bị quá hạn hiệu chuẩn hoặc không đạt chuẩn.
+    """
+    seed_default_equipments_if_empty(db)
+    equipments = db.scalars(select(Equipment).order_by(Equipment.equipment_code.asc())).all()
+    today = date.today()
+
+    ccp_devices = []
+    for eq in equipments:
+        sync_equipment_calibration_state(eq, db)
+        # Nhận diện thiết bị gắn với CCP hoặc kiểm soát tới hạn
+        is_ccp = (
+            eq.criticality_level in ["HIGH_CCP", "MEDIUM_OPRP"] or
+            "CCP" in (eq.equipment_name or "").upper() or
+            "DÒ KIM LOẠI" in (eq.equipment_name or "").upper() or
+            "NHIỆT KẾ" in (eq.equipment_name or "").upper() or
+            "CÂN" in (eq.equipment_name or "").upper()
+        )
+        if not is_ccp:
+            continue
+
+        days_left = (eq.next_calibration_due - today).days if eq.next_calibration_due else None
+        is_expired = bool(days_left is not None and days_left < 0) or (eq.calibration_status == "EXPIRED")
+        is_locked = is_expired or (eq.status in ["CALIBRATION_OVERDUE", "MAINTENANCE", "DECOMMISSIONED"])
+
+        ccp_code = "CCP 2" if "DÒ KIM LOẠI" in eq.equipment_name.upper() else ("CCP 1" if "HẤP" in eq.equipment_name.upper() else "CCP/oPRP")
+
+        ccp_devices.append({
+            "equipment_id": str(eq.equipment_id),
+            "equipment_code": eq.equipment_code,
+            "equipment_name": eq.equipment_name,
+            "criticality_level": eq.criticality_level,
+            "linked_ccp_code": ccp_code,
+            "installation_location": eq.installation_location,
+            "calibration_status": eq.calibration_status,
+            "status": eq.status,
+            "last_calibration_date": str(eq.last_calibration_date) if eq.last_calibration_date else None,
+            "next_calibration_due": str(eq.next_calibration_due) if eq.next_calibration_due else None,
+            "days_until_calibration": days_left,
+            "is_locked_from_ccp": is_locked,
+            "lock_reason": "Thiết bị quá hạn hiệu chuẩn hoặc đang bảo trì, KHÔNG ĐƯỢC PHÉP dùng cho giám sát CCP." if is_locked else None,
+            "warning_alert": "KHẨN CẤP: Quá hạn kiểm định đo lường ISO 22000!" if is_locked else ("Sắp đến hạn hiệu chuẩn" if days_left and days_left <= 15 else "Bình thường")
+        })
+
+    return {
+        "total_ccp_devices": len(ccp_devices),
+        "locked_devices_count": sum(1 for d in ccp_devices if d["is_locked_from_ccp"]),
+        "operational_count": sum(1 for d in ccp_devices if not d["is_locked_from_ccp"]),
+        "devices": ccp_devices,
+    }
+
+
+@router.post("/calibration-logs/{calibration_id}/upload-certificate")
+def upload_calibration_certificate(
+    calibration_id: UUID,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "qc", "fst_leader")),
+):
+    """
+    Tải lên tệp chứng thư / tem hiệu chuẩn đo lường (PDF, ảnh kết quả QUATEST/VILAS)
+    """
+    cal_log = db.get(EquipmentCalibrationLog, calibration_id)
+    if not cal_log:
+        raise HTTPException(status_code=404, detail="Không tìm thấy bản ghi hiệu chuẩn thiết bị.")
+
+    allowed_exts = {".pdf", ".jpg", ".jpeg", ".png"}
+    ext = os.path.splitext(file.filename or "")[1].lower()
+    if ext not in allowed_exts:
+        raise HTTPException(status_code=400, detail=f"Định dạng tệp không được hỗ trợ ({ext}). Cho phép: {', '.join(allowed_exts)}")
+
+    upload_dir = os.path.join(os.getcwd(), "uploads", "documents")
+    os.makedirs(upload_dir, exist_ok=True)
+
+    safe_name = f"CAL-CERT-{cal_log.calibration_code}-{datetime.now().strftime('%Y%m%d%H%M%S')}{ext}"
+    safe_path = os.path.join(upload_dir, safe_name)
+
+    with open(safe_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+
+    file_url = f"/api/v1/documents/files/{safe_name}"
+    cal_log.certificate_file_url = file_url
+    db.commit()
+    db.refresh(cal_log)
+
+    return {
+        "message": "Đã tải lên chứng thư hiệu chuẩn thành công.",
+        "calibration_id": str(cal_log.calibration_id),
+        "certificate_file_url": file_url,
+        "filename": safe_name,
+    }

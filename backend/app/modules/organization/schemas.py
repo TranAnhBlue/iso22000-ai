@@ -130,6 +130,7 @@ class ContextRiskResponse(ContextRiskBase):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
+    risk_id: Optional[int] = None
     risk_score: int
     residual_risk_score: Optional[int] = None
     party_name: Optional[str] = None

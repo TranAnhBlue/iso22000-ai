@@ -3,7 +3,7 @@ from typing import List, Optional, Any
 from datetime import datetime, date, timedelta
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session, joinedload
-from sqlalchemy import desc, func, or_, and_
+from sqlalchemy import select, desc, func, or_, and_
 
 from app.core.database import get_db
 from app.core.dependencies import require_roles
@@ -684,6 +684,188 @@ def get_inventory_kpi_stats(db: Session = Depends(get_db)):
     }
 
 
+@router.get("/alerts")
+def get_inventory_alerts(db: Session = Depends(get_db)):
+    """
+    Cảnh báo tự động Kho & FEFO & Mẫu lưu (ISO 22000 Điều 8.2.4 & 8.5.1):
+    1. Cảnh báo nhiệt độ kho lạnh / kho mát vượt ngưỡng kiểm soát
+    2. Cảnh báo tồn kho hết hạn (EXPIRED) & cận hạn sử dụng (< 30 ngày)
+    3. Cảnh báo tồn kho dưới định mức an toàn tối thiểu
+    4. Cảnh báo mẫu lưu đối chứng sắp hết hạn
+    """
+    today = date.today()
+    alerts = []
+
+    # 1. Kiểm tra nhiệt độ kho
+    stocks = db.scalars(select(WarehouseInventory)).all()
+    for s in stocks:
+        temp = float(s.temperature_c) if s.temperature_c is not None else None
+        if temp is not None:
+            if s.warehouse_type == "COLD_STORAGE" and temp > -18.0:
+                alerts.append({
+                    "alert_type": "TEMPERATURE_DEVIATION",
+                    "severity": "CRITICAL" if temp > -15.0 else "WARNING",
+                    "item_code": s.item_code,
+                    "item_name": s.item_name,
+                    "lot_number": s.lot_number,
+                    "warehouse_type": s.warehouse_type,
+                    "location_bin": s.location_bin,
+                    "current_temp": temp,
+                    "limit_temp": -18.0,
+                    "message": f"Nhiệt độ kho đông ({temp}°C) vượt giới hạn an toàn -18°C tại kệ {s.location_bin}",
+                })
+            elif s.warehouse_type == "CHILL_STORAGE" and temp > 4.0:
+                alerts.append({
+                    "alert_type": "TEMPERATURE_DEVIATION",
+                    "severity": "CRITICAL" if temp > 8.0 else "WARNING",
+                    "item_code": s.item_code,
+                    "item_name": s.item_name,
+                    "lot_number": s.lot_number,
+                    "warehouse_type": s.warehouse_type,
+                    "location_bin": s.location_bin,
+                    "current_temp": temp,
+                    "limit_temp": 4.0,
+                    "message": f"Nhiệt độ kho mát ({temp}°C) vượt giới hạn 0-4°C tại kệ {s.location_bin}",
+                })
+
+        # 2. Kiểm tra FEFO cận hạn & hết hạn
+        if s.exp_date is not None:
+            if s.exp_date < today:
+                alerts.append({
+                    "alert_type": "EXPIRED",
+                    "severity": "CRITICAL",
+                    "item_code": s.item_code,
+                    "item_name": s.item_name,
+                    "lot_number": s.lot_number,
+                    "exp_date": str(s.exp_date),
+                    "location_bin": s.location_bin,
+                    "quantity": float(s.quantity) if s.quantity is not None else 0.0,
+                    "unit": s.unit,
+                    "message": f"Lô hàng {s.lot_number} ({s.item_name}) đã hết hạn từ ngày {s.exp_date}. Cần lập biên bản hủy hàng BM02-HỦY HÀNG!",
+                })
+            elif s.exp_date <= today + timedelta(days=30):
+                days_left = (s.exp_date - today).days
+                alerts.append({
+                    "alert_type": "NEAR_EXPIRY",
+                    "severity": "WARNING",
+                    "item_code": s.item_code,
+                    "item_name": s.item_name,
+                    "lot_number": s.lot_number,
+                    "exp_date": str(s.exp_date),
+                    "days_left": days_left,
+                    "location_bin": s.location_bin,
+                    "quantity": float(s.quantity) if s.quantity is not None else 0.0,
+                    "unit": s.unit,
+                    "message": f"Lô {s.lot_number} còn {days_left} ngày là hết hạn (HSD {s.exp_date}). Ưu tiên xuất kho trước theo nguyên tắc FEFO.",
+                })
+
+        # 3. Tồn kho dưới định mức
+        if s.quantity is not None and s.min_stock_level is not None and float(s.quantity) < float(s.min_stock_level):
+            alerts.append({
+                "alert_type": "LOW_STOCK",
+                "severity": "INFO",
+                "item_code": s.item_code,
+                "item_name": s.item_name,
+                "current_quantity": float(s.quantity),
+                "min_stock_level": float(s.min_stock_level),
+                "unit": s.unit,
+                "message": f"Tồn kho {s.item_name} ({s.quantity} {s.unit}) thấp hơn mức an toàn ({s.min_stock_level} {s.unit})",
+            })
+
+    # 4. Kiểm tra mẫu lưu sắp hết hạn
+    samples = db.scalars(select(RetainedSample).where(RetainedSample.status == "STORED")).all()
+    for sp in samples:
+        if sp.expiry_date is not None and sp.expiry_date <= today:
+            alerts.append({
+                "alert_type": "SAMPLE_EXPIRED",
+                "severity": "INFO",
+                "sample_code": sp.sample_code,
+                "product_name": sp.product_name,
+                "batch_number": sp.batch_number,
+                "expiry_date": str(sp.expiry_date),
+                "storage_cabinet": sp.storage_cabinet,
+                "message": f"Mẫu lưu {sp.sample_code} của mẻ {sp.batch_number} đã hết hạn lưu. Có thể tiến hành thanh lý/hủy mẫu.",
+            })
+
+    return {
+        "total_alerts": len(alerts),
+        "critical_count": sum(1 for a in alerts if a["severity"] == "CRITICAL"),
+        "warning_count": sum(1 for a in alerts if a["severity"] == "WARNING"),
+        "info_count": sum(1 for a in alerts if a["severity"] == "INFO"),
+        "alerts": alerts,
+    }
+
+
+@router.get("/reconciliation")
+def get_inventory_reconciliation(
+    lot_number: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
+    """
+    Đối soát tồn thực tế & Liên kết hoàn chỉnh: Sản xuất -> Tồn kho -> Xuất kho -> Giao hàng -> Thu hồi
+    Truy vết tức thời theo Điều 8.9.5 ISO 22000:2018
+    """
+    batches_stmt = select(ProductionBatch)
+    if lot_number:
+        batches_stmt = batches_stmt.where(ProductionBatch.batch_number.ilike(f"%{lot_number.strip()}%"))
+    batches = db.scalars(batches_stmt.order_by(ProductionBatch.created_at.desc())).unique().all()
+
+    reconciled_list = []
+    for b in batches:
+        # Tồn kho hiện tại
+        stock_items = db.scalars(select(WarehouseInventory).where(WarehouseInventory.batch_id == b.batch_id)).unique().all()
+        stock_qty = sum(float(s.quantity) for s in stock_items if s.quantity is not None)
+        # Đã xuất kho giao hàng
+        dispatches = db.scalars(select(OrderDispatch).where(OrderDispatch.batch_id == b.batch_id)).unique().all()
+        dispatched_qty = sum(float(d.quantity_dispatched) for d in dispatches if d.quantity_dispatched is not None)
+        # Đã tiêu hủy (nếu có)
+        from app.modules.inventory.models import DisposalRecord
+        disposals = db.scalars(select(DisposalRecord).where(DisposalRecord.batch_id == b.batch_id)).unique().all()
+        disposed_qty = sum(float(dp.quantity) for dp in disposals if dp.quantity is not None)
+        produced_qty = float(b.actual_quantity) if b.actual_quantity is not None else float(b.planned_quantity or 0.0)
+        accounted_qty = stock_qty + dispatched_qty + disposed_qty
+        variance = produced_qty - accounted_qty
+        # Chi tiết phân phối cho từng khách hàng (phục vụ thu hồi khẩn cấp)
+        dispatch_details = [{
+            "dispatch_code": d.dispatch_code,
+            "order_number": d.order_number,
+            "customer_name": d.customer_name,
+            "customer_phone": d.customer_phone,
+            "destination_address": d.destination_address,
+            "quantity_dispatched": float(d.quantity_dispatched) if d.quantity_dispatched is not None else 0.0,
+            "unit": d.unit,
+            "vehicle_number": d.vehicle_number,
+            "status": d.status,
+            "dispatched_at": str(d.dispatched_at) if d.dispatched_at else None,
+        } for d in dispatches]
+
+        reconciled_list.append({
+            "batch_id": str(b.batch_id),
+            "batch_number": b.batch_number,
+            "product_name": b.product_name,
+            "product_code": b.product_code,
+            "batch_status": b.status,
+            "produced_quantity": produced_qty,
+            "current_stock_quantity": stock_qty,
+            "dispatched_quantity": dispatched_qty,
+            "disposed_quantity": disposed_qty,
+            "variance": round(variance, 2),
+            "is_balanced": abs(variance) < 0.01,
+            "unit": b.unit,
+            "stock_locations": [s.location_bin for s in stock_items],
+            "dispatches_count": len(dispatches),
+            "customers_supplied": list(set(d.customer_name for d in dispatches if d.customer_name)),
+            "dispatch_details": dispatch_details,
+        })
+
+    return {
+        "total_batches_checked": len(reconciled_list),
+        "balanced_batches": sum(1 for r in reconciled_list if r["is_balanced"]),
+        "reconciliation": reconciled_list,
+    }
+
+
+
 # =========================================================================
 # 6. VEHICLE INSPECTION ENDPOINTS (BM01-PTVC)
 # =========================================================================
@@ -697,6 +879,8 @@ def format_vehicle_inspection(v: VehicleInspection) -> VehicleInspectionResponse
         driver_name=v.driver_name,
         driver_phone=v.driver_phone,
         transport_company=v.transport_company,
+        customer_name=getattr(v, "customer_name", None),
+        vehicle_type=getattr(v, "vehicle_type", "Xe tải thùng kín"),
         valid_registration_check=getattr(v, "valid_registration_check", True),
         cargo_integrity_check=getattr(v, "cargo_integrity_check", True),
         clean_dry_check=getattr(v, "clean_dry_check", True),
@@ -704,6 +888,7 @@ def format_vehicle_inspection(v: VehicleInspection) -> VehicleInspectionResponse
         pest_free_check=getattr(v, "pest_free_check", True),
         inspection_result=v.inspection_result,
         inspector_name=v.inspector_name,
+        corrective_action=getattr(v, "corrective_action", None),
         notes=v.notes,
         created_at=v.created_at,
     )
@@ -761,6 +946,8 @@ def create_vehicle_inspection(
         driver_name=payload.driver_name,
         driver_phone=payload.driver_phone,
         transport_company=payload.transport_company,
+        customer_name=payload.customer_name,
+        vehicle_type=payload.vehicle_type or "Xe tải thùng kín",
         valid_registration_check=payload.valid_registration_check,
         cargo_integrity_check=payload.cargo_integrity_check,
         clean_dry_check=payload.clean_dry_check,
@@ -768,6 +955,7 @@ def create_vehicle_inspection(
         pest_free_check=payload.pest_free_check,
         inspection_result=result,
         inspector_name=payload.inspector_name or current_user.full_name or "Nhân viên kiểm tra",
+        corrective_action=payload.corrective_action,
         notes=payload.notes,
     )
     db.add(insp)

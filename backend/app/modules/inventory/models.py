@@ -162,6 +162,8 @@ class VehicleInspection(Base):
     driver_name: Mapped[str] = mapped_column(String(100), nullable=False)
     driver_phone: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     transport_company: Mapped[Optional[str]] = mapped_column(String(255), default="Đội xe Công ty", nullable=True)
+    customer_name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    vehicle_type: Mapped[Optional[str]] = mapped_column(String(100), default="Xe tải thùng kín", nullable=True)
     
     # 5 TIÊU CHÍ NGUYÊN BẢN THEO BIỂU MẪU BM01-PTVC
     valid_registration_check: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)  # 1. Xe còn niên hạn sử dụng / được đăng kiểm cho phép lưu hành
@@ -172,6 +174,7 @@ class VehicleInspection(Base):
     
     inspection_result: Mapped[str] = mapped_column(String(30), default="PASS", nullable=False)  # PASS, FAIL
     inspector_name: Mapped[str] = mapped_column(String(100), default="Thủ kho xuất hàng", nullable=False)
+    corrective_action: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     created_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), server_default=func.now())
 

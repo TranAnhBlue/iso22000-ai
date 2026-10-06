@@ -385,3 +385,385 @@ class SaveWorkflowAndStepsResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+# ==================== 11. METAL DETECTOR LOG SCHEMAS (BM06-KSQT) ====================
+class MetalDetectorLogBase(BaseModel):
+    machine_code: str = Field(default="MD-01", max_length=50)
+    machine_name: str = Field(default="Máy dò kim loại băng tải", max_length=100)
+    log_date: date = Field(default_factory=date.today)
+    check_time: str = Field(..., max_length=20, description="07:00, 09:00, 11:00...")
+    shift_name: str = Field(default="Ca 1", max_length=50)
+    batch_number: str = Field(..., max_length=100)
+    product_name: str = Field(..., max_length=255)
+    fe_standard_mm: float = Field(default=0.50, description="Đường kính thỏi chuẩn Fe (mm)")
+    fe_detected: bool = Field(default=True, description="Máy phát hiện thỏi chuẩn Fe")
+    sus_standard_mm: float = Field(default=0.80, description="Đường kính thỏi chuẩn SUS 304 (mm)")
+    sus_detected: bool = Field(default=True, description="Máy phát hiện thỏi chuẩn SUS 304")
+    rejection_mechanism_working: bool = Field(default=True, description="Cơ cấu loại bỏ/còi báo hoạt động tốt")
+    metal_detected_count: int = Field(default=0, description="Số sản phẩm chứa kim loại bị loại")
+    test_result: str = Field(default="PASSED", description="PASSED, FAILED")
+    corrective_action: Optional[str] = None
+    checked_by_name: str = Field(..., max_length=100)
+    verified_by_name: Optional[str] = None
+    notes: Optional[str] = None
+
+class MetalDetectorLogCreate(MetalDetectorLogBase):
+    pass
+
+class MetalDetectorLogUpdate(BaseModel):
+    machine_code: Optional[str] = None
+    machine_name: Optional[str] = None
+    log_date: Optional[date] = None
+    check_time: Optional[str] = None
+    shift_name: Optional[str] = None
+    batch_number: Optional[str] = None
+    product_name: Optional[str] = None
+    fe_standard_mm: Optional[float] = None
+    fe_detected: Optional[bool] = None
+    sus_standard_mm: Optional[float] = None
+    sus_detected: Optional[bool] = None
+    rejection_mechanism_working: Optional[bool] = None
+    metal_detected_count: Optional[int] = None
+    test_result: Optional[str] = None
+    corrective_action: Optional[str] = None
+    checked_by_name: Optional[str] = None
+    verified_by_name: Optional[str] = None
+    notes: Optional[str] = None
+
+class MetalDetectorLogResponse(MetalDetectorLogBase):
+    log_id: UUID
+    created_at: Optional[datetime] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+# ==================== 12. IN-PROCESS QC LOG SCHEMAS (BM01-BM05 KSQT) ====================
+class InProcessQCLogBase(BaseModel):
+    inspection_code: Optional[str] = None
+    stage_code: str = Field(..., max_length=50, description="WASH_CUT, DRY_COOL, GRIND_SIEVE, GELATINIZE, FINISHED_PRODUCT")
+    stage_name: str = Field(..., max_length=150)
+    log_date: date = Field(default_factory=date.today)
+    check_time: str = Field(..., max_length=20)
+    shift_name: str = Field(default="Ca 1", max_length=50)
+    batch_number: str = Field(..., max_length=100)
+    product_name: str = Field(..., max_length=255)
+    criteria_data: Dict[str, Any] = Field(default_factory=dict, description="Các chỉ tiêu kiểm tra cụ thể theo công đoạn")
+    overall_status: str = Field(default="PASS", description="PASS, WARNING, FAIL")
+    deviations: Optional[str] = None
+    corrective_actions: Optional[str] = None
+    inspector_name: str = Field(..., max_length=100)
+    supervisor_name: Optional[str] = None
+    notes: Optional[str] = None
+
+class InProcessQCLogCreate(InProcessQCLogBase):
+    pass
+
+class InProcessQCLogUpdate(BaseModel):
+    stage_code: Optional[str] = None
+    stage_name: Optional[str] = None
+    log_date: Optional[date] = None
+    check_time: Optional[str] = None
+    shift_name: Optional[str] = None
+    batch_number: Optional[str] = None
+    product_name: Optional[str] = None
+    criteria_data: Optional[Dict[str, Any]] = None
+    overall_status: Optional[str] = None
+    deviations: Optional[str] = None
+    corrective_actions: Optional[str] = None
+    inspector_name: Optional[str] = None
+    supervisor_name: Optional[str] = None
+    notes: Optional[str] = None
+
+class InProcessQCLogResponse(InProcessQCLogBase):
+    log_id: UUID
+    created_at: Optional[datetime] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+# ==================== 10. PEST CONTROL LOG SCHEMAS (BM01-SVGH) ====================
+class PestControlLogBase(BaseModel):
+    log_code: Optional[str] = None
+    check_date: date = Field(default_factory=date.today)
+    inspector_name: str = Field(..., max_length=100)
+    trap_locations: List[Dict[str, Any]] = Field(default_factory=list)
+    total_pests_caught: int = 0
+    corrective_actions: Optional[str] = None
+    status: str = Field(default="COMPLETED", max_length=30)
+
+class PestControlLogCreate(PestControlLogBase):
+    pass
+
+class PestControlLogUpdate(BaseModel):
+    check_date: Optional[date] = None
+    inspector_name: Optional[str] = None
+    trap_locations: Optional[List[Dict[str, Any]]] = None
+    total_pests_caught: Optional[int] = None
+    corrective_actions: Optional[str] = None
+    status: Optional[str] = None
+
+class PestControlLogResponse(PestControlLogBase):
+    log_id: UUID
+    created_at: Optional[datetime] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+# ==================== 11. ALLERGEN CONTROL SCHEMAS (BM01-CGDU) ====================
+class AllergenControlBase(BaseModel):
+    allergen_code: Optional[str] = None
+    material_name: str = Field(..., max_length=255)
+    allergen_types: str = Field(..., max_length=255)
+    is_contained_in_product: bool = True
+    cross_contact_risk_stage: Optional[str] = None
+    preventive_measures: str = Field(..., description="Biện pháp kiểm soát & ngăn ngừa lây nhiễm chéo")
+    responsible_person: str = Field(..., max_length=100)
+    status: str = Field(default="ACTIVE", max_length=30)
+
+class AllergenControlCreate(AllergenControlBase):
+    pass
+
+class AllergenControlUpdate(BaseModel):
+    material_name: Optional[str] = None
+    allergen_types: Optional[str] = None
+    is_contained_in_product: Optional[bool] = None
+    cross_contact_risk_stage: Optional[str] = None
+    preventive_measures: Optional[str] = None
+    responsible_person: Optional[str] = None
+    status: Optional[str] = None
+
+class AllergenControlResponse(AllergenControlBase):
+    allergen_id: UUID
+    created_at: Optional[datetime] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+# ==================== 12. VISITOR HEALTH SCHEMAS (BM03-KSSK) ====================
+class VisitorHealthDeclarationBase(BaseModel):
+    declaration_code: Optional[str] = None
+    visit_date: date = Field(default_factory=date.today)
+    visitor_name: str = Field(..., max_length=100)
+    company_name: str = Field(..., max_length=150)
+    purpose_of_visit: str = Field(..., max_length=255)
+    has_diarrhea: bool = False
+    has_fever_cough: bool = False
+    has_open_wound: bool = False
+    visited_epidemic_area: bool = False
+    is_approved_entry: bool = True
+    escort_person: Optional[str] = None
+    commitment_signed: bool = True
+    notes: Optional[str] = None
+
+class VisitorHealthDeclarationCreate(VisitorHealthDeclarationBase):
+    pass
+
+class VisitorHealthDeclarationUpdate(BaseModel):
+    visitor_name: Optional[str] = None
+    company_name: Optional[str] = None
+    purpose_of_visit: Optional[str] = None
+    has_diarrhea: Optional[bool] = None
+    has_fever_cough: Optional[bool] = None
+    has_open_wound: Optional[bool] = None
+    visited_epidemic_area: Optional[bool] = None
+    is_approved_entry: Optional[bool] = None
+    escort_person: Optional[str] = None
+    commitment_signed: Optional[bool] = None
+    notes: Optional[str] = None
+
+class VisitorHealthDeclarationResponse(VisitorHealthDeclarationBase):
+    declaration_id: UUID
+    created_at: Optional[datetime] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+# ==================== 13. FIRST AID SCHEMAS (BM01-KSSK) ====================
+class FirstAidLogBase(BaseModel):
+    log_code: Optional[str] = None
+    issue_date: date = Field(default_factory=date.today)
+    recipient_name: str = Field(..., max_length=100)
+    department: str = Field(..., max_length=100)
+    reason_symptom: str = Field(..., description="Lý do / triệu chứng")
+    supplies_provided: str = Field(..., description="Tên thuốc / dụng cụ y tế")
+    quantity: int = Field(default=1, ge=1)
+    dispenser_name: str = Field(..., max_length=100)
+    status_after_aid: str = Field(default="Tiếp tục làm việc")
+    notes: Optional[str] = None
+
+class FirstAidLogCreate(FirstAidLogBase):
+    pass
+
+class FirstAidLogUpdate(BaseModel):
+    issue_date: Optional[date] = None
+    recipient_name: Optional[str] = None
+    department: Optional[str] = None
+    reason_symptom: Optional[str] = None
+    supplies_provided: Optional[str] = None
+    quantity: Optional[int] = None
+    dispenser_name: Optional[str] = None
+    status_after_aid: Optional[str] = None
+    notes: Optional[str] = None
+
+class FirstAidLogResponse(FirstAidLogBase):
+    log_id: UUID
+    created_at: Optional[datetime] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+# ==================== 14. VEHICLE INSPECTION SCHEMAS (BM01-PTVC) ====================
+class VehicleInspectionLogBase(BaseModel):
+    inspection_code: Optional[str] = None
+    inspection_date: date = Field(default_factory=date.today)
+    customer_name: str = Field(..., max_length=255)
+    vehicle_type: str = Field(..., max_length=100)
+    license_plate: str = Field(..., max_length=50)
+    driver_name: str = Field(..., max_length=100)
+    check_registration_valid: bool = True
+    check_clean_floor: bool = True
+    check_no_odor: bool = True
+    check_no_pests: bool = True
+    check_enclosed_tarp: bool = True
+    overall_result: str = Field(default="PASSED", max_length=30)
+    inspector_name: str = Field(..., max_length=100)
+    corrective_action: Optional[str] = None
+
+class VehicleInspectionLogCreate(VehicleInspectionLogBase):
+    pass
+
+class VehicleInspectionLogUpdate(BaseModel):
+    customer_name: Optional[str] = None
+    vehicle_type: Optional[str] = None
+    license_plate: Optional[str] = None
+    driver_name: Optional[str] = None
+    check_registration_valid: Optional[bool] = None
+    check_clean_floor: Optional[bool] = None
+    check_no_odor: Optional[bool] = None
+    check_no_pests: Optional[bool] = None
+    check_enclosed_tarp: Optional[bool] = None
+    overall_result: Optional[str] = None
+    inspector_name: Optional[str] = None
+    corrective_action: Optional[str] = None
+
+class VehicleInspectionLogResponse(VehicleInspectionLogBase):
+    inspection_id: UUID
+    created_at: Optional[datetime] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+# ==================== 15. WATER SAFETY RECORD SCHEMAS (BM01-SSOP-NUOC) ====================
+class WaterSafetyRecordBase(BaseModel):
+    record_code: Optional[str] = None
+    sampling_point: str = Field(..., max_length=255, description="Vị trí lấy mẫu nước/đá")
+    sampling_date: date = Field(default_factory=date.today)
+    sampling_time: str = Field(default="07:00", max_length=20)
+    ph_level: float = Field(default=7.2, description="Độ pH chuẩn 6.5 - 8.5")
+    chlorine_ppm: float = Field(default=0.5, description="Clo dư 0.2 - 1.0 mg/L")
+    turbidity_ntu: float = Field(default=0.5, description="Độ đục <= 2 NTU")
+    sensory_result: str = Field(default="Trong suốt, không màu, không mùi vị lạ", max_length=100)
+    coliform_cfu: Optional[float] = 0.0
+    e_coli_cfu: Optional[float] = 0.0
+    overall_status: str = Field(default="PASS", max_length=30)
+    tested_by_name: str = Field(default="Kỹ thuật Cơ điện", max_length=100)
+    verified_by_name: Optional[str] = None
+    corrective_action: Optional[str] = None
+    notes: Optional[str] = None
+
+class WaterSafetyRecordCreate(WaterSafetyRecordBase):
+    pass
+
+class WaterSafetyRecordResponse(WaterSafetyRecordBase):
+    record_id: UUID
+    created_at: Optional[datetime] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+# ==================== 16. CHEMICAL RECORD & MSDS SCHEMAS (BM01-SSOP-HOACHAT) ====================
+class ChemicalRecordBase(BaseModel):
+    chemical_code: str = Field(..., max_length=50)
+    chemical_name: str = Field(..., max_length=255)
+    purpose: str = Field(..., max_length=255)
+    is_food_grade: bool = True
+    supplier_name: str = Field(..., max_length=255)
+    msds_document_url: Optional[str] = None
+    msds_file_name: Optional[str] = None
+    msds_expiry_date: Optional[date] = None
+    dilution_ratio: str = Field(default="1:1000", max_length=100)
+    storage_location: str = Field(default="Kho hóa chất riêng biệt có khóa", max_length=255)
+    approval_status: str = Field(default="APPROVED", max_length=30)
+    current_stock_kg: float = Field(default=50.0)
+    safety_instructions: Optional[str] = None
+    approved_by: Optional[str] = None
+
+class ChemicalRecordCreate(ChemicalRecordBase):
+    pass
+
+class ChemicalRecordUpdate(BaseModel):
+    chemical_name: Optional[str] = None
+    purpose: Optional[str] = None
+    is_food_grade: Optional[bool] = None
+    supplier_name: Optional[str] = None
+    msds_document_url: Optional[str] = None
+    msds_file_name: Optional[str] = None
+    msds_expiry_date: Optional[date] = None
+    dilution_ratio: Optional[str] = None
+    storage_location: Optional[str] = None
+    approval_status: Optional[str] = None
+    current_stock_kg: Optional[float] = None
+    safety_instructions: Optional[str] = None
+    approved_by: Optional[str] = None
+
+class ChemicalRecordResponse(ChemicalRecordBase):
+    chemical_id: UUID
+    created_at: Optional[datetime] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+# ==================== 17. WASTE MANAGEMENT LOG SCHEMAS (BM01-SSOP-RACTHAI) ====================
+class WasteLogBase(BaseModel):
+    log_code: Optional[str] = None
+    log_date: date = Field(default_factory=date.today)
+    waste_type: str = Field(default="ORGANIC_BYPRODUCT", max_length=50)
+    description: str = Field(..., max_length=255)
+    quantity_kg: float = Field(..., gt=0)
+    storage_area: str = Field(default="Nhà chứa phụ phẩm khép kín", max_length=150)
+    disposal_contractor: str = Field(default="Nhà máy Bột cá An Giang", max_length=255)
+    transfer_note_code: Optional[str] = None
+    status: str = Field(default="TRANSFERRED", max_length=30)
+    handled_by_name: str = Field(default="Tổ Vệ sinh Môi trường", max_length=100)
+    notes: Optional[str] = None
+
+class WasteLogCreate(WasteLogBase):
+    pass
+
+class WasteLogResponse(WasteLogBase):
+    waste_id: UUID
+    created_at: Optional[datetime] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+# ==================== 18. ENVIRONMENTAL MONITORING SCHEMAS ====================
+class EnvironmentalMonitoringScheduleBase(BaseModel):
+    item_code: str = Field(..., max_length=50)
+    target_object: str = Field(..., max_length=150)
+    parameters: str = Field(..., max_length=255)
+    frequency: str = Field(default="1 tháng/lần", max_length=50)
+    testing_unit: str = Field(default="Trung tâm Kiểm nghiệm Pasteur / Quatest", max_length=255)
+    last_tested_date: Optional[date] = None
+    next_due_date: date
+    status: str = Field(default="SCHEDULED", max_length=30)
+    last_result: Optional[str] = "PASSED"
+
+class EnvironmentalMonitoringScheduleCreate(EnvironmentalMonitoringScheduleBase):
+    pass
+
+class EnvironmentalMonitoringScheduleResponse(EnvironmentalMonitoringScheduleBase):
+    schedule_id: UUID
+    created_at: Optional[datetime] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
