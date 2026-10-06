@@ -10,6 +10,7 @@ from app.modules.auth.schemas import (
     UserRegisterRequest,
     UserLoginRequest,
     TokenResponse,
+    UserProfileUpdateRequest,
     DepartmentOption,
     ChangePasswordRequest,
     ResetPasswordRequest,
@@ -48,6 +49,29 @@ def get_me(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Không có quyền truy cập hồ sơ của người dùng khác.",
             )
+    return service.get_current_user_profile(current_user)
+
+
+@router.patch("/me", response_model=TokenResponse)
+def update_my_profile(
+    payload: UserProfileUpdateRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Cập nhật thông tin liên hệ của chính người dùng đang đăng nhập."""
+    current_user.full_name = payload.full_name.strip()
+    current_user.email = payload.email.strip() if payload.email and payload.email.strip() else None
+    current_user.phone = payload.phone.strip() if payload.phone and payload.phone.strip() else None
+    db.commit()
+    db.refresh(current_user)
+    service.create_audit_log(
+        db,
+        username=current_user.username,
+        action="UPDATE_PROFILE",
+        entity_type="AUTH",
+        user_id=current_user.user_id,
+        details={"fields": ["full_name", "email", "phone"]},
+    )
     return service.get_current_user_profile(current_user)
 
 

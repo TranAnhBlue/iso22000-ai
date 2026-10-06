@@ -55,7 +55,7 @@ export function PeriodicReviewTab({
   const [confirmingDoc, setConfirmingDoc] = useState<PeriodicReviewItem | null>(null);
   const [signerName, setSignerName] = useState("Trần Anh (Đội trưởng FSMS)");
   const [confirmComment, setConfirmComment] = useState(
-    "Xác nhận nội dung tài liệu vẫn phù hợp sau chu kỳ 3 năm, không có sửa đổi (BM05-KSTL)."
+    "Xác nhận nội dung tài liệu vẫn phù hợp sau chu kỳ 3 năm, không có sửa đổi (BM05-KSTL).",
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -99,7 +99,7 @@ export function PeriodicReviewTab({
         comment: confirmComment.trim(),
       });
       toast.success(
-        `Đã gia hạn chu kỳ 3 năm cho tài liệu ${confirmingDoc.doc_code} theo BM05-KSTL!`
+        `Đã gia hạn chu kỳ 3 năm cho tài liệu ${confirmingDoc.doc_code} theo BM05-KSTL!`,
       );
       setConfirmingDoc(null);
       onRefresh();
@@ -132,7 +132,9 @@ export function PeriodicReviewTab({
             </span>
           </div>
           <p className="mt-1 text-xs text-muted-foreground">
-            Theo Quy trình Kiểm soát Tài liệu QT-01-KSTL: Định kỳ 03 năm kể từ ngày ban hành, các tài liệu phải được đơn vị chủ quản soát xét lại. Nếu không có thay đổi, ghi nhận xác nhận BM05 để tiếp tục hiệu lực. Nếu có thay đổi, khởi tạo Phiếu đề xuất xem xét BM01.
+            Theo Quy trình Kiểm soát Tài liệu QT-01-KSTL: Định kỳ 03 năm kể từ ngày ban hành, các
+            tài liệu phải được đơn vị chủ quản soát xét lại. Nếu không có thay đổi, ghi nhận xác
+            nhận BM05 để tiếp tục hiệu lực. Nếu có thay đổi, khởi tạo Phiếu đề xuất xem xét BM01.
           </p>
         </div>
 
@@ -169,19 +171,25 @@ export function PeriodicReviewTab({
         </div>
 
         <div className="rounded-xl border border-emerald-200 bg-emerald-500/5 p-3.5 shadow-sm">
-          <div className="text-xs font-medium text-emerald-700 dark:text-emerald-300">Thời hạn an toàn (&gt; 60 ngày)</div>
+          <div className="text-xs font-medium text-emerald-700 dark:text-emerald-300">
+            Thời hạn an toàn (&gt; 60 ngày)
+          </div>
           <div className="mt-1.5 text-2xl font-bold text-emerald-700">{stats.valid}</div>
           <div className="text-[11px] text-emerald-600/80">Tuân thủ hoàn toàn quy chuẩn</div>
         </div>
 
         <div className="rounded-xl border border-amber-200 bg-amber-500/5 p-3.5 shadow-sm">
-          <div className="text-xs font-medium text-amber-700 dark:text-amber-300">Sắp đến hạn soát xét (&le; 60 ngày)</div>
+          <div className="text-xs font-medium text-amber-700 dark:text-amber-300">
+            Sắp đến hạn soát xét (&le; 60 ngày)
+          </div>
           <div className="mt-1.5 text-2xl font-bold text-amber-700">{stats.dueSoon}</div>
           <div className="text-[11px] text-amber-600/80">Cần lên kế hoạch rà soát nội bộ</div>
         </div>
 
         <div className="rounded-xl border border-rose-200 bg-rose-500/5 p-3.5 shadow-sm">
-          <div className="text-xs font-medium text-rose-700 dark:text-rose-300">Quá hạn chu kỳ 3 năm</div>
+          <div className="text-xs font-medium text-rose-700 dark:text-rose-300">
+            Quá hạn chu kỳ 3 năm
+          </div>
           <div className="mt-1.5 text-2xl font-bold text-rose-700">{stats.overdue}</div>
           <div className="text-[11px] text-rose-600/80">Cảnh báo điểm không phù hợp (NC)</div>
         </div>
@@ -275,8 +283,8 @@ export function PeriodicReviewTab({
                         isOverdue
                           ? "bg-rose-50/30 dark:bg-rose-950/10"
                           : isDueSoon
-                          ? "bg-amber-50/20 dark:bg-amber-950/10"
-                          : ""
+                            ? "bg-amber-50/20 dark:bg-amber-950/10"
+                            : ""
                       }`}
                     >
                       <td className="px-3 py-3 text-center text-muted-foreground">{idx + 1}</td>
@@ -327,7 +335,7 @@ export function PeriodicReviewTab({
                               onClick={() => {
                                 setConfirmingDoc(doc);
                                 setConfirmComment(
-                                  `Xác nhận quy trình ${doc.doc_code} vẫn phù hợp mục tiêu ATTP và thực tế sản xuất sau chu kỳ 3 năm, không cần sửa đổi (BM05-KSTL).`
+                                  `Xác nhận quy trình ${doc.doc_code} vẫn phù hợp mục tiêu ATTP và thực tế sản xuất sau chu kỳ 3 năm, không cần sửa đổi (BM05-KSTL).`,
                                 );
                               }}
                               title="Xác nhận không đổi & gia hạn 3 năm (BM05)"
@@ -378,7 +386,9 @@ export function PeriodicReviewTab({
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Tên tài liệu:</span>
-                  <span className="font-semibold text-foreground text-right">{confirmingDoc.doc_title}</span>
+                  <span className="font-semibold text-foreground text-right">
+                    {confirmingDoc.doc_title}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Phiên bản hiện hành:</span>
@@ -391,7 +401,9 @@ export function PeriodicReviewTab({
               </div>
 
               <div>
-                <Label className="text-xs font-semibold">Họ tên & chức danh người xác nhận <span className="text-rose-500">*</span></Label>
+                <Label className="text-xs font-semibold">
+                  Họ tên & chức danh người xác nhận <span className="text-rose-500">*</span>
+                </Label>
                 <Input
                   value={signerName}
                   onChange={(e) => setSignerName(e.target.value)}
@@ -402,7 +414,10 @@ export function PeriodicReviewTab({
               </div>
 
               <div>
-                <Label className="text-xs font-semibold">Nội dung / Ý kiến xác nhận soát xét định kỳ <span className="text-rose-500">*</span></Label>
+                <Label className="text-xs font-semibold">
+                  Nội dung / Ý kiến xác nhận soát xét định kỳ{" "}
+                  <span className="text-rose-500">*</span>
+                </Label>
                 <textarea
                   value={confirmComment}
                   onChange={(e) => setConfirmComment(e.target.value)}
@@ -413,11 +428,18 @@ export function PeriodicReviewTab({
               </div>
 
               <div className="rounded border border-emerald-200 bg-emerald-500/10 p-2.5 text-[11px] text-emerald-800 dark:text-emerald-300">
-                Hiệu lực sau khi xác nhận: Hệ thống sẽ tự động cập nhật ngày soát xét gần nhất = ngày hôm nay, tự động gia hạn thêm chu kỳ 03 năm tiếp theo và ghi nhận lịch sử theo đúng quy định điều 7.5.3 ISO 22000.
+                Hiệu lực sau khi xác nhận: Hệ thống sẽ tự động cập nhật ngày soát xét gần nhất =
+                ngày hôm nay, tự động gia hạn thêm chu kỳ 03 năm tiếp theo và ghi nhận lịch sử theo
+                đúng quy định điều 7.5.3 ISO 22000.
               </div>
 
               <DialogFooter>
-                <Button type="button" variant="outline" size="sm" onClick={() => setConfirmingDoc(null)}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setConfirmingDoc(null)}
+                >
                   Hủy
                 </Button>
                 <Button

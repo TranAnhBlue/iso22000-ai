@@ -66,9 +66,20 @@ export const Route = createFileRoute("/audits")({
   head: () => ({
     meta: [
       { title: "Đánh Giá Nội Bộ, Đào Tạo & Khai Báo Sức Khỏe – WCERT ISO 22000:2018" },
-      { name: "description", content: "Hệ thống quản lý đánh giá nội bộ, ma trận đào tạo nhân sự và sổ khai báo sức khỏe ca chuẩn ISO 22000:2018." },
-      { property: "og:title", content: "Đánh Giá Nội Bộ, Đào Tạo & Khai Báo Sức Khỏe – WCERT ISO 22000:2018" },
-      { property: "og:description", content: "Số hóa quy trình ĐGNB, đào tạo sát hạch nhân sự và kiểm soát vệ sinh sức khỏe công nhân trước ca với Trợ lý AI." },
+      {
+        name: "description",
+        content:
+          "Hệ thống quản lý đánh giá nội bộ, ma trận đào tạo nhân sự và sổ khai báo sức khỏe ca chuẩn ISO 22000:2018.",
+      },
+      {
+        property: "og:title",
+        content: "Đánh Giá Nội Bộ, Đào Tạo & Khai Báo Sức Khỏe – WCERT ISO 22000:2018",
+      },
+      {
+        property: "og:description",
+        content:
+          "Số hóa quy trình ĐGNB, đào tạo sát hạch nhân sự và kiểm soát vệ sinh sức khỏe công nhân trước ca với Trợ lý AI.",
+      },
     ],
   }),
   component: () => (
@@ -124,7 +135,13 @@ interface TrainingCourse {
   course_id: string;
   course_code: string;
   title: string;
-  category: "ISO_AWARENESS" | "HACCP_CCP" | "FOOD_HYGIENE_GMP" | "ALLERGEN_CONTROL" | "EQUIPMENT_OPERATION" | "EMERGENCY_RECALL";
+  category:
+    | "ISO_AWARENESS"
+    | "HACCP_CCP"
+    | "FOOD_HYGIENE_GMP"
+    | "ALLERGEN_CONTROL"
+    | "EQUIPMENT_OPERATION"
+    | "EMERGENCY_RECALL";
   trainer_name: string;
   training_type: "INTERNAL" | "EXTERNAL";
   schedule_date: string;
@@ -242,7 +259,9 @@ interface AuditStats {
 // ==================== MAIN COMPONENT ====================
 function AuditManagementPage() {
   const { departments } = useDepartments();
-  const [activeTab, setActiveTab] = useState<"audits" | "training" | "health" | "ai_studio">("audits");
+  const [activeTab, setActiveTab] = useState<"audits" | "training" | "health" | "ai_studio">(
+    "audits",
+  );
   const [showGuide, setShowGuide] = useState(false);
   const [stats, setStats] = useState<AuditStats>({
     total_audits: 0,
@@ -273,7 +292,9 @@ function AuditManagementPage() {
   const [loading, setLoading] = useState(true);
 
   // Training sub-tabs and records
-  const [trainingSubTab, setTrainingSubTab] = useState<"courses" | "requests" | "evaluations">("courses");
+  const [trainingSubTab, setTrainingSubTab] = useState<"courses" | "requests" | "evaluations">(
+    "courses",
+  );
   const [trainingRequests, setTrainingRequests] = useState<TrainingRequest[]>([]);
   const [trainingEvaluations, setTrainingEvaluations] = useState<TrainingEvaluation[]>([]);
 
@@ -290,7 +311,8 @@ function AuditManagementPage() {
     training_topic: "Cập nhật tiêu chuẩn FSSC 22000 Version 6.0 & Giám sát dị nguyên",
     target_audience: "Đội HACCP, KCS, Trưởng ca sản xuất",
     expected_participants_count: 12,
-    reason_and_objective: "Nâng cao năng lực nhận diện rủi ro chéo dị nguyên và đáp ứng yêu cầu khách hàng xuất khẩu",
+    reason_and_objective:
+      "Nâng cao năng lực nhận diện rủi ro chéo dị nguyên và đáp ứng yêu cầu khách hàng xuất khẩu",
     expected_timeframe: "Tháng 04/2026 (2 ngày)",
     estimated_cost: 15000000,
     proposed_trainer: "Viện Đào Tạo Tiêu Chuẩn Chất Lượng",
@@ -313,15 +335,20 @@ function AuditManagementPage() {
     evaluated_employee_name: "Nguyễn Văn Kiểm",
     department: "Tổ Sơ Chế & Rửa",
     post_training_period: "1_MONTH" as "1_MONTH" | "3_MONTHS" | "6_MONTHS",
-    criteria_ratings_str: JSON.stringify({
-      work_quality: 5,
-      compliance_sop: 5,
-      problem_handling: 4,
-      hygiene_discipline: 5
-    }, null, 2),
+    criteria_ratings_str: JSON.stringify(
+      {
+        work_quality: 5,
+        compliance_sop: 5,
+        problem_handling: 4,
+        hygiene_discipline: 5,
+      },
+      null,
+      2,
+    ),
     overall_rating: 4.8,
     is_effective: true,
-    improvements_observed: "Thao tác gọt vỏ, phân loại nguyên liệu chuẩn xác; tuân thủ quy định thay găng tay đúng tần suất.",
+    improvements_observed:
+      "Thao tác gọt vỏ, phân loại nguyên liệu chuẩn xác; tuân thủ quy định thay găng tay đúng tần suất.",
     further_actions_needed: "Duy trì giám sát chéo giữa các ca sản xuất",
     reviewed_by: "Ban Giám Đốc",
   });
@@ -334,19 +361,20 @@ function AuditManagementPage() {
   const [healthStatusFilter, setHealthStatusFilter] = useState("ALL");
 
   const filteredRequests = useMemo(() => {
-    return trainingRequests.filter(req => {
+    return trainingRequests.filter((req) => {
       const matchSearch =
         req.request_code.toLowerCase().includes(requestSearch.toLowerCase()) ||
         req.training_topic.toLowerCase().includes(requestSearch.toLowerCase()) ||
         req.department.toLowerCase().includes(requestSearch.toLowerCase()) ||
         req.requested_by.toLowerCase().includes(requestSearch.toLowerCase());
-      const matchStatus = requestStatusFilter === "ALL" || req.approval_status === requestStatusFilter;
+      const matchStatus =
+        requestStatusFilter === "ALL" || req.approval_status === requestStatusFilter;
       return matchSearch && matchStatus;
     });
   }, [trainingRequests, requestSearch, requestStatusFilter]);
 
   const filteredEvaluations = useMemo(() => {
-    return trainingEvaluations.filter(ev => {
+    return trainingEvaluations.filter((ev) => {
       const matchSearch =
         ev.evaluation_code.toLowerCase().includes(evalSearch.toLowerCase()) ||
         ev.evaluated_employee_name.toLowerCase().includes(evalSearch.toLowerCase()) ||
@@ -466,14 +494,15 @@ function AuditManagementPage() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [statsRes, auditsRes, coursesRes, healthRes, requestsRes, evaluationsRes] = await Promise.all([
-        api.get("/audits/stats"),
-        api.get("/audits/audits"),
-        api.get("/audits/training/courses"),
-        api.get("/audits/health-declarations"),
-        api.get("/audits/training/requests"),
-        api.get("/audits/training/evaluations"),
-      ]);
+      const [statsRes, auditsRes, coursesRes, healthRes, requestsRes, evaluationsRes] =
+        await Promise.all([
+          api.get("/audits/stats"),
+          api.get("/audits/audits"),
+          api.get("/audits/training/courses"),
+          api.get("/audits/health-declarations"),
+          api.get("/audits/training/requests"),
+          api.get("/audits/training/evaluations"),
+        ]);
       setStats(statsRes.data);
       setAudits(auditsRes.data);
       setCourses(coursesRes.data);
@@ -491,7 +520,9 @@ function AuditManagementPage() {
       }
     } catch (err: any) {
       console.error("Lỗi tải dữ liệu Audits:", err);
-      toast.error("Không thể tải danh sách ĐGNB & Đào tạo: " + (err.response?.data?.detail || err.message));
+      toast.error(
+        "Không thể tải danh sách ĐGNB & Đào tạo: " + (err.response?.data?.detail || err.message),
+      );
     } finally {
       setLoading(false);
     }
@@ -502,7 +533,9 @@ function AuditManagementPage() {
       const res = await api.get(`/audits/audits/${auditId}/findings`);
       setFindings(res.data);
     } catch (err: any) {
-      toast.error("Không thể tải bảng kiểm checklist: " + (err.response?.data?.detail || err.message));
+      toast.error(
+        "Không thể tải bảng kiểm checklist: " + (err.response?.data?.detail || err.message),
+      );
     }
   };
 
@@ -511,7 +544,9 @@ function AuditManagementPage() {
       const res = await api.get(`/audits/training/courses/${courseId}/participants`);
       setParticipants(res.data);
     } catch (err: any) {
-      toast.error("Không thể tải danh sách học viên: " + (err.response?.data?.detail || err.message));
+      toast.error(
+        "Không thể tải danh sách học viên: " + (err.response?.data?.detail || err.message),
+      );
     }
   };
 
@@ -521,20 +556,31 @@ function AuditManagementPage() {
 
   // Filtered lists
   const filteredAudits = audits.filter((a) => {
-    const matchSearch = !searchQuery || a.audit_code.toLowerCase().includes(searchQuery.toLowerCase()) || a.title.toLowerCase().includes(searchQuery.toLowerCase()) || a.audited_dept.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchSearch =
+      !searchQuery ||
+      a.audit_code.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      a.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      a.audited_dept.toLowerCase().includes(searchQuery.toLowerCase());
     const matchType = auditTypeFilter === "ALL" || a.audit_type === auditTypeFilter;
     const matchStatus = auditStatusFilter === "ALL" || a.status === auditStatusFilter;
     return matchSearch && matchType && matchStatus;
   });
 
   const filteredCourses = courses.filter((c) => {
-    const matchSearch = !searchQuery || c.course_code.toLowerCase().includes(searchQuery.toLowerCase()) || c.title.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchSearch =
+      !searchQuery ||
+      c.course_code.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      c.title.toLowerCase().includes(searchQuery.toLowerCase());
     const matchCat = courseCatFilter === "ALL" || c.category === courseCatFilter;
     return matchSearch && matchCat;
   });
 
   const filteredHealth = healthLogs.filter((h) => {
-    const matchSearch = !searchQuery || h.employee_code.toLowerCase().includes(searchQuery.toLowerCase()) || h.employee_name.toLowerCase().includes(searchQuery.toLowerCase()) || h.department.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchSearch =
+      !searchQuery ||
+      h.employee_code.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      h.employee_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      h.department.toLowerCase().includes(searchQuery.toLowerCase());
     const matchStatus = healthStatusFilter === "ALL" || h.cleared_for_shift === healthStatusFilter;
     return matchSearch && matchStatus;
   });
@@ -557,7 +603,7 @@ function AuditManagementPage() {
       const res = await api.get("/builders/workflows");
       if (Array.isArray(res.data)) {
         const existing = res.data.find(
-          (w: any) => w.code === "WF-AUDIT-4STEPS" || w.module === "INTERNAL_AUDIT"
+          (w: any) => w.code === "WF-AUDIT-4STEPS" || w.module === "INTERNAL_AUDIT",
         );
         if (existing) {
           setWorkflowTemplate(existing);
@@ -573,13 +619,48 @@ function AuditManagementPage() {
       module: "INTERNAL_AUDIT",
       code: "WF-AUDIT-4STEPS",
       title: "Quy Trình 4 Bước Đánh Giá Nội Bộ",
-      description: "Quy trình chuẩn mực đánh giá độc lập: Lập kế hoạch & Chuẩn bị Checklist -> Đánh giá tại hiện trường -> Lập báo cáo phát hiện -> Thẩm tra khắc phục CAPA.",
+      description:
+        "Quy trình chuẩn mực đánh giá độc lập: Lập kế hoạch & Chuẩn bị Checklist -> Đánh giá tại hiện trường -> Lập báo cáo phát hiện -> Thẩm tra khắc phục CAPA.",
       version: "1.0",
       nodes: [
-        { id: "a_1", type: "process", label: "1. Lập Kế Hoạch & Soạn Checklist", role: "Ban QLCL & ATTP", description: "Xác định phạm vi, chuẩn mực áp dụng và phân công đánh giá chéo.", is_ccp: false, step_number: 1 },
-        { id: "a_2", type: "process", label: "2. Thực Hiện Đánh Giá Tại Chỗ", role: "Ban QLCL & ATTP", description: "Phỏng vấn nhân sự, kiểm tra hồ sơ ghi chép và quan sát hiện trường sản xuất.", is_ccp: false, step_number: 2 },
-        { id: "a_3", type: "approval", label: "3. Họp Tổng Kết & Báo Cáo Phát Hiện", role: "Ban Giám đốc", description: "Thống nhất phân loại lỗi (Conformity / Major NC / Minor NC / OFI) và ký biên bản.", is_ccp: false, step_number: 3 },
-        { id: "a_4", type: "process", label: "4. Theo Dõi & Thẩm Tra Khắc Phục CAPA", role: "Ban QLCL & ATTP", description: "Giám sát các hành động khắc phục phòng ngừa và đóng hồ sơ sau 30 ngày.", is_ccp: false, step_number: 4 },
+        {
+          id: "a_1",
+          type: "process",
+          label: "1. Lập Kế Hoạch & Soạn Checklist",
+          role: "Ban QLCL & ATTP",
+          description: "Xác định phạm vi, chuẩn mực áp dụng và phân công đánh giá chéo.",
+          is_ccp: false,
+          step_number: 1,
+        },
+        {
+          id: "a_2",
+          type: "process",
+          label: "2. Thực Hiện Đánh Giá Tại Chỗ",
+          role: "Ban QLCL & ATTP",
+          description:
+            "Phỏng vấn nhân sự, kiểm tra hồ sơ ghi chép và quan sát hiện trường sản xuất.",
+          is_ccp: false,
+          step_number: 2,
+        },
+        {
+          id: "a_3",
+          type: "approval",
+          label: "3. Họp Tổng Kết & Báo Cáo Phát Hiện",
+          role: "Ban Giám đốc",
+          description:
+            "Thống nhất phân loại lỗi (Conformity / Major NC / Minor NC / OFI) và ký biên bản.",
+          is_ccp: false,
+          step_number: 3,
+        },
+        {
+          id: "a_4",
+          type: "process",
+          label: "4. Theo Dõi & Thẩm Tra Khắc Phục CAPA",
+          role: "Ban QLCL & ATTP",
+          description: "Giám sát các hành động khắc phục phòng ngừa và đóng hồ sơ sau 30 ngày.",
+          is_ccp: false,
+          step_number: 4,
+        },
       ],
       edges: [
         { id: "ea1_2", source: "a_1", target: "a_2", label: "Triển khai đánh giá" },
@@ -651,25 +732,35 @@ function AuditManagementPage() {
   // ==================== TRIGGER PRINT FUNCTIONS ====================
   const triggerPrintAuditReport = (audit: InternalAudit, list: AuditFinding[]) => {
     const origin = typeof window !== "undefined" ? window.location.origin : "";
-    const rowsHtml = list.length === 0
-      ? `<tr><td colspan="5" style="text-align: center; padding: 14px; font-weight: bold; color: #047857; background: #f0fdf4;">✓ Toàn bộ các tiêu chí đánh giá trong phạm vi đều đạt chuẩn tuân thủ (100% Conformity) - Không ghi nhận điểm không phù hợp (No NC).</td></tr>`
-      : list.map((f, idx) => `
+    const rowsHtml =
+      list.length === 0
+        ? `<tr><td colspan="5" style="text-align: center; padding: 14px; font-weight: bold; color: #047857; background: #f0fdf4;">✓ Toàn bộ các tiêu chí đánh giá trong phạm vi đều đạt chuẩn tuân thủ (100% Conformity) - Không ghi nhận điểm không phù hợp (No NC).</td></tr>`
+        : list
+            .map(
+              (f, idx) => `
         <tr>
           <td style="text-align: center; font-family: monospace; font-weight: bold;">${idx + 1}</td>
           <td style="text-align: center; font-weight: bold; font-family: monospace;">Điều ${f.clause_number}</td>
           <td><b>${f.clause_title}</b><br/><span style="color: #334155;">${f.question}</span></td>
           <td style="text-align: center; font-weight: 800; font-size: 11px;">
-            ${f.result === "MAJOR_NC" ? '<span style="color: #b91c1c; background: #fee2e2; padding: 3px 8px; border-radius: 4px; border: 1px solid #fca5a5;">MAJOR NC</span>' :
-              f.result === "MINOR_NC" ? '<span style="color: #b45309; background: #fef3c7; padding: 3px 8px; border-radius: 4px; border: 1px solid #fcd34d;">MINOR NC</span>' :
-              f.result === "OFI" ? '<span style="color: #1d4ed8; background: #dbeafe; padding: 3px 8px; border-radius: 4px; border: 1px solid #93c5fd;">OFI</span>' :
-              '<span style="color: #047857; background: #d1fae5; padding: 3px 8px; border-radius: 4px; border: 1px solid #6ee7b7;">PHÙ HỢP</span>'}
+            ${
+              f.result === "MAJOR_NC"
+                ? '<span style="color: #b91c1c; background: #fee2e2; padding: 3px 8px; border-radius: 4px; border: 1px solid #fca5a5;">MAJOR NC</span>'
+                : f.result === "MINOR_NC"
+                  ? '<span style="color: #b45309; background: #fef3c7; padding: 3px 8px; border-radius: 4px; border: 1px solid #fcd34d;">MINOR NC</span>'
+                  : f.result === "OFI"
+                    ? '<span style="color: #1d4ed8; background: #dbeafe; padding: 3px 8px; border-radius: 4px; border: 1px solid #93c5fd;">OFI</span>'
+                    : '<span style="color: #047857; background: #d1fae5; padding: 3px 8px; border-radius: 4px; border: 1px solid #6ee7b7;">PHÙ HỢP</span>'
+            }
           </td>
           <td style="font-size: 11px; line-height: 1.4;">
-            ${f.finding_notes ? `<b>Sai lệch:</b> ${f.finding_notes}<br/>` : ''}
-            ${f.evidence_reviewed ? `<span style="color: #64748b;"><b>Bằng chứng:</b> ${f.evidence_reviewed}</span>` : '--'}
+            ${f.finding_notes ? `<b>Sai lệch:</b> ${f.finding_notes}<br/>` : ""}
+            ${f.evidence_reviewed ? `<span style="color: #64748b;"><b>Bằng chứng:</b> ${f.evidence_reviewed}</span>` : "--"}
           </td>
         </tr>
-      `).join("");
+      `,
+            )
+            .join("");
 
     const htmlContent = `
       <!DOCTYPE html>
@@ -793,22 +884,27 @@ function AuditManagementPage() {
 
   const triggerPrintTrainingRecord = (course: TrainingCourse, list: TrainingParticipant[]) => {
     const origin = typeof window !== "undefined" ? window.location.origin : "";
-    const rowsHtml = list.length === 0
-      ? `<tr><td colspan="8" style="text-align: center; padding: 14px; color: #475569; font-style: italic; background: #f8fafc;">(Khóa đào tạo đang trong giai đoạn tiếp nhận đăng ký học viên - Chưa ghi nhận điểm sát hạch)</td></tr>`
-      : list.map((p, idx) => `
+    const rowsHtml =
+      list.length === 0
+        ? `<tr><td colspan="8" style="text-align: center; padding: 14px; color: #475569; font-style: italic; background: #f8fafc;">(Khóa đào tạo đang trong giai đoạn tiếp nhận đăng ký học viên - Chưa ghi nhận điểm sát hạch)</td></tr>`
+        : list
+            .map(
+              (p, idx) => `
         <tr>
           <td style="text-align: center; font-family: monospace;">${idx + 1}</td>
           <td style="text-align: center; font-family: monospace; font-weight: bold;">${p.employee_code}</td>
           <td style="font-weight: bold;">${p.employee_name}</td>
           <td>${p.department}</td>
-          <td style="text-align: center; font-family: monospace;">${p.pre_test_score !== null ? `${p.pre_test_score}đ` : '--'}</td>
-          <td style="text-align: center; font-family: monospace; font-weight: bold; color: #7e22ce;">${p.post_test_score !== null ? `${p.post_test_score}đ` : '--'}</td>
+          <td style="text-align: center; font-family: monospace;">${p.pre_test_score !== null ? `${p.pre_test_score}đ` : "--"}</td>
+          <td style="text-align: center; font-family: monospace; font-weight: bold; color: #7e22ce;">${p.post_test_score !== null ? `${p.post_test_score}đ` : "--"}</td>
           <td style="text-align: center; font-weight: bold;">
             ${p.evaluation_result === "PASSED" ? '<span style="color: #047857; background: #d1fae5; padding: 2px 6px; border-radius: 4px;">ĐẠT</span>' : '<span style="color: #b91c1c; background: #fee2e2; padding: 2px 6px; border-radius: 4px;">CHƯA ĐẠT</span>'}
           </td>
           <td style="text-align: center;">${p.certificate_issued ? '<span style="color: #047857; font-weight: bold;">✓ ĐÃ CẤP</span>' : '<span style="color: #94a3b8;">Chưa</span>'}</td>
         </tr>
-      `).join("");
+      `,
+            )
+            .join("");
 
     const htmlContent = `
       <!DOCTYPE html>
@@ -1050,14 +1146,20 @@ function AuditManagementPage() {
       "3_MONTHS": "03 Tháng sau đào tạo",
       "6_MONTHS": "06 Tháng sau đào tạo",
     };
-    const criteriaRows = ev.criteria_ratings ? Object.entries(ev.criteria_ratings).map(([k, v], idx) => `
+    const criteriaRows = ev.criteria_ratings
+      ? Object.entries(ev.criteria_ratings)
+          .map(
+            ([k, v], idx) => `
       <tr>
         <td style="text-align: center; font-family: monospace;">${idx + 1}</td>
         <td><b>${k}</b></td>
         <td style="text-align: center; font-weight: bold; color: #7e22ce;">${v} / 5</td>
         <td>${Number(v) >= 4 ? "Đáp ứng tốt yêu cầu thực tế sản xuất" : "Cần bồi dưỡng bổ sung thêm"}</td>
       </tr>
-    `).join("") : "";
+    `,
+          )
+          .join("")
+      : "";
 
     const htmlContent = `
       <!DOCTYPE html>
@@ -1129,7 +1231,9 @@ function AuditManagementPage() {
           </tr>
         </table>
 
-        ${criteriaRows ? `
+        ${
+          criteriaRows
+            ? `
         <div style="font-weight: bold; font-size: 12px; text-transform: uppercase; margin-bottom: 6px; color: #0f172a;">
           CHI TIẾT ĐIỂM SỐ THEO TIÊU CHÍ:
         </div>
@@ -1146,7 +1250,9 @@ function AuditManagementPage() {
             ${criteriaRows}
           </tbody>
         </table>
-        ` : ''}
+        `
+            : ""
+        }
 
         <table class="info-table">
           <tr>
@@ -1196,7 +1302,8 @@ function AuditManagementPage() {
       training_topic: "Cập nhật tiêu chuẩn FSSC 22000 Version 6.0 & Giám sát dị nguyên",
       target_audience: "Đội HACCP, KCS, Trưởng ca sản xuất",
       expected_participants_count: 12,
-      reason_and_objective: "Nâng cao năng lực nhận diện rủi ro chéo dị nguyên và đáp ứng yêu cầu khách hàng xuất khẩu",
+      reason_and_objective:
+        "Nâng cao năng lực nhận diện rủi ro chéo dị nguyên và đáp ứng yêu cầu khách hàng xuất khẩu",
       expected_timeframe: "Tháng 04/2026 (2 ngày)",
       estimated_cost: 15000000,
       proposed_trainer: "Viện Đào Tạo Tiêu Chuẩn Chất Lượng",
@@ -1232,12 +1339,17 @@ function AuditManagementPage() {
     e.preventDefault();
     try {
       if (editingRequest) {
-        const res = await api.put(`/audits/training/requests/${editingRequest.request_id}`, requestForm);
-        setTrainingRequests(prev => prev.map(r => r.request_id === editingRequest.request_id ? res.data : r));
+        const res = await api.put(
+          `/audits/training/requests/${editingRequest.request_id}`,
+          requestForm,
+        );
+        setTrainingRequests((prev) =>
+          prev.map((r) => (r.request_id === editingRequest.request_id ? res.data : r)),
+        );
         toast.success("Cập nhật phiếu đề xuất đào tạo thành công");
       } else {
         const res = await api.post("/audits/training/requests", requestForm);
-        setTrainingRequests(prev => [res.data, ...prev]);
+        setTrainingRequests((prev) => [res.data, ...prev]);
         toast.success("Lập phiếu đề xuất đào tạo (BM01-QTĐT) thành công");
       }
       setShowRequestModal(false);
@@ -1250,7 +1362,7 @@ function AuditManagementPage() {
     if (!confirm("Bạn có chắc chắn muốn xóa phiếu đề xuất đào tạo này?")) return;
     try {
       await api.delete(`/audits/training/requests/${requestId}`);
-      setTrainingRequests(prev => prev.filter(r => r.request_id !== requestId));
+      setTrainingRequests((prev) => prev.filter((r) => r.request_id !== requestId));
       toast.success("Đã xóa phiếu đề xuất đào tạo");
     } catch (err: any) {
       toast.error("Lỗi xóa phiếu đề xuất: " + (err.response?.data?.detail || err.message));
@@ -1259,7 +1371,11 @@ function AuditManagementPage() {
 
   const handleApproveRequest = async (req: TrainingRequest, newStatus: "APPROVED" | "REJECTED") => {
     const approverName = prompt("Nhập tên người phê duyệt:", "Ban Giám Đốc") || "Ban Giám Đốc";
-    const notes = prompt("Ghi chú phê duyệt:", newStatus === "APPROVED" ? "Đồng ý tổ chức theo kế hoạch" : "Chưa phê duyệt đợt này") || "";
+    const notes =
+      prompt(
+        "Ghi chú phê duyệt:",
+        newStatus === "APPROVED" ? "Đồng ý tổ chức theo kế hoạch" : "Chưa phê duyệt đợt này",
+      ) || "";
     try {
       const res = await api.put(`/audits/training/requests/${req.request_id}`, {
         approval_status: newStatus,
@@ -1267,8 +1383,12 @@ function AuditManagementPage() {
         approval_date: new Date().toISOString().split("T")[0],
         approval_notes: notes,
       });
-      setTrainingRequests(prev => prev.map(r => r.request_id === req.request_id ? res.data : r));
-      toast.success(`Đã cập nhật trạng thái phiếu: ${newStatus === "APPROVED" ? "PHÊ DUYỆT" : "TỪ CHỐI"}`);
+      setTrainingRequests((prev) =>
+        prev.map((r) => (r.request_id === req.request_id ? res.data : r)),
+      );
+      toast.success(
+        `Đã cập nhật trạng thái phiếu: ${newStatus === "APPROVED" ? "PHÊ DUYỆT" : "TỪ CHỐI"}`,
+      );
     } catch (err: any) {
       toast.error("Lỗi cập nhật trạng thái: " + (err.response?.data?.detail || err.message));
     }
@@ -1286,15 +1406,20 @@ function AuditManagementPage() {
       evaluated_employee_name: "Nguyễn Văn Kiểm",
       department: "Tổ Sơ Chế & Rửa",
       post_training_period: "1_MONTH",
-      criteria_ratings_str: JSON.stringify({
-        work_quality: 5,
-        compliance_sop: 5,
-        problem_handling: 4,
-        hygiene_discipline: 5
-      }, null, 2),
+      criteria_ratings_str: JSON.stringify(
+        {
+          work_quality: 5,
+          compliance_sop: 5,
+          problem_handling: 4,
+          hygiene_discipline: 5,
+        },
+        null,
+        2,
+      ),
       overall_rating: 4.8,
       is_effective: true,
-      improvements_observed: "Thao tác gọt vỏ, phân loại nguyên liệu chuẩn xác; tuân thủ quy định thay găng tay đúng tần suất.",
+      improvements_observed:
+        "Thao tác gọt vỏ, phân loại nguyên liệu chuẩn xác; tuân thủ quy định thay găng tay đúng tần suất.",
       further_actions_needed: "Duy trì giám sát chéo giữa các ca sản xuất",
       reviewed_by: "Ban Giám Đốc",
     });
@@ -1349,12 +1474,17 @@ function AuditManagementPage() {
     };
     try {
       if (editingEvaluation) {
-        const res = await api.put(`/audits/training/evaluations/${editingEvaluation.evaluation_id}`, payload);
-        setTrainingEvaluations(prev => prev.map(ev => ev.evaluation_id === editingEvaluation.evaluation_id ? res.data : ev));
+        const res = await api.put(
+          `/audits/training/evaluations/${editingEvaluation.evaluation_id}`,
+          payload,
+        );
+        setTrainingEvaluations((prev) =>
+          prev.map((ev) => (ev.evaluation_id === editingEvaluation.evaluation_id ? res.data : ev)),
+        );
         toast.success("Cập nhật đánh giá chất lượng sau đào tạo thành công");
       } else {
         const res = await api.post("/audits/training/evaluations", payload);
-        setTrainingEvaluations(prev => [res.data, ...prev]);
+        setTrainingEvaluations((prev) => [res.data, ...prev]);
         toast.success("Lập đánh giá chất lượng sau đào tạo (BM04-QTĐT) thành công");
       }
       setShowEvalModal(false);
@@ -1367,7 +1497,7 @@ function AuditManagementPage() {
     if (!confirm("Bạn có chắc chắn muốn xóa bản ghi đánh giá sau đào tạo này?")) return;
     try {
       await api.delete(`/audits/training/evaluations/${evalId}`);
-      setTrainingEvaluations(prev => prev.filter(ev => ev.evaluation_id !== evalId));
+      setTrainingEvaluations((prev) => prev.filter((ev) => ev.evaluation_id !== evalId));
       toast.success("Đã xóa bản ghi đánh giá");
     } catch (err: any) {
       toast.error("Lỗi xóa bản ghi: " + (err.response?.data?.detail || err.message));
@@ -1376,31 +1506,40 @@ function AuditManagementPage() {
 
   const triggerPrintHealthLog = (logs: HealthDeclaration[]) => {
     const origin = typeof window !== "undefined" ? window.location.origin : "";
-    const rowsHtml = logs.length === 0
-      ? `<tr><td colspan="9" style="text-align: center; padding: 14px; color: #475569; font-style: italic;">Chưa có bản ghi khai báo sức khỏe nào.</td></tr>`
-      : logs.map((h, idx) => `
+    const rowsHtml =
+      logs.length === 0
+        ? `<tr><td colspan="9" style="text-align: center; padding: 14px; color: #475569; font-style: italic;">Chưa có bản ghi khai báo sức khỏe nào.</td></tr>`
+        : logs
+            .map(
+              (h, idx) => `
         <tr>
           <td style="text-align: center; font-family: monospace;">${idx + 1}</td>
           <td style="text-align: center; font-family: monospace; font-weight: bold;">${h.employee_code}</td>
           <td style="font-weight: bold;">${h.employee_name}</td>
           <td>${h.department}</td>
           <td style="text-align: center;">${h.shift_name}</td>
-          <td style="text-align: center; font-family: monospace; font-weight: bold; ${h.body_temperature >= 37.8 ? 'color: #b91c1c;' : ''}">${h.body_temperature}°C</td>
+          <td style="text-align: center; font-family: monospace; font-weight: bold; ${h.body_temperature >= 37.8 ? "color: #b91c1c;" : ""}">${h.body_temperature}°C</td>
           <td style="font-size: 11px;">
-            ${h.symptoms?.fever ? '<span style="color: #b91c1c; font-weight: bold;">Sốt. </span>' : ''}
-            ${h.symptoms?.cough ? '<span style="color: #b45309;">Ho. </span>' : ''}
-            ${h.symptoms?.open_wound ? '<span style="color: #b91c1c; font-weight: bold;">Vết thương hở. </span>' : ''}
-            ${h.symptoms?.diarrhea ? '<span style="color: #b91c1c; font-weight: bold;">Tiêu chảy. </span>' : ''}
-            ${!h.symptoms?.fever && !h.symptoms?.cough && !h.symptoms?.open_wound && !h.symptoms?.diarrhea ? '<span style="color: #047857;">Bình thường</span>' : ''}
+            ${h.symptoms?.fever ? '<span style="color: #b91c1c; font-weight: bold;">Sốt. </span>' : ""}
+            ${h.symptoms?.cough ? '<span style="color: #b45309;">Ho. </span>' : ""}
+            ${h.symptoms?.open_wound ? '<span style="color: #b91c1c; font-weight: bold;">Vết thương hở. </span>' : ""}
+            ${h.symptoms?.diarrhea ? '<span style="color: #b91c1c; font-weight: bold;">Tiêu chảy. </span>' : ""}
+            ${!h.symptoms?.fever && !h.symptoms?.cough && !h.symptoms?.open_wound && !h.symptoms?.diarrhea ? '<span style="color: #047857;">Bình thường</span>' : ""}
           </td>
           <td style="text-align: center; font-weight: bold; font-size: 11px;">
-            ${h.cleared_for_shift === "CLEARED" ? '<span style="color: #047857; background: #d1fae5; padding: 2px 6px; border-radius: 4px;">ĐỦ ĐIỀU KIỆN</span>' :
-              h.cleared_for_shift === "RESTRICTED" ? '<span style="color: #b45309; background: #fef3c7; padding: 2px 6px; border-radius: 4px;">HẠN CHẾ</span>' :
-              '<span style="color: #b91c1c; background: #fee2e2; padding: 2px 6px; border-radius: 4px;">ĐÌNH CHỈ CA</span>'}
+            ${
+              h.cleared_for_shift === "CLEARED"
+                ? '<span style="color: #047857; background: #d1fae5; padding: 2px 6px; border-radius: 4px;">ĐỦ ĐIỀU KIỆN</span>'
+                : h.cleared_for_shift === "RESTRICTED"
+                  ? '<span style="color: #b45309; background: #fef3c7; padding: 2px 6px; border-radius: 4px;">HẠN CHẾ</span>'
+                  : '<span style="color: #b91c1c; background: #fee2e2; padding: 2px 6px; border-radius: 4px;">ĐÌNH CHỈ CA</span>'
+            }
           </td>
           <td>${h.supervisor_name}</td>
         </tr>
-      `).join("");
+      `,
+            )
+            .join("");
 
     const htmlContent = `
       <!DOCTYPE html>
@@ -1586,7 +1725,9 @@ function AuditManagementPage() {
       />
 
       <AIBadge>
-        <b>Trí Tuệ Nhân Tạo WCERT:</b> Tự động sinh Checklist câu hỏi ĐGNB theo điều khoản ISO 22000 · Thẩm định mức độ lỗi phát hiện (Major/Minor NC) · Sinh đề thi trắc nghiệm sát hạch nhân sự kèm đáp án · Quét phân tích rủi ro dịch tễ từ sổ sức khỏe ca.
+        <b>Trí Tuệ Nhân Tạo WCERT:</b> Tự động sinh Checklist câu hỏi ĐGNB theo điều khoản ISO 22000
+        · Thẩm định mức độ lỗi phát hiện (Major/Minor NC) · Sinh đề thi trắc nghiệm sát hạch nhân sự
+        kèm đáp án · Quét phân tích rủi ro dịch tễ từ sổ sức khỏe ca.
       </AIBadge>
 
       {/* ==================== 4 KPI CARDS ==================== */}
@@ -1594,7 +1735,9 @@ function AuditManagementPage() {
         {/* KPI 1 */}
         <div className="bg-card rounded-2xl border p-5 shadow-sm hover:shadow-md transition-all relative overflow-hidden">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Đánh Giá Nội Bộ</span>
+            <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+              Đánh Giá Nội Bộ
+            </span>
             <div className="p-2.5 rounded-xl bg-blue-500/10 text-blue-600 border border-blue-200">
               <ClipboardCheck className="h-5 w-5" />
             </div>
@@ -1607,20 +1750,28 @@ function AuditManagementPage() {
           </div>
           <p className="mt-2 text-xs text-muted-foreground flex items-center gap-1.5">
             <Clock className="w-3.5 h-3.5 text-slate-400" />
-            <span>{stats.in_progress_audits} Đang đánh giá · {stats.planned_audits} Đã lên lịch</span>
+            <span>
+              {stats.in_progress_audits} Đang đánh giá · {stats.planned_audits} Đã lên lịch
+            </span>
           </p>
         </div>
 
         {/* KPI 2 */}
         <div className="bg-card rounded-2xl border p-5 shadow-sm hover:shadow-md transition-all relative overflow-hidden">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Tỷ Lệ Tuân Thủ ĐGNB</span>
-            <div className={`p-2.5 rounded-xl border ${stats.conformity_rate >= 80 ? "bg-emerald-500/10 text-emerald-600 border-emerald-200" : "bg-amber-500/10 text-amber-600 border-amber-200"}`}>
+            <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+              Tỷ Lệ Tuân Thủ ĐGNB
+            </span>
+            <div
+              className={`p-2.5 rounded-xl border ${stats.conformity_rate >= 80 ? "bg-emerald-500/10 text-emerald-600 border-emerald-200" : "bg-amber-500/10 text-amber-600 border-amber-200"}`}
+            >
               <ShieldCheck className="h-5 w-5" />
             </div>
           </div>
           <div className="mt-3 flex items-baseline gap-2">
-            <span className={`text-3xl font-black ${stats.conformity_rate >= 80 ? "text-emerald-700" : "text-amber-700"}`}>
+            <span
+              className={`text-3xl font-black ${stats.conformity_rate >= 80 ? "text-emerald-700" : "text-amber-700"}`}
+            >
               {stats.conformity_rate}%
             </span>
             <span className="text-xs font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md">
@@ -1628,8 +1779,8 @@ function AuditManagementPage() {
             </span>
           </div>
           <p className="mt-2 text-xs text-muted-foreground flex items-center gap-1.5">
-            <span className="text-rose-600 font-bold">{stats.major_nc_count} Major NC</span> · 
-            <span className="text-amber-600 font-bold">{stats.minor_nc_count} Minor NC</span> · 
+            <span className="text-rose-600 font-bold">{stats.major_nc_count} Major NC</span> ·
+            <span className="text-amber-600 font-bold">{stats.minor_nc_count} Minor NC</span> ·
             <span className="text-blue-600 font-bold">{stats.ofi_count} OFI</span>
           </p>
         </div>
@@ -1637,7 +1788,9 @@ function AuditManagementPage() {
         {/* KPI 3 */}
         <div className="bg-card rounded-2xl border p-5 shadow-sm hover:shadow-md transition-all relative overflow-hidden">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Đào Tạo & Năng Lực</span>
+            <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+              Đào Tạo & Năng Lực
+            </span>
             <div className="p-2.5 rounded-xl bg-purple-500/10 text-purple-600 border border-purple-200">
               <GraduationCap className="h-5 w-5" />
             </div>
@@ -1650,22 +1803,34 @@ function AuditManagementPage() {
           </div>
           <p className="mt-2 text-xs text-muted-foreground flex items-center gap-1.5">
             <BookOpen className="w-3.5 h-3.5 text-slate-400" />
-            <span>{stats.total_courses} Khóa đào tạo · {stats.completed_courses} Đã cấp chứng chỉ</span>
+            <span>
+              {stats.total_courses} Khóa đào tạo · {stats.completed_courses} Đã cấp chứng chỉ
+            </span>
           </p>
         </div>
 
         {/* KPI 4 */}
         <div className="bg-card rounded-2xl border p-5 shadow-sm hover:shadow-md transition-all relative overflow-hidden">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Sức Khỏe Trước Ca</span>
-            <div className={`p-2.5 rounded-xl border ${stats.today_suspended_count > 0 ? "bg-rose-500/10 text-rose-600 border-rose-200" : "bg-emerald-500/10 text-emerald-600 border-emerald-200"}`}>
+            <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+              Sức Khỏe Trước Ca
+            </span>
+            <div
+              className={`p-2.5 rounded-xl border ${stats.today_suspended_count > 0 ? "bg-rose-500/10 text-rose-600 border-rose-200" : "bg-emerald-500/10 text-emerald-600 border-emerald-200"}`}
+            >
               <HeartPulse className="h-5 w-5" />
             </div>
           </div>
           <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-3xl font-black text-slate-900">{stats.total_health_declarations}</span>
-            <span className={`text-xs font-bold px-2 py-0.5 rounded-md border ${stats.today_suspended_count > 0 ? "bg-rose-50 text-rose-700 border-rose-200" : "bg-emerald-50 text-emerald-700 border-emerald-200"}`}>
-              {stats.today_suspended_count > 0 ? `${stats.today_suspended_count} Ca đình chỉ` : "100% Đạt chuẩn"}
+            <span className="text-3xl font-black text-slate-900">
+              {stats.total_health_declarations}
+            </span>
+            <span
+              className={`text-xs font-bold px-2 py-0.5 rounded-md border ${stats.today_suspended_count > 0 ? "bg-rose-50 text-rose-700 border-rose-200" : "bg-emerald-50 text-emerald-700 border-emerald-200"}`}
+            >
+              {stats.today_suspended_count > 0
+                ? `${stats.today_suspended_count} Ca đình chỉ`
+                : "100% Đạt chuẩn"}
             </span>
           </div>
           <p className="mt-2 text-xs text-muted-foreground flex items-center gap-1.5">
@@ -1795,225 +1960,257 @@ function AuditManagementPage() {
             />
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-            {/* Left Column: Campaigns List */}
-            <div className="lg:col-span-5 space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-black text-slate-900 flex items-center gap-2">
-                  <ClipboardCheck className="w-4 h-4 text-blue-600" />
-                  Danh Sách Đợt Đánh Giá Nội Bộ ({filteredAudits.length})
-                </h3>
-              </div>
+              {/* Left Column: Campaigns List */}
+              <div className="lg:col-span-5 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-black text-slate-900 flex items-center gap-2">
+                    <ClipboardCheck className="w-4 h-4 text-blue-600" />
+                    Danh Sách Đợt Đánh Giá Nội Bộ ({filteredAudits.length})
+                  </h3>
+                </div>
 
-              {filteredAudits.map((a) => {
-                const isSelected = selectedAudit?.audit_id === a.audit_id;
-                return (
-                  <div
-                    key={a.audit_id}
-                    onClick={() => {
-                      setSelectedAudit(a);
-                      loadFindings(a.audit_id);
-                    }}
-                    className={`p-4 rounded-2xl border cursor-pointer transition-all ${
-                      isSelected
-                        ? "bg-blue-50/70 border-blue-400 shadow-md ring-2 ring-blue-300/50"
-                        : "bg-card hover:bg-slate-50 border-slate-200 shadow-sm"
-                    }`}
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-md bg-blue-100 text-blue-800 border border-blue-200">
-                            {a.audit_code}
-                          </span>
-                          <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
-                            a.status === "COMPLETED"
-                              ? "bg-emerald-100 text-emerald-800 border border-emerald-200"
-                              : a.status === "IN_PROGRESS"
-                              ? "bg-amber-100 text-amber-800 border border-amber-200"
-                              : "bg-slate-100 text-slate-700"
-                          }`}>
-                            {a.status === "COMPLETED" ? "Đã Hoàn Thành" : a.status === "IN_PROGRESS" ? "Đang Đánh Giá" : a.status === "REPORTING" ? "Lập Báo Cáo" : "Lên Kế Hoạch"}
+                {filteredAudits.map((a) => {
+                  const isSelected = selectedAudit?.audit_id === a.audit_id;
+                  return (
+                    <div
+                      key={a.audit_id}
+                      onClick={() => {
+                        setSelectedAudit(a);
+                        loadFindings(a.audit_id);
+                      }}
+                      className={`p-4 rounded-2xl border cursor-pointer transition-all ${
+                        isSelected
+                          ? "bg-blue-50/70 border-blue-400 shadow-md ring-2 ring-blue-300/50"
+                          : "bg-card hover:bg-slate-50 border-slate-200 shadow-sm"
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-md bg-blue-100 text-blue-800 border border-blue-200">
+                              {a.audit_code}
+                            </span>
+                            <span
+                              className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
+                                a.status === "COMPLETED"
+                                  ? "bg-emerald-100 text-emerald-800 border border-emerald-200"
+                                  : a.status === "IN_PROGRESS"
+                                    ? "bg-amber-100 text-amber-800 border border-amber-200"
+                                    : "bg-slate-100 text-slate-700"
+                              }`}
+                            >
+                              {a.status === "COMPLETED"
+                                ? "Đã Hoàn Thành"
+                                : a.status === "IN_PROGRESS"
+                                  ? "Đang Đánh Giá"
+                                  : a.status === "REPORTING"
+                                    ? "Lập Báo Cáo"
+                                    : "Lên Kế Hoạch"}
+                            </span>
+                          </div>
+                          <h4 className="text-sm font-bold text-slate-900 leading-snug">
+                            {a.title}
+                          </h4>
+                        </div>
+                      </div>
+
+                      <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-slate-600 bg-white/80 p-2.5 rounded-xl border border-slate-200">
+                        <div>
+                          <span className="text-slate-400 block text-[10px]">Phòng ban:</span>
+                          <span className="font-semibold text-slate-800">{a.audited_dept}</span>
+                        </div>
+                        <div>
+                          <span className="text-slate-400 block text-[10px]">Trưởng đoàn:</span>
+                          <span className="font-semibold text-slate-800">
+                            {a.lead_auditor_name}
                           </span>
                         </div>
-                        <h4 className="text-sm font-bold text-slate-900 leading-snug">{a.title}</h4>
+                        <div>
+                          <span className="text-slate-400 block text-[10px]">Thời gian:</span>
+                          <span className="font-mono text-slate-700">
+                            {a.start_date} ~ {a.end_date}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-slate-400 block text-[10px]">Phát hiện:</span>
+                          <span className="font-bold text-slate-900">
+                            {a.total_findings || 0} Hạng mục
+                          </span>
+                        </div>
                       </div>
                     </div>
+                  );
+                })}
+              </div>
 
-                    <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-slate-600 bg-white/80 p-2.5 rounded-xl border border-slate-200">
+              {/* Right Column: Findings Checklist Details */}
+              <div className="lg:col-span-7 space-y-4">
+                {selectedAudit ? (
+                  <div className="bg-card rounded-2xl border p-5 shadow-sm space-y-5">
+                    <div className="flex flex-wrap items-center justify-between gap-3 border-b pb-4">
                       <div>
-                        <span className="text-slate-400 block text-[10px]">Phòng ban:</span>
-                        <span className="font-semibold text-slate-800">{a.audited_dept}</span>
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-800">
+                            {selectedAudit.audit_code}
+                          </span>
+                          <span className="text-xs font-bold text-slate-600">
+                            Phòng ban: {selectedAudit.audited_dept}
+                          </span>
+                        </div>
+                        <h3 className="text-base font-black text-slate-900">
+                          {selectedAudit.title}
+                        </h3>
                       </div>
-                      <div>
-                        <span className="text-slate-400 block text-[10px]">Trưởng đoàn:</span>
-                        <span className="font-semibold text-slate-800">{a.lead_auditor_name}</span>
-                      </div>
-                      <div>
-                        <span className="text-slate-400 block text-[10px]">Thời gian:</span>
-                        <span className="font-mono text-slate-700">{a.start_date} ~ {a.end_date}</span>
-                      </div>
-                      <div>
-                        <span className="text-slate-400 block text-[10px]">Phát hiện:</span>
-                        <span className="font-bold text-slate-900">{a.total_findings || 0} Hạng mục</span>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
 
-            {/* Right Column: Findings Checklist Details */}
-            <div className="lg:col-span-7 space-y-4">
-              {selectedAudit ? (
-                <div className="bg-card rounded-2xl border p-5 shadow-sm space-y-5">
-                  <div className="flex flex-wrap items-center justify-between gap-3 border-b pb-4">
-                    <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-800">
-                          {selectedAudit.audit_code}
-                        </span>
-                        <span className="text-xs font-bold text-slate-600">
-                          Phòng ban: {selectedAudit.audited_dept}
-                        </span>
-                      </div>
-                      <h3 className="text-base font-black text-slate-900">{selectedAudit.title}</h3>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => setShowPrintAuditModal(true)}
-                        className="text-xs font-bold border-slate-300 text-slate-700 hover:bg-slate-100"
-                      >
-                        <Printer className="h-4 w-4 mr-1.5 text-slate-600" /> In BM-AUDIT-01
-                      </Button>
-                      <Button
-                        size="sm"
-                        onClick={() => {
-                          setFindingForm({
-                            clause_number: "8.2.4",
-                            clause_title: "Kiểm soát vệ sinh PRP & Nhà xưởng",
-                            department: selectedAudit.audited_dept,
-                            question: "Tình trạng vệ sinh thiết bị và mặt sàn có đạt yêu cầu không?",
-                            evidence_reviewed: "",
-                            result: "CONFORMITY",
-                            finding_notes: "",
-                          });
-                          setShowFindingModal(true);
-                        }}
-                        className="bg-primary text-primary-foreground font-bold text-xs"
-                      >
-                        <Plus className="h-4 w-4 mr-1.5" /> Ghi Nhận Phát Hiện
-                      </Button>
-                    </div>
-                  </div>
-
-                  {/* Findings Table */}
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <h4 className="text-xs font-bold uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
-                        <ListOrdered className="w-4 h-4 text-blue-600" /> Bảng Kiểm Checklist & Kết Quả Đánh Giá Hiện Trường ({findings.length})
-                      </h4>
-                    </div>
-
-                    {findings.length === 0 ? (
-                      <div className="p-8 text-center bg-slate-50 rounded-2xl border border-dashed text-slate-500 space-y-2">
-                        <AlertCircle className="w-8 h-8 mx-auto text-slate-400" />
-                        <p className="text-xs font-semibold">Chưa có câu hỏi hoặc phát hiện nào cho đợt đánh giá này.</p>
+                      <div className="flex items-center gap-2">
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => setShowFindingModal(true)}
-                          className="text-xs"
+                          onClick={() => setShowPrintAuditModal(true)}
+                          className="text-xs font-bold border-slate-300 text-slate-700 hover:bg-slate-100"
                         >
-                          + Thêm câu hỏi checklist đầu tiên
+                          <Printer className="h-4 w-4 mr-1.5 text-slate-600" /> In BM-AUDIT-01
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={() => {
+                            setFindingForm({
+                              clause_number: "8.2.4",
+                              clause_title: "Kiểm soát vệ sinh PRP & Nhà xưởng",
+                              department: selectedAudit.audited_dept,
+                              question:
+                                "Tình trạng vệ sinh thiết bị và mặt sàn có đạt yêu cầu không?",
+                              evidence_reviewed: "",
+                              result: "CONFORMITY",
+                              finding_notes: "",
+                            });
+                            setShowFindingModal(true);
+                          }}
+                          className="bg-primary text-primary-foreground font-bold text-xs"
+                        >
+                          <Plus className="h-4 w-4 mr-1.5" /> Ghi Nhận Phát Hiện
                         </Button>
                       </div>
-                    ) : (
-                      <div className="space-y-3">
-                        {findings.map((f, idx) => (
-                          <div
-                            key={f.finding_id}
-                            className={`p-4 rounded-xl border transition-all ${
-                              f.result === "MAJOR_NC"
-                                ? "bg-rose-50/70 border-rose-300"
-                                : f.result === "MINOR_NC"
-                                ? "bg-amber-50/70 border-amber-300"
-                                : f.result === "OFI"
-                                ? "bg-blue-50/70 border-blue-300"
-                                : "bg-white border-slate-200"
-                            }`}
+                    </div>
+
+                    {/* Findings Table */}
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-xs font-bold uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
+                          <ListOrdered className="w-4 h-4 text-blue-600" /> Bảng Kiểm Checklist &
+                          Kết Quả Đánh Giá Hiện Trường ({findings.length})
+                        </h4>
+                      </div>
+
+                      {findings.length === 0 ? (
+                        <div className="p-8 text-center bg-slate-50 rounded-2xl border border-dashed text-slate-500 space-y-2">
+                          <AlertCircle className="w-8 h-8 mx-auto text-slate-400" />
+                          <p className="text-xs font-semibold">
+                            Chưa có câu hỏi hoặc phát hiện nào cho đợt đánh giá này.
+                          </p>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setShowFindingModal(true)}
+                            className="text-xs"
                           >
-                            <div className="flex items-start justify-between gap-3">
-                              <div className="space-y-1">
-                                <div className="flex items-center gap-2">
-                                  <span className="text-xs font-mono font-black text-slate-900 bg-slate-100 px-2 py-0.5 rounded">
-                                    Điều {f.clause_number}
-                                  </span>
-                                  <span className="text-xs font-bold text-slate-700">{f.clause_title}</span>
-                                </div>
-                                <p className="text-xs font-semibold text-slate-900 leading-relaxed mt-1">
-                                  <b>Câu hỏi:</b> {f.question}
-                                </p>
-                                {f.evidence_reviewed && (
-                                  <p className="text-[11px] text-slate-600">
-                                    <b>Bằng chứng xem xét:</b> {f.evidence_reviewed}
-                                  </p>
-                                )}
-                                {f.finding_notes && (
-                                  <div className="mt-2 p-2.5 rounded-lg bg-white/90 border text-xs font-medium text-slate-800">
-                                    <b>Ghi nhận sai lệch:</b> {f.finding_notes}
-                                  </div>
-                                )}
-                              </div>
-
-                              {/* Badges & Actions */}
-                              <div className="text-right shrink-0 space-y-2">
-                                <span className={`inline-block text-[11px] font-black px-2.5 py-1 rounded-full border ${
-                                  f.result === "MAJOR_NC"
-                                    ? "bg-rose-100 text-rose-800 border-rose-300"
-                                    : f.result === "MINOR_NC"
-                                    ? "bg-amber-100 text-amber-800 border-amber-300"
+                            + Thêm câu hỏi checklist đầu tiên
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          {findings.map((f, idx) => (
+                            <div
+                              key={f.finding_id}
+                              className={`p-4 rounded-xl border transition-all ${
+                                f.result === "MAJOR_NC"
+                                  ? "bg-rose-50/70 border-rose-300"
+                                  : f.result === "MINOR_NC"
+                                    ? "bg-amber-50/70 border-amber-300"
                                     : f.result === "OFI"
-                                    ? "bg-blue-100 text-blue-800 border-blue-300"
-                                    : "bg-emerald-100 text-emerald-800 border-emerald-300"
-                                }`}>
-                                  {f.result === "MAJOR_NC" ? "MAJOR NC (NẶNG)" : f.result === "MINOR_NC" ? "MINOR NC (NHẸ)" : f.result === "OFI" ? "CƠ HỘI CẢI TIẾN" : "PHÙ HỢP (PASS)"}
-                                </span>
-
-                                {(f.result === "MAJOR_NC" || f.result === "MINOR_NC") && (
-                                  <div>
-                                    {f.nc_number ? (
-                                      <div className="text-[11px] font-mono font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-200">
-                                        Đã tạo: {f.nc_number}
-                                      </div>
-                                    ) : (
-                                      <Button
-                                        size="sm"
-                                        onClick={() => handleConvertToNC(f.finding_id)}
-                                        className="text-[11px] bg-rose-600 hover:bg-rose-700 text-white font-bold h-7 px-2.5 rounded-lg shadow-sm"
-                                      >
-                                        <Flame className="w-3 h-3 mr-1" /> Chuyển Sang CAPA
-                                      </Button>
-                                    )}
+                                      ? "bg-blue-50/70 border-blue-300"
+                                      : "bg-white border-slate-200"
+                              }`}
+                            >
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="space-y-1">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-xs font-mono font-black text-slate-900 bg-slate-100 px-2 py-0.5 rounded">
+                                      Điều {f.clause_number}
+                                    </span>
+                                    <span className="text-xs font-bold text-slate-700">
+                                      {f.clause_title}
+                                    </span>
                                   </div>
-                                )}
+                                  <p className="text-xs font-semibold text-slate-900 leading-relaxed mt-1">
+                                    <b>Câu hỏi:</b> {f.question}
+                                  </p>
+                                  {f.evidence_reviewed && (
+                                    <p className="text-[11px] text-slate-600">
+                                      <b>Bằng chứng xem xét:</b> {f.evidence_reviewed}
+                                    </p>
+                                  )}
+                                  {f.finding_notes && (
+                                    <div className="mt-2 p-2.5 rounded-lg bg-white/90 border text-xs font-medium text-slate-800">
+                                      <b>Ghi nhận sai lệch:</b> {f.finding_notes}
+                                    </div>
+                                  )}
+                                </div>
+
+                                {/* Badges & Actions */}
+                                <div className="text-right shrink-0 space-y-2">
+                                  <span
+                                    className={`inline-block text-[11px] font-black px-2.5 py-1 rounded-full border ${
+                                      f.result === "MAJOR_NC"
+                                        ? "bg-rose-100 text-rose-800 border-rose-300"
+                                        : f.result === "MINOR_NC"
+                                          ? "bg-amber-100 text-amber-800 border-amber-300"
+                                          : f.result === "OFI"
+                                            ? "bg-blue-100 text-blue-800 border-blue-300"
+                                            : "bg-emerald-100 text-emerald-800 border-emerald-300"
+                                    }`}
+                                  >
+                                    {f.result === "MAJOR_NC"
+                                      ? "MAJOR NC (NẶNG)"
+                                      : f.result === "MINOR_NC"
+                                        ? "MINOR NC (NHẸ)"
+                                        : f.result === "OFI"
+                                          ? "CƠ HỘI CẢI TIẾN"
+                                          : "PHÙ HỢP (PASS)"}
+                                  </span>
+
+                                  {(f.result === "MAJOR_NC" || f.result === "MINOR_NC") && (
+                                    <div>
+                                      {f.nc_number ? (
+                                        <div className="text-[11px] font-mono font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-200">
+                                          Đã tạo: {f.nc_number}
+                                        </div>
+                                      ) : (
+                                        <Button
+                                          size="sm"
+                                          onClick={() => handleConvertToNC(f.finding_id)}
+                                          className="text-[11px] bg-rose-600 hover:bg-rose-700 text-white font-bold h-7 px-2.5 rounded-lg shadow-sm"
+                                        >
+                                          <Flame className="w-3 h-3 mr-1" /> Chuyển Sang CAPA
+                                        </Button>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ) : (
-                <div className="bg-card rounded-2xl border p-12 text-center text-slate-500">
-                  Vui lòng chọn một đợt đánh giá ở cột bên trái để xem chi tiết.
-                </div>
-              )}
+                ) : (
+                  <div className="bg-card rounded-2xl border p-12 text-center text-slate-500">
+                    Vui lòng chọn một đợt đánh giá ở cột bên trái để xem chi tiết.
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
           )}
         </div>
       )}
@@ -2061,237 +2258,263 @@ function AuditManagementPage() {
           {trainingSubTab === "courses" && (
             <div className="space-y-6">
               {/* Filter Bar */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-card p-4 rounded-2xl border shadow-sm">
-            <div className="relative w-full sm:w-80">
-              <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Tìm mã khóa, tên khóa học..."
-                className="pl-9 text-xs"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-            <div className="flex items-center gap-2">
-              <select
-                className="border rounded-xl px-3 py-2 text-xs bg-background text-foreground font-semibold"
-                value={courseCatFilter}
-                onChange={(e) => setCourseCatFilter(e.target.value)}
-              >
-                <option value="ALL">Tất cả chuyên đề đào tạo</option>
-                <option value="HACCP_CCP">HACCP & Giám sát CCP</option>
-                <option value="FOOD_HYGIENE_GMP">Vệ sinh cá nhân GMP/SSOP</option>
-                <option value="ALLERGEN_CONTROL">Kiểm soát Dị nguyên</option>
-                <option value="EMERGENCY_RECALL">Triệu hồi khẩn cấp</option>
-                <option value="ISO_AWARENESS">Nhận thức ISO 22000</option>
-              </select>
-            </div>
-          </div>
-
-          {/* 2-Column Layout: Course Cards (Left) & Participants Table (Right) */}
-          {courses.length === 0 ? (
-            <EmptyState
-              icon={GraduationCap}
-              title="Chưa có khóa đào tạo nào"
-              description="Xây dựng kế hoạch và tổ chức các khóa đào tạo ATTP, HACCP, GMP cho nhân sự định kỳ."
-              actionLabel="+ Tạo Khóa Đào Tạo Mới"
-              onAction={() => {
-                setCourseForm({
-                  course_code: `TR-2026-0${courses.length + 1}`,
-                  title: "",
-                  category: "HACCP_CCP",
-                  trainer_name: "ThS. Nguyễn Văn An",
-                  training_type: "INTERNAL",
-                  schedule_date: new Date().toISOString().split("T")[0],
-                  duration_hours: 4.0,
-                  target_dept: departments[0] || "Phòng Sản Xuất & QA",
-                  content_summary: "",
-                  status: "PLANNED",
-                });
-                setShowCourseModal(true);
-              }}
-              onGuide={() => setShowGuide(true)}
-            />
-          ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-            {/* Left Column: Courses List */}
-            <div className="lg:col-span-5 space-y-4">
-              <h3 className="text-sm font-black text-slate-900 flex items-center gap-2">
-                <GraduationCap className="w-4 h-4 text-purple-600" />
-                Khóa Đào Tạo Hàng Năm ({filteredCourses.length})
-              </h3>
-
-              {filteredCourses.map((c) => {
-                const isSelected = selectedCourse?.course_id === c.course_id;
-                return (
-                  <div
-                    key={c.course_id}
-                    onClick={() => {
-                      setSelectedCourse(c);
-                      loadParticipants(c.course_id);
-                    }}
-                    className={`p-4 rounded-2xl border cursor-pointer transition-all ${
-                      isSelected
-                        ? "bg-purple-50/70 border-purple-400 shadow-md ring-2 ring-purple-300/50"
-                        : "bg-card hover:bg-slate-50 border-slate-200 shadow-sm"
-                    }`}
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-md bg-purple-100 text-purple-800 border border-purple-200">
-                            {c.course_code}
-                          </span>
-                          <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">
-                            {c.training_type === "INTERNAL" ? "Đào tạo nội bộ" : "Chuyên gia bên ngoài"}
-                          </span>
-                        </div>
-                        <h4 className="text-sm font-bold text-slate-900 leading-snug">{c.title}</h4>
-                      </div>
-                    </div>
-
-                    <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-slate-600 bg-white/80 p-2.5 rounded-xl border border-slate-200">
-                      <div>
-                        <span className="text-slate-400 block text-[10px]">Giảng viên:</span>
-                        <span className="font-semibold text-slate-800">{c.trainer_name}</span>
-                      </div>
-                      <div>
-                        <span className="text-slate-400 block text-[10px]">Ngày học:</span>
-                        <span className="font-mono text-slate-800">{c.schedule_date} ({c.duration_hours}h)</span>
-                      </div>
-                      <div>
-                        <span className="text-slate-400 block text-[10px]">Học viên:</span>
-                        <span className="font-bold text-purple-700">{c.total_participants || 0} Người</span>
-                      </div>
-                      <div>
-                        <span className="text-slate-400 block text-[10px]">Điểm trung bình:</span>
-                        <span className="font-bold text-emerald-700">{c.avg_score || 0}/100</span>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Right Column: Participants List & Roster */}
-            <div className="lg:col-span-7 space-y-4">
-              {selectedCourse ? (
-                <div className="bg-card rounded-2xl border p-5 shadow-sm space-y-5">
-                  <div className="flex flex-wrap items-center justify-between gap-3 border-b pb-4">
-                    <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-purple-100 text-purple-800">
-                          {selectedCourse.course_code}
-                        </span>
-                        <span className="text-xs font-bold text-slate-600">
-                          Đối tượng: {selectedCourse.target_dept}
-                        </span>
-                      </div>
-                      <h3 className="text-base font-black text-slate-900">{selectedCourse.title}</h3>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => setShowPrintTrainModal(true)}
-                        className="text-xs font-bold border-slate-300 text-slate-700 hover:bg-slate-100"
-                      >
-                        <Printer className="h-4 w-4 mr-1.5 text-slate-600" /> In BM-TRAIN-02
-                      </Button>
-                      <Button
-                        size="sm"
-                        onClick={() => {
-                          setParticipantForm({
-                            employee_code: `NV-0${participants.length + 101}`,
-                            employee_name: "",
-                            department: "Xưởng Sản Xuất",
-                            position: "Công nhân",
-                            attendance_status: "ATTENDED",
-                            pre_test_score: 50.0,
-                            post_test_score: 85.0,
-                            evaluation_result: "PASSED",
-                            certificate_issued: true,
-                            notes: "",
-                          });
-                          setShowParticipantModal(true);
-                        }}
-                        className="bg-primary text-primary-foreground font-bold text-xs"
-                      >
-                        <Plus className="h-4 w-4 mr-1.5" /> Thêm Học Viên
-                      </Button>
-                    </div>
-                  </div>
-
-                  {/* Participants Table */}
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-xs text-left border-collapse min-w-[650px]">
-                      <thead>
-                        <tr className="bg-slate-50 text-slate-700 border-b font-bold uppercase text-[10px] tracking-wider">
-                          <th className="p-3 w-12 text-center">STT</th>
-                          <th className="p-3">Học viên</th>
-                          <th className="p-3">Phòng ban</th>
-                          <th className="p-3 text-center">Pre-Test</th>
-                          <th className="p-3 text-center">Post-Test</th>
-                          <th className="p-3 text-center">Kết quả</th>
-                          <th className="p-3 text-center">Chứng chỉ</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100">
-                        {participants.length === 0 ? (
-                          <tr>
-                            <td colSpan={7} className="p-6 text-center text-slate-400">
-                              Chưa có danh sách học viên cho khóa này.
-                            </td>
-                          </tr>
-                        ) : (
-                          participants.map((p, idx) => (
-                            <tr key={p.participant_id} className="hover:bg-slate-50/80">
-                              <td className="p-3 text-center font-mono text-slate-400">{idx + 1}</td>
-                              <td className="p-3">
-                                <div className="font-bold text-slate-900">{p.employee_name}</div>
-                                <div className="text-[10px] font-mono text-slate-500">{p.employee_code} · {p.position}</div>
-                              </td>
-                              <td className="p-3 text-slate-700 font-medium">{p.department}</td>
-                              <td className="p-3 text-center font-mono font-semibold text-slate-600">
-                                {p.pre_test_score !== null ? `${p.pre_test_score}đ` : "--"}
-                              </td>
-                              <td className="p-3 text-center font-mono font-black text-purple-700 text-sm">
-                                {p.post_test_score !== null ? `${p.post_test_score}đ` : "--"}
-                              </td>
-                              <td className="p-3 text-center">
-                                <span className={`inline-block text-[10px] font-black px-2 py-0.5 rounded-full ${
-                                  p.evaluation_result === "PASSED"
-                                    ? "bg-emerald-100 text-emerald-800"
-                                    : "bg-rose-100 text-rose-800"
-                                }`}>
-                                  {p.evaluation_result === "PASSED" ? "ĐẠT CHUẨN" : "CẦN ĐÀO TẠO LẠI"}
-                                </span>
-                              </td>
-                              <td className="p-3 text-center">
-                                {p.certificate_issued ? (
-                                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                                    <Award className="w-3 h-3 text-emerald-600" /> Đã Cấp
-                                  </span>
-                                ) : (
-                                  <span className="text-[10px] text-slate-400">Chưa cấp</span>
-                                )}
-                              </td>
-                            </tr>
-                          ))
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-card p-4 rounded-2xl border shadow-sm">
+                <div className="relative w-full sm:w-80">
+                  <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Tìm mã khóa, tên khóa học..."
+                    className="pl-9 text-xs"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
                 </div>
+                <div className="flex items-center gap-2">
+                  <select
+                    className="border rounded-xl px-3 py-2 text-xs bg-background text-foreground font-semibold"
+                    value={courseCatFilter}
+                    onChange={(e) => setCourseCatFilter(e.target.value)}
+                  >
+                    <option value="ALL">Tất cả chuyên đề đào tạo</option>
+                    <option value="HACCP_CCP">HACCP & Giám sát CCP</option>
+                    <option value="FOOD_HYGIENE_GMP">Vệ sinh cá nhân GMP/SSOP</option>
+                    <option value="ALLERGEN_CONTROL">Kiểm soát Dị nguyên</option>
+                    <option value="EMERGENCY_RECALL">Triệu hồi khẩn cấp</option>
+                    <option value="ISO_AWARENESS">Nhận thức ISO 22000</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* 2-Column Layout: Course Cards (Left) & Participants Table (Right) */}
+              {courses.length === 0 ? (
+                <EmptyState
+                  icon={GraduationCap}
+                  title="Chưa có khóa đào tạo nào"
+                  description="Xây dựng kế hoạch và tổ chức các khóa đào tạo ATTP, HACCP, GMP cho nhân sự định kỳ."
+                  actionLabel="+ Tạo Khóa Đào Tạo Mới"
+                  onAction={() => {
+                    setCourseForm({
+                      course_code: `TR-2026-0${courses.length + 1}`,
+                      title: "",
+                      category: "HACCP_CCP",
+                      trainer_name: "ThS. Nguyễn Văn An",
+                      training_type: "INTERNAL",
+                      schedule_date: new Date().toISOString().split("T")[0],
+                      duration_hours: 4.0,
+                      target_dept: departments[0] || "Phòng Sản Xuất & QA",
+                      content_summary: "",
+                      status: "PLANNED",
+                    });
+                    setShowCourseModal(true);
+                  }}
+                  onGuide={() => setShowGuide(true)}
+                />
               ) : (
-                <div className="bg-card rounded-2xl border p-12 text-center text-slate-500">
-                  Vui lòng chọn một khóa học ở cột bên trái để xem danh sách học viên.
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                  {/* Left Column: Courses List */}
+                  <div className="lg:col-span-5 space-y-4">
+                    <h3 className="text-sm font-black text-slate-900 flex items-center gap-2">
+                      <GraduationCap className="w-4 h-4 text-purple-600" />
+                      Khóa Đào Tạo Hàng Năm ({filteredCourses.length})
+                    </h3>
+
+                    {filteredCourses.map((c) => {
+                      const isSelected = selectedCourse?.course_id === c.course_id;
+                      return (
+                        <div
+                          key={c.course_id}
+                          onClick={() => {
+                            setSelectedCourse(c);
+                            loadParticipants(c.course_id);
+                          }}
+                          className={`p-4 rounded-2xl border cursor-pointer transition-all ${
+                            isSelected
+                              ? "bg-purple-50/70 border-purple-400 shadow-md ring-2 ring-purple-300/50"
+                              : "bg-card hover:bg-slate-50 border-slate-200 shadow-sm"
+                          }`}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-md bg-purple-100 text-purple-800 border border-purple-200">
+                                  {c.course_code}
+                                </span>
+                                <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">
+                                  {c.training_type === "INTERNAL"
+                                    ? "Đào tạo nội bộ"
+                                    : "Chuyên gia bên ngoài"}
+                                </span>
+                              </div>
+                              <h4 className="text-sm font-bold text-slate-900 leading-snug">
+                                {c.title}
+                              </h4>
+                            </div>
+                          </div>
+
+                          <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-slate-600 bg-white/80 p-2.5 rounded-xl border border-slate-200">
+                            <div>
+                              <span className="text-slate-400 block text-[10px]">Giảng viên:</span>
+                              <span className="font-semibold text-slate-800">{c.trainer_name}</span>
+                            </div>
+                            <div>
+                              <span className="text-slate-400 block text-[10px]">Ngày học:</span>
+                              <span className="font-mono text-slate-800">
+                                {c.schedule_date} ({c.duration_hours}h)
+                              </span>
+                            </div>
+                            <div>
+                              <span className="text-slate-400 block text-[10px]">Học viên:</span>
+                              <span className="font-bold text-purple-700">
+                                {c.total_participants || 0} Người
+                              </span>
+                            </div>
+                            <div>
+                              <span className="text-slate-400 block text-[10px]">
+                                Điểm trung bình:
+                              </span>
+                              <span className="font-bold text-emerald-700">
+                                {c.avg_score || 0}/100
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Right Column: Participants List & Roster */}
+                  <div className="lg:col-span-7 space-y-4">
+                    {selectedCourse ? (
+                      <div className="bg-card rounded-2xl border p-5 shadow-sm space-y-5">
+                        <div className="flex flex-wrap items-center justify-between gap-3 border-b pb-4">
+                          <div>
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-purple-100 text-purple-800">
+                                {selectedCourse.course_code}
+                              </span>
+                              <span className="text-xs font-bold text-slate-600">
+                                Đối tượng: {selectedCourse.target_dept}
+                              </span>
+                            </div>
+                            <h3 className="text-base font-black text-slate-900">
+                              {selectedCourse.title}
+                            </h3>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => setShowPrintTrainModal(true)}
+                              className="text-xs font-bold border-slate-300 text-slate-700 hover:bg-slate-100"
+                            >
+                              <Printer className="h-4 w-4 mr-1.5 text-slate-600" /> In BM-TRAIN-02
+                            </Button>
+                            <Button
+                              size="sm"
+                              onClick={() => {
+                                setParticipantForm({
+                                  employee_code: `NV-0${participants.length + 101}`,
+                                  employee_name: "",
+                                  department: "Xưởng Sản Xuất",
+                                  position: "Công nhân",
+                                  attendance_status: "ATTENDED",
+                                  pre_test_score: 50.0,
+                                  post_test_score: 85.0,
+                                  evaluation_result: "PASSED",
+                                  certificate_issued: true,
+                                  notes: "",
+                                });
+                                setShowParticipantModal(true);
+                              }}
+                              className="bg-primary text-primary-foreground font-bold text-xs"
+                            >
+                              <Plus className="h-4 w-4 mr-1.5" /> Thêm Học Viên
+                            </Button>
+                          </div>
+                        </div>
+
+                        {/* Participants Table */}
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-xs text-left border-collapse min-w-[650px]">
+                            <thead>
+                              <tr className="bg-slate-50 text-slate-700 border-b font-bold uppercase text-[10px] tracking-wider">
+                                <th className="p-3 w-12 text-center">STT</th>
+                                <th className="p-3">Học viên</th>
+                                <th className="p-3">Phòng ban</th>
+                                <th className="p-3 text-center">Pre-Test</th>
+                                <th className="p-3 text-center">Post-Test</th>
+                                <th className="p-3 text-center">Kết quả</th>
+                                <th className="p-3 text-center">Chứng chỉ</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                              {participants.length === 0 ? (
+                                <tr>
+                                  <td colSpan={7} className="p-6 text-center text-slate-400">
+                                    Chưa có danh sách học viên cho khóa này.
+                                  </td>
+                                </tr>
+                              ) : (
+                                participants.map((p, idx) => (
+                                  <tr key={p.participant_id} className="hover:bg-slate-50/80">
+                                    <td className="p-3 text-center font-mono text-slate-400">
+                                      {idx + 1}
+                                    </td>
+                                    <td className="p-3">
+                                      <div className="font-bold text-slate-900">
+                                        {p.employee_name}
+                                      </div>
+                                      <div className="text-[10px] font-mono text-slate-500">
+                                        {p.employee_code} · {p.position}
+                                      </div>
+                                    </td>
+                                    <td className="p-3 text-slate-700 font-medium">
+                                      {p.department}
+                                    </td>
+                                    <td className="p-3 text-center font-mono font-semibold text-slate-600">
+                                      {p.pre_test_score !== null ? `${p.pre_test_score}đ` : "--"}
+                                    </td>
+                                    <td className="p-3 text-center font-mono font-black text-purple-700 text-sm">
+                                      {p.post_test_score !== null ? `${p.post_test_score}đ` : "--"}
+                                    </td>
+                                    <td className="p-3 text-center">
+                                      <span
+                                        className={`inline-block text-[10px] font-black px-2 py-0.5 rounded-full ${
+                                          p.evaluation_result === "PASSED"
+                                            ? "bg-emerald-100 text-emerald-800"
+                                            : "bg-rose-100 text-rose-800"
+                                        }`}
+                                      >
+                                        {p.evaluation_result === "PASSED"
+                                          ? "ĐẠT CHUẨN"
+                                          : "CẦN ĐÀO TẠO LẠI"}
+                                      </span>
+                                    </td>
+                                    <td className="p-3 text-center">
+                                      {p.certificate_issued ? (
+                                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                                          <Award className="w-3 h-3 text-emerald-600" /> Đã Cấp
+                                        </span>
+                                      ) : (
+                                        <span className="text-[10px] text-slate-400">Chưa cấp</span>
+                                      )}
+                                    </td>
+                                  </tr>
+                                ))
+                              )}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="bg-card rounded-2xl border p-12 text-center text-slate-500">
+                        Vui lòng chọn một khóa học ở cột bên trái để xem danh sách học viên.
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
-          </div>
-          )}
-          </div>
           )}
 
           {/* ==================== SUB-TAB: TRAINING REQUESTS (BM01-QTĐT) ==================== */}
@@ -2324,8 +2547,7 @@ function AuditManagementPage() {
                     onClick={handleOpenCreateRequest}
                     className="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs"
                   >
-                    <Plus className="w-4 h-4 mr-1.5" />
-                    + Lập Phiếu Đề Xuất (BM01)
+                    <Plus className="w-4 h-4 mr-1.5" />+ Lập Phiếu Đề Xuất (BM01)
                   </Button>
                 </div>
               </div>
@@ -2334,8 +2556,12 @@ function AuditManagementPage() {
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 <div className="bg-card p-4 rounded-2xl border shadow-sm flex items-center justify-between">
                   <div>
-                    <p className="text-[11px] font-bold text-muted-foreground">Tổng phiếu đề xuất</p>
-                    <h3 className="text-xl font-extrabold text-foreground mt-0.5">{trainingRequests.length}</h3>
+                    <p className="text-[11px] font-bold text-muted-foreground">
+                      Tổng phiếu đề xuất
+                    </p>
+                    <h3 className="text-xl font-extrabold text-foreground mt-0.5">
+                      {trainingRequests.length}
+                    </h3>
                   </div>
                   <div className="w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600">
                     <FileText className="w-5 h-5" />
@@ -2345,7 +2571,7 @@ function AuditManagementPage() {
                   <div>
                     <p className="text-[11px] font-bold text-amber-600">Đang chờ phê duyệt</p>
                     <h3 className="text-xl font-extrabold text-amber-700 mt-0.5">
-                      {trainingRequests.filter(r => r.approval_status === "PENDING").length}
+                      {trainingRequests.filter((r) => r.approval_status === "PENDING").length}
                     </h3>
                   </div>
                   <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center text-amber-600">
@@ -2356,7 +2582,7 @@ function AuditManagementPage() {
                   <div>
                     <p className="text-[11px] font-bold text-emerald-600">Đã phê duyệt</p>
                     <h3 className="text-xl font-extrabold text-emerald-700 mt-0.5">
-                      {trainingRequests.filter(r => r.approval_status === "APPROVED").length}
+                      {trainingRequests.filter((r) => r.approval_status === "APPROVED").length}
                     </h3>
                   </div>
                   <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600">
@@ -2365,10 +2591,16 @@ function AuditManagementPage() {
                 </div>
                 <div className="bg-card p-4 rounded-2xl border shadow-sm flex items-center justify-between">
                   <div>
-                    <p className="text-[11px] font-bold text-muted-foreground">Tổng dự toán kinh phí</p>
+                    <p className="text-[11px] font-bold text-muted-foreground">
+                      Tổng dự toán kinh phí
+                    </p>
                     <h3 className="text-xl font-extrabold text-foreground mt-0.5">
-                      {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND", maximumFractionDigits: 0 }).format(
-                        trainingRequests.reduce((sum, r) => sum + (r.estimated_cost || 0), 0)
+                      {new Intl.NumberFormat("vi-VN", {
+                        style: "currency",
+                        currency: "VND",
+                        maximumFractionDigits: 0,
+                      }).format(
+                        trainingRequests.reduce((sum, r) => sum + (r.estimated_cost || 0), 0),
                       )}
                     </h3>
                   </div>
@@ -2382,10 +2614,16 @@ function AuditManagementPage() {
               <div className="bg-card rounded-2xl border shadow-sm overflow-hidden">
                 <div className="p-4 border-b flex items-center justify-between">
                   <div>
-                    <h3 className="text-sm font-bold text-foreground">Danh Sách Phiếu Đề Xuất Đào Tạo (Biểu mẫu BM01-QTĐT)</h3>
-                    <p className="text-[11px] text-muted-foreground">Theo quy trình đào tạo Thư mục 14 Hệ thống ISO 22000 An Giang</p>
+                    <h3 className="text-sm font-bold text-foreground">
+                      Danh Sách Phiếu Đề Xuất Đào Tạo (Biểu mẫu BM01-QTĐT)
+                    </h3>
+                    <p className="text-[11px] text-muted-foreground">
+                      Theo quy trình đào tạo Thư mục 14 Hệ thống ISO 22000 An Giang
+                    </p>
                   </div>
-                  <span className="text-xs font-semibold text-muted-foreground">Hiển thị {filteredRequests.length} phiếu</span>
+                  <span className="text-xs font-semibold text-muted-foreground">
+                    Hiển thị {filteredRequests.length} phiếu
+                  </span>
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs">
@@ -2420,8 +2658,12 @@ function AuditManagementPage() {
                               </div>
                             </td>
                             <td className="py-3 px-4 max-w-xs">
-                              <p className="font-bold text-foreground text-xs">{req.training_topic}</p>
-                              <p className="text-[11px] text-muted-foreground line-clamp-1 mt-0.5">{req.reason_and_objective}</p>
+                              <p className="font-bold text-foreground text-xs">
+                                {req.training_topic}
+                              </p>
+                              <p className="text-[11px] text-muted-foreground line-clamp-1 mt-0.5">
+                                {req.reason_and_objective}
+                              </p>
                               {req.proposed_trainer && (
                                 <span className="inline-block mt-1 text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-1.5 py-0.5 rounded">
                                   Giảng viên: {req.proposed_trainer}
@@ -2439,14 +2681,19 @@ function AuditManagementPage() {
                               </div>
                             </td>
                             <td className="py-3 px-4 text-center">
-                              <span className="font-bold text-foreground">{req.expected_participants_count}</span>
+                              <span className="font-bold text-foreground">
+                                {req.expected_participants_count}
+                              </span>
                               <span className="text-[11px] text-muted-foreground"> người</span>
                               <div className="text-[11px] text-muted-foreground mt-0.5">
                                 {req.expected_timeframe || "-"}
                               </div>
                             </td>
                             <td className="py-3 px-4 text-right font-mono font-bold text-foreground">
-                              {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(req.estimated_cost)}
+                              {new Intl.NumberFormat("vi-VN", {
+                                style: "currency",
+                                currency: "VND",
+                              }).format(req.estimated_cost)}
                             </td>
                             <td className="py-3 px-4 text-center">
                               {req.approval_status === "APPROVED" && (
@@ -2465,7 +2712,9 @@ function AuditManagementPage() {
                                 </span>
                               )}
                               {req.approved_by && (
-                                <div className="text-[10px] text-muted-foreground mt-1">Duyệt: {req.approved_by}</div>
+                                <div className="text-[10px] text-muted-foreground mt-1">
+                                  Duyệt: {req.approved_by}
+                                </div>
                               )}
                             </td>
                             <td className="py-3 px-4 text-right">
@@ -2550,8 +2799,7 @@ function AuditManagementPage() {
                     onClick={handleOpenCreateEval}
                     className="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs"
                   >
-                    <Plus className="w-4 h-4 mr-1.5" />
-                    + Đánh Giá Sau ĐT (BM04)
+                    <Plus className="w-4 h-4 mr-1.5" />+ Đánh Giá Sau ĐT (BM04)
                   </Button>
                 </div>
               </div>
@@ -2560,8 +2808,12 @@ function AuditManagementPage() {
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 <div className="bg-card p-4 rounded-2xl border shadow-sm flex items-center justify-between">
                   <div>
-                    <p className="text-[11px] font-bold text-muted-foreground">Tổng bản ghi đánh giá</p>
-                    <h3 className="text-xl font-extrabold text-foreground mt-0.5">{trainingEvaluations.length}</h3>
+                    <p className="text-[11px] font-bold text-muted-foreground">
+                      Tổng bản ghi đánh giá
+                    </p>
+                    <h3 className="text-xl font-extrabold text-foreground mt-0.5">
+                      {trainingEvaluations.length}
+                    </h3>
                   </div>
                   <div className="w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600">
                     <Award className="w-5 h-5" />
@@ -2571,7 +2823,7 @@ function AuditManagementPage() {
                   <div>
                     <p className="text-[11px] font-bold text-emerald-600">Đạt hiệu quả ứng dụng</p>
                     <h3 className="text-xl font-extrabold text-emerald-700 mt-0.5">
-                      {trainingEvaluations.filter(e => e.is_effective).length}
+                      {trainingEvaluations.filter((e) => e.is_effective).length}
                     </h3>
                   </div>
                   <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600">
@@ -2583,7 +2835,7 @@ function AuditManagementPage() {
                     <p className="text-[11px] font-bold text-blue-600">Tỷ lệ đạt hiệu quả</p>
                     <h3 className="text-xl font-extrabold text-blue-700 mt-0.5">
                       {trainingEvaluations.length > 0
-                        ? `${Math.round((trainingEvaluations.filter(e => e.is_effective).length / trainingEvaluations.length) * 100)}%`
+                        ? `${Math.round((trainingEvaluations.filter((e) => e.is_effective).length / trainingEvaluations.length) * 100)}%`
                         : "0%"}
                     </h3>
                   </div>
@@ -2596,8 +2848,14 @@ function AuditManagementPage() {
                     <p className="text-[11px] font-bold text-muted-foreground">Điểm đánh giá TB</p>
                     <h3 className="text-xl font-extrabold text-purple-700 dark:text-purple-400 mt-0.5">
                       {trainingEvaluations.length > 0
-                        ? (trainingEvaluations.reduce((sum, e) => sum + (e.overall_rating || 0), 0) / trainingEvaluations.length).toFixed(1)
-                        : "0.0"} / 5.0
+                        ? (
+                            trainingEvaluations.reduce(
+                              (sum, e) => sum + (e.overall_rating || 0),
+                              0,
+                            ) / trainingEvaluations.length
+                          ).toFixed(1)
+                        : "0.0"}{" "}
+                      / 5.0
                     </h3>
                   </div>
                   <div className="w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600">
@@ -2610,10 +2868,16 @@ function AuditManagementPage() {
               <div className="bg-card rounded-2xl border shadow-sm overflow-hidden">
                 <div className="p-4 border-b flex items-center justify-between">
                   <div>
-                    <h3 className="text-sm font-bold text-foreground">Bảng Đánh Giá Chất Lượng Sau Đào Tạo (Biểu mẫu BM04-QTĐT)</h3>
-                    <p className="text-[11px] text-muted-foreground">Theo dõi khả năng ứng dụng thực tế sau 1 - 3 - 6 tháng tại vị trí làm việc</p>
+                    <h3 className="text-sm font-bold text-foreground">
+                      Bảng Đánh Giá Chất Lượng Sau Đào Tạo (Biểu mẫu BM04-QTĐT)
+                    </h3>
+                    <p className="text-[11px] text-muted-foreground">
+                      Theo dõi khả năng ứng dụng thực tế sau 1 - 3 - 6 tháng tại vị trí làm việc
+                    </p>
                   </div>
-                  <span className="text-xs font-semibold text-muted-foreground">Hiển thị {filteredEvaluations.length} bản ghi</span>
+                  <span className="text-xs font-semibold text-muted-foreground">
+                    Hiển thị {filteredEvaluations.length} bản ghi
+                  </span>
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs">
@@ -2624,7 +2888,9 @@ function AuditManagementPage() {
                         <th className="py-3 px-4 text-center font-bold">Thời Điểm</th>
                         <th className="py-3 px-4 text-center font-bold">Điểm TB</th>
                         <th className="py-3 px-4 text-center font-bold">Kết Luận Hiệu Quả</th>
-                        <th className="py-3 px-4 text-left font-bold">Người ĐG & Tiến Bộ Quan Sát</th>
+                        <th className="py-3 px-4 text-left font-bold">
+                          Người ĐG & Tiến Bộ Quan Sát
+                        </th>
                         <th className="py-3 px-4 text-right font-bold">Thao Tác</th>
                       </tr>
                     </thead>
@@ -2637,7 +2903,10 @@ function AuditManagementPage() {
                         </tr>
                       ) : (
                         filteredEvaluations.map((ev) => (
-                          <tr key={ev.evaluation_id} className="hover:bg-muted/30 transition-colors">
+                          <tr
+                            key={ev.evaluation_id}
+                            className="hover:bg-muted/30 transition-colors"
+                          >
                             <td className="py-3 px-4">
                               <span className="font-mono font-bold text-purple-700 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/40 px-2 py-0.5 rounded border border-purple-200">
                                 {ev.evaluation_code}
@@ -2659,7 +2928,11 @@ function AuditManagementPage() {
                             </td>
                             <td className="py-3 px-4 text-center font-semibold">
                               <span className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[11px]">
-                                {ev.post_training_period === "1_MONTH" ? "1 Tháng" : ev.post_training_period === "3_MONTHS" ? "3 Tháng" : "6 Tháng"}
+                                {ev.post_training_period === "1_MONTH"
+                                  ? "1 Tháng"
+                                  : ev.post_training_period === "3_MONTHS"
+                                    ? "3 Tháng"
+                                    : "6 Tháng"}
                               </span>
                             </td>
                             <td className="py-3 px-4 text-center">
@@ -2680,9 +2953,13 @@ function AuditManagementPage() {
                               )}
                             </td>
                             <td className="py-3 px-4 max-w-xs">
-                              <p className="font-bold text-foreground text-xs">{ev.evaluator_name}</p>
+                              <p className="font-bold text-foreground text-xs">
+                                {ev.evaluator_name}
+                              </p>
                               <p className="text-[11px] text-muted-foreground line-clamp-1 mt-0.5">
-                                {ev.improvements_observed || ev.further_actions_needed || "Tuân thủ tốt quy trình"}
+                                {ev.improvements_observed ||
+                                  ev.further_actions_needed ||
+                                  "Tuân thủ tốt quy trình"}
                               </p>
                             </td>
                             <td className="py-3 px-4 text-right">
@@ -2797,93 +3074,129 @@ function AuditManagementPage() {
             />
           ) : (
             <div className="bg-card rounded-2xl border shadow-sm overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs text-left border-collapse min-w-[950px]">
-                <thead>
-                  <tr className="bg-slate-50 text-slate-700 border-b font-bold uppercase text-[10px] tracking-wider">
-                    <th className="p-3 w-12 text-center">STT</th>
-                    <th className="p-3">Nhân sự</th>
-                    <th className="p-3">Phòng ban</th>
-                    <th className="p-3">Ca / Ngày</th>
-                    <th className="p-3 text-center">Thân nhiệt</th>
-                    <th className="p-3">Triệu chứng lây nhiễm</th>
-                    <th className="p-3">Vệ sinh cá nhân</th>
-                    <th className="p-3 text-center">Kết luận ca</th>
-                    <th className="p-3">Người giám sát / Ghi chú</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {filteredHealth.length === 0 ? (
-                    <tr>
-                      <td colSpan={9} className="p-8 text-center text-slate-400">
-                        Chưa có bản ghi khai báo sức khỏe nào.
-                      </td>
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs text-left border-collapse min-w-[950px]">
+                  <thead>
+                    <tr className="bg-slate-50 text-slate-700 border-b font-bold uppercase text-[10px] tracking-wider">
+                      <th className="p-3 w-12 text-center">STT</th>
+                      <th className="p-3">Nhân sự</th>
+                      <th className="p-3">Phòng ban</th>
+                      <th className="p-3">Ca / Ngày</th>
+                      <th className="p-3 text-center">Thân nhiệt</th>
+                      <th className="p-3">Triệu chứng lây nhiễm</th>
+                      <th className="p-3">Vệ sinh cá nhân</th>
+                      <th className="p-3 text-center">Kết luận ca</th>
+                      <th className="p-3">Người giám sát / Ghi chú</th>
                     </tr>
-                  ) : (
-                    filteredHealth.map((h, idx) => {
-                      const hasSymptom = h.symptoms && Object.values(h.symptoms).some(Boolean);
-                      return (
-                        <tr key={h.declaration_id} className={`hover:bg-slate-50/80 ${h.cleared_for_shift === "SUSPENDED" ? "bg-rose-50/40" : ""}`}>
-                          <td className="p-3 text-center font-mono text-slate-400">{idx + 1}</td>
-                          <td className="p-3">
-                            <div className="font-bold text-slate-900">{h.employee_name}</div>
-                            <div className="text-[10px] font-mono text-slate-500">{h.employee_code}</div>
-                          </td>
-                          <td className="p-3 text-slate-700 font-medium">{h.department}</td>
-                          <td className="p-3">
-                            <div className="font-semibold text-slate-800">{h.shift_name}</div>
-                            <div className="text-[10px] font-mono text-slate-500">{h.shift_date}</div>
-                          </td>
-                          <td className="p-3 text-center">
-                            <span className={`inline-flex items-center gap-1 font-mono font-bold px-2 py-0.5 rounded text-xs ${
-                              h.body_temperature >= 37.8
-                                ? "bg-rose-100 text-rose-800 border border-rose-300"
-                                : "bg-slate-100 text-slate-800"
-                            }`}>
-                              <Thermometer className="w-3 h-3 text-slate-500" />
-                              {h.body_temperature}°C
-                            </span>
-                          </td>
-                          <td className="p-3">
-                            {hasSymptom ? (
-                              <div className="space-y-0.5">
-                                {h.symptoms.fever && <span className="inline-block text-[10px] font-bold text-rose-700 bg-rose-50 px-1.5 py-0.5 rounded mr-1">Sốt</span>}
-                                {h.symptoms.cough && <span className="inline-block text-[10px] font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded mr-1">Ho</span>}
-                                {h.symptoms.open_wound && <span className="inline-block text-[10px] font-bold text-rose-700 bg-rose-50 px-1.5 py-0.5 rounded mr-1">Vết thương hở</span>}
-                                {h.symptoms.diarrhea && <span className="inline-block text-[10px] font-bold text-rose-700 bg-rose-50 px-1.5 py-0.5 rounded mr-1">Tiêu chảy</span>}
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {filteredHealth.length === 0 ? (
+                      <tr>
+                        <td colSpan={9} className="p-8 text-center text-slate-400">
+                          Chưa có bản ghi khai báo sức khỏe nào.
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredHealth.map((h, idx) => {
+                        const hasSymptom = h.symptoms && Object.values(h.symptoms).some(Boolean);
+                        return (
+                          <tr
+                            key={h.declaration_id}
+                            className={`hover:bg-slate-50/80 ${h.cleared_for_shift === "SUSPENDED" ? "bg-rose-50/40" : ""}`}
+                          >
+                            <td className="p-3 text-center font-mono text-slate-400">{idx + 1}</td>
+                            <td className="p-3">
+                              <div className="font-bold text-slate-900">{h.employee_name}</div>
+                              <div className="text-[10px] font-mono text-slate-500">
+                                {h.employee_code}
                               </div>
-                            ) : (
-                              <span className="text-[11px] text-emerald-700 font-semibold flex items-center gap-1">
-                                <Check className="w-3.5 h-3.5 text-emerald-600" /> Không có triệu chứng
+                            </td>
+                            <td className="p-3 text-slate-700 font-medium">{h.department}</td>
+                            <td className="p-3">
+                              <div className="font-semibold text-slate-800">{h.shift_name}</div>
+                              <div className="text-[10px] font-mono text-slate-500">
+                                {h.shift_date}
+                              </div>
+                            </td>
+                            <td className="p-3 text-center">
+                              <span
+                                className={`inline-flex items-center gap-1 font-mono font-bold px-2 py-0.5 rounded text-xs ${
+                                  h.body_temperature >= 37.8
+                                    ? "bg-rose-100 text-rose-800 border border-rose-300"
+                                    : "bg-slate-100 text-slate-800"
+                                }`}
+                              >
+                                <Thermometer className="w-3 h-3 text-slate-500" />
+                                {h.body_temperature}°C
                               </span>
-                            )}
-                          </td>
-                          <td className="p-3 text-[11px] text-slate-600">
-                            {h.personal_hygiene_check?.clean_uniform ? "BHLĐ Đạt · Móng ngắn" : "Cần chỉnh trang"}
-                          </td>
-                          <td className="p-3 text-center">
-                            <span className={`inline-block text-[10px] font-black px-2.5 py-1 rounded-full border ${
-                              h.cleared_for_shift === "CLEARED"
-                                ? "bg-emerald-100 text-emerald-800 border-emerald-300"
-                                : h.cleared_for_shift === "RESTRICTED"
-                                ? "bg-amber-100 text-amber-800 border-amber-300"
-                                : "bg-rose-100 text-rose-800 border-rose-300"
-                            }`}>
-                              {h.cleared_for_shift === "CLEARED" ? "ĐỦ ĐIỀU KIỆN" : h.cleared_for_shift === "RESTRICTED" ? "HẠN CHẾ VỊ TRÍ" : "ĐÌNH CHỈ VÀO XƯỞNG"}
-                            </span>
-                          </td>
-                          <td className="p-3 text-[11px] text-slate-700">
-                            <div className="font-semibold">{h.supervisor_name}</div>
-                            {h.notes && <div className="text-slate-500 text-[10px] italic">{h.notes}</div>}
-                          </td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
+                            </td>
+                            <td className="p-3">
+                              {hasSymptom ? (
+                                <div className="space-y-0.5">
+                                  {h.symptoms.fever && (
+                                    <span className="inline-block text-[10px] font-bold text-rose-700 bg-rose-50 px-1.5 py-0.5 rounded mr-1">
+                                      Sốt
+                                    </span>
+                                  )}
+                                  {h.symptoms.cough && (
+                                    <span className="inline-block text-[10px] font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded mr-1">
+                                      Ho
+                                    </span>
+                                  )}
+                                  {h.symptoms.open_wound && (
+                                    <span className="inline-block text-[10px] font-bold text-rose-700 bg-rose-50 px-1.5 py-0.5 rounded mr-1">
+                                      Vết thương hở
+                                    </span>
+                                  )}
+                                  {h.symptoms.diarrhea && (
+                                    <span className="inline-block text-[10px] font-bold text-rose-700 bg-rose-50 px-1.5 py-0.5 rounded mr-1">
+                                      Tiêu chảy
+                                    </span>
+                                  )}
+                                </div>
+                              ) : (
+                                <span className="text-[11px] text-emerald-700 font-semibold flex items-center gap-1">
+                                  <Check className="w-3.5 h-3.5 text-emerald-600" /> Không có triệu
+                                  chứng
+                                </span>
+                              )}
+                            </td>
+                            <td className="p-3 text-[11px] text-slate-600">
+                              {h.personal_hygiene_check?.clean_uniform
+                                ? "BHLĐ Đạt · Móng ngắn"
+                                : "Cần chỉnh trang"}
+                            </td>
+                            <td className="p-3 text-center">
+                              <span
+                                className={`inline-block text-[10px] font-black px-2.5 py-1 rounded-full border ${
+                                  h.cleared_for_shift === "CLEARED"
+                                    ? "bg-emerald-100 text-emerald-800 border-emerald-300"
+                                    : h.cleared_for_shift === "RESTRICTED"
+                                      ? "bg-amber-100 text-amber-800 border-amber-300"
+                                      : "bg-rose-100 text-rose-800 border-rose-300"
+                                }`}
+                              >
+                                {h.cleared_for_shift === "CLEARED"
+                                  ? "ĐỦ ĐIỀU KIỆN"
+                                  : h.cleared_for_shift === "RESTRICTED"
+                                    ? "HẠN CHẾ VỊ TRÍ"
+                                    : "ĐÌNH CHỈ VÀO XƯỞNG"}
+                              </span>
+                            </td>
+                            <td className="p-3 text-[11px] text-slate-700">
+                              <div className="font-semibold">{h.supervisor_name}</div>
+                              {h.notes && (
+                                <div className="text-slate-500 text-[10px] italic">{h.notes}</div>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
-          </div>
           )}
         </div>
       )}
@@ -2899,8 +3212,12 @@ function AuditManagementPage() {
                   <BrainCircuit className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-slate-900">AI Sinh Checklist ĐGNB Theo Điều Khoản</h3>
-                  <p className="text-xs text-muted-foreground">Tự động gợi ý bộ câu hỏi và bằng chứng cần kiểm tra theo ISO 22000.</p>
+                  <h3 className="text-sm font-bold text-slate-900">
+                    AI Sinh Checklist ĐGNB Theo Điều Khoản
+                  </h3>
+                  <p className="text-xs text-muted-foreground">
+                    Tự động gợi ý bộ câu hỏi và bằng chứng cần kiểm tra theo ISO 22000.
+                  </p>
                 </div>
               </div>
 
@@ -2926,16 +3243,29 @@ function AuditManagementPage() {
 
               {aiChecklistResult && (
                 <div className="space-y-2.5 pt-2 border-t">
-                  <h4 className="text-xs font-bold text-blue-800">Danh mục câu hỏi gợi ý ({aiChecklistResult.suggested_questions?.length}):</h4>
+                  <h4 className="text-xs font-bold text-blue-800">
+                    Danh mục câu hỏi gợi ý ({aiChecklistResult.suggested_questions?.length}):
+                  </h4>
                   <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
                     {aiChecklistResult.suggested_questions?.map((q: any, idx: number) => (
-                      <div key={idx} className="p-2.5 rounded-xl bg-slate-50 border text-xs space-y-1">
+                      <div
+                        key={idx}
+                        className="p-2.5 rounded-xl bg-slate-50 border text-xs space-y-1"
+                      >
                         <div className="flex items-center justify-between font-bold text-slate-900">
-                          <span>Điều {q.clause} - {q.title}</span>
-                          <span className="text-[10px] text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded">{q.dept}</span>
+                          <span>
+                            Điều {q.clause} - {q.title}
+                          </span>
+                          <span className="text-[10px] text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded">
+                            {q.dept}
+                          </span>
                         </div>
-                        <p className="text-slate-800"><b>Hỏi:</b> {q.question}</p>
-                        <p className="text-slate-500 text-[11px]"><b>Bằng chứng:</b> {q.evidence}</p>
+                        <p className="text-slate-800">
+                          <b>Hỏi:</b> {q.question}
+                        </p>
+                        <p className="text-slate-500 text-[11px]">
+                          <b>Bằng chứng:</b> {q.evidence}
+                        </p>
                       </div>
                     ))}
                   </div>
@@ -2950,8 +3280,12 @@ function AuditManagementPage() {
                   <AlertTriangle className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-slate-900">AI Thẩm Định & Phân Loại Lỗi Phát Hiện</h3>
-                  <p className="text-xs text-muted-foreground">Phân tích mức độ nặng/nhẹ (Major/Minor NC/OFI) từ mô tả hiện trường.</p>
+                  <h3 className="text-sm font-bold text-slate-900">
+                    AI Thẩm Định & Phân Loại Lỗi Phát Hiện
+                  </h3>
+                  <p className="text-xs text-muted-foreground">
+                    Phân tích mức độ nặng/nhẹ (Major/Minor NC/OFI) từ mô tả hiện trường.
+                  </p>
                 </div>
               </div>
 
@@ -2981,9 +3315,15 @@ function AuditManagementPage() {
                       {aiEvalResult.suggested_classification}
                     </span>
                   </div>
-                  <p><b>Điều khoản vi phạm:</b> {aiEvalResult.suggested_clause}</p>
-                  <p><b>Lý do mức độ:</b> {aiEvalResult.severity_reason}</p>
-                  <p className="text-rose-700 font-bold"><b>Hành động khắc phục:</b> {aiEvalResult.recommended_action}</p>
+                  <p>
+                    <b>Điều khoản vi phạm:</b> {aiEvalResult.suggested_clause}
+                  </p>
+                  <p>
+                    <b>Lý do mức độ:</b> {aiEvalResult.severity_reason}
+                  </p>
+                  <p className="text-rose-700 font-bold">
+                    <b>Hành động khắc phục:</b> {aiEvalResult.recommended_action}
+                  </p>
                 </div>
               )}
             </div>
@@ -2995,8 +3335,12 @@ function AuditManagementPage() {
                   <GraduationCap className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-slate-900">AI Sinh Đề Thi Trắc Nghiệm Sát Hạch</h3>
-                  <p className="text-xs text-muted-foreground">Tự động sinh 5 câu hỏi trắc nghiệm kèm đáp án giải thích theo chuyên đề.</p>
+                  <h3 className="text-sm font-bold text-slate-900">
+                    AI Sinh Đề Thi Trắc Nghiệm Sát Hạch
+                  </h3>
+                  <p className="text-xs text-muted-foreground">
+                    Tự động sinh 5 câu hỏi trắc nghiệm kèm đáp án giải thích theo chuyên đề.
+                  </p>
                 </div>
               </div>
 
@@ -3022,14 +3366,26 @@ function AuditManagementPage() {
 
               {aiQuizResult && (
                 <div className="space-y-2.5 pt-2 border-t">
-                  <h4 className="text-xs font-bold text-purple-800">Bộ đề thi trắc nghiệm mẫu ({aiQuizResult.questions?.length} câu):</h4>
+                  <h4 className="text-xs font-bold text-purple-800">
+                    Bộ đề thi trắc nghiệm mẫu ({aiQuizResult.questions?.length} câu):
+                  </h4>
                   <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
                     {aiQuizResult.questions?.map((q: any) => (
-                      <div key={q.id} className="p-2.5 rounded-xl bg-slate-50 border text-xs space-y-1">
-                        <div className="font-bold text-slate-900">Câu {q.id}: {q.question}</div>
+                      <div
+                        key={q.id}
+                        className="p-2.5 rounded-xl bg-slate-50 border text-xs space-y-1"
+                      >
+                        <div className="font-bold text-slate-900">
+                          Câu {q.id}: {q.question}
+                        </div>
                         <div className="space-y-0.5 text-slate-700 pl-2">
                           {q.options.map((opt: string, i: number) => (
-                            <div key={i} className={opt.startsWith(q.correct_option) ? "text-emerald-700 font-bold" : ""}>
+                            <div
+                              key={i}
+                              className={
+                                opt.startsWith(q.correct_option) ? "text-emerald-700 font-bold" : ""
+                              }
+                            >
                               {opt}
                             </div>
                           ))}
@@ -3051,8 +3407,12 @@ function AuditManagementPage() {
                   <HeartPulse className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-slate-900">AI Quét Phân Tích Rủi Ro Sức Khỏe Ca</h3>
-                  <p className="text-xs text-muted-foreground">Tự động phát hiện nguy cơ lây nhiễm vi sinh từ sổ khai báo sức khỏe.</p>
+                  <h3 className="text-sm font-bold text-slate-900">
+                    AI Quét Phân Tích Rủi Ro Sức Khỏe Ca
+                  </h3>
+                  <p className="text-xs text-muted-foreground">
+                    Tự động phát hiện nguy cơ lây nhiễm vi sinh từ sổ khai báo sức khỏe.
+                  </p>
                 </div>
               </div>
 
@@ -3071,26 +3431,47 @@ function AuditManagementPage() {
                 <div className="p-3 rounded-xl bg-slate-50 border text-xs space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="font-bold text-slate-700">Mức độ rủi ro dịch tễ:</span>
-                    <span className={`font-black px-2 py-0.5 rounded ${
-                      aiHealthRiskResult.risk_level === "HIGH"
-                        ? "bg-rose-100 text-rose-800"
+                    <span
+                      className={`font-black px-2 py-0.5 rounded ${
+                        aiHealthRiskResult.risk_level === "HIGH"
+                          ? "bg-rose-100 text-rose-800"
+                          : aiHealthRiskResult.risk_level === "MEDIUM"
+                            ? "bg-amber-100 text-amber-800"
+                            : "bg-emerald-100 text-emerald-800"
+                      }`}
+                    >
+                      {aiHealthRiskResult.risk_level === "HIGH"
+                        ? "NGUY CƠ CAO (CÁCH LY)"
                         : aiHealthRiskResult.risk_level === "MEDIUM"
-                        ? "bg-amber-100 text-amber-800"
-                        : "bg-emerald-100 text-emerald-800"
-                    }`}>
-                      {aiHealthRiskResult.risk_level === "HIGH" ? "NGUY CƠ CAO (CÁCH LY)" : aiHealthRiskResult.risk_level === "MEDIUM" ? "CẢNH BÁO VỪA" : "AN TOÀN"}
+                          ? "CẢNH BÁO VỪA"
+                          : "AN TOÀN"}
                     </span>
                   </div>
                   <div className="grid grid-cols-2 gap-2 text-[11px] bg-white p-2 rounded-lg border">
-                    <div>Số ca sốt: <b className="text-rose-700">{aiHealthRiskResult.fever_count}</b></div>
-                    <div>Vết thương hở: <b className="text-rose-700">{aiHealthRiskResult.open_wound_count}</b></div>
-                    <div>Ca đình chỉ: <b className="text-rose-700">{aiHealthRiskResult.suspended_count}</b></div>
-                    <div>Tổng số đã quét: <b>{aiHealthRiskResult.total_scanned}</b></div>
+                    <div>
+                      Số ca sốt: <b className="text-rose-700">{aiHealthRiskResult.fever_count}</b>
+                    </div>
+                    <div>
+                      Vết thương hở:{" "}
+                      <b className="text-rose-700">{aiHealthRiskResult.open_wound_count}</b>
+                    </div>
+                    <div>
+                      Ca đình chỉ:{" "}
+                      <b className="text-rose-700">{aiHealthRiskResult.suspended_count}</b>
+                    </div>
+                    <div>
+                      Tổng số đã quét: <b>{aiHealthRiskResult.total_scanned}</b>
+                    </div>
                   </div>
                   <div className="space-y-1">
-                    <span className="font-bold text-slate-900 block text-[11px]">Khuyến nghị y tế:</span>
+                    <span className="font-bold text-slate-900 block text-[11px]">
+                      Khuyến nghị y tế:
+                    </span>
                     {aiHealthRiskResult.recommendations?.map((r: string, i: number) => (
-                      <div key={i} className="text-rose-700 font-medium text-[11px] flex items-start gap-1">
+                      <div
+                        key={i}
+                        className="text-rose-700 font-medium text-[11px] flex items-start gap-1"
+                      >
                         • {r}
                       </div>
                     ))}
@@ -3180,7 +3561,9 @@ function AuditManagementPage() {
                 <Input
                   required
                   value={auditForm.lead_auditor_name}
-                  onChange={(e) => setAuditForm({ ...auditForm, lead_auditor_name: e.target.value })}
+                  onChange={(e) =>
+                    setAuditForm({ ...auditForm, lead_auditor_name: e.target.value })
+                  }
                 />
               </div>
             </div>
@@ -3259,7 +3642,9 @@ function AuditManagementPage() {
                   required
                   placeholder="VD: 8.2.4, 8.5.4"
                   value={findingForm.clause_number}
-                  onChange={(e) => setFindingForm({ ...findingForm, clause_number: e.target.value })}
+                  onChange={(e) =>
+                    setFindingForm({ ...findingForm, clause_number: e.target.value })
+                  }
                 />
               </div>
               <div className="space-y-1 col-span-2">
@@ -3288,7 +3673,9 @@ function AuditManagementPage() {
               <Input
                 placeholder="Hồ sơ, nhật ký, phỏng vấn, quan sát..."
                 value={findingForm.evidence_reviewed}
-                onChange={(e) => setFindingForm({ ...findingForm, evidence_reviewed: e.target.value })}
+                onChange={(e) =>
+                  setFindingForm({ ...findingForm, evidence_reviewed: e.target.value })
+                }
               />
             </div>
 
@@ -3423,7 +3810,12 @@ function AuditManagementPage() {
                   type="number"
                   step="0.5"
                   value={courseForm.duration_hours}
-                  onChange={(e) => setCourseForm({ ...courseForm, duration_hours: parseFloat(e.target.value) || 4.0 })}
+                  onChange={(e) =>
+                    setCourseForm({
+                      ...courseForm,
+                      duration_hours: parseFloat(e.target.value) || 4.0,
+                    })
+                  }
                 />
               </div>
             </div>
@@ -3452,12 +3844,15 @@ function AuditManagementPage() {
               if (!selectedCourse) return;
               try {
                 const passed = participantForm.post_test_score >= 70;
-                await api.post(`/audits/training/courses/${selectedCourse.course_id}/participants`, {
-                  ...participantForm,
-                  course_id: selectedCourse.course_id,
-                  evaluation_result: passed ? "PASSED" : "FAILED",
-                  certificate_issued: passed,
-                });
+                await api.post(
+                  `/audits/training/courses/${selectedCourse.course_id}/participants`,
+                  {
+                    ...participantForm,
+                    course_id: selectedCourse.course_id,
+                    evaluation_result: passed ? "PASSED" : "FAILED",
+                    certificate_issued: passed,
+                  },
+                );
                 toast.success("Thêm học viên thành công!");
                 setShowParticipantModal(false);
                 loadParticipants(selectedCourse.course_id);
@@ -3474,7 +3869,9 @@ function AuditManagementPage() {
                 <Input
                   required
                   value={participantForm.employee_code}
-                  onChange={(e) => setParticipantForm({ ...participantForm, employee_code: e.target.value })}
+                  onChange={(e) =>
+                    setParticipantForm({ ...participantForm, employee_code: e.target.value })
+                  }
                 />
               </div>
               <div className="space-y-1">
@@ -3482,7 +3879,9 @@ function AuditManagementPage() {
                 <Input
                   required
                   value={participantForm.employee_name}
-                  onChange={(e) => setParticipantForm({ ...participantForm, employee_name: e.target.value })}
+                  onChange={(e) =>
+                    setParticipantForm({ ...participantForm, employee_name: e.target.value })
+                  }
                 />
               </div>
             </div>
@@ -3493,7 +3892,9 @@ function AuditManagementPage() {
                 <select
                   className="w-full border rounded-md px-3 py-2 text-xs bg-background font-semibold"
                   value={participantForm.department}
-                  onChange={(e) => setParticipantForm({ ...participantForm, department: e.target.value })}
+                  onChange={(e) =>
+                    setParticipantForm({ ...participantForm, department: e.target.value })
+                  }
                 >
                   {departments.map((d) => (
                     <option key={d} value={d}>
@@ -3506,7 +3907,9 @@ function AuditManagementPage() {
                 <Label className="text-xs">Vị trí công việc</Label>
                 <Input
                   value={participantForm.position}
-                  onChange={(e) => setParticipantForm({ ...participantForm, position: e.target.value })}
+                  onChange={(e) =>
+                    setParticipantForm({ ...participantForm, position: e.target.value })
+                  }
                 />
               </div>
             </div>
@@ -3518,7 +3921,12 @@ function AuditManagementPage() {
                   type="number"
                   step="1"
                   value={participantForm.pre_test_score}
-                  onChange={(e) => setParticipantForm({ ...participantForm, pre_test_score: parseFloat(e.target.value) || 0 })}
+                  onChange={(e) =>
+                    setParticipantForm({
+                      ...participantForm,
+                      pre_test_score: parseFloat(e.target.value) || 0,
+                    })
+                  }
                 />
               </div>
               <div className="space-y-1">
@@ -3528,13 +3936,22 @@ function AuditManagementPage() {
                   step="1"
                   required
                   value={participantForm.post_test_score}
-                  onChange={(e) => setParticipantForm({ ...participantForm, post_test_score: parseFloat(e.target.value) || 0 })}
+                  onChange={(e) =>
+                    setParticipantForm({
+                      ...participantForm,
+                      post_test_score: parseFloat(e.target.value) || 0,
+                    })
+                  }
                 />
               </div>
             </div>
 
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setShowParticipantModal(false)}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowParticipantModal(false)}
+              >
                 Hủy
               </Button>
               <Button type="submit" className="bg-primary text-primary-foreground font-bold">
@@ -3550,7 +3967,9 @@ function AuditManagementPage() {
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {editingRequest ? "Chỉnh Sửa Phiếu Đề Xuất Đào Tạo (BM01)" : "Lập Phiếu Đề Xuất Đào Tạo Mới (BM01-QTĐT)"}
+              {editingRequest
+                ? "Chỉnh Sửa Phiếu Đề Xuất Đào Tạo (BM01)"
+                : "Lập Phiếu Đề Xuất Đào Tạo Mới (BM01-QTĐT)"}
             </DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSaveRequest} className="space-y-4 text-xs">
@@ -3591,7 +4010,9 @@ function AuditManagementPage() {
                 required
                 placeholder="Mô tả nhu cầu phát sinh, rủi ro an toàn thực phẩm cần khắc phục hoặc mục tiêu nâng cao tay nghề..."
                 value={requestForm.reason_and_objective}
-                onChange={(e) => setRequestForm({ ...requestForm, reason_and_objective: e.target.value })}
+                onChange={(e) =>
+                  setRequestForm({ ...requestForm, reason_and_objective: e.target.value })
+                }
               />
             </div>
 
@@ -3604,7 +4025,9 @@ function AuditManagementPage() {
                   onChange={(e) => setRequestForm({ ...requestForm, department: e.target.value })}
                 >
                   {departments.map((d) => (
-                    <option key={d} value={d}>{d}</option>
+                    <option key={d} value={d}>
+                      {d}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -3624,7 +4047,9 @@ function AuditManagementPage() {
                 <Input
                   placeholder="VD: Công nhân vận hành, KTV QA"
                   value={requestForm.target_audience}
-                  onChange={(e) => setRequestForm({ ...requestForm, target_audience: e.target.value })}
+                  onChange={(e) =>
+                    setRequestForm({ ...requestForm, target_audience: e.target.value })
+                  }
                 />
               </div>
               <div className="space-y-1">
@@ -3633,7 +4058,12 @@ function AuditManagementPage() {
                   type="number"
                   min="1"
                   value={requestForm.expected_participants_count}
-                  onChange={(e) => setRequestForm({ ...requestForm, expected_participants_count: parseInt(e.target.value) || 1 })}
+                  onChange={(e) =>
+                    setRequestForm({
+                      ...requestForm,
+                      expected_participants_count: parseInt(e.target.value) || 1,
+                    })
+                  }
                 />
               </div>
             </div>
@@ -3644,7 +4074,9 @@ function AuditManagementPage() {
                 <Input
                   placeholder="VD: Tháng 03/2026"
                   value={requestForm.expected_timeframe}
-                  onChange={(e) => setRequestForm({ ...requestForm, expected_timeframe: e.target.value })}
+                  onChange={(e) =>
+                    setRequestForm({ ...requestForm, expected_timeframe: e.target.value })
+                  }
                 />
               </div>
               <div className="space-y-1">
@@ -3652,7 +4084,9 @@ function AuditManagementPage() {
                 <Input
                   placeholder="VD: Đội trưởng HACCP"
                   value={requestForm.proposed_trainer}
-                  onChange={(e) => setRequestForm({ ...requestForm, proposed_trainer: e.target.value })}
+                  onChange={(e) =>
+                    setRequestForm({ ...requestForm, proposed_trainer: e.target.value })
+                  }
                 />
               </div>
               <div className="space-y-1">
@@ -3661,7 +4095,12 @@ function AuditManagementPage() {
                   type="number"
                   step="50000"
                   value={requestForm.estimated_cost}
-                  onChange={(e) => setRequestForm({ ...requestForm, estimated_cost: parseFloat(e.target.value) || 0 })}
+                  onChange={(e) =>
+                    setRequestForm({
+                      ...requestForm,
+                      estimated_cost: parseFloat(e.target.value) || 0,
+                    })
+                  }
                 />
               </div>
             </div>
@@ -3672,7 +4111,9 @@ function AuditManagementPage() {
                 <select
                   className="w-full border rounded-md px-3 py-2 text-xs bg-background font-semibold"
                   value={requestForm.approval_status}
-                  onChange={(e) => setRequestForm({ ...requestForm, approval_status: e.target.value })}
+                  onChange={(e) =>
+                    setRequestForm({ ...requestForm, approval_status: e.target.value })
+                  }
                 >
                   <option value="PENDING">Chờ phê duyệt</option>
                   <option value="APPROVED">Đã phê duyệt</option>
@@ -3684,7 +4125,13 @@ function AuditManagementPage() {
                 <Input
                   placeholder="VD: Giám Đốc Điều Hành - Đã duyệt triển khai theo kế hoạch"
                   value={requestForm.approved_by || ""}
-                  onChange={(e) => setRequestForm({ ...requestForm, approved_by: e.target.value, approval_comments: e.target.value })}
+                  onChange={(e) =>
+                    setRequestForm({
+                      ...requestForm,
+                      approved_by: e.target.value,
+                      approval_comments: e.target.value,
+                    })
+                  }
                 />
               </div>
             </div>
@@ -3693,7 +4140,10 @@ function AuditManagementPage() {
               <Button type="button" variant="outline" onClick={() => setShowRequestModal(false)}>
                 Hủy
               </Button>
-              <Button type="submit" className="bg-purple-600 hover:bg-purple-700 text-white font-bold">
+              <Button
+                type="submit"
+                className="bg-purple-600 hover:bg-purple-700 text-white font-bold"
+              >
                 {editingRequest ? "Cập Nhật Phiếu" : "Lưu Phiếu Đề Xuất"}
               </Button>
             </DialogFooter>
@@ -3706,7 +4156,9 @@ function AuditManagementPage() {
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {editingEval ? "Chỉnh Sửa Bản Đánh Giá Sau Đào Tạo (BM04)" : "Lập Đánh Giá Chất Lượng Sau Đào Tạo (BM04-QTĐT)"}
+              {editingEval
+                ? "Chỉnh Sửa Bản Đánh Giá Sau Đào Tạo (BM04)"
+                : "Lập Đánh Giá Chất Lượng Sau Đào Tạo (BM04-QTĐT)"}
             </DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSaveEval} className="space-y-4 text-xs">
@@ -3733,7 +4185,9 @@ function AuditManagementPage() {
                 <select
                   className="w-full border rounded-md px-3 py-2 text-xs bg-background font-semibold"
                   value={evalForm.post_training_period}
-                  onChange={(e) => setEvalForm({ ...evalForm, post_training_period: e.target.value })}
+                  onChange={(e) =>
+                    setEvalForm({ ...evalForm, post_training_period: e.target.value })
+                  }
                 >
                   <option value="1_MONTH">1 Tháng sau đào tạo</option>
                   <option value="3_MONTHS">3 Tháng sau đào tạo</option>
@@ -3747,7 +4201,12 @@ function AuditManagementPage() {
               <select
                 className="w-full border rounded-md px-3 py-2 text-xs bg-background font-semibold"
                 value={evalForm.course_id || ""}
-                onChange={(e) => setEvalForm({ ...evalForm, course_id: e.target.value ? parseInt(e.target.value) : undefined })}
+                onChange={(e) =>
+                  setEvalForm({
+                    ...evalForm,
+                    course_id: e.target.value ? parseInt(e.target.value) : undefined,
+                  })
+                }
               >
                 <option value="">-- Chọn khóa học thực hiện --</option>
                 {courses.map((c) => (
@@ -3772,7 +4231,9 @@ function AuditManagementPage() {
                 <Input
                   required
                   value={evalForm.evaluated_employee_name}
-                  onChange={(e) => setEvalForm({ ...evalForm, evaluated_employee_name: e.target.value })}
+                  onChange={(e) =>
+                    setEvalForm({ ...evalForm, evaluated_employee_name: e.target.value })
+                  }
                 />
               </div>
               <div className="space-y-1">
@@ -3783,7 +4244,9 @@ function AuditManagementPage() {
                   onChange={(e) => setEvalForm({ ...evalForm, department: e.target.value })}
                 >
                   {departments.map((d) => (
-                    <option key={d} value={d}>{d}</option>
+                    <option key={d} value={d}>
+                      {d}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -3809,7 +4272,9 @@ function AuditManagementPage() {
 
             <div className="grid grid-cols-2 gap-3 p-3 bg-purple-50/50 dark:bg-purple-950/20 rounded-xl border border-purple-100">
               <div className="space-y-1">
-                <Label className="text-xs font-bold text-purple-900 dark:text-purple-200">Điểm đánh giá tổng thể (Thang 1-5)</Label>
+                <Label className="text-xs font-bold text-purple-900 dark:text-purple-200">
+                  Điểm đánh giá tổng thể (Thang 1-5)
+                </Label>
                 <Input
                   type="number"
                   step="0.1"
@@ -3828,7 +4293,9 @@ function AuditManagementPage() {
                 />
               </div>
               <div className="space-y-1 flex flex-col justify-end">
-                <Label className="text-xs font-bold text-purple-900 dark:text-purple-200">Kết luận hiệu quả ứng dụng</Label>
+                <Label className="text-xs font-bold text-purple-900 dark:text-purple-200">
+                  Kết luận hiệu quả ứng dụng
+                </Label>
                 <div className="flex items-center gap-2 mt-2">
                   <input
                     type="checkbox"
@@ -3837,7 +4304,10 @@ function AuditManagementPage() {
                     onChange={(e) => setEvalForm({ ...evalForm, is_effective: e.target.checked })}
                     className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500"
                   />
-                  <label htmlFor="is_effective_check" className="text-xs font-bold text-foreground cursor-pointer">
+                  <label
+                    htmlFor="is_effective_check"
+                    className="text-xs font-bold text-foreground cursor-pointer"
+                  >
                     {evalForm.is_effective ? "✅ ĐẠT HIỆU QUẢ SAU ĐÀO TẠO" : "❌ CHƯA ĐẠT HIỆU QUẢ"}
                   </label>
                 </div>
@@ -3850,7 +4320,9 @@ function AuditManagementPage() {
                 rows={2}
                 placeholder="VD: Thao tác đúng quy trình SOP, kiểm soát tốt mối nguy, không xảy ra sai sót..."
                 value={evalForm.improvements_observed}
-                onChange={(e) => setEvalForm({ ...evalForm, improvements_observed: e.target.value })}
+                onChange={(e) =>
+                  setEvalForm({ ...evalForm, improvements_observed: e.target.value })
+                }
               />
             </div>
 
@@ -3860,7 +4332,9 @@ function AuditManagementPage() {
                 <Input
                   placeholder="VD: Kèm cặp thực hành thêm 1 tuần"
                   value={evalForm.further_actions_needed}
-                  onChange={(e) => setEvalForm({ ...evalForm, further_actions_needed: e.target.value })}
+                  onChange={(e) =>
+                    setEvalForm({ ...evalForm, further_actions_needed: e.target.value })
+                  }
                 />
               </div>
               <div className="space-y-1">
@@ -3876,7 +4350,10 @@ function AuditManagementPage() {
               <Button type="button" variant="outline" onClick={() => setShowEvalModal(false)}>
                 Hủy
               </Button>
-              <Button type="submit" className="bg-purple-600 hover:bg-purple-700 text-white font-bold">
+              <Button
+                type="submit"
+                className="bg-purple-600 hover:bg-purple-700 text-white font-bold"
+              >
                 {editingEval ? "Cập Nhật Đánh Giá" : "Lưu Đánh Giá BM04"}
               </Button>
             </DialogFooter>
@@ -3959,19 +4436,31 @@ function AuditManagementPage() {
                 step="0.1"
                 required
                 value={healthForm.body_temperature}
-                onChange={(e) => setHealthForm({ ...healthForm, body_temperature: parseFloat(e.target.value) || 36.5 })}
+                onChange={(e) =>
+                  setHealthForm({
+                    ...healthForm,
+                    body_temperature: parseFloat(e.target.value) || 36.5,
+                  })
+                }
               />
             </div>
 
             {/* Symptoms Checklist */}
             <div className="p-3 bg-slate-50 rounded-xl border space-y-2">
-              <Label className="text-xs font-bold text-slate-800">Kiểm tra triệu chứng bệnh truyền nhiễm:</Label>
+              <Label className="text-xs font-bold text-slate-800">
+                Kiểm tra triệu chứng bệnh truyền nhiễm:
+              </Label>
               <div className="grid grid-cols-2 gap-2 text-xs">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={healthForm.symptoms.fever}
-                    onChange={(e) => setHealthForm({ ...healthForm, symptoms: { ...healthForm.symptoms, fever: e.target.checked } })}
+                    onChange={(e) =>
+                      setHealthForm({
+                        ...healthForm,
+                        symptoms: { ...healthForm.symptoms, fever: e.target.checked },
+                      })
+                    }
                     className="rounded text-rose-600"
                   />
                   <span>Sốt (&gt;= 37.8°C)</span>
@@ -3980,7 +4469,12 @@ function AuditManagementPage() {
                   <input
                     type="checkbox"
                     checked={healthForm.symptoms.cough}
-                    onChange={(e) => setHealthForm({ ...healthForm, symptoms: { ...healthForm.symptoms, cough: e.target.checked } })}
+                    onChange={(e) =>
+                      setHealthForm({
+                        ...healthForm,
+                        symptoms: { ...healthForm.symptoms, cough: e.target.checked },
+                      })
+                    }
                     className="rounded text-amber-600"
                   />
                   <span>Ho, đau họng, khó thở</span>
@@ -3989,7 +4483,12 @@ function AuditManagementPage() {
                   <input
                     type="checkbox"
                     checked={healthForm.symptoms.open_wound}
-                    onChange={(e) => setHealthForm({ ...healthForm, symptoms: { ...healthForm.symptoms, open_wound: e.target.checked } })}
+                    onChange={(e) =>
+                      setHealthForm({
+                        ...healthForm,
+                        symptoms: { ...healthForm.symptoms, open_wound: e.target.checked },
+                      })
+                    }
                     className="rounded text-rose-600"
                   />
                   <span>Vết thương hở / Đứt tay</span>
@@ -3998,7 +4497,12 @@ function AuditManagementPage() {
                   <input
                     type="checkbox"
                     checked={healthForm.symptoms.diarrhea}
-                    onChange={(e) => setHealthForm({ ...healthForm, symptoms: { ...healthForm.symptoms, diarrhea: e.target.checked } })}
+                    onChange={(e) =>
+                      setHealthForm({
+                        ...healthForm,
+                        symptoms: { ...healthForm.symptoms, diarrhea: e.target.checked },
+                      })
+                    }
                     className="rounded text-rose-600"
                   />
                   <span>Tiêu chảy / Nôn mửa</span>
@@ -4010,7 +4514,10 @@ function AuditManagementPage() {
               <Button type="button" variant="outline" onClick={() => setShowHealthModal(false)}>
                 Hủy
               </Button>
-              <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold">
+              <Button
+                type="submit"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold"
+              >
                 Lưu Khai Báo
               </Button>
             </DialogFooter>
@@ -4026,38 +4533,61 @@ function AuditManagementPage() {
           </DialogHeader>
 
           {selectedAudit && (
-            <div id="printable-audit" className="bg-white text-slate-900 p-8 rounded-lg border font-sans text-xs space-y-6">
+            <div
+              id="printable-audit"
+              className="bg-white text-slate-900 p-8 rounded-lg border font-sans text-xs space-y-6"
+            >
               <div className="flex items-center justify-between border-b-2 border-slate-900 pb-4">
                 <div className="flex items-center gap-3">
                   <img src={logoImg} alt="WCERT Logo" className="h-14 w-auto object-contain" />
                   <div>
-                    <h2 className="font-extrabold text-base tracking-tight text-slate-900">CÔNG TY CỔ PHẦN CHẾ BIẾN THỰC PHẨM WCERT</h2>
-                    <p className="text-[11px] text-slate-600">Ban Quản lý Chất lượng & An toàn Thực phẩm (FSMS)</p>
+                    <h2 className="font-extrabold text-base tracking-tight text-slate-900">
+                      CÔNG TY CỔ PHẦN CHẾ BIẾN THỰC PHẨM WCERT
+                    </h2>
+                    <p className="text-[11px] text-slate-600">
+                      Ban Quản lý Chất lượng & An toàn Thực phẩm (FSMS)
+                    </p>
                   </div>
                 </div>
                 <div className="text-right text-[11px] text-slate-600">
                   <p className="font-bold text-slate-900 text-sm">BIỂU MẪU: BM-AUDIT-01</p>
                   <p>Tiêu chuẩn: ISO 22000:2018 Điều khoản 9.2</p>
-                  <p>Mã đợt: <b className="text-blue-800">{selectedAudit.audit_code}</b></p>
+                  <p>
+                    Mã đợt: <b className="text-blue-800">{selectedAudit.audit_code}</b>
+                  </p>
                 </div>
               </div>
 
               <div className="text-center space-y-1">
-                <h1 className="text-lg font-black text-slate-900 uppercase">BÁO CÁO TỔNG KẾT ĐÁNH GIÁ NỘI BỘ HỆ THỐNG FSMS</h1>
+                <h1 className="text-lg font-black text-slate-900 uppercase">
+                  BÁO CÁO TỔNG KẾT ĐÁNH GIÁ NỘI BỘ HỆ THỐNG FSMS
+                </h1>
                 <p className="text-xs text-slate-600">{selectedAudit.title}</p>
               </div>
 
               <div className="grid grid-cols-2 gap-4 border p-3 rounded-lg bg-slate-50 text-[11px]">
-                <div><b>Phòng ban được đánh giá:</b> {selectedAudit.audited_dept}</div>
-                <div><b>Trưởng đoàn đánh giá:</b> {selectedAudit.lead_auditor_name}</div>
-                <div><b>Thời gian đánh giá:</b> {selectedAudit.start_date} ~ {selectedAudit.end_date}</div>
-                <div><b>Loại hình đánh giá:</b> {selectedAudit.audit_type}</div>
-                <div className="col-span-2"><b>Phạm vi đánh giá:</b> {selectedAudit.scope}</div>
+                <div>
+                  <b>Phòng ban được đánh giá:</b> {selectedAudit.audited_dept}
+                </div>
+                <div>
+                  <b>Trưởng đoàn đánh giá:</b> {selectedAudit.lead_auditor_name}
+                </div>
+                <div>
+                  <b>Thời gian đánh giá:</b> {selectedAudit.start_date} ~ {selectedAudit.end_date}
+                </div>
+                <div>
+                  <b>Loại hình đánh giá:</b> {selectedAudit.audit_type}
+                </div>
+                <div className="col-span-2">
+                  <b>Phạm vi đánh giá:</b> {selectedAudit.scope}
+                </div>
               </div>
 
               {/* Table of Findings */}
               <div className="space-y-2">
-                <h3 className="font-bold text-slate-900 uppercase text-xs">Danh mục Phát hiện & Bảng kiểm Checklist:</h3>
+                <h3 className="font-bold text-slate-900 uppercase text-xs">
+                  Danh mục Phát hiện & Bảng kiểm Checklist:
+                </h3>
                 <table className="w-full border-collapse border border-slate-400 text-[11px]">
                   <thead>
                     <tr className="bg-slate-100 border-b border-slate-400 font-bold text-center">
@@ -4065,38 +4595,67 @@ function AuditManagementPage() {
                       <th className="border border-slate-400 p-2 w-24">Điều khoản</th>
                       <th className="border border-slate-400 p-2">Nội dung câu hỏi / Chuẩn mực</th>
                       <th className="border border-slate-400 p-2 w-28">Kết luận</th>
-                      <th className="border border-slate-400 p-2">Ghi nhận sai lệch & Bằng chứng</th>
+                      <th className="border border-slate-400 p-2">
+                        Ghi nhận sai lệch & Bằng chứng
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
                     {findings.length === 0 ? (
                       <tr>
-                        <td colSpan={5} className="border border-slate-300 p-4 text-center font-bold text-emerald-700 bg-emerald-50">
-                          ✓ Toàn bộ các tiêu chí đánh giá trong phạm vi đều đạt chuẩn tuân thủ (100% Conformity) - Không ghi nhận điểm không phù hợp (No NC).
+                        <td
+                          colSpan={5}
+                          className="border border-slate-300 p-4 text-center font-bold text-emerald-700 bg-emerald-50"
+                        >
+                          ✓ Toàn bộ các tiêu chí đánh giá trong phạm vi đều đạt chuẩn tuân thủ (100%
+                          Conformity) - Không ghi nhận điểm không phù hợp (No NC).
                         </td>
                       </tr>
                     ) : (
                       findings.map((f, idx) => (
                         <tr key={f.finding_id} className="border-b border-slate-300">
-                          <td className="border border-slate-300 p-2 text-center font-mono">{idx + 1}</td>
-                          <td className="border border-slate-300 p-2 text-center font-bold font-mono">Điều {f.clause_number}</td>
+                          <td className="border border-slate-300 p-2 text-center font-mono">
+                            {idx + 1}
+                          </td>
+                          <td className="border border-slate-300 p-2 text-center font-bold font-mono">
+                            Điều {f.clause_number}
+                          </td>
                           <td className="border border-slate-300 p-2">
                             <b>{f.clause_title}</b>
                             <p className="text-slate-600 mt-0.5">{f.question}</p>
                           </td>
                           <td className="border border-slate-300 p-2 text-center font-bold">
-                            <span className={`inline-block px-2 py-0.5 rounded text-[10px] ${
-                              f.result === "MAJOR_NC" ? "bg-rose-100 text-rose-800 border border-rose-200" :
-                              f.result === "MINOR_NC" ? "bg-amber-100 text-amber-800 border border-amber-200" :
-                              f.result === "OFI" ? "bg-blue-100 text-blue-800 border border-blue-200" :
-                              "bg-emerald-100 text-emerald-800 border border-emerald-200"
-                            }`}>
-                              {f.result === "MAJOR_NC" ? "MAJOR NC" : f.result === "MINOR_NC" ? "MINOR NC" : f.result === "OFI" ? "OFI" : "PHÙ HỢP"}
+                            <span
+                              className={`inline-block px-2 py-0.5 rounded text-[10px] ${
+                                f.result === "MAJOR_NC"
+                                  ? "bg-rose-100 text-rose-800 border border-rose-200"
+                                  : f.result === "MINOR_NC"
+                                    ? "bg-amber-100 text-amber-800 border border-amber-200"
+                                    : f.result === "OFI"
+                                      ? "bg-blue-100 text-blue-800 border border-blue-200"
+                                      : "bg-emerald-100 text-emerald-800 border border-emerald-200"
+                              }`}
+                            >
+                              {f.result === "MAJOR_NC"
+                                ? "MAJOR NC"
+                                : f.result === "MINOR_NC"
+                                  ? "MINOR NC"
+                                  : f.result === "OFI"
+                                    ? "OFI"
+                                    : "PHÙ HỢP"}
                             </span>
                           </td>
                           <td className="border border-slate-300 p-2">
-                            {f.finding_notes ? <p className="font-semibold text-slate-800">{f.finding_notes}</p> : null}
-                            {f.evidence_reviewed ? <p className="text-slate-500 text-[10px]">Bằng chứng: {f.evidence_reviewed}</p> : "--"}
+                            {f.finding_notes ? (
+                              <p className="font-semibold text-slate-800">{f.finding_notes}</p>
+                            ) : null}
+                            {f.evidence_reviewed ? (
+                              <p className="text-slate-500 text-[10px]">
+                                Bằng chứng: {f.evidence_reviewed}
+                              </p>
+                            ) : (
+                              "--"
+                            )}
                           </td>
                         </tr>
                       ))
@@ -4144,37 +4703,62 @@ function AuditManagementPage() {
           </DialogHeader>
 
           {selectedCourse && (
-            <div id="printable-train" className="bg-white text-slate-900 p-8 rounded-lg border font-sans text-xs space-y-6">
+            <div
+              id="printable-train"
+              className="bg-white text-slate-900 p-8 rounded-lg border font-sans text-xs space-y-6"
+            >
               <div className="flex items-center justify-between border-b-2 border-slate-900 pb-4">
                 <div className="flex items-center gap-3">
                   <img src={logoImg} alt="WCERT Logo" className="h-14 w-auto object-contain" />
                   <div>
-                    <h2 className="font-extrabold text-base tracking-tight text-slate-900">CÔNG TY CỔ PHẦN CHẾ BIẾN THỰC PHẨM WCERT</h2>
-                    <p className="text-[11px] text-slate-600">Phòng Nhân sự & Ban Quản lý Chất lượng (FSMS)</p>
+                    <h2 className="font-extrabold text-base tracking-tight text-slate-900">
+                      CÔNG TY CỔ PHẦN CHẾ BIẾN THỰC PHẨM WCERT
+                    </h2>
+                    <p className="text-[11px] text-slate-600">
+                      Phòng Nhân sự & Ban Quản lý Chất lượng (FSMS)
+                    </p>
                   </div>
                 </div>
                 <div className="text-right text-[11px] text-slate-600">
                   <p className="font-bold text-slate-900 text-sm">BIỂU MẪU: BM-TRAIN-02</p>
                   <p>Tiêu chuẩn: ISO 22000:2018 Điều khoản 7.2</p>
-                  <p>Mã khóa: <b className="text-purple-800">{selectedCourse.course_code}</b></p>
+                  <p>
+                    Mã khóa: <b className="text-purple-800">{selectedCourse.course_code}</b>
+                  </p>
                 </div>
               </div>
 
               <div className="text-center space-y-1">
-                <h1 className="text-lg font-black text-slate-900 uppercase">BIÊN BẢN TỔNG KẾT & ĐÁNH GIÁ KẾT QUẢ ĐÀO TẠO NĂNG LỰC</h1>
+                <h1 className="text-lg font-black text-slate-900 uppercase">
+                  BIÊN BẢN TỔNG KẾT & ĐÁNH GIÁ KẾT QUẢ ĐÀO TẠO NĂNG LỰC
+                </h1>
                 <p className="text-xs text-slate-600">{selectedCourse.title}</p>
               </div>
 
               <div className="grid grid-cols-2 gap-4 border p-3 rounded-lg bg-slate-50 text-[11px]">
-                <div><b>Giảng viên / Đơn vị đào tạo:</b> {selectedCourse.trainer_name}</div>
-                <div><b>Thời gian tổ chức:</b> {selectedCourse.schedule_date} ({selectedCourse.duration_hours} giờ)</div>
-                <div><b>Đối tượng tham gia:</b> {selectedCourse.target_dept}</div>
-                <div><b>Hình thức đào tạo:</b> {selectedCourse.training_type === "INTERNAL" ? "Đào tạo nội bộ" : "Chuyên gia bên ngoài"}</div>
+                <div>
+                  <b>Giảng viên / Đơn vị đào tạo:</b> {selectedCourse.trainer_name}
+                </div>
+                <div>
+                  <b>Thời gian tổ chức:</b> {selectedCourse.schedule_date} (
+                  {selectedCourse.duration_hours} giờ)
+                </div>
+                <div>
+                  <b>Đối tượng tham gia:</b> {selectedCourse.target_dept}
+                </div>
+                <div>
+                  <b>Hình thức đào tạo:</b>{" "}
+                  {selectedCourse.training_type === "INTERNAL"
+                    ? "Đào tạo nội bộ"
+                    : "Chuyên gia bên ngoài"}
+                </div>
               </div>
 
               {/* Table of Participants */}
               <div className="space-y-2">
-                <h3 className="font-bold text-slate-900 uppercase text-xs">Danh Sách Học Viên & Kết Quả Sát Hạch:</h3>
+                <h3 className="font-bold text-slate-900 uppercase text-xs">
+                  Danh Sách Học Viên & Kết Quả Sát Hạch:
+                </h3>
                 <table className="w-full border-collapse border border-slate-400 text-[11px]">
                   <thead>
                     <tr className="bg-slate-100 border-b border-slate-400 font-bold text-center">
@@ -4191,26 +4775,46 @@ function AuditManagementPage() {
                   <tbody>
                     {participants.length === 0 ? (
                       <tr>
-                        <td colSpan={8} className="border border-slate-300 p-4 text-center text-slate-500 italic bg-slate-50">
-                          (Khóa đào tạo đang trong giai đoạn tiếp nhận đăng ký học viên - Chưa ghi nhận điểm sát hạch)
+                        <td
+                          colSpan={8}
+                          className="border border-slate-300 p-4 text-center text-slate-500 italic bg-slate-50"
+                        >
+                          (Khóa đào tạo đang trong giai đoạn tiếp nhận đăng ký học viên - Chưa ghi
+                          nhận điểm sát hạch)
                         </td>
                       </tr>
                     ) : (
                       participants.map((p, idx) => (
                         <tr key={p.participant_id} className="border-b border-slate-300">
-                          <td className="border border-slate-300 p-2 text-center font-mono">{idx + 1}</td>
-                          <td className="border border-slate-300 p-2 text-center font-mono font-bold">{p.employee_code}</td>
-                          <td className="border border-slate-300 p-2 font-bold">{p.employee_name}</td>
+                          <td className="border border-slate-300 p-2 text-center font-mono">
+                            {idx + 1}
+                          </td>
+                          <td className="border border-slate-300 p-2 text-center font-mono font-bold">
+                            {p.employee_code}
+                          </td>
+                          <td className="border border-slate-300 p-2 font-bold">
+                            {p.employee_name}
+                          </td>
                           <td className="border border-slate-300 p-2">{p.department}</td>
-                          <td className="border border-slate-300 p-2 text-center font-mono">{p.pre_test_score !== null ? `${p.pre_test_score}đ` : '--'}</td>
-                          <td className="border border-slate-300 p-2 text-center font-mono font-bold text-purple-800">{p.post_test_score !== null ? `${p.post_test_score}đ` : '--'}</td>
+                          <td className="border border-slate-300 p-2 text-center font-mono">
+                            {p.pre_test_score !== null ? `${p.pre_test_score}đ` : "--"}
+                          </td>
+                          <td className="border border-slate-300 p-2 text-center font-mono font-bold text-purple-800">
+                            {p.post_test_score !== null ? `${p.post_test_score}đ` : "--"}
+                          </td>
                           <td className="border border-slate-300 p-2 text-center font-bold">
-                            <span className={`inline-block px-2 py-0.5 rounded text-[10px] ${p.evaluation_result === "PASSED" ? "bg-emerald-100 text-emerald-800 border border-emerald-200" : "bg-rose-100 text-rose-800 border border-rose-200"}`}>
+                            <span
+                              className={`inline-block px-2 py-0.5 rounded text-[10px] ${p.evaluation_result === "PASSED" ? "bg-emerald-100 text-emerald-800 border border-emerald-200" : "bg-rose-100 text-rose-800 border border-rose-200"}`}
+                            >
                               {p.evaluation_result === "PASSED" ? "ĐẠT" : "CHƯA ĐẠT"}
                             </span>
                           </td>
                           <td className="border border-slate-300 p-2 text-center">
-                            {p.certificate_issued ? <span className="text-emerald-700 font-bold">✓ ĐÃ CẤP</span> : <span className="text-slate-400">CHƯA</span>}
+                            {p.certificate_issued ? (
+                              <span className="text-emerald-700 font-bold">✓ ĐÃ CẤP</span>
+                            ) : (
+                              <span className="text-slate-400">CHƯA</span>
+                            )}
                           </td>
                         </tr>
                       ))
@@ -4237,7 +4841,9 @@ function AuditManagementPage() {
               Đóng
             </Button>
             <Button
-              onClick={() => selectedCourse && triggerPrintTrainingRecord(selectedCourse, participants)}
+              onClick={() =>
+                selectedCourse && triggerPrintTrainingRecord(selectedCourse, participants)
+              }
               className="bg-primary text-primary-foreground font-bold"
             >
               <Printer className="h-4 w-4 mr-1.5" /> In Biểu Mẫu (A4 PDF)
@@ -4253,13 +4859,20 @@ function AuditManagementPage() {
             <DialogTitle>Sổ Nhật Ký Khai Báo Sức Khỏe & Vệ Sinh Cá Nhân (BM-HEALTH-03)</DialogTitle>
           </DialogHeader>
 
-          <div id="printable-health" className="bg-white text-slate-900 p-8 rounded-lg border font-sans text-xs space-y-6">
+          <div
+            id="printable-health"
+            className="bg-white text-slate-900 p-8 rounded-lg border font-sans text-xs space-y-6"
+          >
             <div className="flex items-center justify-between border-b-2 border-slate-900 pb-4">
               <div className="flex items-center gap-3">
                 <img src={logoImg} alt="WCERT Logo" className="h-14 w-auto object-contain" />
                 <div>
-                  <h2 className="font-extrabold text-base tracking-tight text-slate-900">CÔNG TY CỔ PHẦN CHẾ BIẾN THỰC PHẨM WCERT</h2>
-                  <p className="text-[11px] text-slate-600">Bộ phận Y tế Nhà máy & Ban Quản lý Chất lượng (FSMS)</p>
+                  <h2 className="font-extrabold text-base tracking-tight text-slate-900">
+                    CÔNG TY CỔ PHẦN CHẾ BIẾN THỰC PHẨM WCERT
+                  </h2>
+                  <p className="text-[11px] text-slate-600">
+                    Bộ phận Y tế Nhà máy & Ban Quản lý Chất lượng (FSMS)
+                  </p>
                 </div>
               </div>
               <div className="text-right text-[11px] text-slate-600">
@@ -4270,8 +4883,12 @@ function AuditManagementPage() {
             </div>
 
             <div className="text-center space-y-1">
-              <h1 className="text-lg font-black text-slate-900 uppercase">SỔ NHẬT KÝ KIỂM TRA SỨC KHỎE & VỆ SINH CÔNG NHÂN TRƯỚC CA</h1>
-              <p className="text-xs text-slate-600">Kiểm soát phòng ngừa lây nhiễm chéo vi sinh vật vào thực phẩm</p>
+              <h1 className="text-lg font-black text-slate-900 uppercase">
+                SỔ NHẬT KÝ KIỂM TRA SỨC KHỎE & VỆ SINH CÔNG NHÂN TRƯỚC CA
+              </h1>
+              <p className="text-xs text-slate-600">
+                Kiểm soát phòng ngừa lây nhiễm chéo vi sinh vật vào thực phẩm
+              </p>
             </div>
 
             {/* Table of Health Declarations */}
@@ -4292,36 +4909,74 @@ function AuditManagementPage() {
               <tbody>
                 {healthLogs.length === 0 ? (
                   <tr>
-                    <td colSpan={9} className="border border-slate-300 p-4 text-center text-slate-500 italic bg-slate-50">
+                    <td
+                      colSpan={9}
+                      className="border border-slate-300 p-4 text-center text-slate-500 italic bg-slate-50"
+                    >
                       Chưa có bản ghi khai báo sức khỏe nào.
                     </td>
                   </tr>
                 ) : (
                   healthLogs.map((h, idx) => (
                     <tr key={h.declaration_id} className="border-b border-slate-300">
-                      <td className="border border-slate-300 p-2 text-center font-mono">{idx + 1}</td>
-                      <td className="border border-slate-300 p-2 text-center font-mono font-bold">{h.employee_code}</td>
+                      <td className="border border-slate-300 p-2 text-center font-mono">
+                        {idx + 1}
+                      </td>
+                      <td className="border border-slate-300 p-2 text-center font-mono font-bold">
+                        {h.employee_code}
+                      </td>
                       <td className="border border-slate-300 p-2 font-bold">{h.employee_name}</td>
                       <td className="border border-slate-300 p-2">{h.department}</td>
                       <td className="border border-slate-300 p-2 text-center">{h.shift_name}</td>
-                      <td className="border border-slate-300 p-2 text-center font-mono font-bold">{h.body_temperature}°C</td>
+                      <td className="border border-slate-300 p-2 text-center font-mono font-bold">
+                        {h.body_temperature}°C
+                      </td>
                       <td className="border border-slate-300 p-2">
-                        {h.symptoms?.fever ? <span className="text-rose-600 font-bold">Sốt. </span> : ""}
+                        {h.symptoms?.fever ? (
+                          <span className="text-rose-600 font-bold">Sốt. </span>
+                        ) : (
+                          ""
+                        )}
                         {h.symptoms?.cough ? <span className="text-amber-600">Ho. </span> : ""}
-                        {h.symptoms?.open_wound ? <span className="text-rose-600 font-bold">Vết thương hở. </span> : ""}
-                        {h.symptoms?.diarrhea ? <span className="text-rose-600 font-bold">Tiêu chảy. </span> : ""}
-                        {!h.symptoms?.fever && !h.symptoms?.cough && !h.symptoms?.open_wound && !h.symptoms?.diarrhea ? <span className="text-emerald-700">Bình thường</span> : ""}
+                        {h.symptoms?.open_wound ? (
+                          <span className="text-rose-600 font-bold">Vết thương hở. </span>
+                        ) : (
+                          ""
+                        )}
+                        {h.symptoms?.diarrhea ? (
+                          <span className="text-rose-600 font-bold">Tiêu chảy. </span>
+                        ) : (
+                          ""
+                        )}
+                        {!h.symptoms?.fever &&
+                        !h.symptoms?.cough &&
+                        !h.symptoms?.open_wound &&
+                        !h.symptoms?.diarrhea ? (
+                          <span className="text-emerald-700">Bình thường</span>
+                        ) : (
+                          ""
+                        )}
                       </td>
                       <td className="border border-slate-300 p-2 text-center font-bold">
-                        <span className={`inline-block px-2 py-0.5 rounded text-[10px] ${
-                          h.cleared_for_shift === "CLEARED" ? "bg-emerald-100 text-emerald-800 border border-emerald-200" :
-                          h.cleared_for_shift === "RESTRICTED" ? "bg-amber-100 text-amber-800 border border-amber-200" :
-                          "bg-rose-100 text-rose-800 border border-rose-200"
-                        }`}>
-                          {h.cleared_for_shift === "CLEARED" ? "ĐỦ ĐIỀU KIỆN" : h.cleared_for_shift === "RESTRICTED" ? "HẠN CHẾ" : "ĐÌNH CHỈ CA"}
+                        <span
+                          className={`inline-block px-2 py-0.5 rounded text-[10px] ${
+                            h.cleared_for_shift === "CLEARED"
+                              ? "bg-emerald-100 text-emerald-800 border border-emerald-200"
+                              : h.cleared_for_shift === "RESTRICTED"
+                                ? "bg-amber-100 text-amber-800 border border-amber-200"
+                                : "bg-rose-100 text-rose-800 border border-rose-200"
+                          }`}
+                        >
+                          {h.cleared_for_shift === "CLEARED"
+                            ? "ĐỦ ĐIỀU KIỆN"
+                            : h.cleared_for_shift === "RESTRICTED"
+                              ? "HẠN CHẾ"
+                              : "ĐÌNH CHỈ CA"}
                         </span>
                       </td>
-                      <td className="border border-slate-300 p-2 text-center">{h.supervisor_name}</td>
+                      <td className="border border-slate-300 p-2 text-center">
+                        {h.supervisor_name}
+                      </td>
                     </tr>
                   ))
                 )}
@@ -4395,11 +5050,7 @@ function AuditManagementPage() {
       )}
 
       {/* ==================== MODAL: MODULE GUIDE ==================== */}
-      <ModuleGuideModal
-        module="audits"
-        isOpen={showGuide}
-        onClose={() => setShowGuide(false)}
-      />
+      <ModuleGuideModal module="audits" isOpen={showGuide} onClose={() => setShowGuide(false)} />
     </div>
   );
 }

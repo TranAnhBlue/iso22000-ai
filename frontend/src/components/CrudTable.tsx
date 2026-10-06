@@ -22,7 +22,9 @@ export interface CrudField {
 
 export function Pill({ value, tone }: { value: string; tone?: string }) {
   return (
-    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${tone || "bg-primary/10 text-primary"}`}>
+    <span
+      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${tone || "bg-primary/10 text-primary"}`}
+    >
       {value}
     </span>
   );
@@ -63,7 +65,7 @@ export function CrudTable({
     if (!searchTerm.trim()) return rows;
     const term = searchTerm.toLowerCase();
     return rows.filter((r) =>
-      Object.values(r).some((val) => String(val).toLowerCase().includes(term))
+      Object.values(r).some((val) => String(val).toLowerCase().includes(term)),
     );
   }, [rows, searchTerm]);
 
@@ -150,7 +152,7 @@ export function CrudTable({
                   </td>
                   {fields.map((f) => (
                     <td key={f.key} className="px-4 py-3">
-                      {f.render ? f.render(r[f.key], r) : r[f.key] ?? "—"}
+                      {f.render ? f.render(r[f.key], r) : (r[f.key] ?? "—")}
                     </td>
                   ))}
                   {canEdit && (
@@ -196,7 +198,13 @@ export function CrudTable({
       />
 
       {/* Modal Thêm/Sửa Bản ghi */}
-      <Dialog open={isCreateOpen || !!editingRow} onOpenChange={() => { setIsCreateOpen(false); setEditingRow(null); }}>
+      <Dialog
+        open={isCreateOpen || !!editingRow}
+        onOpenChange={() => {
+          setIsCreateOpen(false);
+          setEditingRow(null);
+        }}
+      >
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle className="text-lg">
@@ -209,7 +217,10 @@ export function CrudTable({
               {fields
                 .filter((f) => !f.hideInForm)
                 .map((f) => (
-                  <div key={f.key} className={`space-y-1.5 ${f.key === "name" ? "sm:col-span-2" : ""}`}>
+                  <div
+                    key={f.key}
+                    className={`space-y-1.5 ${f.key === "name" ? "sm:col-span-2" : ""}`}
+                  >
                     <Label className="text-xs">
                       {f.label} {f.required && <span className="text-destructive">*</span>}
                     </Label>
@@ -243,7 +254,15 @@ export function CrudTable({
             </div>
 
             <div className="flex justify-end gap-2 pt-4">
-              <Button type="button" variant="outline" size="sm" onClick={() => { setIsCreateOpen(false); setEditingRow(null); }}>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setIsCreateOpen(false);
+                  setEditingRow(null);
+                }}
+              >
                 Huỷ
               </Button>
               <Button type="submit" size="sm">

@@ -118,7 +118,8 @@ def format_user_profile(user: User) -> TokenResponse:
         full_name=str(user.full_name),
         role=current_role,
         department=str(user.department) if user.department else None,
-        phone=str(user.phone) if user.phone else None
+        phone=str(user.phone) if user.phone else None,
+        email=str(user.email) if user.email else None,
     )
 
 def get_current_user_profile(user: User) -> TokenResponse:

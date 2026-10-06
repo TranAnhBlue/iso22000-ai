@@ -41,9 +41,10 @@ export function QRCodeModal({
   const [qrDataUrl, setQrDataUrl] = useState<string>("");
 
   // Create real scannable QR Code content (URL or code)
-  const scannableContent = typeof window !== "undefined"
-    ? `${window.location.origin}/traceability?query_code=${encodeURIComponent(lotNumber || qrCodeText)}`
-    : `https://fsms.wcert.vn/traceability?query_code=${encodeURIComponent(lotNumber || qrCodeText)}`;
+  const scannableContent =
+    typeof window !== "undefined"
+      ? `${window.location.origin}/traceability?query_code=${encodeURIComponent(lotNumber || qrCodeText)}`
+      : `https://fsms.wcert.vn/traceability?query_code=${encodeURIComponent(lotNumber || qrCodeText)}`;
 
   useEffect(() => {
     if (open && (lotNumber || qrCodeText)) {
@@ -126,8 +127,12 @@ export function QRCodeModal({
               <div className="flex items-center gap-2">
                 <img src={logoImg} alt="WCERT" className="h-7 w-auto object-contain" />
                 <div>
-                  <div className="text-xs font-bold leading-tight text-slate-900">WCERT FOOD SAFETY</div>
-                  <div className="text-[9px] text-slate-500 font-mono">ISO 22000:2018 CERTIFIED</div>
+                  <div className="text-xs font-bold leading-tight text-slate-900">
+                    WCERT FOOD SAFETY
+                  </div>
+                  <div className="text-[9px] text-slate-500 font-mono">
+                    ISO 22000:2018 CERTIFIED
+                  </div>
                 </div>
               </div>
               <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-800 font-mono border border-slate-200">
@@ -141,7 +146,9 @@ export function QRCodeModal({
                 {qrDataUrl ? (
                   <img src={qrDataUrl} alt="QR Code" className="h-28 w-28 object-contain" />
                 ) : (
-                  <div className="h-28 w-28 flex items-center justify-center text-xs text-slate-400">Đang tải...</div>
+                  <div className="h-28 w-28 flex items-center justify-center text-xs text-slate-400">
+                    Đang tải...
+                  </div>
                 )}
                 <span className="text-[9px] font-mono text-slate-500 font-bold mt-0.5">
                   {lotNumber || qrCodeText}
@@ -150,8 +157,12 @@ export function QRCodeModal({
 
               <div className="flex-1 space-y-1.5 text-xs text-left">
                 <div>
-                  <span className="text-[9px] text-slate-500 uppercase font-semibold block">Tên sản phẩm / Lô:</span>
-                  <div className="font-bold text-slate-900 leading-tight text-sm">{productName}</div>
+                  <span className="text-[9px] text-slate-500 uppercase font-semibold block">
+                    Tên sản phẩm / Lô:
+                  </span>
+                  <div className="font-bold text-slate-900 leading-tight text-sm">
+                    {productName}
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-1.5 text-[11px] pt-1 border-t border-slate-100">
@@ -162,7 +173,9 @@ export function QRCodeModal({
                   {quantity ? (
                     <div>
                       <span className="text-slate-500 text-[10px] block">Số lượng:</span>
-                      <span className="font-bold text-slate-900">{quantity} {unit}</span>
+                      <span className="font-bold text-slate-900">
+                        {quantity} {unit}
+                      </span>
                     </div>
                   ) : null}
                   {mfgDate ? (
@@ -194,15 +207,26 @@ export function QRCodeModal({
           <div className="rounded-lg bg-muted/40 p-2.5 text-xs text-muted-foreground flex items-start gap-2">
             <Smartphone className="h-4 w-4 text-primary shrink-0 mt-0.5" />
             <div>
-              <b>Cách quét thử:</b> Mở ứng dụng <b>Camera / Zalo</b> trên điện thoại quét trực tiếp mã QR trên màn hình → Điện thoại sẽ tự động mở trang hồ sơ truy xuất nguồn gốc của lô hàng.
+              <b>Cách quét thử:</b> Mở ứng dụng <b>Camera / Zalo</b> trên điện thoại quét trực tiếp
+              mã QR trên màn hình → Điện thoại sẽ tự động mở trang hồ sơ truy xuất nguồn gốc của lô
+              hàng.
             </div>
           </div>
 
           <DialogFooter className="flex-col-reverse sm:flex-row gap-2 pt-2 border-t">
-            <Button variant="outline" size="sm" onClick={() => onOpenChange(false)} className="w-full sm:w-auto">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onOpenChange(false)}
+              className="w-full sm:w-auto"
+            >
               Đóng
             </Button>
-            <Button size="sm" onClick={printQRLabel} className="w-full sm:w-auto gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold">
+            <Button
+              size="sm"
+              onClick={printQRLabel}
+              className="w-full sm:w-auto gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold"
+            >
               <Printer className="h-4 w-4" />
               In Tem Nhãn QR
             </Button>

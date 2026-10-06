@@ -16,7 +16,10 @@ export function Modal({
 }) {
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-foreground/40 p-4" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-50 grid place-items-center bg-foreground/40 p-4"
+      onClick={onClose}
+    >
       <div
         className={`max-h-[88vh] w-full overflow-y-auto rounded-2xl border bg-card p-6 shadow-xl ${wide ? "max-w-4xl" : "max-w-lg"}`}
         onClick={(e) => e.stopPropagation()}
@@ -83,7 +86,9 @@ export function Btn({
 
 export function Tag({ children, tone }: { children: ReactNode; tone: string }) {
   return (
-    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${tone}`}>
+    <span
+      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${tone}`}
+    >
       {children}
     </span>
   );

@@ -156,7 +156,9 @@ export function ChangeRequestsTab({
   const handleSubmitCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.doc_title || !formData.reason || !formData.requested_by_name) {
-      toast.error("Vui lòng điền đầy đủ các thông tin bắt buộc (Tên tài liệu, Người đề xuất, Lý do)");
+      toast.error(
+        "Vui lòng điền đầy đủ các thông tin bắt buộc (Tên tài liệu, Người đề xuất, Lý do)",
+      );
       return;
     }
 
@@ -192,8 +194,11 @@ export function ChangeRequestsTab({
       opinion: step === "DIRECTOR" ? "APPROVED" : "AGREE",
       comment: "",
       signerName:
-        step === "DEPT" ? "Trưởng Bộ Phận" :
-        step === "QA" ? "Trưởng Ban QLCL & ATTP" : "Tổng Giám Đốc",
+        step === "DEPT"
+          ? "Trưởng Bộ Phận"
+          : step === "QA"
+            ? "Trưởng Ban QLCL & ATTP"
+            : "Tổng Giám Đốc",
     });
   };
 
@@ -268,7 +273,8 @@ export function ChangeRequestsTab({
             </span>
           </div>
           <p className="mt-1 text-xs text-muted-foreground">
-            Quy trình đề xuất Soạn mới, Sửa đổi bổ sung hoặc Hủy bỏ tài liệu/SOP theo chu trình 3 cấp kiểm soát (Trưởng Đơn Vị ➔ Trưởng Ban QLCL ➔ Tổng Giám Đốc).
+            Quy trình đề xuất Soạn mới, Sửa đổi bổ sung hoặc Hủy bỏ tài liệu/SOP theo chu trình 3
+            cấp kiểm soát (Trưởng Đơn Vị ➔ Trưởng Ban QLCL ➔ Tổng Giám Đốc).
           </p>
         </div>
 
@@ -302,25 +308,33 @@ export function ChangeRequestsTab({
         </div>
 
         <div className="rounded-xl border border-amber-200 bg-amber-500/5 p-3.5 shadow-sm">
-          <div className="text-xs font-medium text-amber-700 dark:text-amber-300">Chờ Đơn vị xem xét</div>
+          <div className="text-xs font-medium text-amber-700 dark:text-amber-300">
+            Chờ Đơn vị xem xét
+          </div>
           <div className="mt-1.5 text-2xl font-bold text-amber-700">{stats.pendingDept}</div>
           <div className="text-[11px] text-amber-600/80">Bước 1: Trưởng phòng ban</div>
         </div>
 
         <div className="rounded-xl border border-blue-200 bg-blue-500/5 p-3.5 shadow-sm">
-          <div className="text-xs font-medium text-blue-700 dark:text-blue-300">Chờ Ban QLCL xem xét</div>
+          <div className="text-xs font-medium text-blue-700 dark:text-blue-300">
+            Chờ Ban QLCL xem xét
+          </div>
           <div className="mt-1.5 text-2xl font-bold text-blue-700">{stats.pendingQA}</div>
           <div className="text-[11px] text-blue-600/80">Bước 2: Trưởng ban QA / FSMS</div>
         </div>
 
         <div className="rounded-xl border border-emerald-200 bg-emerald-500/5 p-3.5 shadow-sm">
-          <div className="text-xs font-medium text-emerald-700 dark:text-emerald-300">Đã phê duyệt ban hành</div>
+          <div className="text-xs font-medium text-emerald-700 dark:text-emerald-300">
+            Đã phê duyệt ban hành
+          </div>
           <div className="mt-1.5 text-2xl font-bold text-emerald-700">{stats.approved}</div>
           <div className="text-[11px] text-emerald-600/80">Bước 3: Tổng Giám Đốc</div>
         </div>
 
         <div className="rounded-xl border border-rose-200 bg-rose-500/5 p-3.5 shadow-sm">
-          <div className="text-xs font-medium text-rose-700 dark:text-rose-300">Từ chối / Yêu cầu sửa lại</div>
+          <div className="text-xs font-medium text-rose-700 dark:text-rose-300">
+            Từ chối / Yêu cầu sửa lại
+          </div>
           <div className="mt-1.5 text-2xl font-bold text-rose-700">{stats.rejected}</div>
           <div className="text-[11px] text-rose-600/80">Không đạt tiêu chí</div>
         </div>
@@ -405,17 +419,35 @@ export function ChangeRequestsTab({
               ) : (
                 filteredList.map((cr, idx) => {
                   const typeBadge =
-                    cr.change_type === "NEW" ? "bg-emerald-500/10 text-emerald-700 border-emerald-300" :
-                    cr.change_type === "REVISION" ? "bg-blue-500/10 text-blue-700 border-blue-300" :
-                    cr.change_type === "OBSOLETE" ? "bg-rose-500/10 text-rose-700 border-rose-300" :
-                    "bg-gray-500/10 text-gray-700 border-gray-300";
+                    cr.change_type === "NEW"
+                      ? "bg-emerald-500/10 text-emerald-700 border-emerald-300"
+                      : cr.change_type === "REVISION"
+                        ? "bg-blue-500/10 text-blue-700 border-blue-300"
+                        : cr.change_type === "OBSOLETE"
+                          ? "bg-rose-500/10 text-rose-700 border-rose-300"
+                          : "bg-gray-500/10 text-gray-700 border-gray-300";
 
                   const statusConfig: Record<string, { label: string; badge: string }> = {
-                    SUBMITTED: { label: "Chờ Đơn vị", badge: "bg-amber-500/10 text-amber-700 border-amber-300" },
-                    DEPT_REVIEWED: { label: "Chờ Ban QA", badge: "bg-blue-500/10 text-blue-700 border-blue-300" },
-                    QA_REVIEWED: { label: "Chờ BGĐ duyệt", badge: "bg-purple-500/10 text-purple-700 border-purple-300" },
-                    APPROVED: { label: "Đã phê duyệt", badge: "bg-emerald-500/10 text-emerald-700 border-emerald-300 font-bold" },
-                    REJECTED: { label: "Từ chối", badge: "bg-rose-500/10 text-rose-700 border-rose-300 font-bold" },
+                    SUBMITTED: {
+                      label: "Chờ Đơn vị",
+                      badge: "bg-amber-500/10 text-amber-700 border-amber-300",
+                    },
+                    DEPT_REVIEWED: {
+                      label: "Chờ Ban QA",
+                      badge: "bg-blue-500/10 text-blue-700 border-blue-300",
+                    },
+                    QA_REVIEWED: {
+                      label: "Chờ BGĐ duyệt",
+                      badge: "bg-purple-500/10 text-purple-700 border-purple-300",
+                    },
+                    APPROVED: {
+                      label: "Đã phê duyệt",
+                      badge: "bg-emerald-500/10 text-emerald-700 border-emerald-300 font-bold",
+                    },
+                    REJECTED: {
+                      label: "Từ chối",
+                      badge: "bg-rose-500/10 text-rose-700 border-rose-300 font-bold",
+                    },
                   };
 
                   return (
@@ -431,17 +463,27 @@ export function ChangeRequestsTab({
                         </div>
                       </td>
                       <td className="px-3 py-3">
-                        <span className={`inline-block rounded px-2 py-0.5 text-[10px] font-semibold border ${typeBadge}`}>
-                          {cr.change_type === "NEW" ? "Soạn mới" :
-                           cr.change_type === "REVISION" ? "Sửa đổi" :
-                           cr.change_type === "OBSOLETE" ? "Hủy bỏ" : "Khác"}
+                        <span
+                          className={`inline-block rounded px-2 py-0.5 text-[10px] font-semibold border ${typeBadge}`}
+                        >
+                          {cr.change_type === "NEW"
+                            ? "Soạn mới"
+                            : cr.change_type === "REVISION"
+                              ? "Sửa đổi"
+                              : cr.change_type === "OBSOLETE"
+                                ? "Hủy bỏ"
+                                : "Khác"}
                         </span>
                       </td>
                       <td className="px-3 py-3">
                         <div className="font-medium text-foreground">{cr.department}</div>
-                        <div className="text-[11px] text-muted-foreground">{cr.requested_by_name}</div>
+                        <div className="text-[11px] text-muted-foreground">
+                          {cr.requested_by_name}
+                        </div>
                       </td>
-                      <td className="px-3 py-3 text-center text-muted-foreground">{cr.request_date}</td>
+                      <td className="px-3 py-3 text-center text-muted-foreground">
+                        {cr.request_date}
+                      </td>
                       <td className="px-3 py-3">
                         {/* 3 Step Indicator */}
                         <div className="flex items-center justify-center gap-1.5 text-[10px]">
@@ -449,41 +491,62 @@ export function ChangeRequestsTab({
                           <div
                             title={`1. Trưởng Bộ Phận: ${cr.dept_head_opinion || "Đang chờ"}`}
                             className={`flex items-center justify-center h-6 px-1.5 rounded border ${
-                              cr.dept_head_opinion === "AGREE" ? "bg-emerald-50 border-emerald-300 text-emerald-700 font-bold" :
-                              cr.dept_head_opinion === "DISAGREE" ? "bg-rose-50 border-rose-300 text-rose-700" :
-                              "bg-muted border-border text-muted-foreground"
+                              cr.dept_head_opinion === "AGREE"
+                                ? "bg-emerald-50 border-emerald-300 text-emerald-700 font-bold"
+                                : cr.dept_head_opinion === "DISAGREE"
+                                  ? "bg-rose-50 border-rose-300 text-rose-700"
+                                  : "bg-muted border-border text-muted-foreground"
                             }`}
                           >
-                            1.ĐV {cr.dept_head_opinion === "AGREE" ? "✓" : cr.dept_head_opinion === "DISAGREE" ? "✗" : "..."}
+                            1.ĐV{" "}
+                            {cr.dept_head_opinion === "AGREE"
+                              ? "✓"
+                              : cr.dept_head_opinion === "DISAGREE"
+                                ? "✗"
+                                : "..."}
                           </div>
-                          ➔
-                          {/* Step 2: QA */}
+                          ➔{/* Step 2: QA */}
                           <div
                             title={`2. Ban QLCL: ${cr.qa_head_opinion || "Đang chờ"}`}
                             className={`flex items-center justify-center h-6 px-1.5 rounded border ${
-                              cr.qa_head_opinion === "AGREE" ? "bg-emerald-50 border-emerald-300 text-emerald-700 font-bold" :
-                              cr.qa_head_opinion === "DISAGREE" ? "bg-rose-50 border-rose-300 text-rose-700" :
-                              "bg-muted border-border text-muted-foreground"
+                              cr.qa_head_opinion === "AGREE"
+                                ? "bg-emerald-50 border-emerald-300 text-emerald-700 font-bold"
+                                : cr.qa_head_opinion === "DISAGREE"
+                                  ? "bg-rose-50 border-rose-300 text-rose-700"
+                                  : "bg-muted border-border text-muted-foreground"
                             }`}
                           >
-                            2.QA {cr.qa_head_opinion === "AGREE" ? "✓" : cr.qa_head_opinion === "DISAGREE" ? "✗" : "..."}
+                            2.QA{" "}
+                            {cr.qa_head_opinion === "AGREE"
+                              ? "✓"
+                              : cr.qa_head_opinion === "DISAGREE"
+                                ? "✗"
+                                : "..."}
                           </div>
-                          ➔
-                          {/* Step 3: Director */}
+                          ➔{/* Step 3: Director */}
                           <div
                             title={`3. Tổng Giám Đốc: ${cr.director_approval || "Đang chờ"}`}
                             className={`flex items-center justify-center h-6 px-1.5 rounded border ${
-                              cr.director_approval === "APPROVED" ? "bg-emerald-50 border-emerald-300 text-emerald-700 font-bold" :
-                              cr.director_approval === "REJECTED" ? "bg-rose-50 border-rose-300 text-rose-700" :
-                              "bg-muted border-border text-muted-foreground"
+                              cr.director_approval === "APPROVED"
+                                ? "bg-emerald-50 border-emerald-300 text-emerald-700 font-bold"
+                                : cr.director_approval === "REJECTED"
+                                  ? "bg-rose-50 border-rose-300 text-rose-700"
+                                  : "bg-muted border-border text-muted-foreground"
                             }`}
                           >
-                            3.BGĐ {cr.director_approval === "APPROVED" ? "✓" : cr.director_approval === "REJECTED" ? "✗" : "..."}
+                            3.BGĐ{" "}
+                            {cr.director_approval === "APPROVED"
+                              ? "✓"
+                              : cr.director_approval === "REJECTED"
+                                ? "✗"
+                                : "..."}
                           </div>
                         </div>
                       </td>
                       <td className="px-3 py-3 text-center">
-                        <span className={`inline-block rounded px-2 py-0.5 text-[11px] font-medium border ${statusConfig[cr.status]?.badge || "bg-muted text-muted-foreground"}`}>
+                        <span
+                          className={`inline-block rounded px-2 py-0.5 text-[11px] font-medium border ${statusConfig[cr.status]?.badge || "bg-muted text-muted-foreground"}`}
+                        >
                           {statusConfig[cr.status]?.label || cr.status}
                         </span>
                       </td>
@@ -609,7 +672,9 @@ export function ChangeRequestsTab({
               </div>
 
               <div>
-                <Label className="text-xs font-semibold">Chọn tài liệu hệ thống (nếu sửa đổi)</Label>
+                <Label className="text-xs font-semibold">
+                  Chọn tài liệu hệ thống (nếu sửa đổi)
+                </Label>
                 <select
                   value={formData.document_id}
                   onChange={(e) => handleSelectExistingDoc(e.target.value)}
@@ -637,7 +702,9 @@ export function ChangeRequestsTab({
               </div>
 
               <div className="col-span-2">
-                <Label className="text-xs font-semibold">Tên tài liệu / Quy trình <span className="text-rose-500">*</span></Label>
+                <Label className="text-xs font-semibold">
+                  Tên tài liệu / Quy trình <span className="text-rose-500">*</span>
+                </Label>
                 <Input
                   value={formData.doc_title}
                   onChange={(e) => setFormData({ ...formData, doc_title: e.target.value })}
@@ -665,7 +732,9 @@ export function ChangeRequestsTab({
               </div>
 
               <div>
-                <Label className="text-xs font-semibold">Họ tên người đề xuất <span className="text-rose-500">*</span></Label>
+                <Label className="text-xs font-semibold">
+                  Họ tên người đề xuất <span className="text-rose-500">*</span>
+                </Label>
                 <Input
                   value={formData.requested_by_name}
                   onChange={(e) => setFormData({ ...formData, requested_by_name: e.target.value })}
@@ -677,7 +746,10 @@ export function ChangeRequestsTab({
             </div>
 
             <div>
-              <Label className="text-xs font-semibold">Lý do và sự cần thiết phải sửa đổi / soạn mới <span className="text-rose-500">*</span></Label>
+              <Label className="text-xs font-semibold">
+                Lý do và sự cần thiết phải sửa đổi / soạn mới{" "}
+                <span className="text-rose-500">*</span>
+              </Label>
               <textarea
                 value={formData.reason}
                 onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
@@ -689,7 +761,9 @@ export function ChangeRequestsTab({
             </div>
 
             <div>
-              <Label className="text-xs font-semibold">Tóm tắt nội dung dự kiến soạn thảo / sửa đổi</Label>
+              <Label className="text-xs font-semibold">
+                Tóm tắt nội dung dự kiến soạn thảo / sửa đổi
+              </Label>
               <textarea
                 value={formData.proposed_content}
                 onChange={(e) => setFormData({ ...formData, proposed_content: e.target.value })}
@@ -705,7 +779,9 @@ export function ChangeRequestsTab({
                 <Input
                   type="date"
                   value={formData.target_completion_date}
-                  onChange={(e) => setFormData({ ...formData, target_completion_date: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, target_completion_date: e.target.value })
+                  }
                   className="text-xs"
                 />
               </div>
@@ -722,7 +798,12 @@ export function ChangeRequestsTab({
             </div>
 
             <DialogFooter className="pt-2">
-              <Button type="button" variant="outline" size="sm" onClick={() => setIsCreateOpen(false)}>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setIsCreateOpen(false)}
+              >
                 Hủy bỏ
               </Button>
               <Button type="submit" size="sm" className="gap-1.5">
@@ -741,17 +822,29 @@ export function ChangeRequestsTab({
             <DialogHeader>
               <DialogTitle className="text-base font-bold flex items-center gap-2">
                 <FileCheck2 className="h-5 w-5 text-primary" />
-                {reviewingCR.step === "DEPT" ? "Bước 1: Trưởng Đơn Vị Xem Xét" :
-                 reviewingCR.step === "QA" ? "Bước 2: Trưởng Ban QLCL Xem Xét" :
-                 "Bước 3: Tổng Giám Đốc Phê Duyệt"}
+                {reviewingCR.step === "DEPT"
+                  ? "Bước 1: Trưởng Đơn Vị Xem Xét"
+                  : reviewingCR.step === "QA"
+                    ? "Bước 2: Trưởng Ban QLCL Xem Xét"
+                    : "Bước 3: Tổng Giám Đốc Phê Duyệt"}
               </DialogTitle>
             </DialogHeader>
 
             <form onSubmit={handleSubmitReview} className="space-y-4">
               <div className="rounded-lg bg-muted/40 p-3 text-xs space-y-1">
-                <div><b>Mã phiếu:</b> <span className="font-mono text-primary font-bold">{reviewingCR.cr.request_code}</span></div>
-                <div><b>Tài liệu:</b> {reviewingCR.cr.doc_title} ({reviewingCR.cr.doc_code || "Soạn mới"})</div>
-                <div><b>Lý do đề xuất:</b> {reviewingCR.cr.reason}</div>
+                <div>
+                  <b>Mã phiếu:</b>{" "}
+                  <span className="font-mono text-primary font-bold">
+                    {reviewingCR.cr.request_code}
+                  </span>
+                </div>
+                <div>
+                  <b>Tài liệu:</b> {reviewingCR.cr.doc_title} (
+                  {reviewingCR.cr.doc_code || "Soạn mới"})
+                </div>
+                <div>
+                  <b>Lý do đề xuất:</b> {reviewingCR.cr.reason}
+                </div>
               </div>
 
               <div>
@@ -762,12 +855,17 @@ export function ChangeRequestsTab({
                       type="radio"
                       name="opinion"
                       value={reviewingCR.step === "DIRECTOR" ? "APPROVED" : "AGREE"}
-                      checked={reviewForm.opinion === (reviewingCR.step === "DIRECTOR" ? "APPROVED" : "AGREE")}
+                      checked={
+                        reviewForm.opinion ===
+                        (reviewingCR.step === "DIRECTOR" ? "APPROVED" : "AGREE")
+                      }
                       onChange={(e) => setReviewForm({ ...reviewForm, opinion: e.target.value })}
                       className="text-primary focus:ring-primary"
                     />
                     <span className="text-emerald-700 font-semibold">
-                      {reviewingCR.step === "DIRECTOR" ? "☑ Phê duyệt ban hành" : "☑ Đồng ý đề xuất"}
+                      {reviewingCR.step === "DIRECTOR"
+                        ? "☑ Phê duyệt ban hành"
+                        : "☑ Đồng ý đề xuất"}
                     </span>
                   </label>
 
@@ -776,7 +874,10 @@ export function ChangeRequestsTab({
                       type="radio"
                       name="opinion"
                       value={reviewingCR.step === "DIRECTOR" ? "REJECTED" : "DISAGREE"}
-                      checked={reviewForm.opinion === (reviewingCR.step === "DIRECTOR" ? "REJECTED" : "DISAGREE")}
+                      checked={
+                        reviewForm.opinion ===
+                        (reviewingCR.step === "DIRECTOR" ? "REJECTED" : "DISAGREE")
+                      }
                       onChange={(e) => setReviewForm({ ...reviewForm, opinion: e.target.value })}
                       className="text-rose-600 focus:ring-rose-500"
                     />
@@ -809,7 +910,12 @@ export function ChangeRequestsTab({
               </div>
 
               <DialogFooter className="pt-2">
-                <Button type="button" variant="outline" size="sm" onClick={() => setReviewingCR(null)}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setReviewingCR(null)}
+                >
                   Hủy
                 </Button>
                 <Button type="submit" size="sm" className="gap-1.5">
@@ -846,55 +952,98 @@ export function ChangeRequestsTab({
 
             <div className="space-y-4 text-xs">
               <div className="grid grid-cols-2 gap-3 border rounded-lg p-3 bg-muted/20">
-                <div><b>Mã tài liệu:</b> <span className="font-mono font-bold">{viewingCR.doc_code || "(Soạn mới)"}</span></div>
-                <div><b>Ngày gửi:</b> {viewingCR.request_date}</div>
-                <div><b>Tên tài liệu:</b> {viewingCR.doc_title}</div>
-                <div><b>Loại đề xuất:</b> {viewingCR.change_type}</div>
-                <div><b>Bộ phận đề xuất:</b> {viewingCR.department}</div>
-                <div><b>Người đề xuất:</b> {viewingCR.requested_by_name}</div>
-                <div><b>Hạn hoàn thành:</b> {viewingCR.target_completion_date || "---"}</div>
-                <div><b>Cán bộ soạn thảo:</b> {viewingCR.assigned_drafter || "---"}</div>
+                <div>
+                  <b>Mã tài liệu:</b>{" "}
+                  <span className="font-mono font-bold">{viewingCR.doc_code || "(Soạn mới)"}</span>
+                </div>
+                <div>
+                  <b>Ngày gửi:</b> {viewingCR.request_date}
+                </div>
+                <div>
+                  <b>Tên tài liệu:</b> {viewingCR.doc_title}
+                </div>
+                <div>
+                  <b>Loại đề xuất:</b> {viewingCR.change_type}
+                </div>
+                <div>
+                  <b>Bộ phận đề xuất:</b> {viewingCR.department}
+                </div>
+                <div>
+                  <b>Người đề xuất:</b> {viewingCR.requested_by_name}
+                </div>
+                <div>
+                  <b>Hạn hoàn thành:</b> {viewingCR.target_completion_date || "---"}
+                </div>
+                <div>
+                  <b>Cán bộ soạn thảo:</b> {viewingCR.assigned_drafter || "---"}
+                </div>
               </div>
 
               <div>
                 <div className="font-semibold text-foreground mb-1">Lý do đề xuất:</div>
-                <div className="p-3 bg-muted/40 rounded border whitespace-pre-wrap">{viewingCR.reason}</div>
+                <div className="p-3 bg-muted/40 rounded border whitespace-pre-wrap">
+                  {viewingCR.reason}
+                </div>
               </div>
 
               <div>
                 <div className="font-semibold text-foreground mb-1">Dự kiến nội dung sửa đổi:</div>
-                <div className="p-3 bg-muted/40 rounded border whitespace-pre-wrap">{viewingCR.proposed_content || "Đính kèm bản thảo chi tiết."}</div>
+                <div className="p-3 bg-muted/40 rounded border whitespace-pre-wrap">
+                  {viewingCR.proposed_content || "Đính kèm bản thảo chi tiết."}
+                </div>
               </div>
 
               <div className="border rounded-lg p-3 bg-card space-y-3">
-                <div className="font-bold text-foreground uppercase border-b pb-1">Trạng thái Ký duyệt 3 Cấp:</div>
+                <div className="font-bold text-foreground uppercase border-b pb-1">
+                  Trạng thái Ký duyệt 3 Cấp:
+                </div>
                 <div className="grid grid-cols-3 gap-3 text-center">
                   <div className="border rounded p-2 bg-muted/20">
                     <div className="font-semibold">1. Trưởng Bộ Phận</div>
-                    <div className="my-1 font-bold text-emerald-700">{viewingCR.dept_head_opinion || "Đang chờ"}</div>
-                    <div className="text-[11px] text-muted-foreground">{viewingCR.dept_head_signer_name || "---"}</div>
-                    <div className="text-[10px] text-muted-foreground">{viewingCR.dept_head_comment}</div>
+                    <div className="my-1 font-bold text-emerald-700">
+                      {viewingCR.dept_head_opinion || "Đang chờ"}
+                    </div>
+                    <div className="text-[11px] text-muted-foreground">
+                      {viewingCR.dept_head_signer_name || "---"}
+                    </div>
+                    <div className="text-[10px] text-muted-foreground">
+                      {viewingCR.dept_head_comment}
+                    </div>
                   </div>
 
                   <div className="border rounded p-2 bg-muted/20">
                     <div className="font-semibold">2. Trưởng Ban QLCL</div>
-                    <div className="my-1 font-bold text-blue-700">{viewingCR.qa_head_opinion || "Đang chờ"}</div>
-                    <div className="text-[11px] text-muted-foreground">{viewingCR.qa_head_signer_name || "---"}</div>
-                    <div className="text-[10px] text-muted-foreground">{viewingCR.qa_head_comment}</div>
+                    <div className="my-1 font-bold text-blue-700">
+                      {viewingCR.qa_head_opinion || "Đang chờ"}
+                    </div>
+                    <div className="text-[11px] text-muted-foreground">
+                      {viewingCR.qa_head_signer_name || "---"}
+                    </div>
+                    <div className="text-[10px] text-muted-foreground">
+                      {viewingCR.qa_head_comment}
+                    </div>
                   </div>
 
                   <div className="border rounded p-2 bg-muted/20">
                     <div className="font-semibold">3. Tổng Giám Đốc</div>
-                    <div className="my-1 font-bold text-purple-700">{viewingCR.director_approval || "Đang chờ"}</div>
-                    <div className="text-[11px] text-muted-foreground">{viewingCR.director_signer_name || "---"}</div>
-                    <div className="text-[10px] text-muted-foreground">{viewingCR.director_comment}</div>
+                    <div className="my-1 font-bold text-purple-700">
+                      {viewingCR.director_approval || "Đang chờ"}
+                    </div>
+                    <div className="text-[11px] text-muted-foreground">
+                      {viewingCR.director_signer_name || "---"}
+                    </div>
+                    <div className="text-[10px] text-muted-foreground">
+                      {viewingCR.director_comment}
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
 
             <DialogFooter>
-              <Button size="sm" onClick={() => setViewingCR(null)}>Đóng</Button>
+              <Button size="sm" onClick={() => setViewingCR(null)}>
+                Đóng
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>

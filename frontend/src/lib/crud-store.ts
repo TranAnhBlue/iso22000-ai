@@ -38,7 +38,6 @@ function subscribe(name: string, fn: () => void) {
   return () => {
     listeners[name]!.delete(fn);
   };
-
 }
 
 export function newId(prefix = "R") {
@@ -91,7 +90,6 @@ export function useCollection(name: string, seed: Row[]) {
 
   const reset = useCallback(() => {
     save(name, seed);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [name, seed]);
 
   return { rows, create, update, remove, reset };

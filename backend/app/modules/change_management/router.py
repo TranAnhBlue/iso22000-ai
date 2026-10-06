@@ -7,6 +7,7 @@ from datetime import datetime, date
 
 from app.core.database import get_db
 from app.core.dependencies import require_roles
+from app.core.authorization import has_any_role
 from app.modules.auth.models import User
 from app.modules.change_management.models import ChangeRequest
 from app.modules.change_management.schemas import (
@@ -69,17 +70,7 @@ def get_change_requests(
     return [format_change_request(cr) for cr in crs]
 
 def check_user_has_roles(user: User, allowed_roles: List[str]) -> bool:
-    user_roles = [str(r.role_code).lower().strip() for r in user.roles]
-    if user.department:
-        user_roles.append(str(user.department).lower().strip())
-    if "admin" in user_roles:
-        return True
-    allowed_lower = [r.lower().strip() for r in allowed_roles]
-    for ur in user_roles:
-        for al in allowed_lower:
-            if ur == al or al in ur or ur in al:
-                return True
-    return False
+    return has_any_role(user, allowed_roles)
 
 VALID_TRANSITIONS = {
     "DRAFT": ["UNDER_REVIEW"],

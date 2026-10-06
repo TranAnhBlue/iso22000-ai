@@ -1,0 +1,34 @@
+services:
+  - type: web
+    name: iso22000-api
+    runtime: python
+    plan: free
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: ENABLE_DEMO_SEED
+        value: "false"
+      - key: DATABASE_URL
+        sync: false
+      - key: SECRET_KEY
+        sync: false
+      - key: CORS_ORIGINS
+        value: https://iso22000-ai.vercel.app
+
+  - type: web
+    name: iso22000-web
+    runtime: static
+    rootDir: frontend
+    buildCommand: npm ci && npm run build
+    staticPublishPath: .output/public
+    envVars:
+      - key: VITE_API_BASE_URL
+        value: https://iso22000-ai-8dlb.onrender.com/api/v1
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html

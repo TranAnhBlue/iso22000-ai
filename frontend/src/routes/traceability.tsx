@@ -46,9 +46,16 @@ export const Route = createFileRoute("/traceability")({
   head: () => ({
     meta: [
       { title: "Truy Xuất Nguồn Gốc 1 Chạm & Thu Hồi – WCERT FSMS" },
-      { name: "description", content: "Hệ thống truy xuất nguồn gốc ngược và xuôi 1 chạm theo tiêu chuẩn ISO 22000:2018." },
+      {
+        name: "description",
+        content:
+          "Hệ thống truy xuất nguồn gốc ngược và xuôi 1 chạm theo tiêu chuẩn ISO 22000:2018.",
+      },
       { property: "og:title", content: "Truy Xuất Nguồn Gốc 1 Chạm & Thu Hồi – WCERT FSMS" },
-      { property: "og:description", content: "Truy xuất chuỗi cung ứng 4 tầng và giả lập thu hồi sản phẩm." },
+      {
+        property: "og:description",
+        content: "Truy xuất chuỗi cung ứng 4 tầng và giả lập thu hồi sản phẩm.",
+      },
     ],
   }),
   component: () => (
@@ -100,7 +107,9 @@ export function TraceabilityPage() {
       setBackwardTree(res.data);
     } catch (err: any) {
       console.error("Lỗi truy xuất ngược:", err);
-      toast.error("Không thể kết nối API truy xuất ngược: " + (err.response?.data?.detail || err.message));
+      toast.error(
+        "Không thể kết nối API truy xuất ngược: " + (err.response?.data?.detail || err.message),
+      );
     } finally {
       setLoading(false);
     }
@@ -112,11 +121,15 @@ export function TraceabilityPage() {
     if (!lot) return;
     setLoading(true);
     try {
-      const res = await api.get(`/traceability/forward?material_lot_number=${encodeURIComponent(lot)}`);
+      const res = await api.get(
+        `/traceability/forward?material_lot_number=${encodeURIComponent(lot)}`,
+      );
       setForwardRecall(res.data);
     } catch (err: any) {
       console.error("Lỗi truy xuất xuôi:", err);
-      toast.error("Không thể kết nối API truy xuất xuôi: " + (err.response?.data?.detail || err.message));
+      toast.error(
+        "Không thể kết nối API truy xuất xuôi: " + (err.response?.data?.detail || err.message),
+      );
     } finally {
       setLoading(false);
     }
@@ -126,9 +139,13 @@ export function TraceabilityPage() {
   const executeQuarantine = async (batchNumber: string) => {
     setQuarantining(true);
     try {
-      await api.post(`/traceability/quarantine-batch/${batchNumber}?reason=Phat%20hien%20su%20co%20nguyen%20lieu`);
+      await api.post(
+        `/traceability/quarantine-batch/${batchNumber}?reason=Phat%20hien%20su%20co%20nguyen%20lieu`,
+      );
       setIsQuarantinedSuccess(true);
-      toast.success(`Đã chuyển toàn bộ tồn kho của mẻ [${batchNumber}] sang trạng thái BIỆT TRỮ CÁCH LY thành công!`);
+      toast.success(
+        `Đã chuyển toàn bộ tồn kho của mẻ [${batchNumber}] sang trạng thái BIỆT TRỮ CÁCH LY thành công!`,
+      );
       if (mode === "backward") handleBackwardSearch();
       else handleForwardSearch();
     } catch (err: any) {
@@ -189,7 +206,10 @@ export function TraceabilityPage() {
       <div className="print:hidden flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <Link to="/inventory" className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1 font-medium">
+            <Link
+              to="/inventory"
+              className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1 font-medium"
+            >
               <ArrowLeft className="h-3.5 w-3.5" /> Quay lại Kho FEFO
             </Link>
           </div>
@@ -209,7 +229,11 @@ export function TraceabilityPage() {
             <span>Hướng Dẫn Nghiệp Vụ</span>
           </Button>
           {backwardTree && backwardTree.found && mode === "backward" && (
-            <Button size="sm" onClick={triggerPrint} className="gap-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold">
+            <Button
+              size="sm"
+              onClick={triggerPrint}
+              className="gap-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold"
+            >
               <Printer className="h-4 w-4" />
               In Biên Bản BM-TX-01
             </Button>
@@ -219,7 +243,9 @@ export function TraceabilityPage() {
 
       <div className="print:hidden">
         <AIBadge>
-          <b>AI Phân Tích Chuỗi Cung Ứng:</b> Tự động liên kết mẻ sản xuất với kết quả kiểm tra CCP và nhà cung ứng · Xác định nhanh danh sách khách hàng cần thu hồi trong &lt; 15 phút (vượt chuẩn ISO 120 phút).
+          <b>AI Phân Tích Chuỗi Cung Ứng:</b> Tự động liên kết mẻ sản xuất với kết quả kiểm tra CCP
+          và nhà cung ứng · Xác định nhanh danh sách khách hàng cần thu hồi trong &lt; 15 phút (vượt
+          chuẩn ISO 120 phút).
         </AIBadge>
       </div>
 
@@ -236,16 +262,23 @@ export function TraceabilityPage() {
               : "border-border bg-card hover:bg-muted/30"
           }`}
         >
-          <div className={`p-2.5 rounded-lg shrink-0 ${mode === "backward" ? "bg-emerald-600 text-white" : "bg-muted text-muted-foreground"}`}>
+          <div
+            className={`p-2.5 rounded-lg shrink-0 ${mode === "backward" ? "bg-emerald-600 text-white" : "bg-muted text-muted-foreground"}`}
+          >
             <RotateCcw className="h-5 w-5" />
           </div>
           <div>
             <div className="font-bold text-sm text-foreground flex items-center gap-2">
               1. Truy Xuất Ngược (Backward Traceability)
-              {mode === "backward" && <span className="text-[10px] bg-emerald-600 text-white px-2 py-0.5 rounded-full">Đang chọn</span>}
+              {mode === "backward" && (
+                <span className="text-[10px] bg-emerald-600 text-white px-2 py-0.5 rounded-full">
+                  Đang chọn
+                </span>
+              )}
             </div>
             <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-              Nhập Mã Lô Thành phẩm → Truy ra toàn bộ: Mẻ SX, Nhật ký CCP, Tủ mẫu lưu, Nguyên liệu và Nhà cung ứng.
+              Nhập Mã Lô Thành phẩm → Truy ra toàn bộ: Mẻ SX, Nhật ký CCP, Tủ mẫu lưu, Nguyên liệu
+              và Nhà cung ứng.
             </p>
           </div>
         </button>
@@ -261,16 +294,23 @@ export function TraceabilityPage() {
               : "border-border bg-card hover:bg-muted/30"
           }`}
         >
-          <div className={`p-2.5 rounded-lg shrink-0 ${mode === "forward" ? "bg-rose-600 text-white" : "bg-muted text-muted-foreground"}`}>
+          <div
+            className={`p-2.5 rounded-lg shrink-0 ${mode === "forward" ? "bg-rose-600 text-white" : "bg-muted text-muted-foreground"}`}
+          >
             <ShieldAlert className="h-5 w-5" />
           </div>
           <div>
             <div className="font-bold text-sm text-foreground flex items-center gap-2">
               2. Truy Xuất Xuôi & Thu Hồi (Mock Recall)
-              {mode === "forward" && <span className="text-[10px] bg-rose-600 text-white px-2 py-0.5 rounded-full">Đang chọn</span>}
+              {mode === "forward" && (
+                <span className="text-[10px] bg-rose-600 text-white px-2 py-0.5 rounded-full">
+                  Đang chọn
+                </span>
+              )}
             </div>
             <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-              Nhập Mã Lô Nguyên liệu sự cố → Quét toàn bộ mẻ đã dùng, tồn kho cần khóa và khách hàng cần thu hồi khẩn cấp.
+              Nhập Mã Lô Nguyên liệu sự cố → Quét toàn bộ mẻ đã dùng, tồn kho cần khóa và khách hàng
+              cần thu hồi khẩn cấp.
             </p>
           </div>
         </button>
@@ -295,7 +335,11 @@ export function TraceabilityPage() {
                   onKeyDown={(e) => e.key === "Enter" && handleBackwardSearch()}
                 />
               </div>
-              <Button onClick={() => handleBackwardSearch()} disabled={loading} className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shrink-0">
+              <Button
+                onClick={() => handleBackwardSearch()}
+                disabled={loading}
+                className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shrink-0"
+              >
                 <Search className="h-4 w-4" />
                 {loading ? "Đang truy xuất..." : "Truy Xuất Ngược 1 Chạm"}
               </Button>
@@ -318,7 +362,11 @@ export function TraceabilityPage() {
                   onKeyDown={(e) => e.key === "Enter" && handleForwardSearch()}
                 />
               </div>
-              <Button onClick={() => handleForwardSearch()} disabled={loading} className="gap-2 bg-rose-600 hover:bg-rose-700 text-white font-semibold shrink-0">
+              <Button
+                onClick={() => handleForwardSearch()}
+                disabled={loading}
+                className="gap-2 bg-rose-600 hover:bg-rose-700 text-white font-semibold shrink-0"
+              >
                 <ShieldAlert className="h-4 w-4" />
                 {loading ? "Đang quét..." : "Quét Giả Lập Thu Hồi (Mock Recall)"}
               </Button>
@@ -360,7 +408,8 @@ export function TraceabilityPage() {
                     </span>
                   </div>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    Lô hàng đáp ứng 100% tiêu chí ATTP: CCP trong giới hạn tới hạn, nguyên liệu IQC Đạt, mẫu đối chứng đã được lưu giữ an toàn.
+                    Lô hàng đáp ứng 100% tiêu chí ATTP: CCP trong giới hạn tới hạn, nguyên liệu IQC
+                    Đạt, mẫu đối chứng đã được lưu giữ an toàn.
                   </p>
                 </div>
               </div>
@@ -395,7 +444,8 @@ export function TraceabilityPage() {
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-xs sm:text-sm text-blue-900 flex items-center gap-2">
                     <Building2 className="h-4 w-4 text-blue-600" />
-                    TẦNG 1: NHÀ CUNG CẤP & NGUYÊN VẬT LIỆU ĐẦU VÀO ({backwardTree.suppliers_and_materials.length} lô)
+                    TẦNG 1: NHÀ CUNG CẤP & NGUYÊN VẬT LIỆU ĐẦU VÀO (
+                    {backwardTree.suppliers_and_materials.length} lô)
                   </span>
                   <span className="text-[11px] font-semibold text-muted-foreground">ISO 22000</span>
                 </div>
@@ -420,7 +470,9 @@ export function TraceabilityPage() {
                         </div>
                         <div>
                           <span className="text-muted-foreground">Đánh giá NCC:</span>
-                          <div className="font-semibold text-emerald-600">{sup.rating_score}/100 điểm</div>
+                          <div className="font-semibold text-emerald-600">
+                            {sup.rating_score}/100 điểm
+                          </div>
                         </div>
                         <div>
                           <span className="text-muted-foreground">Kiểm tra IQC:</span>
@@ -468,7 +520,9 @@ export function TraceabilityPage() {
                         Xem Tem Mã QR
                       </Button>
                     )}
-                    <span className="text-[11px] font-semibold text-muted-foreground hidden sm:inline">ISO 22000</span>
+                    <span className="text-[11px] font-semibold text-muted-foreground hidden sm:inline">
+                      ISO 22000
+                    </span>
                   </div>
                 </div>
 
@@ -477,11 +531,15 @@ export function TraceabilityPage() {
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs bg-muted/40 p-3 rounded-lg">
                       <div>
                         <span className="text-muted-foreground">Mã mẻ SX:</span>
-                        <div className="font-mono font-bold text-primary text-sm">{backwardTree.batch_info.batch_number}</div>
+                        <div className="font-mono font-bold text-primary text-sm">
+                          {backwardTree.batch_info.batch_number}
+                        </div>
                       </div>
                       <div>
                         <span className="text-muted-foreground">Tên sản phẩm:</span>
-                        <div className="font-semibold text-foreground">{backwardTree.batch_info.product_name}</div>
+                        <div className="font-semibold text-foreground">
+                          {backwardTree.batch_info.product_name}
+                        </div>
                       </div>
                       <div>
                         <span className="text-muted-foreground">Sản lượng:</span>
@@ -491,24 +549,36 @@ export function TraceabilityPage() {
                       </div>
                       <div>
                         <span className="text-muted-foreground">QC Thẩm định:</span>
-                        <div className="font-semibold text-foreground">{backwardTree.batch_info.qc_inspector}</div>
+                        <div className="font-semibold text-foreground">
+                          {backwardTree.batch_info.qc_inspector}
+                        </div>
                       </div>
                     </div>
 
-                    {backwardTree.ccp_monitoring_records && backwardTree.ccp_monitoring_records.length > 0 ? (
+                    {backwardTree.ccp_monitoring_records &&
+                    backwardTree.ccp_monitoring_records.length > 0 ? (
                       <div className="space-y-1">
-                        <span className="text-xs font-bold text-muted-foreground">Hồ sơ đo đạc CCP theo thời gian thực:</span>
+                        <span className="text-xs font-bold text-muted-foreground">
+                          Hồ sơ đo đạc CCP theo thời gian thực:
+                        </span>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                           {backwardTree.ccp_monitoring_records.map((ccp: any, cidx: number) => (
-                            <div key={cidx} className="rounded-lg border bg-muted/20 p-2.5 text-xs space-y-1">
+                            <div
+                              key={cidx}
+                              className="rounded-lg border bg-muted/20 p-2.5 text-xs space-y-1"
+                            >
                               <div className="flex items-center justify-between font-bold">
-                                <span>{ccp.ccp_code}: {ccp.ccp_name}</span>
+                                <span>
+                                  {ccp.ccp_code}: {ccp.ccp_name}
+                                </span>
                                 <span className="text-emerald-600 flex items-center gap-1">
-                                  <CheckCircle2 className="h-3 w-3" /> {ccp.measured_value} {ccp.unit} (ĐẠT)
+                                  <CheckCircle2 className="h-3 w-3" /> {ccp.measured_value}{" "}
+                                  {ccp.unit} (ĐẠT)
                                 </span>
                               </div>
                               <div className="text-[11px] text-muted-foreground">
-                                Người kiểm tra: {ccp.checked_by_name} | Công đoạn: {ccp.process_step}
+                                Người kiểm tra: {ccp.checked_by_name} | Công đoạn:{" "}
+                                {ccp.process_step}
                               </div>
                             </div>
                           ))}
@@ -517,7 +587,8 @@ export function TraceabilityPage() {
                     ) : (
                       <div className="text-xs text-muted-foreground bg-muted/20 p-2 rounded flex items-center gap-2">
                         <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                        Giám sát CCP1 (Thanh trùng nhiệt độ 85.5°C / 15 phút) & CCP2 (Máy dò kim loại Fe 1.2mm) đạt 100%.
+                        Giám sát CCP1 (Thanh trùng nhiệt độ 85.5°C / 15 phút) & CCP2 (Máy dò kim
+                        loại Fe 1.2mm) đạt 100%.
                       </div>
                     )}
                   </div>
@@ -555,12 +626,15 @@ export function TraceabilityPage() {
                             {stk.quantity} {stk.unit} ({stk.location_bin})
                           </div>
                           <div className="text-muted-foreground">
-                            HSD: {stk.exp_date} (Còn {stk.days_to_expiry} ngày) | Trạng thái: <b>{stk.status}</b>
+                            HSD: {stk.exp_date} (Còn {stk.days_to_expiry} ngày) | Trạng thái:{" "}
+                            <b>{stk.status}</b>
                           </div>
                         </div>
                       ))
                     ) : (
-                      <div className="text-muted-foreground italic">Không có hàng tồn ở kho (Đã xuất hết).</div>
+                      <div className="text-muted-foreground italic">
+                        Không có hàng tồn ở kho (Đã xuất hết).
+                      </div>
                     )}
                   </div>
 
@@ -575,7 +649,9 @@ export function TraceabilityPage() {
                         <div key={mpidx} className="text-[11px] space-y-1">
                           <div className="font-bold text-foreground flex items-center justify-between">
                             <span>Mã mẫu: {smp.sample_code}</span>
-                            <span className="text-emerald-700 font-bold">Vi sinh: {smp.test_result}</span>
+                            <span className="text-emerald-700 font-bold">
+                              Vi sinh: {smp.test_result}
+                            </span>
                           </div>
                           <div className="text-muted-foreground">
                             Vị trí: {smp.storage_cabinet} | Hạn lưu: {smp.expiry_date}
@@ -599,7 +675,8 @@ export function TraceabilityPage() {
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-xs sm:text-sm text-emerald-950 flex items-center gap-2">
                     <Truck className="h-4 w-4 text-emerald-600" />
-                    TẦNG 4: ĐƠN HÀNG XUẤT KHO & KHÁCH HÀNG TIÊU THỤ ({backwardTree.customers_dispatched.length} phiếu xuất)
+                    TẦNG 4: ĐƠN HÀNG XUẤT KHO & KHÁCH HÀNG TIÊU THỤ (
+                    {backwardTree.customers_dispatched.length} phiếu xuất)
                   </span>
                   <span className="text-[11px] font-semibold text-muted-foreground">ISO 22000</span>
                 </div>
@@ -608,21 +685,31 @@ export function TraceabilityPage() {
                   {backwardTree.customers_dispatched.map((cust: any, cidx: number) => (
                     <div key={cidx} className="rounded-lg border bg-muted/20 p-3 text-xs space-y-2">
                       <div className="flex items-center justify-between">
-                        <span className="font-bold text-foreground text-sm">{cust.customer_name}</span>
-                        <span className="font-mono font-bold text-primary">{cust.dispatch_code}</span>
+                        <span className="font-bold text-foreground text-sm">
+                          {cust.customer_name}
+                        </span>
+                        <span className="font-mono font-bold text-primary">
+                          {cust.dispatch_code}
+                        </span>
                       </div>
                       <div className="grid grid-cols-2 gap-1.5 text-[11px]">
                         <div>
                           <span className="text-muted-foreground">Số lượng giao:</span>
-                          <div className="font-bold text-foreground">{cust.quantity_dispatched} {cust.unit}</div>
+                          <div className="font-bold text-foreground">
+                            {cust.quantity_dispatched} {cust.unit}
+                          </div>
                         </div>
                         <div>
                           <span className="text-muted-foreground">Xe giao hàng:</span>
-                          <div className="font-semibold text-foreground">{cust.vehicle_number} ({cust.vehicle_temp_c}°C)</div>
+                          <div className="font-semibold text-foreground">
+                            {cust.vehicle_number} ({cust.vehicle_temp_c}°C)
+                          </div>
                         </div>
                         <div className="col-span-2">
                           <span className="text-muted-foreground">Địa điểm giao:</span>
-                          <div className="text-foreground">{cust.destination_address || "Kho trung tâm"}</div>
+                          <div className="text-foreground">
+                            {cust.destination_address || "Kho trung tâm"}
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -655,7 +742,9 @@ export function TraceabilityPage() {
               <div className="text-right text-xs font-mono">
                 <div className="font-bold text-foreground">BIỂU MẪU: BM-TX-01</div>
                 <div className="text-muted-foreground">Lần ban hành: 02 (2026)</div>
-                <div className="text-muted-foreground">Ngày in: {new Date().toLocaleDateString("vi-VN")}</div>
+                <div className="text-muted-foreground">
+                  Ngày in: {new Date().toLocaleDateString("vi-VN")}
+                </div>
               </div>
             </div>
 
@@ -672,15 +761,21 @@ export function TraceabilityPage() {
             {/* SECTION 1: PRODUCT INFO */}
             <div className="space-y-4 text-xs sm:text-sm">
               <div className="rounded-lg border p-3 bg-muted/10 space-y-2">
-                <h4 className="font-bold uppercase text-primary text-xs">I. THÔNG TIN SẢN PHẨM & MẺ CHẾ BIẾN</h4>
+                <h4 className="font-bold uppercase text-primary text-xs">
+                  I. THÔNG TIN SẢN PHẨM & MẺ CHẾ BIẾN
+                </h4>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
                   <div>
                     <span className="text-muted-foreground">Mã Mẻ Sản Xuất:</span>
-                    <div className="font-mono font-bold text-foreground">{backwardTree.batch_info?.batch_number}</div>
+                    <div className="font-mono font-bold text-foreground">
+                      {backwardTree.batch_info?.batch_number}
+                    </div>
                   </div>
                   <div>
                     <span className="text-muted-foreground">Tên Sản Phẩm:</span>
-                    <div className="font-bold text-foreground">{backwardTree.batch_info?.product_name}</div>
+                    <div className="font-bold text-foreground">
+                      {backwardTree.batch_info?.product_name}
+                    </div>
                   </div>
                   <div>
                     <span className="text-muted-foreground">Sản Lượng Thực Tế:</span>
@@ -690,14 +785,18 @@ export function TraceabilityPage() {
                   </div>
                   <div>
                     <span className="text-muted-foreground">Dây Chuyền / Ca:</span>
-                    <div className="font-medium text-foreground">{backwardTree.batch_info?.production_line} ({backwardTree.batch_info?.shift})</div>
+                    <div className="font-medium text-foreground">
+                      {backwardTree.batch_info?.production_line} ({backwardTree.batch_info?.shift})
+                    </div>
                   </div>
                 </div>
               </div>
 
               {/* SECTION 2: RAW MATERIALS */}
               <div className="rounded-lg border p-3 space-y-2">
-                <h4 className="font-bold uppercase text-primary text-xs">II. NGUYÊN LIỆU ĐẦU VÀO & NHÀ CUNG CẤP</h4>
+                <h4 className="font-bold uppercase text-primary text-xs">
+                  II. NGUYÊN LIỆU ĐẦU VÀO & NHÀ CUNG CẤP
+                </h4>
                 <table className="w-full text-xs text-left border-collapse">
                   <thead>
                     <tr className="border-b bg-muted/40 font-semibold text-muted-foreground">
@@ -722,19 +821,24 @@ export function TraceabilityPage() {
 
               {/* SECTION 3: CCP COMPLIANCE */}
               <div className="rounded-lg border p-3 space-y-2">
-                <h4 className="font-bold uppercase text-primary text-xs">III. THẨM ĐỊNH ĐIỂM KIỂM SOÁT TỚI HẠN (CCP / oPRP)</h4>
+                <h4 className="font-bold uppercase text-primary text-xs">
+                  III. THẨM ĐỊNH ĐIỂM KIỂM SOÁT TỚI HẠN (CCP / oPRP)
+                </h4>
                 <p className="text-xs text-muted-foreground">
-                  • <b>CCP 1 (Thanh trùng nhiệt độ):</b> Đo thực tế 85.5°C (Giới hạn tới hạn: ≥ 85.0°C trong ≥ 15 phút) → <b>ĐẠT TIÊU CHUẨN</b>.
-                  <br />
-                  • <b>CCP 2 (Dò kim loại sau đóng gói):</b> Test strip Fe 1.2mm, Non-Fe 1.5mm, SUS 2.0mm → <b>KHÔNG PHÁT HIỆN DỊ VẬT (ĐẠT)</b>.
-                  <br />
-                  • <b>Mẫu lưu đối chứng (ML-202608-01):</b> Khối lượng 250g, bảo quản tại Tủ đông T-01 (≤ -18°C), Hạn lưu đến 25/11/2026.
+                  • <b>CCP 1 (Thanh trùng nhiệt độ):</b> Đo thực tế 85.5°C (Giới hạn tới hạn: ≥
+                  85.0°C trong ≥ 15 phút) → <b>ĐẠT TIÊU CHUẨN</b>.
+                  <br />• <b>CCP 2 (Dò kim loại sau đóng gói):</b> Test strip Fe 1.2mm, Non-Fe
+                  1.5mm, SUS 2.0mm → <b>KHÔNG PHÁT HIỆN DỊ VẬT (ĐẠT)</b>.
+                  <br />• <b>Mẫu lưu đối chứng (ML-202608-01):</b> Khối lượng 250g, bảo quản tại Tủ
+                  đông T-01 (≤ -18°C), Hạn lưu đến 25/11/2026.
                 </p>
               </div>
 
               {/* SECTION 4: DISPATCHES */}
               <div className="rounded-lg border p-3 space-y-2">
-                <h4 className="font-bold uppercase text-primary text-xs">IV. PHÂN PHỐI & KHÁCH HÀNG NHẬN</h4>
+                <h4 className="font-bold uppercase text-primary text-xs">
+                  IV. PHÂN PHỐI & KHÁCH HÀNG NHẬN
+                </h4>
                 <table className="w-full text-xs text-left border-collapse">
                   <thead>
                     <tr className="border-b bg-muted/40 font-semibold text-muted-foreground">
@@ -749,8 +853,12 @@ export function TraceabilityPage() {
                       <tr key={idx}>
                         <td className="py-1.5 px-2 font-mono font-bold">{c.dispatch_code}</td>
                         <td className="py-1.5 px-2">{c.customer_name}</td>
-                        <td className="py-1.5 px-2 font-bold">{c.quantity_dispatched} {c.unit}</td>
-                        <td className="py-1.5 px-2 text-blue-600 font-semibold">{c.vehicle_temp_c}°C ({c.vehicle_number})</td>
+                        <td className="py-1.5 px-2 font-bold">
+                          {c.quantity_dispatched} {c.unit}
+                        </td>
+                        <td className="py-1.5 px-2 text-blue-600 font-semibold">
+                          {c.vehicle_temp_c}°C ({c.vehicle_number})
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -810,7 +918,9 @@ export function TraceabilityPage() {
                     </span>
                   </div>
                   <p className="text-xs text-rose-800 mt-0.5">
-                    Lô nguyên liệu nghi ngờ: <b>{forwardRecall.material_name}</b> (Mã Lô: <span className="font-mono font-bold">{forwardRecall.material_lot_number}</span>) · Nhà cung cấp: <b>{forwardRecall.supplier_name}</b>
+                    Lô nguyên liệu nghi ngờ: <b>{forwardRecall.material_name}</b> (Mã Lô:{" "}
+                    <span className="font-mono font-bold">{forwardRecall.material_lot_number}</span>
+                    ) · Nhà cung cấp: <b>{forwardRecall.supplier_name}</b>
                   </p>
                 </div>
               </div>
@@ -822,7 +932,9 @@ export function TraceabilityPage() {
                   </span>
                 ) : (
                   <Button
-                    onClick={() => handleQuarantine(forwardRecall.affected_batches[0] || "LOT-202608-B01")}
+                    onClick={() =>
+                      handleQuarantine(forwardRecall.affected_batches[0] || "LOT-202608-B01")
+                    }
                     disabled={quarantining}
                     className="gap-2 bg-rose-600 hover:bg-rose-700 text-white font-bold shadow-sm"
                     size="sm"
@@ -839,7 +951,9 @@ export function TraceabilityPage() {
               <div className="rounded-lg border border-rose-300 bg-rose-100/80 p-3 text-xs text-rose-900 font-medium flex items-center gap-2">
                 <ShieldAlert className="h-4 w-4 text-rose-600 shrink-0" />
                 <span>
-                  <b>ĐÃ THỰC THI LỆNH BIỆT TRỮ KHẨN CẤP:</b> Toàn bộ lô tồn kho của mẻ chế biến đã được chuyển sang trạng thái <b>QUARANTINE</b> (Niêm phong cách ly, khóa quyền xuất kho cho thủ kho).
+                  <b>ĐÃ THỰC THI LỆNH BIỆT TRỮ KHẨN CẤP:</b> Toàn bộ lô tồn kho của mẻ chế biến đã
+                  được chuyển sang trạng thái <b>QUARANTINE</b> (Niêm phong cách ly, khóa quyền xuất
+                  kho cho thủ kho).
                 </span>
               </div>
             )}
@@ -849,13 +963,15 @@ export function TraceabilityPage() {
               <div className="bg-white/80 p-2.5 rounded-lg border border-rose-100">
                 <span className="text-muted-foreground">Thời gian truy xuất hoàn thành:</span>
                 <div className="text-base font-bold text-emerald-700 flex items-center gap-1">
-                  <Clock className="h-4 w-4" /> {forwardRecall.iso_recall_time_est_minutes} Phút (Chuẩn ISO &lt; 120 Phút)
+                  <Clock className="h-4 w-4" /> {forwardRecall.iso_recall_time_est_minutes} Phút
+                  (Chuẩn ISO &lt; 120 Phút)
                 </div>
               </div>
               <div className="bg-white/80 p-2.5 rounded-lg border border-rose-100">
                 <span className="text-muted-foreground">Mẻ sản xuất bị ảnh hưởng:</span>
                 <div className="text-base font-bold text-rose-700">
-                  {forwardRecall.affected_batches.length} mẻ ({forwardRecall.total_affected_production_qty.toLocaleString()} kg/gói)
+                  {forwardRecall.affected_batches.length} mẻ (
+                  {forwardRecall.total_affected_production_qty.toLocaleString()} kg/gói)
                 </div>
               </div>
               <div className="bg-white/80 p-2.5 rounded-lg border border-rose-100">
@@ -874,7 +990,8 @@ export function TraceabilityPage() {
               Danh Sách Khách Hàng / Đại Lý Đã Nhận Hàng (Cần Kích Hoạt Thu Hồi Trong 2 Giờ)
             </h3>
             <p className="text-xs text-muted-foreground">
-              Theo quy định tiêu chuẩn, danh sách khách hàng dưới đây phải được thông báo khẩn cấp và niêm phong sản phẩm trên kệ bán lẻ.
+              Theo quy định tiêu chuẩn, danh sách khách hàng dưới đây phải được thông báo khẩn cấp
+              và niêm phong sản phẩm trên kệ bán lẻ.
             </p>
 
             <div className="overflow-x-auto">
@@ -892,20 +1009,24 @@ export function TraceabilityPage() {
                   {forwardRecall.affected_customers.length === 0 ? (
                     <tr>
                       <td colSpan={5} className="py-6 text-center text-muted-foreground">
-                        Không có sản phẩm nào đã xuất ra thị trường. Toàn bộ còn nằm trong kho an toàn!
+                        Không có sản phẩm nào đã xuất ra thị trường. Toàn bộ còn nằm trong kho an
+                        toàn!
                       </td>
                     </tr>
                   ) : (
                     forwardRecall.affected_customers.map((c: any, idx: number) => (
                       <tr key={idx} className="hover:bg-muted/30">
-                        <td className="py-3 px-3 font-mono font-bold text-primary">{c.dispatch_code}</td>
+                        <td className="py-3 px-3 font-mono font-bold text-primary">
+                          {c.dispatch_code}
+                        </td>
                         <td className="py-3 px-3 font-bold text-foreground">{c.customer_name}</td>
                         <td className="py-3 px-3">
                           <div className="flex items-center gap-1 text-primary font-medium">
                             <Phone className="h-3 w-3" /> {c.customer_phone || "028.3836.0143"}
                           </div>
                           <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-                            <MapPin className="h-3 w-3" /> {c.destination_address || "Tổng kho Bình Dương"}
+                            <MapPin className="h-3 w-3" />{" "}
+                            {c.destination_address || "Tổng kho Bình Dương"}
                           </div>
                         </td>
                         <td className="py-3 px-3 font-bold text-rose-600 text-sm">

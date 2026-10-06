@@ -248,7 +248,9 @@ const CALIBRATION_STATUS_MAP: Record<string, { label: string; tone: string }> = 
 
 // ==================== MAIN COMPONENT ====================
 function EquipmentModule() {
-  const [activeTab, setActiveTab] = useState<"equipments" | "calibration" | "maintenance" | "ai">("equipments");
+  const [activeTab, setActiveTab] = useState<"equipments" | "calibration" | "maintenance" | "ai">(
+    "equipments",
+  );
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("ALL");
@@ -395,12 +397,18 @@ function EquipmentModule() {
   // Filtered Logs
   const filteredCalLogs = useMemo(() => {
     if (selectedEqFilterForLogs === "ALL") return calibrationLogs;
-    return calibrationLogs.filter((c) => c.equipment_id === selectedEqFilterForLogs || c.equipment_code === selectedEqFilterForLogs);
+    return calibrationLogs.filter(
+      (c) =>
+        c.equipment_id === selectedEqFilterForLogs || c.equipment_code === selectedEqFilterForLogs,
+    );
   }, [calibrationLogs, selectedEqFilterForLogs]);
 
   const filteredMaintLogs = useMemo(() => {
     if (selectedEqFilterForLogs === "ALL") return maintenanceLogs;
-    return maintenanceLogs.filter((m) => m.equipment_id === selectedEqFilterForLogs || m.equipment_code === selectedEqFilterForLogs);
+    return maintenanceLogs.filter(
+      (m) =>
+        m.equipment_id === selectedEqFilterForLogs || m.equipment_code === selectedEqFilterForLogs,
+    );
   }, [maintenanceLogs, selectedEqFilterForLogs]);
 
   // Handle Create / Edit Equipment
@@ -409,7 +417,7 @@ function EquipmentModule() {
     const codeNum = String(equipments.length + 1).padStart(2, "0");
     const today = new Date();
     const todayStr = today.toISOString().split("T")[0];
-    
+
     // Tự động tính ngày đến hạn dự kiến theo chu kỳ
     const nextCal = new Date(today);
     nextCal.setMonth(nextCal.getMonth() + 12);
@@ -474,13 +482,17 @@ function EquipmentModule() {
 
     const name = eqForm.equipment_name?.trim();
     if (!name || name.length < 3) {
-      toast.error("Lỗi nghiệp vụ: Tên thiết bị là bắt buộc (tối thiểu 3 ký tự, ví dụ: Nồi tiệt trùng cao áp)");
+      toast.error(
+        "Lỗi nghiệp vụ: Tên thiết bị là bắt buộc (tối thiểu 3 ký tự, ví dụ: Nồi tiệt trùng cao áp)",
+      );
       return;
     }
 
     const location = eqForm.installation_location?.trim();
     if (!location || location.length < 2) {
-      toast.error("Lỗi nghiệp vụ: Vị trí lắp đặt là bắt buộc để quản lý phân vùng ATTP và chống nhiễm chéo.");
+      toast.error(
+        "Lỗi nghiệp vụ: Vị trí lắp đặt là bắt buộc để quản lý phân vùng ATTP và chống nhiễm chéo.",
+      );
       return;
     }
 
@@ -498,14 +510,18 @@ function EquipmentModule() {
 
     if (eqForm.last_calibration_date && eqForm.next_calibration_due) {
       if (eqForm.next_calibration_due < eqForm.last_calibration_date) {
-        toast.error("Lỗi logic ngày tháng: Hạn hiệu chuẩn kế tiếp không thể diễn ra trước Ngày hiệu chuẩn gần nhất.");
+        toast.error(
+          "Lỗi logic ngày tháng: Hạn hiệu chuẩn kế tiếp không thể diễn ra trước Ngày hiệu chuẩn gần nhất.",
+        );
         return;
       }
     }
 
     if (eqForm.last_maintenance_date && eqForm.next_maintenance_due) {
       if (eqForm.next_maintenance_due < eqForm.last_maintenance_date) {
-        toast.error("Lỗi logic ngày tháng: Hạn bảo trì kế tiếp không thể diễn ra trước Ngày bảo dưỡng gần nhất.");
+        toast.error(
+          "Lỗi logic ngày tháng: Hạn bảo trì kế tiếp không thể diễn ra trước Ngày bảo dưỡng gần nhất.",
+        );
         return;
       }
     }
@@ -565,7 +581,8 @@ function EquipmentModule() {
       maintenance_type: "PREVENTIVE",
       maintenance_date: new Date().toISOString().split("T")[0],
       performer_name: "Tổ Cơ Điện - Phòng Kỹ Thuật",
-      task_desc: "Bảo dưỡng định kỳ, tra dầu mỡ bôi trơn an toàn thực phẩm NSF H1 và hiệu chỉnh căn chỉnh trục quay.",
+      task_desc:
+        "Bảo dưỡng định kỳ, tra dầu mỡ bôi trơn an toàn thực phẩm NSF H1 và hiệu chỉnh căn chỉnh trục quay.",
       parts_desc: "",
       food_grade_lubricant_used: true,
       hygiene_sanitation_after_maint: true,
@@ -595,12 +612,16 @@ function EquipmentModule() {
     }
     const taskDesc = maintForm.task_desc?.trim();
     if (!taskDesc || taskDesc.length < 5) {
-      toast.error("Lỗi nghiệp vụ: Nội dung công việc bảo trì phải mô tả chi tiết tối thiểu 5 ký tự.");
+      toast.error(
+        "Lỗi nghiệp vụ: Nội dung công việc bảo trì phải mô tả chi tiết tối thiểu 5 ký tự.",
+      );
       return;
     }
     const performer = maintForm.performer_name?.trim();
     if (!performer || performer.length < 2) {
-      toast.error("Lỗi nghiệp vụ: Người/Đơn vị thực hiện bảo trì là bắt buộc để truy cứu trách nhiệm.");
+      toast.error(
+        "Lỗi nghiệp vụ: Người/Đơn vị thực hiện bảo trì là bắt buộc để truy cứu trách nhiệm.",
+      );
       return;
     }
 
@@ -612,7 +633,9 @@ function EquipmentModule() {
         maintenance_date: maintForm.maintenance_date,
         performer_name: performer,
         tasks_performed: [{ task: taskDesc, result: "PASS" }],
-        parts_replaced: maintForm.parts_desc?.trim() ? [{ part: maintForm.parts_desc.trim(), qty: 1 }] : [],
+        parts_replaced: maintForm.parts_desc?.trim()
+          ? [{ part: maintForm.parts_desc.trim(), qty: 1 }]
+          : [],
         food_grade_lubricant_used: Boolean(maintForm.food_grade_lubricant_used),
         hygiene_sanitation_after_maint: Boolean(maintForm.hygiene_sanitation_after_maint),
         cost: Math.max(0, Number(maintForm.cost) || 0),
@@ -683,7 +706,9 @@ function EquipmentModule() {
 
     const certNum = calForm.certificate_number?.trim();
     if (!certNum) {
-      toast.error("Lỗi nghiệp vụ: Số tem kiểm định / Số giấy chứng nhận là bắt buộc để truy xuất nguồn gốc đo lường.");
+      toast.error(
+        "Lỗi nghiệp vụ: Số tem kiểm định / Số giấy chứng nhận là bắt buộc để truy xuất nguồn gốc đo lường.",
+      );
       return;
     }
 
@@ -975,7 +1000,7 @@ function EquipmentModule() {
           </tr>
           <tr>
             <td class="meta-title">Kết luận thẩm định:</td>
-            <td colspan="3" style="font-weight: bold; color: ${cal.is_passed ? '#047857' : '#be123c'}; font-size: 13px;">
+            <td colspan="3" style="font-weight: bold; color: ${cal.is_passed ? "#047857" : "#be123c"}; font-size: 13px;">
               ${cal.is_passed ? "✓ ĐẠT YÊU CẦU ĐỘ CHÍNH XÁC (PASSED) — TEM KIỂM ĐỊNH HỢP LỆ" : "✕ KHÔNG ĐẠT YÊU CẦU (FAILED) — DÁN NHÃN NGƯNG SỬ DỤNG"}
             </td>
           </tr>
@@ -1179,7 +1204,11 @@ function EquipmentModule() {
             <span className="truncate">Trợ lý AI Bảo trì</span>
           </Button>
 
-          <Button onClick={handleOpenCreateEq} size="sm" className="w-full sm:w-auto gap-1.5 text-xs shadow-sm h-9 sm:h-8 font-semibold">
+          <Button
+            onClick={handleOpenCreateEq}
+            size="sm"
+            className="w-full sm:w-auto gap-1.5 text-xs shadow-sm h-9 sm:h-8 font-semibold"
+          >
             <Plus className="h-4 w-4" />
             Thêm thiết bị mới
           </Button>
@@ -1225,7 +1254,9 @@ function EquipmentModule() {
             <span className="text-xl sm:text-2xl font-bold tracking-tight text-emerald-600">
               {stats?.calibration_compliance_rate || 100}%
             </span>
-            <span className="text-[10px] sm:text-xs text-muted-foreground hidden sm:inline">độ chuẩn xác</span>
+            <span className="text-[10px] sm:text-xs text-muted-foreground hidden sm:inline">
+              độ chuẩn xác
+            </span>
           </div>
           <div className="mt-1 text-[10px] sm:text-xs text-muted-foreground line-clamp-1">
             {stats?.calibration_valid_count || 0} máy có tem hợp lệ
@@ -1244,7 +1275,8 @@ function EquipmentModule() {
           </div>
           <div className="mt-2 sm:mt-3 flex items-baseline gap-1.5">
             <span className="text-xl sm:text-2xl font-bold tracking-tight text-amber-600">
-              {(stats?.calibration_expiring_soon_count || 0) + (stats?.calibration_overdue_count || 0)}
+              {(stats?.calibration_expiring_soon_count || 0) +
+                (stats?.calibration_overdue_count || 0)}
             </span>
             <span className="text-[10px] sm:text-xs text-rose-600 font-semibold line-clamp-1">
               ({stats?.calibration_overdue_count || 0} Quá hạn)
@@ -1269,7 +1301,9 @@ function EquipmentModule() {
             <span className="text-xl sm:text-2xl font-bold tracking-tight text-purple-600">
               {stats?.preventive_maintenance_due_this_month || 0}
             </span>
-            <span className="text-[10px] sm:text-xs text-muted-foreground hidden sm:inline">phiếu bảo dưỡng</span>
+            <span className="text-[10px] sm:text-xs text-muted-foreground hidden sm:inline">
+              phiếu bảo dưỡng
+            </span>
           </div>
           <div className="mt-1 text-[10px] sm:text-xs text-muted-foreground line-clamp-1">
             Đã làm {stats?.total_maintenance_logs_year || 0} lượt PM
@@ -1292,7 +1326,9 @@ function EquipmentModule() {
             <span>Hồ sơ Lý lịch</span>
             <span
               className={`ml-1 rounded-full px-1.5 py-0.2 text-[10px] sm:text-[11px] ${
-                activeTab === "equipments" ? "bg-white/20 text-white" : "bg-muted text-muted-foreground"
+                activeTab === "equipments"
+                  ? "bg-white/20 text-white"
+                  : "bg-muted text-muted-foreground"
               }`}
             >
               {equipments.length}
@@ -1311,7 +1347,9 @@ function EquipmentModule() {
             <span>Nhật ký Hiệu chuẩn</span>
             <span
               className={`ml-1 rounded-full px-1.5 py-0.2 text-[10px] sm:text-[11px] ${
-                activeTab === "calibration" ? "bg-white/20 text-white" : "bg-muted text-muted-foreground"
+                activeTab === "calibration"
+                  ? "bg-white/20 text-white"
+                  : "bg-muted text-muted-foreground"
               }`}
             >
               {calibrationLogs.length}
@@ -1330,7 +1368,9 @@ function EquipmentModule() {
             <span>Kế hoạch Bảo trì (PM)</span>
             <span
               className={`ml-1 rounded-full px-1.5 py-0.2 text-[10px] sm:text-[11px] ${
-                activeTab === "maintenance" ? "bg-white/20 text-white" : "bg-muted text-muted-foreground"
+                activeTab === "maintenance"
+                  ? "bg-white/20 text-white"
+                  : "bg-muted text-muted-foreground"
               }`}
             >
               {maintenanceLogs.length}
@@ -1358,8 +1398,8 @@ function EquipmentModule() {
       </div>
 
       {/* ==================== TAB 1: DANH MỤC THIẾT BỊ ==================== */}
-      {activeTab === "equipments" && (
-        equipments.length === 0 ? (
+      {activeTab === "equipments" &&
+        (equipments.length === 0 ? (
           <EmptyState
             icon={Wrench}
             title="Chưa có thiết bị hoặc phương tiện đo nào"
@@ -1370,244 +1410,264 @@ function EquipmentModule() {
           />
         ) : (
           <div className="space-y-4">
-          {/* SEARCH & FILTERS BAR */}
-          <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Tìm theo mã máy, tên thiết bị, model, vị trí..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 text-xs sm:text-sm h-9"
-              />
-            </div>
+            {/* SEARCH & FILTERS BAR */}
+            <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  placeholder="Tìm theo mã máy, tên thiết bị, model, vị trí..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9 text-xs sm:text-sm h-9"
+                />
+              </div>
 
-            <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2">
-              <select
-                value={categoryFilter}
-                onChange={(e) => setCategoryFilter(e.target.value)}
-                className="w-full sm:w-auto rounded-lg border bg-background px-2.5 py-2 text-xs font-medium shadow-sm h-9 focus:outline-none focus:ring-1 focus:ring-primary"
-              >
-                <option value="ALL">Tất cả Phân nhóm</option>
-                <option value="MEASURING">Đo lường & Kiểm định</option>
-                <option value="PROCESSING">Chế biến & Sản xuất</option>
-                <option value="STORAGE">Lưu trữ & Cấp đông</option>
-                <option value="UTILITY">Phụ trợ & Nguồn nước</option>
-              </select>
-
-              <select
-                value={criticalityFilter}
-                onChange={(e) => setCriticalityFilter(e.target.value)}
-                className="w-full sm:w-auto rounded-lg border bg-background px-2.5 py-2 text-xs font-medium shadow-sm h-9 focus:outline-none focus:ring-1 focus:ring-primary"
-              >
-                <option value="ALL">Mọi Mức độ ATTP</option>
-                <option value="HIGH_CCP">Kiểm soát CCP</option>
-                <option value="MEDIUM_OPRP">Kiểm soát oPRP</option>
-                <option value="LOW_PRP">Nền tảng PRP</option>
-              </select>
-            </div>
-          </div>
-
-          {/* EQUIPMENT CARDS GRID (RESPONSIVE: 1 COL MOBILE, 2 COLS TABLET, 3 COLS DESKTOP) */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-            {filteredEquipments.map((eq) => {
-              const CatIcon = CATEGORY_MAP[eq.category]?.icon || Wrench;
-              const isOverdue = eq.calibration_status === "EXPIRED";
-              const isExpSoon = eq.calibration_status === "EXPIRING_SOON";
-
-              return (
-                <div
-                  key={eq.equipment_id}
-                  className={`rounded-2xl border bg-card p-3.5 sm:p-4 shadow-sm transition hover:shadow-md flex flex-col justify-between ${
-                    isOverdue
-                      ? "border-rose-300 ring-1 ring-rose-300 dark:border-rose-800"
-                      : isExpSoon
-                      ? "border-amber-300 dark:border-amber-800"
-                      : ""
-                  }`}
+              <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2">
+                <select
+                  value={categoryFilter}
+                  onChange={(e) => setCategoryFilter(e.target.value)}
+                  className="w-full sm:w-auto rounded-lg border bg-background px-2.5 py-2 text-xs font-medium shadow-sm h-9 focus:outline-none focus:ring-1 focus:ring-primary"
                 >
-                  <div>
-                    {/* Card Top: Badges & Code */}
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex items-center gap-2">
-                        <div className="grid h-8 w-8 place-items-center rounded-lg bg-primary/10 text-primary shrink-0">
-                          <CatIcon className="h-4 w-4" />
+                  <option value="ALL">Tất cả Phân nhóm</option>
+                  <option value="MEASURING">Đo lường & Kiểm định</option>
+                  <option value="PROCESSING">Chế biến & Sản xuất</option>
+                  <option value="STORAGE">Lưu trữ & Cấp đông</option>
+                  <option value="UTILITY">Phụ trợ & Nguồn nước</option>
+                </select>
+
+                <select
+                  value={criticalityFilter}
+                  onChange={(e) => setCriticalityFilter(e.target.value)}
+                  className="w-full sm:w-auto rounded-lg border bg-background px-2.5 py-2 text-xs font-medium shadow-sm h-9 focus:outline-none focus:ring-1 focus:ring-primary"
+                >
+                  <option value="ALL">Mọi Mức độ ATTP</option>
+                  <option value="HIGH_CCP">Kiểm soát CCP</option>
+                  <option value="MEDIUM_OPRP">Kiểm soát oPRP</option>
+                  <option value="LOW_PRP">Nền tảng PRP</option>
+                </select>
+              </div>
+            </div>
+
+            {/* EQUIPMENT CARDS GRID (RESPONSIVE: 1 COL MOBILE, 2 COLS TABLET, 3 COLS DESKTOP) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+              {filteredEquipments.map((eq) => {
+                const CatIcon = CATEGORY_MAP[eq.category]?.icon || Wrench;
+                const isOverdue = eq.calibration_status === "EXPIRED";
+                const isExpSoon = eq.calibration_status === "EXPIRING_SOON";
+
+                return (
+                  <div
+                    key={eq.equipment_id}
+                    className={`rounded-2xl border bg-card p-3.5 sm:p-4 shadow-sm transition hover:shadow-md flex flex-col justify-between ${
+                      isOverdue
+                        ? "border-rose-300 ring-1 ring-rose-300 dark:border-rose-800"
+                        : isExpSoon
+                          ? "border-amber-300 dark:border-amber-800"
+                          : ""
+                    }`}
+                  >
+                    <div>
+                      {/* Card Top: Badges & Code */}
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <div className="grid h-8 w-8 place-items-center rounded-lg bg-primary/10 text-primary shrink-0">
+                            <CatIcon className="h-4 w-4" />
+                          </div>
+                          <div>
+                            <span className="font-mono text-xs font-bold text-primary">
+                              {eq.equipment_code}
+                            </span>
+                            <div className="text-[11px] text-muted-foreground">
+                              {eq.model || "Chưa có model"}
+                            </div>
+                          </div>
                         </div>
-                        <div>
-                          <span className="font-mono text-xs font-bold text-primary">
-                            {eq.equipment_code}
-                          </span>
-                          <div className="text-[11px] text-muted-foreground">{eq.model || "Chưa có model"}</div>
-                        </div>
-                      </div>
 
-                      <span
-                        className={`rounded-full px-2 py-0.5 text-[10px] border shrink-0 ${
-                          CRITICALITY_MAP[eq.criticality_level]?.tone || "bg-muted text-muted-foreground"
-                        }`}
-                      >
-                        {CRITICALITY_MAP[eq.criticality_level]?.label || eq.criticality_level}
-                      </span>
-                    </div>
-
-                    {/* Machine Name */}
-                    <h4 className="mt-2.5 text-sm font-bold text-foreground line-clamp-2">
-                      {eq.equipment_name}
-                    </h4>
-
-                    {/* Location & Specs */}
-                    <div className="mt-2 space-y-1 text-xs text-muted-foreground">
-                      <div className="flex items-center justify-between">
-                        <span>Vị trí lắp đặt:</span>
-                        <span className="font-medium text-foreground text-right">{eq.installation_location || "—"}</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span>Hãng sản xuất:</span>
-                        <span className="font-medium text-foreground text-right">{eq.manufacturer || "—"}</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span>Trạng thái máy:</span>
                         <span
-                          className={`rounded px-1.5 py-0.2 text-[10px] font-semibold border ${
-                            STATUS_MAP[eq.status]?.tone || "bg-muted text-muted-foreground"
+                          className={`rounded-full px-2 py-0.5 text-[10px] border shrink-0 ${
+                            CRITICALITY_MAP[eq.criticality_level]?.tone ||
+                            "bg-muted text-muted-foreground"
                           }`}
                         >
-                          {STATUS_MAP[eq.status]?.label || eq.status}
+                          {CRITICALITY_MAP[eq.criticality_level]?.label || eq.criticality_level}
                         </span>
                       </div>
-                    </div>
 
-                    {/* Section: Tiêu chuẩn quy định vs Thực tế hoạt động */}
-                    <div className="mt-3 rounded-xl border bg-muted/30 p-2.5 space-y-2 text-xs">
-                      {/* Hiệu chuẩn */}
-                      <div className="border-b pb-2 space-y-1">
+                      {/* Machine Name */}
+                      <h4 className="mt-2.5 text-sm font-bold text-foreground line-clamp-2">
+                        {eq.equipment_name}
+                      </h4>
+
+                      {/* Location & Specs */}
+                      <div className="mt-2 space-y-1 text-xs text-muted-foreground">
                         <div className="flex items-center justify-between">
-                          <span className="flex items-center gap-1 font-semibold text-foreground">
-                            <Gauge className="h-3.5 w-3.5 text-blue-600 shrink-0" />
-                            Hiệu chuẩn:
+                          <span>Vị trí lắp đặt:</span>
+                          <span className="font-medium text-foreground text-right">
+                            {eq.installation_location || "—"}
                           </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span>Hãng sản xuất:</span>
+                          <span className="font-medium text-foreground text-right">
+                            {eq.manufacturer || "—"}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span>Trạng thái máy:</span>
                           <span
-                            className={`rounded px-1.5 py-0.2 text-[10px] border ${
-                              CALIBRATION_STATUS_MAP[eq.calibration_status]?.tone || "bg-muted text-muted-foreground"
+                            className={`rounded px-1.5 py-0.2 text-[10px] font-semibold border ${
+                              STATUS_MAP[eq.status]?.tone || "bg-muted text-muted-foreground"
                             }`}
                           >
-                            {CALIBRATION_STATUS_MAP[eq.calibration_status]?.label || eq.calibration_status}
+                            {STATUS_MAP[eq.status]?.label || eq.status}
                           </span>
-                        </div>
-                        <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-                          <span>Quy định tiêu chuẩn:</span>
-                          <span className="font-medium text-foreground">{eq.calibration_frequency_months} tháng/lần</span>
-                        </div>
-                        <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-                          <span>Hạn kiểm định tới:</span>
-                          <span className="font-bold text-foreground">{eq.next_calibration_due || "Chưa có"}</span>
                         </div>
                       </div>
 
-                      {/* Bảo trì PM */}
-                      <div className="space-y-1">
-                        <div className="flex items-center justify-between">
-                          <span className="flex items-center gap-1 font-semibold text-foreground">
-                            <Calendar className="h-3.5 w-3.5 text-purple-600 shrink-0" />
-                            Bảo trì phòng ngừa (PM):
-                          </span>
-                          <span className="text-[10px] text-muted-foreground">
-                            Đã làm {eq.total_maintenance_logs || 0} đợt
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-                          <span>Chu kỳ định kỳ:</span>
-                          <span className="font-medium text-foreground">{eq.maintenance_frequency_days} ngày/lần</span>
-                        </div>
-                        <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-                          <span>Hạn bảo dưỡng tới:</span>
-                          <span className={`font-bold ${eq.next_maintenance_due && new Date(eq.next_maintenance_due) < new Date() ? "text-rose-600 font-black" : "text-foreground"}`}>
-                            {eq.next_maintenance_due || "Chưa lên lịch"}
-                            {eq.next_maintenance_due && new Date(eq.next_maintenance_due) < new Date() && " (Quá hạn!)"}
-                          </span>
-                        </div>
-                        {eq.status === "MAINTENANCE" && (
-                          <div className="mt-1 rounded-md bg-amber-500/15 border border-amber-300 px-2 py-1 text-[11px] font-bold text-amber-800 flex items-center gap-1.5">
-                            <Wrench className="h-3 w-3 text-amber-600 animate-spin" />
-                            Thiết bị đang bảo trì / tạm ngừng
+                      {/* Section: Tiêu chuẩn quy định vs Thực tế hoạt động */}
+                      <div className="mt-3 rounded-xl border bg-muted/30 p-2.5 space-y-2 text-xs">
+                        {/* Hiệu chuẩn */}
+                        <div className="border-b pb-2 space-y-1">
+                          <div className="flex items-center justify-between">
+                            <span className="flex items-center gap-1 font-semibold text-foreground">
+                              <Gauge className="h-3.5 w-3.5 text-blue-600 shrink-0" />
+                              Hiệu chuẩn:
+                            </span>
+                            <span
+                              className={`rounded px-1.5 py-0.2 text-[10px] border ${
+                                CALIBRATION_STATUS_MAP[eq.calibration_status]?.tone ||
+                                "bg-muted text-muted-foreground"
+                              }`}
+                            >
+                              {CALIBRATION_STATUS_MAP[eq.calibration_status]?.label ||
+                                eq.calibration_status}
+                            </span>
                           </div>
-                        )}
+                          <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                            <span>Quy định tiêu chuẩn:</span>
+                            <span className="font-medium text-foreground">
+                              {eq.calibration_frequency_months} tháng/lần
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                            <span>Hạn kiểm định tới:</span>
+                            <span className="font-bold text-foreground">
+                              {eq.next_calibration_due || "Chưa có"}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Bảo trì PM */}
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between">
+                            <span className="flex items-center gap-1 font-semibold text-foreground">
+                              <Calendar className="h-3.5 w-3.5 text-purple-600 shrink-0" />
+                              Bảo trì phòng ngừa (PM):
+                            </span>
+                            <span className="text-[10px] text-muted-foreground">
+                              Đã làm {eq.total_maintenance_logs || 0} đợt
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                            <span>Chu kỳ định kỳ:</span>
+                            <span className="font-medium text-foreground">
+                              {eq.maintenance_frequency_days} ngày/lần
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                            <span>Hạn bảo dưỡng tới:</span>
+                            <span
+                              className={`font-bold ${eq.next_maintenance_due && new Date(eq.next_maintenance_due) < new Date() ? "text-rose-600 font-black" : "text-foreground"}`}
+                            >
+                              {eq.next_maintenance_due || "Chưa lên lịch"}
+                              {eq.next_maintenance_due &&
+                                new Date(eq.next_maintenance_due) < new Date() &&
+                                " (Quá hạn!)"}
+                            </span>
+                          </div>
+                          {eq.status === "MAINTENANCE" && (
+                            <div className="mt-1 rounded-md bg-amber-500/15 border border-amber-300 px-2 py-1 text-[11px] font-bold text-amber-800 flex items-center gap-1.5">
+                              <Wrench className="h-3 w-3 text-amber-600 animate-spin" />
+                              Thiết bị đang bảo trì / tạm ngừng
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Card Bottom Actions */}
+                    <div className="mt-3 pt-2.5 border-t flex flex-wrap items-center justify-between gap-1.5">
+                      <div className="flex flex-wrap items-center gap-1">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedPrintEq(eq);
+                            setShowPrintProfileModal(true);
+                          }}
+                          className="h-7 px-2 text-[11px] gap-1"
+                          title="Xem và In Phiếu Lý Lịch Thiết Bị (BM-TB-01)"
+                        >
+                          <Printer className="h-3 w-3" />
+                          In BM-TB-01
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleOpenCreateMaint(eq)}
+                          className="h-7 px-2 text-[11px] gap-1 text-purple-700 hover:bg-purple-50"
+                          title="Lập phiếu bảo dưỡng máy"
+                        >
+                          <Sliders className="h-3 w-3" />
+                          Bảo trì
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleOpenCreateCal(eq)}
+                          className="h-7 px-2 text-[11px] gap-1 text-blue-700 hover:bg-blue-50"
+                          title="Ghi nhận tem hiệu chuẩn"
+                        >
+                          <Gauge className="h-3 w-3" />
+                          Hiệu chuẩn
+                        </Button>
+                      </div>
+
+                      <div className="flex items-center gap-1 ml-auto">
+                        <button
+                          onClick={() => handleOpenEditEq(eq)}
+                          className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition"
+                          title="Sửa thông tin máy"
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          onClick={() =>
+                            setDeletingEqItem({ id: eq.equipment_id, name: eq.equipment_name })
+                          }
+                          className="rounded p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition"
+                          title="Xoá thiết bị"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
                       </div>
                     </div>
                   </div>
-
-                  {/* Card Bottom Actions */}
-                  <div className="mt-3 pt-2.5 border-t flex flex-wrap items-center justify-between gap-1.5">
-                    <div className="flex flex-wrap items-center gap-1">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setSelectedPrintEq(eq);
-                          setShowPrintProfileModal(true);
-                        }}
-                        className="h-7 px-2 text-[11px] gap-1"
-                        title="Xem và In Phiếu Lý Lịch Thiết Bị (BM-TB-01)"
-                      >
-                        <Printer className="h-3 w-3" />
-                        In BM-TB-01
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleOpenCreateMaint(eq)}
-                        className="h-7 px-2 text-[11px] gap-1 text-purple-700 hover:bg-purple-50"
-                        title="Lập phiếu bảo dưỡng máy"
-                      >
-                        <Sliders className="h-3 w-3" />
-                        Bảo trì
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleOpenCreateCal(eq)}
-                        className="h-7 px-2 text-[11px] gap-1 text-blue-700 hover:bg-blue-50"
-                        title="Ghi nhận tem hiệu chuẩn"
-                      >
-                        <Gauge className="h-3 w-3" />
-                        Hiệu chuẩn
-                      </Button>
-                    </div>
-
-                    <div className="flex items-center gap-1 ml-auto">
-                      <button
-                        onClick={() => handleOpenEditEq(eq)}
-                        className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition"
-                        title="Sửa thông tin máy"
-                      >
-                        <Pencil className="h-3.5 w-3.5" />
-                      </button>
-                      <button
-                        onClick={() => setDeletingEqItem({ id: eq.equipment_id, name: eq.equipment_name })}
-                        className="rounded p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition"
-                        title="Xoá thiết bị"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          {filteredEquipments.length === 0 && (
-            <div className="rounded-2xl border bg-card p-8 sm:p-12 text-center text-muted-foreground text-xs sm:text-sm">
-              Không tìm thấy thiết bị nào phù hợp với bộ lọc tìm kiếm.
+                );
+              })}
             </div>
-          )}
-        </div>
-        )
-      )}
+
+            {filteredEquipments.length === 0 && (
+              <div className="rounded-2xl border bg-card p-8 sm:p-12 text-center text-muted-foreground text-xs sm:text-sm">
+                Không tìm thấy thiết bị nào phù hợp với bộ lọc tìm kiếm.
+              </div>
+            )}
+          </div>
+        ))}
 
       {/* ==================== TAB 2: NHẬT KÝ HIỆU CHUẨN ==================== */}
-      {activeTab === "calibration" && (
-        calibrationLogs.length === 0 ? (
+      {activeTab === "calibration" &&
+        (calibrationLogs.length === 0 ? (
           <EmptyState
             icon={ShieldCheck}
             title="Chưa có nhật ký hiệu chuẩn hoặc kiểm định đo lường"
@@ -1618,125 +1678,139 @@ function EquipmentModule() {
           />
         ) : (
           <div className="space-y-4">
-          <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h3 className="text-sm font-bold tracking-tight">Hồ sơ Tem & Biên bản Hiệu chuẩn Đo lường</h3>
-              <p className="text-xs text-muted-foreground">
-                Quản lý các chứng nhận kiểm định từ QUATEST 3, VILAS và nội bộ theo chuẩn ISO/IEC 17025 (Sắp xếp mới nhất trước).
-              </p>
-            </div>
-
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-              <div className="flex items-center gap-1.5">
-                <Filter className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                <select
-                  value={selectedEqFilterForLogs}
-                  onChange={(e) => setSelectedEqFilterForLogs(e.target.value)}
-                  className="w-full sm:w-auto rounded-lg border bg-background px-3 py-1.5 text-xs font-medium shadow-sm h-9"
-                >
-                  <option value="ALL">Tất cả thiết bị</option>
-                  {equipments.map((e) => (
-                    <option key={e.equipment_id} value={e.equipment_id}>
-                      {e.equipment_code} - {e.equipment_name}
-                    </option>
-                  ))}
-                </select>
+            <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h3 className="text-sm font-bold tracking-tight">
+                  Hồ sơ Tem & Biên bản Hiệu chuẩn Đo lường
+                </h3>
+                <p className="text-xs text-muted-foreground">
+                  Quản lý các chứng nhận kiểm định từ QUATEST 3, VILAS và nội bộ theo chuẩn ISO/IEC
+                  17025 (Sắp xếp mới nhất trước).
+                </p>
               </div>
 
-              <Button onClick={() => handleOpenCreateCal()} size="sm" className="gap-1.5 text-xs h-9">
-                <Plus className="h-4 w-4" />
-                Lập phiếu hiệu chuẩn mới
-              </Button>
-            </div>
-          </div>
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                <div className="flex items-center gap-1.5">
+                  <Filter className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                  <select
+                    value={selectedEqFilterForLogs}
+                    onChange={(e) => setSelectedEqFilterForLogs(e.target.value)}
+                    className="w-full sm:w-auto rounded-lg border bg-background px-3 py-1.5 text-xs font-medium shadow-sm h-9"
+                  >
+                    <option value="ALL">Tất cả thiết bị</option>
+                    {equipments.map((e) => (
+                      <option key={e.equipment_id} value={e.equipment_id}>
+                        {e.equipment_code} - {e.equipment_name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-          {/* TABLE OF CALIBRATIONS */}
-          <div className="rounded-2xl border bg-card shadow-sm overflow-x-auto">
-            <table className="w-full text-left text-xs min-w-[650px]">
-              <thead className="border-b bg-muted/40 font-semibold text-muted-foreground">
-                <tr>
-                  <th className="px-3.5 py-2.5 text-center w-10">STT</th>
-                  <th className="px-3.5 py-2.5">Mã phiếu / Số tem</th>
-                  <th className="px-3.5 py-2.5">Thiết bị đo</th>
-                  <th className="px-3.5 py-2.5">Đơn vị kiểm định</th>
-                  <th className="px-3.5 py-2.5 text-center">Sai số</th>
-                  <th className="px-3.5 py-2.5 text-center">Dung sai (+/-)</th>
-                  <th className="px-3.5 py-2.5 text-center">Hạn kiểm định</th>
-                  <th className="px-3.5 py-2.5 text-center">Kết luận</th>
-                  <th className="px-3.5 py-2.5 text-right">In mẫu</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y">
-                {filteredCalLogs.map((c, index) => (
-                  <tr key={c.calibration_id} className="hover:bg-muted/30">
-                    <td className="px-3.5 py-2.5 text-center font-medium text-muted-foreground">
-                      {index + 1}
-                    </td>
-                    <td className="px-3.5 py-2.5">
-                      <div className="font-mono font-bold text-primary">{c.calibration_code}</div>
-                      <div className="text-[11px] text-muted-foreground">{c.certificate_number || "—"}</div>
-                    </td>
-                    <td className="px-3.5 py-2.5">
-                      <div className="font-semibold text-foreground">{c.equipment_name}</div>
-                      <div className="text-[11px] font-mono text-muted-foreground">{c.equipment_code}</div>
-                    </td>
-                    <td className="px-3.5 py-2.5">
-                      <div className="text-foreground">{c.agency_name || "Phòng KCS"}</div>
-                      <div className="text-[10px] text-muted-foreground">{c.standard_applied || "ISO/IEC 17025"}</div>
-                    </td>
-                    <td className="px-3.5 py-2.5 text-center font-mono font-semibold">
-                      {c.measured_deviation !== undefined ? c.measured_deviation : "—"}
-                    </td>
-                    <td className="px-3.5 py-2.5 text-center font-mono text-muted-foreground">
-                      {c.allowable_tolerance !== undefined ? `+/- ${c.allowable_tolerance}` : "—"}
-                    </td>
-                    <td className="px-3.5 py-2.5 text-center">
-                      <div className="font-semibold text-foreground">{c.expiry_date}</div>
-                      <div className="text-[10px] text-muted-foreground">Hiệu chuẩn: {c.calibration_date}</div>
-                    </td>
-                    <td className="px-3.5 py-2.5 text-center">
-                      <span
-                        className={`rounded-full px-2 py-0.5 text-[10px] font-bold border ${
-                          c.is_passed
-                            ? "bg-emerald-500/10 text-emerald-700 border-emerald-200"
-                            : "bg-rose-500/10 text-rose-700 border-rose-200"
-                        }`}
-                      >
-                        {c.is_passed ? "ĐẠT" : "LỖI"}
-                      </span>
-                    </td>
-                    <td className="px-3.5 py-2.5 text-right">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setSelectedPrintCal(c);
-                          setShowPrintCalModal(true);
-                        }}
-                        className="h-7 px-2 text-[11px] gap-1"
-                      >
-                        <Printer className="h-3 w-3" />
-                        In
-                      </Button>
-                    </td>
+                <Button
+                  onClick={() => handleOpenCreateCal()}
+                  size="sm"
+                  className="gap-1.5 text-xs h-9"
+                >
+                  <Plus className="h-4 w-4" />
+                  Lập phiếu hiệu chuẩn mới
+                </Button>
+              </div>
+            </div>
+
+            {/* TABLE OF CALIBRATIONS */}
+            <div className="rounded-2xl border bg-card shadow-sm overflow-x-auto">
+              <table className="w-full text-left text-xs min-w-[650px]">
+                <thead className="border-b bg-muted/40 font-semibold text-muted-foreground">
+                  <tr>
+                    <th className="px-3.5 py-2.5 text-center w-10">STT</th>
+                    <th className="px-3.5 py-2.5">Mã phiếu / Số tem</th>
+                    <th className="px-3.5 py-2.5">Thiết bị đo</th>
+                    <th className="px-3.5 py-2.5">Đơn vị kiểm định</th>
+                    <th className="px-3.5 py-2.5 text-center">Sai số</th>
+                    <th className="px-3.5 py-2.5 text-center">Dung sai (+/-)</th>
+                    <th className="px-3.5 py-2.5 text-center">Hạn kiểm định</th>
+                    <th className="px-3.5 py-2.5 text-center">Kết luận</th>
+                    <th className="px-3.5 py-2.5 text-right">In mẫu</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {filteredCalLogs.length === 0 && (
-            <div className="rounded-2xl border bg-card p-8 sm:p-12 text-center text-muted-foreground text-xs sm:text-sm">
-              Không tìm thấy biên bản hiệu chuẩn nào cho thiết bị đã chọn.
+                </thead>
+                <tbody className="divide-y">
+                  {filteredCalLogs.map((c, index) => (
+                    <tr key={c.calibration_id} className="hover:bg-muted/30">
+                      <td className="px-3.5 py-2.5 text-center font-medium text-muted-foreground">
+                        {index + 1}
+                      </td>
+                      <td className="px-3.5 py-2.5">
+                        <div className="font-mono font-bold text-primary">{c.calibration_code}</div>
+                        <div className="text-[11px] text-muted-foreground">
+                          {c.certificate_number || "—"}
+                        </div>
+                      </td>
+                      <td className="px-3.5 py-2.5">
+                        <div className="font-semibold text-foreground">{c.equipment_name}</div>
+                        <div className="text-[11px] font-mono text-muted-foreground">
+                          {c.equipment_code}
+                        </div>
+                      </td>
+                      <td className="px-3.5 py-2.5">
+                        <div className="text-foreground">{c.agency_name || "Phòng KCS"}</div>
+                        <div className="text-[10px] text-muted-foreground">
+                          {c.standard_applied || "ISO/IEC 17025"}
+                        </div>
+                      </td>
+                      <td className="px-3.5 py-2.5 text-center font-mono font-semibold">
+                        {c.measured_deviation !== undefined ? c.measured_deviation : "—"}
+                      </td>
+                      <td className="px-3.5 py-2.5 text-center font-mono text-muted-foreground">
+                        {c.allowable_tolerance !== undefined ? `+/- ${c.allowable_tolerance}` : "—"}
+                      </td>
+                      <td className="px-3.5 py-2.5 text-center">
+                        <div className="font-semibold text-foreground">{c.expiry_date}</div>
+                        <div className="text-[10px] text-muted-foreground">
+                          Hiệu chuẩn: {c.calibration_date}
+                        </div>
+                      </td>
+                      <td className="px-3.5 py-2.5 text-center">
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-[10px] font-bold border ${
+                            c.is_passed
+                              ? "bg-emerald-500/10 text-emerald-700 border-emerald-200"
+                              : "bg-rose-500/10 text-rose-700 border-rose-200"
+                          }`}
+                        >
+                          {c.is_passed ? "ĐẠT" : "LỖI"}
+                        </span>
+                      </td>
+                      <td className="px-3.5 py-2.5 text-right">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedPrintCal(c);
+                            setShowPrintCalModal(true);
+                          }}
+                          className="h-7 px-2 text-[11px] gap-1"
+                        >
+                          <Printer className="h-3 w-3" />
+                          In
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-          )}
-        </div>
-        )
-      )}
+
+            {filteredCalLogs.length === 0 && (
+              <div className="rounded-2xl border bg-card p-8 sm:p-12 text-center text-muted-foreground text-xs sm:text-sm">
+                Không tìm thấy biên bản hiệu chuẩn nào cho thiết bị đã chọn.
+              </div>
+            )}
+          </div>
+        ))}
 
       {/* ==================== TAB 3: KẾ HOẠCH BẢO TRÌ ==================== */}
-      {activeTab === "maintenance" && (
-        maintenanceLogs.length === 0 ? (
+      {activeTab === "maintenance" &&
+        (maintenanceLogs.length === 0 ? (
           <EmptyState
             icon={Calendar}
             title="Chưa có nhật ký bảo trì thiết bị nào"
@@ -1747,160 +1821,172 @@ function EquipmentModule() {
           />
         ) : (
           <div className="space-y-4">
-          <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h3 className="text-sm font-bold tracking-tight">Nhật ký Bảo trì Phòng ngừa (PM) & Sửa chữa</h3>
-              <p className="text-xs text-muted-foreground">
-                Ghi nhận đầu việc bảo dưỡng, kiểm soát bắt buộc dầu mỡ an toàn thực phẩm NSF H1 & vệ sinh khử trùng sau bảo trì.
-              </p>
-            </div>
-
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-              <div className="flex items-center gap-1.5">
-                <Filter className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                <select
-                  value={selectedEqFilterForLogs}
-                  onChange={(e) => setSelectedEqFilterForLogs(e.target.value)}
-                  className="w-full sm:w-auto rounded-lg border bg-background px-3 py-1.5 text-xs font-medium shadow-sm h-9"
-                >
-                  <option value="ALL">Tất cả thiết bị</option>
-                  {equipments.map((e) => (
-                    <option key={e.equipment_id} value={e.equipment_id}>
-                      {e.equipment_code} - {e.equipment_name}
-                    </option>
-                  ))}
-                </select>
+            <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h3 className="text-sm font-bold tracking-tight">
+                  Nhật ký Bảo trì Phòng ngừa (PM) & Sửa chữa
+                </h3>
+                <p className="text-xs text-muted-foreground">
+                  Ghi nhận đầu việc bảo dưỡng, kiểm soát bắt buộc dầu mỡ an toàn thực phẩm NSF H1 &
+                  vệ sinh khử trùng sau bảo trì.
+                </p>
               </div>
 
-              <Button onClick={() => handleOpenCreateMaint()} size="sm" className="gap-1.5 text-xs h-9">
-                <Plus className="h-4 w-4" />
-                Lập phiếu bảo trì mới
-              </Button>
-            </div>
-          </div>
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                <div className="flex items-center gap-1.5">
+                  <Filter className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                  <select
+                    value={selectedEqFilterForLogs}
+                    onChange={(e) => setSelectedEqFilterForLogs(e.target.value)}
+                    className="w-full sm:w-auto rounded-lg border bg-background px-3 py-1.5 text-xs font-medium shadow-sm h-9"
+                  >
+                    <option value="ALL">Tất cả thiết bị</option>
+                    {equipments.map((e) => (
+                      <option key={e.equipment_id} value={e.equipment_id}>
+                        {e.equipment_code} - {e.equipment_name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-          {/* TABLE OF MAINTENANCE LOGS */}
-          <div className="rounded-2xl border bg-card shadow-sm overflow-x-auto">
-            <table className="w-full text-left text-xs min-w-[650px]">
-              <thead className="border-b bg-muted/40 font-semibold text-muted-foreground">
-                <tr>
-                  <th className="px-3.5 py-2.5 text-center w-10">STT</th>
-                  <th className="px-3.5 py-2.5">Mã phiếu / Ngày</th>
-                  <th className="px-3.5 py-2.5">Thiết bị</th>
-                  <th className="px-3.5 py-2.5">Loại bảo trì</th>
-                  <th className="px-3.5 py-2.5">Nội dung công việc</th>
-                  <th className="px-3.5 py-2.5 text-center">NSF H1</th>
-                  <th className="px-3.5 py-2.5 text-center">Khử trùng</th>
-                  <th className="px-3.5 py-2.5">Người thực hiện</th>
-                  <th className="px-3.5 py-2.5 text-center">Kết quả</th>
-                  <th className="px-3.5 py-2.5 text-center w-24">Thao tác</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y">
-                {filteredMaintLogs.map((m, index) => (
-                  <tr key={m.maintenance_id} className="hover:bg-muted/30">
-                    <td className="px-3.5 py-2.5 text-center font-medium text-muted-foreground">
-                      {index + 1}
-                    </td>
-                    <td className="px-3.5 py-2.5">
-                      <div className="font-mono font-bold text-primary">{m.maintenance_code}</div>
-                      <div className="text-[11px] text-muted-foreground">{m.maintenance_date}</div>
-                    </td>
-                    <td className="px-3.5 py-2.5">
-                      <div className="font-semibold text-foreground">{m.equipment_name}</div>
-                      <div className="text-[11px] font-mono text-muted-foreground">{m.equipment_code}</div>
-                    </td>
-                    <td className="px-3.5 py-2.5">
-                      <span className="rounded-md bg-purple-500/10 px-2 py-0.5 text-[10px] font-semibold text-purple-700 border border-purple-200">
-                        {m.maintenance_type === "PREVENTIVE" ? "Bảo trì PM" : m.maintenance_type}
-                      </span>
-                    </td>
-                    <td className="px-3.5 py-2.5 max-w-xs">
-                      <div className="line-clamp-2 text-foreground">
-                        {m.tasks_performed && m.tasks_performed.length > 0
-                          ? m.tasks_performed.map((t) => t.task).join("; ")
-                          : m.notes || "—"}
-                      </div>
-                    </td>
-                    <td className="px-3.5 py-2.5 text-center">
-                      {m.food_grade_lubricant_used ? (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 border border-emerald-200">
-                          <CheckCircle2 className="h-3 w-3" />
-                          Đạt
-                        </span>
-                      ) : (
-                        <span className="rounded-full bg-rose-500/10 px-2 py-0.5 text-[10px] font-semibold text-rose-700">
-                          K/dùng
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-3.5 py-2.5 text-center">
-                      {m.hygiene_sanitation_after_maint ? (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 border border-emerald-200">
-                          <ShieldCheck className="h-3 w-3" />
-                          Đã KT
-                        </span>
-                      ) : (
-                        <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
-                          Chưa
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-3.5 py-2.5 text-foreground">
-                      {m.performer_display_name || m.performer_name || "—"}
-                    </td>
-                    <td className="px-3.5 py-2.5 text-center">
-                      {m.result_status === "IN_PROGRESS" ? (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2.5 py-0.5 text-[10px] font-bold text-amber-700 border border-amber-300">
-                          <Wrench className="h-3 w-3 animate-spin" />
-                          Đang bảo trì
-                        </span>
-                      ) : m.result_status === "NEED_FOLLOWUP" ? (
-                        <span className="rounded-full bg-rose-500/10 px-2.5 py-0.5 text-[10px] font-bold text-rose-700 border border-rose-300">
-                          Cần theo dõi
-                        </span>
-                      ) : m.result_status === "FAILED" ? (
-                        <span className="rounded-full bg-rose-600/10 px-2.5 py-0.5 text-[10px] font-bold text-rose-800 border border-rose-300">
-                          Không đạt
-                        </span>
-                      ) : (
-                        <span className="rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[10px] font-bold text-emerald-700 border border-emerald-200">
-                          Hoàn tất
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-3.5 py-2.5 text-center">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => triggerPrintMaintenanceLog(m)}
-                        className="h-7 px-2 text-[11px] gap-1 text-slate-700 hover:bg-slate-100"
-                        title="In Phiếu Bảo Trì Thiết Bị (BM-BT-01)"
-                      >
-                        <Printer className="h-3 w-3" />
-                        In phiếu
-                      </Button>
-                    </td>
+                <Button
+                  onClick={() => handleOpenCreateMaint()}
+                  size="sm"
+                  className="gap-1.5 text-xs h-9"
+                >
+                  <Plus className="h-4 w-4" />
+                  Lập phiếu bảo trì mới
+                </Button>
+              </div>
+            </div>
+
+            {/* TABLE OF MAINTENANCE LOGS */}
+            <div className="rounded-2xl border bg-card shadow-sm overflow-x-auto">
+              <table className="w-full text-left text-xs min-w-[650px]">
+                <thead className="border-b bg-muted/40 font-semibold text-muted-foreground">
+                  <tr>
+                    <th className="px-3.5 py-2.5 text-center w-10">STT</th>
+                    <th className="px-3.5 py-2.5">Mã phiếu / Ngày</th>
+                    <th className="px-3.5 py-2.5">Thiết bị</th>
+                    <th className="px-3.5 py-2.5">Loại bảo trì</th>
+                    <th className="px-3.5 py-2.5">Nội dung công việc</th>
+                    <th className="px-3.5 py-2.5 text-center">NSF H1</th>
+                    <th className="px-3.5 py-2.5 text-center">Khử trùng</th>
+                    <th className="px-3.5 py-2.5">Người thực hiện</th>
+                    <th className="px-3.5 py-2.5 text-center">Kết quả</th>
+                    <th className="px-3.5 py-2.5 text-center w-24">Thao tác</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {filteredMaintLogs.length === 0 && (
-            <div className="rounded-2xl border bg-card p-8 sm:p-12 text-center text-muted-foreground text-xs sm:text-sm">
-              Không tìm thấy phiếu bảo trì nào cho thiết bị đã chọn.
+                </thead>
+                <tbody className="divide-y">
+                  {filteredMaintLogs.map((m, index) => (
+                    <tr key={m.maintenance_id} className="hover:bg-muted/30">
+                      <td className="px-3.5 py-2.5 text-center font-medium text-muted-foreground">
+                        {index + 1}
+                      </td>
+                      <td className="px-3.5 py-2.5">
+                        <div className="font-mono font-bold text-primary">{m.maintenance_code}</div>
+                        <div className="text-[11px] text-muted-foreground">
+                          {m.maintenance_date}
+                        </div>
+                      </td>
+                      <td className="px-3.5 py-2.5">
+                        <div className="font-semibold text-foreground">{m.equipment_name}</div>
+                        <div className="text-[11px] font-mono text-muted-foreground">
+                          {m.equipment_code}
+                        </div>
+                      </td>
+                      <td className="px-3.5 py-2.5">
+                        <span className="rounded-md bg-purple-500/10 px-2 py-0.5 text-[10px] font-semibold text-purple-700 border border-purple-200">
+                          {m.maintenance_type === "PREVENTIVE" ? "Bảo trì PM" : m.maintenance_type}
+                        </span>
+                      </td>
+                      <td className="px-3.5 py-2.5 max-w-xs">
+                        <div className="line-clamp-2 text-foreground">
+                          {m.tasks_performed && m.tasks_performed.length > 0
+                            ? m.tasks_performed.map((t) => t.task).join("; ")
+                            : m.notes || "—"}
+                        </div>
+                      </td>
+                      <td className="px-3.5 py-2.5 text-center">
+                        {m.food_grade_lubricant_used ? (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 border border-emerald-200">
+                            <CheckCircle2 className="h-3 w-3" />
+                            Đạt
+                          </span>
+                        ) : (
+                          <span className="rounded-full bg-rose-500/10 px-2 py-0.5 text-[10px] font-semibold text-rose-700">
+                            K/dùng
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-3.5 py-2.5 text-center">
+                        {m.hygiene_sanitation_after_maint ? (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 border border-emerald-200">
+                            <ShieldCheck className="h-3 w-3" />
+                            Đã KT
+                          </span>
+                        ) : (
+                          <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
+                            Chưa
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-3.5 py-2.5 text-foreground">
+                        {m.performer_display_name || m.performer_name || "—"}
+                      </td>
+                      <td className="px-3.5 py-2.5 text-center">
+                        {m.result_status === "IN_PROGRESS" ? (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2.5 py-0.5 text-[10px] font-bold text-amber-700 border border-amber-300">
+                            <Wrench className="h-3 w-3 animate-spin" />
+                            Đang bảo trì
+                          </span>
+                        ) : m.result_status === "NEED_FOLLOWUP" ? (
+                          <span className="rounded-full bg-rose-500/10 px-2.5 py-0.5 text-[10px] font-bold text-rose-700 border border-rose-300">
+                            Cần theo dõi
+                          </span>
+                        ) : m.result_status === "FAILED" ? (
+                          <span className="rounded-full bg-rose-600/10 px-2.5 py-0.5 text-[10px] font-bold text-rose-800 border border-rose-300">
+                            Không đạt
+                          </span>
+                        ) : (
+                          <span className="rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[10px] font-bold text-emerald-700 border border-emerald-200">
+                            Hoàn tất
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-3.5 py-2.5 text-center">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => triggerPrintMaintenanceLog(m)}
+                          className="h-7 px-2 text-[11px] gap-1 text-slate-700 hover:bg-slate-100"
+                          title="In Phiếu Bảo Trì Thiết Bị (BM-BT-01)"
+                        >
+                          <Printer className="h-3 w-3" />
+                          In phiếu
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-          )}
-        </div>
-        )
-      )}
+
+            {filteredMaintLogs.length === 0 && (
+              <div className="rounded-2xl border bg-card p-8 sm:p-12 text-center text-muted-foreground text-xs sm:text-sm">
+                Không tìm thấy phiếu bảo trì nào cho thiết bị đã chọn.
+              </div>
+            )}
+          </div>
+        ))}
 
       {/* ==================== TAB 4: TRỢ LÝ AI BẢO TRÌ & DỰ ĐOÁN ==================== */}
       {activeTab === "ai" && (
         <div className="space-y-4 sm:space-y-6">
           <AIBadge>
-            <b>AI Kỹ thuật & Bảo trì thông minh:</b> Tự động hóa dự báo hỏng hóc máy móc theo dữ liệu cảm biến & Thẩm định rủi ro an toàn thực phẩm khi thiết bị đo lệch dung sai theo ISO 22000:2018.
+            <b>AI Kỹ thuật & Bảo trì thông minh:</b> Tự động hóa dự báo hỏng hóc máy móc theo dữ
+            liệu cảm biến & Thẩm định rủi ro an toàn thực phẩm khi thiết bị đo lệch dung sai theo
+            ISO 22000:2018.
           </AIBadge>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
@@ -1911,7 +1997,9 @@ function EquipmentModule() {
                   <Activity className="h-4 w-4" />
                 </div>
                 <div>
-                  <h4 className="text-sm font-bold">1. AI Dự Báo Hỏng Hóc Máy Móc (Predictive PM)</h4>
+                  <h4 className="text-sm font-bold">
+                    1. AI Dự Báo Hỏng Hóc Máy Móc (Predictive PM)
+                  </h4>
                   <p className="text-xs text-muted-foreground">
                     Phân tích rung động, nhiệt độ và giờ chạy để đề xuất chu kỳ bảo trì tối ưu.
                   </p>
@@ -1946,7 +2034,9 @@ function EquipmentModule() {
                     <Label className="text-xs">Mức độ rung động cảm biến:</Label>
                     <select
                       value={aiMaintReq.sensor_vibration_level}
-                      onChange={(e) => setAiMaintReq({ ...aiMaintReq, sensor_vibration_level: e.target.value })}
+                      onChange={(e) =>
+                        setAiMaintReq({ ...aiMaintReq, sensor_vibration_level: e.target.value })
+                      }
                       className="mt-1 w-full rounded-lg border bg-background px-3 py-2 text-xs font-medium h-9"
                     >
                       <option value="Bình thường">Bình thường</option>
@@ -1960,7 +2050,12 @@ function EquipmentModule() {
                     <Input
                       type="number"
                       value={aiMaintReq.current_temperature_c}
-                      onChange={(e) => setAiMaintReq({ ...aiMaintReq, current_temperature_c: Number(e.target.value) })}
+                      onChange={(e) =>
+                        setAiMaintReq({
+                          ...aiMaintReq,
+                          current_temperature_c: Number(e.target.value),
+                        })
+                      }
                       className="mt-1 text-xs h-9"
                     />
                   </div>
@@ -1995,8 +2090,8 @@ function EquipmentModule() {
                         aiMaintResult.estimated_failure_risk === "CẤP BÁCH"
                           ? "bg-rose-500 text-white"
                           : aiMaintResult.estimated_failure_risk === "TRUNG BÌNH"
-                          ? "bg-amber-500 text-white"
-                          : "bg-emerald-500 text-white"
+                            ? "bg-amber-500 text-white"
+                            : "bg-emerald-500 text-white"
                       }`}
                     >
                       {aiMaintResult.estimated_failure_risk}
@@ -2011,7 +2106,9 @@ function EquipmentModule() {
                   </div>
 
                   <div>
-                    <span className="font-semibold text-foreground">Hạng mục bắt buộc kiểm tra:</span>
+                    <span className="font-semibold text-foreground">
+                      Hạng mục bắt buộc kiểm tra:
+                    </span>
                     <ul className="mt-1 list-disc pl-4 space-y-0.5 text-muted-foreground">
                       {aiMaintResult.tasks_to_inspect.map((t: string, i: number) => (
                         <li key={i}>{t}</li>
@@ -2048,7 +2145,9 @@ function EquipmentModule() {
                       type="number"
                       step="0.01"
                       value={aiCalReq.measured_deviation}
-                      onChange={(e) => setAiCalReq({ ...aiCalReq, measured_deviation: Number(e.target.value) })}
+                      onChange={(e) =>
+                        setAiCalReq({ ...aiCalReq, measured_deviation: Number(e.target.value) })
+                      }
                       className="mt-1 text-xs h-9"
                     />
                   </div>
@@ -2059,7 +2158,9 @@ function EquipmentModule() {
                       type="number"
                       step="0.01"
                       value={aiCalReq.allowable_tolerance}
-                      onChange={(e) => setAiCalReq({ ...aiCalReq, allowable_tolerance: Number(e.target.value) })}
+                      onChange={(e) =>
+                        setAiCalReq({ ...aiCalReq, allowable_tolerance: Number(e.target.value) })
+                      }
                       className="mt-1 text-xs h-9"
                     />
                   </div>
@@ -2110,14 +2211,18 @@ function EquipmentModule() {
                   </div>
 
                   <div>
-                    <span className="font-semibold text-foreground">Tác động đến các lô sản xuất trước:</span>
+                    <span className="font-semibold text-foreground">
+                      Tác động đến các lô sản xuất trước:
+                    </span>
                     <p className="mt-0.5 text-muted-foreground leading-relaxed">
                       {aiCalResult.impact_on_past_batches}
                     </p>
                   </div>
 
                   <div>
-                    <span className="font-semibold text-foreground">Hành động khắc phục CAPA đề xuất:</span>
+                    <span className="font-semibold text-foreground">
+                      Hành động khắc phục CAPA đề xuất:
+                    </span>
                     <p className="mt-0.5 text-muted-foreground leading-relaxed">
                       {aiCalResult.suggested_capa_action}
                     </p>
@@ -2141,7 +2246,11 @@ function EquipmentModule() {
               <div className="grid h-7 w-7 place-items-center rounded-lg bg-primary/10 text-primary">
                 <Wrench className="h-4 w-4" />
               </div>
-              <span>{editingEq ? `Chỉnh sửa Thiết bị [${editingEq.equipment_code}]` : "Thêm Thiết Bị Mới"}</span>
+              <span>
+                {editingEq
+                  ? `Chỉnh sửa Thiết bị [${editingEq.equipment_code}]`
+                  : "Thêm Thiết Bị Mới"}
+              </span>
             </DialogTitle>
           </DialogHeader>
 
@@ -2197,7 +2306,9 @@ function EquipmentModule() {
                   <Input
                     required
                     value={eqForm.installation_location}
-                    onChange={(e) => setEqForm({ ...eqForm, installation_location: e.target.value })}
+                    onChange={(e) =>
+                      setEqForm({ ...eqForm, installation_location: e.target.value })
+                    }
                     placeholder="Phân xưởng Chế biến 1"
                     className="mt-1 h-9 text-xs sm:text-sm"
                   />
@@ -2282,7 +2393,9 @@ function EquipmentModule() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                 <div>
-                  <Label className="text-xs font-semibold">Chu kỳ hiệu chuẩn quy định (tháng) (*):</Label>
+                  <Label className="text-xs font-semibold">
+                    Chu kỳ hiệu chuẩn quy định (tháng) (*):
+                  </Label>
                   <Input
                     type="number"
                     min="1"
@@ -2290,7 +2403,9 @@ function EquipmentModule() {
                     value={eqForm.calibration_frequency_months}
                     onChange={(e) => {
                       const freq = Math.max(1, Number(e.target.value) || 12);
-                      const baseDate = eqForm.last_calibration_date ? new Date(eqForm.last_calibration_date) : new Date();
+                      const baseDate = eqForm.last_calibration_date
+                        ? new Date(eqForm.last_calibration_date)
+                        : new Date();
                       baseDate.setMonth(baseDate.getMonth() + freq);
                       setEqForm({
                         ...eqForm,
@@ -2303,7 +2418,9 @@ function EquipmentModule() {
                 </div>
 
                 <div>
-                  <Label className="text-xs font-semibold">Chu kỳ bảo trì PM quy định (ngày) (*):</Label>
+                  <Label className="text-xs font-semibold">
+                    Chu kỳ bảo trì PM quy định (ngày) (*):
+                  </Label>
                   <Input
                     type="number"
                     min="1"
@@ -2311,7 +2428,9 @@ function EquipmentModule() {
                     value={eqForm.maintenance_frequency_days}
                     onChange={(e) => {
                       const freq = Math.max(1, Number(e.target.value) || 30);
-                      const baseDate = eqForm.last_maintenance_date ? new Date(eqForm.last_maintenance_date) : new Date();
+                      const baseDate = eqForm.last_maintenance_date
+                        ? new Date(eqForm.last_maintenance_date)
+                        : new Date();
                       baseDate.setDate(baseDate.getDate() + freq);
                       setEqForm({
                         ...eqForm,
@@ -2344,7 +2463,11 @@ function EquipmentModule() {
                           d.setMonth(d.getMonth() + freq);
                           nextDue = d.toISOString().split("T")[0];
                         }
-                        setEqForm({ ...eqForm, last_calibration_date: dt, next_calibration_due: nextDue });
+                        setEqForm({
+                          ...eqForm,
+                          last_calibration_date: dt,
+                          next_calibration_due: nextDue,
+                        });
                       }}
                       className="mt-1 h-8 text-xs"
                     />
@@ -2357,7 +2480,9 @@ function EquipmentModule() {
                     <Input
                       type="date"
                       value={eqForm.next_calibration_due}
-                      onChange={(e) => setEqForm({ ...eqForm, next_calibration_due: e.target.value })}
+                      onChange={(e) =>
+                        setEqForm({ ...eqForm, next_calibration_due: e.target.value })
+                      }
                       className="mt-1 h-8 text-xs font-bold border-blue-200"
                     />
                   </div>
@@ -2381,7 +2506,11 @@ function EquipmentModule() {
                           d.setDate(d.getDate() + freq);
                           nextDue = d.toISOString().split("T")[0];
                         }
-                        setEqForm({ ...eqForm, last_maintenance_date: dt, next_maintenance_due: nextDue });
+                        setEqForm({
+                          ...eqForm,
+                          last_maintenance_date: dt,
+                          next_maintenance_due: nextDue,
+                        });
                       }}
                       className="mt-1 h-8 text-xs"
                     />
@@ -2394,7 +2523,9 @@ function EquipmentModule() {
                     <Input
                       type="date"
                       value={eqForm.next_maintenance_due}
-                      onChange={(e) => setEqForm({ ...eqForm, next_maintenance_due: e.target.value })}
+                      onChange={(e) =>
+                        setEqForm({ ...eqForm, next_maintenance_due: e.target.value })
+                      }
                       className="mt-1 h-8 text-xs font-bold border-purple-200"
                     />
                   </div>
@@ -2405,7 +2536,8 @@ function EquipmentModule() {
             {/* NHÓM 4: GHI CHÚ */}
             <div className="space-y-1.5 pt-2 border-t">
               <Label className="text-xs text-muted-foreground">
-                Ghi chú kỹ thuật & Yêu cầu an toàn thực phẩm (Dầu mỡ NSF H1, Tiêu chuẩn ISO/TS 22002-1):
+                Ghi chú kỹ thuật & Yêu cầu an toàn thực phẩm (Dầu mỡ NSF H1, Tiêu chuẩn ISO/TS
+                22002-1):
               </Label>
               <Textarea
                 rows={2}
@@ -2417,10 +2549,20 @@ function EquipmentModule() {
             </div>
 
             <DialogFooter className="pt-3 border-t mt-4 flex flex-col-reverse sm:flex-row items-center justify-end gap-2 w-full">
-              <Button type="button" variant="outline" size="sm" onClick={() => setIsEqModalOpen(false)} className="w-full sm:w-auto h-9 text-xs">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setIsEqModalOpen(false)}
+                className="w-full sm:w-auto h-9 text-xs"
+              >
                 Hủy bỏ
               </Button>
-              <Button type="submit" size="sm" className="w-full sm:w-auto h-9 text-xs shadow-sm font-semibold">
+              <Button
+                type="submit"
+                size="sm"
+                className="w-full sm:w-auto h-9 text-xs shadow-sm font-semibold"
+              >
                 {editingEq ? "Cập nhật thiết bị" : "Lưu thiết bị"}
               </Button>
             </DialogFooter>
@@ -2537,28 +2679,44 @@ function EquipmentModule() {
             </div>
 
             <div>
-              <Label className="text-xs font-semibold">Trạng thái phiếu / Tiến độ thiết bị (*):</Label>
+              <Label className="text-xs font-semibold">
+                Trạng thái phiếu / Tiến độ thiết bị (*):
+              </Label>
               <select
                 value={maintForm.result_status || "IN_PROGRESS"}
                 onChange={(e) => setMaintForm({ ...maintForm, result_status: e.target.value })}
                 className="mt-1 w-full rounded-md border bg-background px-3 h-9 text-xs font-semibold text-primary"
               >
-                <option value="IN_PROGRESS">🟡 Đang bảo trì / Sửa chữa (Máy tự động chuyển sang BẢO TRÌ)</option>
-                <option value="COMPLETED">🟢 Đã hoàn thành (Máy tự động quay về HOẠT ĐỘNG TỐT)</option>
-                <option value="NEED_FOLLOWUP">🟠 Chưa đạt / Cần theo dõi tiếp (Máy tiếp tục ở trạng thái BẢO TRÌ)</option>
+                <option value="IN_PROGRESS">
+                  🟡 Đang bảo trì / Sửa chữa (Máy tự động chuyển sang BẢO TRÌ)
+                </option>
+                <option value="COMPLETED">
+                  🟢 Đã hoàn thành (Máy tự động quay về HOẠT ĐỘNG TỐT)
+                </option>
+                <option value="NEED_FOLLOWUP">
+                  🟠 Chưa đạt / Cần theo dõi tiếp (Máy tiếp tục ở trạng thái BẢO TRÌ)
+                </option>
                 <option value="FAILED">🔴 Không đạt / Hỏng nặng (Dừng máy, chờ khắc phục)</option>
               </select>
             </div>
 
-            {maintForm.result_status === "IN_PROGRESS" || maintForm.result_status === "NEED_FOLLOWUP" || maintForm.result_status === "FAILED" ? (
+            {maintForm.result_status === "IN_PROGRESS" ||
+            maintForm.result_status === "NEED_FOLLOWUP" ||
+            maintForm.result_status === "FAILED" ? (
               <div className="rounded-lg bg-amber-500/10 border border-amber-500/30 p-2.5 text-xs text-amber-700 dark:text-amber-300 flex items-center gap-2">
                 <AlertCircle className="h-4 w-4 shrink-0 text-amber-600" />
-                <span>Thiết bị sẽ tự động duy trì trạng thái <strong>"Đang bảo trì / Sửa chữa"</strong> trên toàn hệ thống cho đến khi hoàn tất.</span>
+                <span>
+                  Thiết bị sẽ tự động duy trì trạng thái <strong>"Đang bảo trì / Sửa chữa"</strong>{" "}
+                  trên toàn hệ thống cho đến khi hoàn tất.
+                </span>
               </div>
             ) : (
               <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/30 p-2.5 text-xs text-emerald-700 dark:text-emerald-300 flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
-                <span>Khi hoàn tất, thiết bị sẽ tự động chuyển về trạng thái <strong>"Đang hoạt động tốt"</strong> và cập nhật chu kỳ bảo dưỡng kế tiếp.</span>
+                <span>
+                  Khi hoàn tất, thiết bị sẽ tự động chuyển về trạng thái{" "}
+                  <strong>"Đang hoạt động tốt"</strong> và cập nhật chu kỳ bảo dưỡng kế tiếp.
+                </span>
               </div>
             )}
 
@@ -2568,7 +2726,9 @@ function EquipmentModule() {
                 <input
                   type="checkbox"
                   checked={maintForm.food_grade_lubricant_used}
-                  onChange={(e) => setMaintForm({ ...maintForm, food_grade_lubricant_used: e.target.checked })}
+                  onChange={(e) =>
+                    setMaintForm({ ...maintForm, food_grade_lubricant_used: e.target.checked })
+                  }
                   className="rounded border-border text-primary focus:ring-primary h-4 w-4"
                 />
                 <span className="font-semibold text-foreground">
@@ -2580,7 +2740,9 @@ function EquipmentModule() {
                 <input
                   type="checkbox"
                   checked={maintForm.hygiene_sanitation_after_maint}
-                  onChange={(e) => setMaintForm({ ...maintForm, hygiene_sanitation_after_maint: e.target.checked })}
+                  onChange={(e) =>
+                    setMaintForm({ ...maintForm, hygiene_sanitation_after_maint: e.target.checked })
+                  }
                   className="rounded border-border text-primary focus:ring-primary h-4 w-4"
                 />
                 <span className="font-semibold text-foreground">
@@ -2590,10 +2752,20 @@ function EquipmentModule() {
             </div>
 
             <DialogFooter className="pt-3 border-t mt-4 flex flex-col-reverse sm:flex-row items-center justify-end gap-2 w-full">
-              <Button type="button" variant="outline" size="sm" onClick={() => setIsMaintModalOpen(false)} className="w-full sm:w-auto h-9 text-xs">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setIsMaintModalOpen(false)}
+                className="w-full sm:w-auto h-9 text-xs"
+              >
                 Hủy bỏ
               </Button>
-              <Button type="submit" size="sm" className="w-full sm:w-auto h-9 text-xs shadow-sm font-semibold">
+              <Button
+                type="submit"
+                size="sm"
+                className="w-full sm:w-auto h-9 text-xs shadow-sm font-semibold"
+              >
                 Lưu phiếu bảo trì
               </Button>
             </DialogFooter>
@@ -2663,7 +2835,9 @@ function EquipmentModule() {
                 />
               </div>
               <div>
-                <Label className="text-xs font-semibold text-emerald-700 dark:text-emerald-400">Hạn kiểm định kế tiếp (*):</Label>
+                <Label className="text-xs font-semibold text-emerald-700 dark:text-emerald-400">
+                  Hạn kiểm định kế tiếp (*):
+                </Label>
                 <Input
                   type="date"
                   required
@@ -2722,10 +2896,20 @@ function EquipmentModule() {
             </div>
 
             <DialogFooter className="pt-3 border-t mt-4 flex flex-col-reverse sm:flex-row items-center justify-end gap-2 w-full">
-              <Button type="button" variant="outline" size="sm" onClick={() => setIsCalModalOpen(false)} className="w-full sm:w-auto h-9 text-xs">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setIsCalModalOpen(false)}
+                className="w-full sm:w-auto h-9 text-xs"
+              >
                 Hủy bỏ
               </Button>
-              <Button type="submit" size="sm" className="w-full sm:w-auto h-9 text-xs shadow-sm font-semibold">
+              <Button
+                type="submit"
+                size="sm"
+                className="w-full sm:w-auto h-9 text-xs shadow-sm font-semibold"
+              >
                 Lưu biên bản hiệu chuẩn
               </Button>
             </DialogFooter>
@@ -2750,7 +2934,11 @@ function EquipmentModule() {
               {/* Header Box với Logo Công ty chuẩn */}
               <div className="flex items-center justify-between border-b-2 border-slate-900 pb-3 min-w-[500px]">
                 <div className="flex items-center gap-3">
-                  <img src={logoImg} alt="WCERT Logo" className="h-10 sm:h-12 w-auto object-contain" />
+                  <img
+                    src={logoImg}
+                    alt="WCERT Logo"
+                    className="h-10 sm:h-12 w-auto object-contain"
+                  />
                   <div>
                     <h2 className="font-extrabold text-xs sm:text-base tracking-tight text-slate-900">
                       CÔNG TY CỔ PHẦN CHẾ BIẾN THỰC PHẨM WCERT
@@ -2780,62 +2968,132 @@ function EquipmentModule() {
               <table className="w-full border-collapse border border-slate-400 text-xs min-w-[500px]">
                 <tbody>
                   <tr className="border-b border-slate-300">
-                    <td className="bg-slate-50 border border-slate-300 p-2 font-bold w-1/4">Mã số thiết bị:</td>
-                    <td className="border border-slate-300 p-2 font-mono font-bold text-emerald-700">{selectedPrintEq.equipment_code}</td>
-                    <td className="bg-slate-50 border border-slate-300 p-2 font-bold w-1/4">Phân nhóm thiết bị:</td>
-                    <td className="border border-slate-300 p-2 font-semibold">{CATEGORY_MAP[selectedPrintEq.category]?.label || selectedPrintEq.category}</td>
+                    <td className="bg-slate-50 border border-slate-300 p-2 font-bold w-1/4">
+                      Mã số thiết bị:
+                    </td>
+                    <td className="border border-slate-300 p-2 font-mono font-bold text-emerald-700">
+                      {selectedPrintEq.equipment_code}
+                    </td>
+                    <td className="bg-slate-50 border border-slate-300 p-2 font-bold w-1/4">
+                      Phân nhóm thiết bị:
+                    </td>
+                    <td className="border border-slate-300 p-2 font-semibold">
+                      {CATEGORY_MAP[selectedPrintEq.category]?.label || selectedPrintEq.category}
+                    </td>
                   </tr>
                   <tr className="border-b border-slate-300">
-                    <td className="bg-slate-50 border border-slate-300 p-2 font-bold">Tên thiết bị:</td>
-                    <td colSpan={3} className="border border-slate-300 p-2 font-bold text-slate-900">{selectedPrintEq.equipment_name}</td>
+                    <td className="bg-slate-50 border border-slate-300 p-2 font-bold">
+                      Tên thiết bị:
+                    </td>
+                    <td
+                      colSpan={3}
+                      className="border border-slate-300 p-2 font-bold text-slate-900"
+                    >
+                      {selectedPrintEq.equipment_name}
+                    </td>
                   </tr>
                   <tr className="border-b border-slate-300">
-                    <td className="bg-slate-50 border border-slate-300 p-2 font-bold">Model / Serial:</td>
-                    <td className="border border-slate-300 p-2">{selectedPrintEq.model || "—"} / {selectedPrintEq.serial_number || "—"}</td>
-                    <td className="bg-slate-50 border border-slate-300 p-2 font-bold">Hãng sản xuất:</td>
-                    <td className="border border-slate-300 p-2">{selectedPrintEq.manufacturer || "—"}</td>
+                    <td className="bg-slate-50 border border-slate-300 p-2 font-bold">
+                      Model / Serial:
+                    </td>
+                    <td className="border border-slate-300 p-2">
+                      {selectedPrintEq.model || "—"} / {selectedPrintEq.serial_number || "—"}
+                    </td>
+                    <td className="bg-slate-50 border border-slate-300 p-2 font-bold">
+                      Hãng sản xuất:
+                    </td>
+                    <td className="border border-slate-300 p-2">
+                      {selectedPrintEq.manufacturer || "—"}
+                    </td>
                   </tr>
                   <tr className="border-b border-slate-300">
-                    <td className="bg-slate-50 border border-slate-300 p-2 font-bold">Vị trí lắp đặt:</td>
-                    <td className="border border-slate-300 p-2">{selectedPrintEq.installation_location || "—"}</td>
-                    <td className="bg-slate-50 border border-slate-300 p-2 font-bold">Mức độ trọng yếu ATTP:</td>
-                    <td className="border border-slate-300 p-2 font-bold text-rose-700">{CRITICALITY_MAP[selectedPrintEq.criticality_level]?.label || selectedPrintEq.criticality_level}</td>
+                    <td className="bg-slate-50 border border-slate-300 p-2 font-bold">
+                      Vị trí lắp đặt:
+                    </td>
+                    <td className="border border-slate-300 p-2">
+                      {selectedPrintEq.installation_location || "—"}
+                    </td>
+                    <td className="bg-slate-50 border border-slate-300 p-2 font-bold">
+                      Mức độ trọng yếu ATTP:
+                    </td>
+                    <td className="border border-slate-300 p-2 font-bold text-rose-700">
+                      {CRITICALITY_MAP[selectedPrintEq.criticality_level]?.label ||
+                        selectedPrintEq.criticality_level}
+                    </td>
                   </tr>
                   <tr className="border-b border-slate-300">
-                    <td className="bg-slate-50 border border-slate-300 p-2 font-bold">Chu kỳ hiệu chuẩn quy định:</td>
-                    <td className="border border-slate-300 p-2">{selectedPrintEq.calibration_frequency_months} tháng/lần (Hạn tới: <b>{selectedPrintEq.next_calibration_due || "—"}</b>)</td>
-                    <td className="bg-slate-50 border border-slate-300 p-2 font-bold">Chu kỳ bảo trì PM quy định:</td>
-                    <td className="border border-slate-300 p-2">{selectedPrintEq.maintenance_frequency_days} ngày/lần (Hạn tới: <b>{selectedPrintEq.next_maintenance_due || "—"}</b>)</td>
+                    <td className="bg-slate-50 border border-slate-300 p-2 font-bold">
+                      Chu kỳ hiệu chuẩn quy định:
+                    </td>
+                    <td className="border border-slate-300 p-2">
+                      {selectedPrintEq.calibration_frequency_months} tháng/lần (Hạn tới:{" "}
+                      <b>{selectedPrintEq.next_calibration_due || "—"}</b>)
+                    </td>
+                    <td className="bg-slate-50 border border-slate-300 p-2 font-bold">
+                      Chu kỳ bảo trì PM quy định:
+                    </td>
+                    <td className="border border-slate-300 p-2">
+                      {selectedPrintEq.maintenance_frequency_days} ngày/lần (Hạn tới:{" "}
+                      <b>{selectedPrintEq.next_maintenance_due || "—"}</b>)
+                    </td>
                   </tr>
                   <tr className="border-b border-slate-300">
-                    <td className="bg-slate-50 border border-slate-300 p-2 font-bold">Tình trạng tem hiệu chuẩn:</td>
-                    <td className="border border-slate-300 p-2 font-semibold">{CALIBRATION_STATUS_MAP[selectedPrintEq.calibration_status]?.label || selectedPrintEq.calibration_status}</td>
-                    <td className="bg-slate-50 border border-slate-300 p-2 font-bold">Trạng thái vận hành:</td>
-                    <td className="border border-slate-300 p-2 font-semibold">{STATUS_MAP[selectedPrintEq.status]?.label || selectedPrintEq.status}</td>
+                    <td className="bg-slate-50 border border-slate-300 p-2 font-bold">
+                      Tình trạng tem hiệu chuẩn:
+                    </td>
+                    <td className="border border-slate-300 p-2 font-semibold">
+                      {CALIBRATION_STATUS_MAP[selectedPrintEq.calibration_status]?.label ||
+                        selectedPrintEq.calibration_status}
+                    </td>
+                    <td className="bg-slate-50 border border-slate-300 p-2 font-bold">
+                      Trạng thái vận hành:
+                    </td>
+                    <td className="border border-slate-300 p-2 font-semibold">
+                      {STATUS_MAP[selectedPrintEq.status]?.label || selectedPrintEq.status}
+                    </td>
                   </tr>
                   <tr className="border-b border-slate-300">
-                    <td className="bg-slate-50 border border-slate-300 p-2 font-bold">Lịch sử tích lũy hồ sơ:</td>
+                    <td className="bg-slate-50 border border-slate-300 p-2 font-bold">
+                      Lịch sử tích lũy hồ sơ:
+                    </td>
                     <td colSpan={3} className="border border-slate-300 p-2 font-semibold">
-                      Đã thực hiện <span className="text-blue-700 font-bold">{selectedPrintEq.total_calibration_logs || 0}</span> đợt hiệu chuẩn đo lường và <span className="text-purple-700 font-bold">{selectedPrintEq.total_maintenance_logs || 0}</span> lượt bảo dưỡng phòng ngừa PM.
+                      Đã thực hiện{" "}
+                      <span className="text-blue-700 font-bold">
+                        {selectedPrintEq.total_calibration_logs || 0}
+                      </span>{" "}
+                      đợt hiệu chuẩn đo lường và{" "}
+                      <span className="text-purple-700 font-bold">
+                        {selectedPrintEq.total_maintenance_logs || 0}
+                      </span>{" "}
+                      lượt bảo dưỡng phòng ngừa PM.
                     </td>
                   </tr>
                   <tr>
-                    <td className="bg-slate-50 border border-slate-300 p-2 font-bold">Ghi chú kỹ thuật:</td>
-                    <td colSpan={3} className="border border-slate-300 p-2 text-slate-700">{selectedPrintEq.notes || "Tuân thủ tiêu chuẩn bôi trơn dầu thực phẩm an toàn NSF H1."}</td>
+                    <td className="bg-slate-50 border border-slate-300 p-2 font-bold">
+                      Ghi chú kỹ thuật:
+                    </td>
+                    <td colSpan={3} className="border border-slate-300 p-2 text-slate-700">
+                      {selectedPrintEq.notes ||
+                        "Tuân thủ tiêu chuẩn bôi trơn dầu thực phẩm an toàn NSF H1."}
+                    </td>
                   </tr>
                 </tbody>
               </table>
 
               <div className="border border-emerald-300 bg-emerald-50/70 p-3 rounded-lg text-emerald-900 text-xs leading-relaxed min-w-[500px]">
-                <b>✓ TIÊU CHUẨN KIỂM SOÁT THIẾT BỊ CHẾ BIẾN THỰC PHẨM (ISO/TS 22002-1):</b><br/>
-                Thiết bị được theo dõi định kỳ bảo trì dự phòng (PM), bôi trơn bằng mỡ an toàn thực phẩm NSF H1 và hiệu chuẩn đo lường định kỳ bởi đơn vị được công nhận ISO/IEC 17025.
+                <b>✓ TIÊU CHUẨN KIỂM SOÁT THIẾT BỊ CHẾ BIẾN THỰC PHẨM (ISO/TS 22002-1):</b>
+                <br />
+                Thiết bị được theo dõi định kỳ bảo trì dự phòng (PM), bôi trơn bằng mỡ an toàn thực
+                phẩm NSF H1 và hiệu chuẩn đo lường định kỳ bởi đơn vị được công nhận ISO/IEC 17025.
               </div>
 
               {/* Signatures */}
               <div className="grid grid-cols-2 gap-8 pt-4 text-center text-xs min-w-[500px]">
                 <div className="space-y-8">
                   <p className="font-bold text-slate-900">CÁN BỘ PHỤ TRÁCH THIẾT BỊ</p>
-                  <p className="font-semibold text-slate-700">{selectedPrintEq.manager_name || "Nguyễn Văn Kỹ Thuật"}</p>
+                  <p className="font-semibold text-slate-700">
+                    {selectedPrintEq.manager_name || "Nguyễn Văn Kỹ Thuật"}
+                  </p>
                 </div>
                 <div className="space-y-8">
                   <p className="font-bold text-slate-900">TRƯỞNG BAN QLCL & ATTP (QA/QC)</p>
@@ -2846,7 +3104,12 @@ function EquipmentModule() {
           )}
 
           <DialogFooter className="mt-4 flex flex-col-reverse sm:flex-row items-center justify-end gap-2">
-            <Button variant="outline" size="sm" onClick={() => setShowPrintProfileModal(false)} className="w-full sm:w-auto">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowPrintProfileModal(false)}
+              className="w-full sm:w-auto"
+            >
               Đóng
             </Button>
             <Button
@@ -2878,7 +3141,11 @@ function EquipmentModule() {
               {/* Header Box với Logo Công ty chuẩn */}
               <div className="flex items-center justify-between border-b-2 border-slate-900 pb-3 min-w-[500px]">
                 <div className="flex items-center gap-3">
-                  <img src={logoImg} alt="WCERT Logo" className="h-10 sm:h-12 w-auto object-contain" />
+                  <img
+                    src={logoImg}
+                    alt="WCERT Logo"
+                    className="h-10 sm:h-12 w-auto object-contain"
+                  />
                   <div>
                     <h2 className="font-extrabold text-xs sm:text-base tracking-tight text-slate-900">
                       CÔNG TY CỔ PHẦN CHẾ BIẾN THỰC PHẨM WCERT
@@ -2890,7 +3157,9 @@ function EquipmentModule() {
                 </div>
                 <div className="text-right text-[10px] sm:text-[11px] text-slate-600">
                   <p className="font-bold text-slate-900 text-xs sm:text-sm">BIỂU MẪU: BM-HC-02</p>
-                  <p>Mã phiếu: <b>{selectedPrintCal.calibration_code}</b></p>
+                  <p>
+                    Mã phiếu: <b>{selectedPrintCal.calibration_code}</b>
+                  </p>
                   <p>Tiêu chuẩn: ISO/IEC 17025</p>
                 </div>
               </div>
@@ -2908,44 +3177,102 @@ function EquipmentModule() {
               <table className="w-full border-collapse border border-slate-400 text-xs min-w-[500px]">
                 <tbody>
                   <tr className="border-b border-slate-300">
-                    <td className="bg-slate-50 border border-slate-300 p-2 font-bold w-1/4">Mã số thiết bị:</td>
-                    <td className="border border-slate-300 p-2 font-mono font-bold text-emerald-700">{selectedPrintCal.equipment_code || "—"}</td>
-                    <td className="bg-slate-50 border border-slate-300 p-2 font-bold w-1/4">Tên thiết bị:</td>
-                    <td className="border border-slate-300 p-2 font-bold">{selectedPrintCal.equipment_name || "—"}</td>
+                    <td className="bg-slate-50 border border-slate-300 p-2 font-bold w-1/4">
+                      Mã số thiết bị:
+                    </td>
+                    <td className="border border-slate-300 p-2 font-mono font-bold text-emerald-700">
+                      {selectedPrintCal.equipment_code || "—"}
+                    </td>
+                    <td className="bg-slate-50 border border-slate-300 p-2 font-bold w-1/4">
+                      Tên thiết bị:
+                    </td>
+                    <td className="border border-slate-300 p-2 font-bold">
+                      {selectedPrintCal.equipment_name || "—"}
+                    </td>
                   </tr>
                   <tr className="border-b border-slate-300">
-                    <td className="bg-slate-50 border border-slate-300 p-2 font-bold">Hình thức hiệu chuẩn:</td>
-                    <td className="border border-slate-300 p-2">{selectedPrintCal.calibration_type === "EXTERNAL" ? "Kiểm định Ngoài (QUATEST 3 / VILAS)" : "Hiệu chuẩn Nội bộ"}</td>
-                    <td className="bg-slate-50 border border-slate-300 p-2 font-bold">Đơn vị thực hiện:</td>
-                    <td className="border border-slate-300 p-2 font-semibold">{selectedPrintCal.agency_name || "Phòng KCS Nội bộ"}</td>
+                    <td className="bg-slate-50 border border-slate-300 p-2 font-bold">
+                      Hình thức hiệu chuẩn:
+                    </td>
+                    <td className="border border-slate-300 p-2">
+                      {selectedPrintCal.calibration_type === "EXTERNAL"
+                        ? "Kiểm định Ngoài (QUATEST 3 / VILAS)"
+                        : "Hiệu chuẩn Nội bộ"}
+                    </td>
+                    <td className="bg-slate-50 border border-slate-300 p-2 font-bold">
+                      Đơn vị thực hiện:
+                    </td>
+                    <td className="border border-slate-300 p-2 font-semibold">
+                      {selectedPrintCal.agency_name || "Phòng KCS Nội bộ"}
+                    </td>
                   </tr>
                   <tr className="border-b border-slate-300">
-                    <td className="bg-slate-50 border border-slate-300 p-2 font-bold">Số tem / Giấy kiểm định:</td>
-                    <td className="border border-slate-300 p-2 font-mono font-bold text-slate-900">{selectedPrintCal.certificate_number || "—"}</td>
-                    <td className="bg-slate-50 border border-slate-300 p-2 font-bold">Tiêu chuẩn áp dụng:</td>
-                    <td className="border border-slate-300 p-2">{selectedPrintCal.standard_applied || "ISO/IEC 17025"}</td>
+                    <td className="bg-slate-50 border border-slate-300 p-2 font-bold">
+                      Số tem / Giấy kiểm định:
+                    </td>
+                    <td className="border border-slate-300 p-2 font-mono font-bold text-slate-900">
+                      {selectedPrintCal.certificate_number || "—"}
+                    </td>
+                    <td className="bg-slate-50 border border-slate-300 p-2 font-bold">
+                      Tiêu chuẩn áp dụng:
+                    </td>
+                    <td className="border border-slate-300 p-2">
+                      {selectedPrintCal.standard_applied || "ISO/IEC 17025"}
+                    </td>
                   </tr>
                   <tr className="border-b border-slate-300">
-                    <td className="bg-slate-50 border border-slate-300 p-2 font-bold">Ngày hiệu chuẩn:</td>
-                    <td className="border border-slate-300 p-2">{selectedPrintCal.calibration_date}</td>
-                    <td className="bg-slate-50 border border-slate-300 p-2 font-bold">Hạn kiểm định:</td>
-                    <td className="border border-slate-300 p-2 font-bold text-emerald-700">{selectedPrintCal.expiry_date}</td>
+                    <td className="bg-slate-50 border border-slate-300 p-2 font-bold">
+                      Ngày hiệu chuẩn:
+                    </td>
+                    <td className="border border-slate-300 p-2">
+                      {selectedPrintCal.calibration_date}
+                    </td>
+                    <td className="bg-slate-50 border border-slate-300 p-2 font-bold">
+                      Hạn kiểm định:
+                    </td>
+                    <td className="border border-slate-300 p-2 font-bold text-emerald-700">
+                      {selectedPrintCal.expiry_date}
+                    </td>
                   </tr>
                   <tr className="border-b border-slate-300">
-                    <td className="bg-slate-50 border border-slate-300 p-2 font-bold">Sai số thực tế đo được:</td>
-                    <td className="border border-slate-300 p-2 font-mono font-bold text-slate-900">{selectedPrintCal.measured_deviation !== undefined ? selectedPrintCal.measured_deviation : "—"}</td>
-                    <td className="bg-slate-50 border border-slate-300 p-2 font-bold">Dung sai cho phép (+/-):</td>
-                    <td className="border border-slate-300 p-2 font-mono">{selectedPrintCal.allowable_tolerance !== undefined ? `+/- ${selectedPrintCal.allowable_tolerance}` : "—"}</td>
+                    <td className="bg-slate-50 border border-slate-300 p-2 font-bold">
+                      Sai số thực tế đo được:
+                    </td>
+                    <td className="border border-slate-300 p-2 font-mono font-bold text-slate-900">
+                      {selectedPrintCal.measured_deviation !== undefined
+                        ? selectedPrintCal.measured_deviation
+                        : "—"}
+                    </td>
+                    <td className="bg-slate-50 border border-slate-300 p-2 font-bold">
+                      Dung sai cho phép (+/-):
+                    </td>
+                    <td className="border border-slate-300 p-2 font-mono">
+                      {selectedPrintCal.allowable_tolerance !== undefined
+                        ? `+/- ${selectedPrintCal.allowable_tolerance}`
+                        : "—"}
+                    </td>
                   </tr>
                   <tr className="border-b border-slate-300">
-                    <td className="bg-slate-50 border border-slate-300 p-2 font-bold">Kết luận thẩm định:</td>
-                    <td colSpan={3} className={`border border-slate-300 p-2 font-bold ${selectedPrintCal.is_passed ? 'text-emerald-700' : 'text-rose-700'}`}>
-                      {selectedPrintCal.is_passed ? "✓ ĐẠT YÊU CẦU ĐỘ CHÍNH XÁC (PASSED) — TEM KIỂM ĐỊNH HỢP LỆ" : "✕ KHÔNG ĐẠT YÊU CẦU (FAILED) — CẦN HIỆU CHỈNH LẠI"}
+                    <td className="bg-slate-50 border border-slate-300 p-2 font-bold">
+                      Kết luận thẩm định:
+                    </td>
+                    <td
+                      colSpan={3}
+                      className={`border border-slate-300 p-2 font-bold ${selectedPrintCal.is_passed ? "text-emerald-700" : "text-rose-700"}`}
+                    >
+                      {selectedPrintCal.is_passed
+                        ? "✓ ĐẠT YÊU CẦU ĐỘ CHÍNH XÁC (PASSED) — TEM KIỂM ĐỊNH HỢP LỆ"
+                        : "✕ KHÔNG ĐẠT YÊU CẦU (FAILED) — CẦN HIỆU CHỈNH LẠI"}
                     </td>
                   </tr>
                   <tr>
-                    <td className="bg-slate-50 border border-slate-300 p-2 font-bold">Nhận xét & Đánh giá:</td>
-                    <td colSpan={3} className="border border-slate-300 p-2 text-slate-700">{selectedPrintCal.notes || "Thiết bị đo lường đáp ứng đầy đủ yêu cầu kiểm soát CCP và giám sát thông số quá trình chế biến."}</td>
+                    <td className="bg-slate-50 border border-slate-300 p-2 font-bold">
+                      Nhận xét & Đánh giá:
+                    </td>
+                    <td colSpan={3} className="border border-slate-300 p-2 text-slate-700">
+                      {selectedPrintCal.notes ||
+                        "Thiết bị đo lường đáp ứng đầy đủ yêu cầu kiểm soát CCP và giám sát thông số quá trình chế biến."}
+                    </td>
                   </tr>
                 </tbody>
               </table>
@@ -2958,7 +3285,11 @@ function EquipmentModule() {
               <div className="grid grid-cols-2 gap-8 pt-4 text-center text-xs min-w-[500px]">
                 <div className="space-y-8">
                   <p className="font-bold text-slate-900">CÁN BỘ / ĐƠN VỊ HIỆU CHUẨN</p>
-                  <p className="font-semibold text-slate-700">{selectedPrintCal.calibrator_display_name || selectedPrintCal.calibrator_name || "Kiểm định viên"}</p>
+                  <p className="font-semibold text-slate-700">
+                    {selectedPrintCal.calibrator_display_name ||
+                      selectedPrintCal.calibrator_name ||
+                      "Kiểm định viên"}
+                  </p>
                 </div>
                 <div className="space-y-8">
                   <p className="font-bold text-slate-900">TRƯỞNG BAN QLCL & ATTP (QA/QC)</p>
@@ -2969,7 +3300,12 @@ function EquipmentModule() {
           )}
 
           <DialogFooter className="mt-4 flex flex-col-reverse sm:flex-row items-center justify-end gap-2">
-            <Button variant="outline" size="sm" onClick={() => setShowPrintCalModal(false)} className="w-full sm:w-auto">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowPrintCalModal(false)}
+              className="w-full sm:w-auto"
+            >
               Đóng
             </Button>
             <Button
@@ -3001,11 +3337,7 @@ function EquipmentModule() {
       />
 
       {/* Module Guide Modal */}
-      <ModuleGuideModal
-        module="equipment"
-        isOpen={showGuide}
-        onClose={() => setShowGuide(false)}
-      />
+      <ModuleGuideModal module="equipment" isOpen={showGuide} onClose={() => setShowGuide(false)} />
     </div>
   );
 }

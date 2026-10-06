@@ -69,7 +69,9 @@ function BuilderManagementPage() {
   const [viewingSubmission, setViewingSubmission] = useState<any | null>(null);
 
   // Deleting confirmation states
-  const [deletingFormItem, setDeletingFormItem] = useState<{ id: string; title: string } | null>(null);
+  const [deletingFormItem, setDeletingFormItem] = useState<{ id: string; title: string } | null>(
+    null,
+  );
   const [deletingWfItem, setDeletingWfItem] = useState<{ id: string; title: string } | null>(null);
 
   // Fetch Forms
@@ -119,7 +121,6 @@ function BuilderManagementPage() {
     fetchWorkflows();
     fetchSubmissions();
   }, []);
-
 
   // Save Form Template
   const handleSaveForm = async (formData: FormTemplateData) => {
@@ -406,7 +407,9 @@ function BuilderManagementPage() {
 
                       {canEdit && f.template_id && (
                         <button
-                          onClick={() => setDeletingFormItem({ id: f.template_id!, title: f.title })}
+                          onClick={() =>
+                            setDeletingFormItem({ id: f.template_id!, title: f.title })
+                          }
                           className="p-2 rounded-lg bg-rose-50 text-rose-600 hover:text-rose-800 hover:bg-rose-100 transition-colors"
                           title="Xóa biểu mẫu"
                         >
@@ -485,7 +488,12 @@ function BuilderManagementPage() {
                   <Workflow className="w-4 h-4" />
                 </div>
                 <div>
-                  <span className="font-bold">Quy Chuẩn Thiết Kế Lưu Đồ & Luồng Phê Duyệt FSMS:</span> Sử dụng 4 loại khối chuẩn hóa (Công đoạn sản xuất, Điểm rẽ nhánh, Điểm kiểm soát CCP/oPRP và Phê duyệt đa cấp). Đảm bảo sơ đồ có tính tuần tự liên tục và có thể thẩm tra xác nhận tại hiện trường nhà máy.
+                  <span className="font-bold">
+                    Quy Chuẩn Thiết Kế Lưu Đồ & Luồng Phê Duyệt FSMS:
+                  </span>{" "}
+                  Sử dụng 4 loại khối chuẩn hóa (Công đoạn sản xuất, Điểm rẽ nhánh, Điểm kiểm soát
+                  CCP/oPRP và Phê duyệt đa cấp). Đảm bảo sơ đồ có tính tuần tự liên tục và có thể
+                  thẩm tra xác nhận tại hiện trường nhà máy.
                 </div>
               </div>
               <Button
@@ -578,7 +586,9 @@ function BuilderManagementPage() {
 
                         {canEdit && w.workflow_id && (
                           <button
-                            onClick={() => setDeletingWfItem({ id: w.workflow_id!, title: w.title })}
+                            onClick={() =>
+                              setDeletingWfItem({ id: w.workflow_id!, title: w.title })
+                            }
                             className="p-2 rounded-lg bg-rose-50 text-rose-600 hover:text-rose-800 hover:bg-rose-100 transition-colors"
                             title="Xóa quy trình"
                           >
@@ -650,7 +660,9 @@ function BuilderManagementPage() {
                             {sub.submitted_by_name || "QC Ca"}
                           </td>
                           <td className="p-3.5 text-slate-500">
-                            {sub.created_at ? new Date(sub.created_at).toLocaleString("vi-VN") : "Hôm nay"}
+                            {sub.created_at
+                              ? new Date(sub.created_at).toLocaleString("vi-VN")
+                              : "Hôm nay"}
                           </td>
                           <td className="p-3.5">
                             {sub.score !== null && sub.score !== undefined ? (
@@ -733,109 +745,119 @@ function BuilderManagementPage() {
         )}
 
         {/* MODAL: VIEW SUBMISSION DETAILS */}
-        {viewingSubmission && (() => {
-          const matchedForm = forms.find(
-            (f) =>
-              f.template_id === viewingSubmission.template_id ||
-              f.code === viewingSubmission.template_code
-          );
+        {viewingSubmission &&
+          (() => {
+            const matchedForm = forms.find(
+              (f) =>
+                f.template_id === viewingSubmission.template_id ||
+                f.code === viewingSubmission.template_code,
+            );
 
-          return (
-            <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-              <div className="w-full max-w-2xl bg-white rounded-2xl p-6 shadow-2xl border border-slate-200 space-y-4">
-                <div className="flex items-center justify-between pb-3 border-b border-slate-200">
-                  <div>
-                    <h3 className="text-base font-bold text-slate-900">
-                      Chi Tiết Dữ Liệu Đã Ghi Nhận
-                    </h3>
-                    <div className="text-xs text-emerald-700 font-mono font-bold mt-0.5">
-                      {viewingSubmission.template_code} • {viewingSubmission.template_title}
-                    </div>
-                  </div>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setViewingSubmission(null)}
-                    className="text-xs border-slate-300 text-slate-700 hover:bg-slate-100"
-                  >
-                    Đóng
-                  </Button>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3 text-xs bg-slate-50 p-3.5 rounded-xl border border-slate-200 text-slate-800">
-                  <div>
-                    Người nộp: <span className="font-bold text-slate-900">{viewingSubmission.submitted_by_name || "QC Ca"}</span>
-                  </div>
-                  <div>
-                    Thời gian: <span className="font-bold text-slate-900">{new Date(viewingSubmission.created_at).toLocaleString("vi-VN")}</span>
-                  </div>
-                  {viewingSubmission.score !== null && (
+            return (
+              <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+                <div className="w-full max-w-2xl bg-white rounded-2xl p-6 shadow-2xl border border-slate-200 space-y-4">
+                  <div className="flex items-center justify-between pb-3 border-b border-slate-200">
                     <div>
-                      Điểm tuân thủ: <span className="font-bold text-amber-700">{viewingSubmission.score}%</span>
-                    </div>
-                  )}
-                  <div>
-                    Trạng thái: <span className="font-bold text-emerald-700">{viewingSubmission.status}</span>
-                  </div>
-                </div>
-
-                <div className="space-y-2.5 max-h-96 overflow-y-auto pr-1">
-                  <div className="text-xs font-bold uppercase tracking-wider text-slate-700">
-                    Nội dung kết quả kiểm tra:
-                  </div>
-                  {Object.entries(viewingSubmission.form_data || {}).map(([k, v], idx) => {
-                    const fieldDef = matchedForm?.fields.find(
-                      (f) => f.name === k || f.id === k
-                    );
-                    const displayLabel = fieldDef?.label || k;
-                    const fieldType = fieldDef?.type;
-                    const unit = fieldDef?.unit;
-
-                    return (
-                      <div
-                        key={k}
-                        className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs space-y-1.5"
-                      >
-                        <div className="flex items-center justify-between text-slate-500 text-[11px]">
-                          <span className="font-semibold text-slate-700">
-                            {idx + 1}. {displayLabel}
-                          </span>
-                          <span className="font-mono text-slate-400 text-[10px]">
-                            [{k}]
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between pt-1 border-t border-slate-200/60">
-                          <span className="text-slate-500 font-medium">Kết quả:</span>
-                          <span className="font-bold text-slate-900">
-                            {typeof v === "boolean" ? (
-                              v ? (
-                                <span className="text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded font-bold">
-                                  ✓ ĐẠT / CÓ
-                                </span>
-                              ) : (
-                                <span className="text-rose-700 bg-rose-100 px-2 py-0.5 rounded font-bold">
-                                  ✗ KHÔNG ĐẠT / KHÔNG
-                                </span>
-                              )
-                            ) : fieldType === "RATING" ? (
-                              <span className="text-amber-700 font-black">
-                                {String(v)} / 5 ★
-                              </span>
-                            ) : (
-                              <span>
-                                {String(v)} {unit ? <span className="text-slate-500 text-[11px] font-normal">{unit}</span> : ""}
-                              </span>
-                            )}
-                          </span>
-                        </div>
+                      <h3 className="text-base font-bold text-slate-900">
+                        Chi Tiết Dữ Liệu Đã Ghi Nhận
+                      </h3>
+                      <div className="text-xs text-emerald-700 font-mono font-bold mt-0.5">
+                        {viewingSubmission.template_code} • {viewingSubmission.template_title}
                       </div>
-                    );
-                  })}
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setViewingSubmission(null)}
+                      className="text-xs border-slate-300 text-slate-700 hover:bg-slate-100"
+                    >
+                      Đóng
+                    </Button>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 text-xs bg-slate-50 p-3.5 rounded-xl border border-slate-200 text-slate-800">
+                    <div>
+                      Người nộp:{" "}
+                      <span className="font-bold text-slate-900">
+                        {viewingSubmission.submitted_by_name || "QC Ca"}
+                      </span>
+                    </div>
+                    <div>
+                      Thời gian:{" "}
+                      <span className="font-bold text-slate-900">
+                        {new Date(viewingSubmission.created_at).toLocaleString("vi-VN")}
+                      </span>
+                    </div>
+                    {viewingSubmission.score !== null && (
+                      <div>
+                        Điểm tuân thủ:{" "}
+                        <span className="font-bold text-amber-700">{viewingSubmission.score}%</span>
+                      </div>
+                    )}
+                    <div>
+                      Trạng thái:{" "}
+                      <span className="font-bold text-emerald-700">{viewingSubmission.status}</span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2.5 max-h-96 overflow-y-auto pr-1">
+                    <div className="text-xs font-bold uppercase tracking-wider text-slate-700">
+                      Nội dung kết quả kiểm tra:
+                    </div>
+                    {Object.entries(viewingSubmission.form_data || {}).map(([k, v], idx) => {
+                      const fieldDef = matchedForm?.fields.find((f) => f.name === k || f.id === k);
+                      const displayLabel = fieldDef?.label || k;
+                      const fieldType = fieldDef?.type;
+                      const unit = fieldDef?.unit;
+
+                      return (
+                        <div
+                          key={k}
+                          className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs space-y-1.5"
+                        >
+                          <div className="flex items-center justify-between text-slate-500 text-[11px]">
+                            <span className="font-semibold text-slate-700">
+                              {idx + 1}. {displayLabel}
+                            </span>
+                            <span className="font-mono text-slate-400 text-[10px]">[{k}]</span>
+                          </div>
+                          <div className="flex items-center justify-between pt-1 border-t border-slate-200/60">
+                            <span className="text-slate-500 font-medium">Kết quả:</span>
+                            <span className="font-bold text-slate-900">
+                              {typeof v === "boolean" ? (
+                                v ? (
+                                  <span className="text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded font-bold">
+                                    ✓ ĐẠT / CÓ
+                                  </span>
+                                ) : (
+                                  <span className="text-rose-700 bg-rose-100 px-2 py-0.5 rounded font-bold">
+                                    ✗ KHÔNG ĐẠT / KHÔNG
+                                  </span>
+                                )
+                              ) : fieldType === "RATING" ? (
+                                <span className="text-amber-700 font-black">{String(v)} / 5 ★</span>
+                              ) : (
+                                <span>
+                                  {String(v)}{" "}
+                                  {unit ? (
+                                    <span className="text-slate-500 text-[11px] font-normal">
+                                      {unit}
+                                    </span>
+                                  ) : (
+                                    ""
+                                  )}
+                                </span>
+                              )}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
-            </div>
-          );
-        })()}
+            );
+          })()}
 
         {/* Modal Xác Nhận Xóa Biểu Mẫu */}
         <ConfirmDialog
@@ -869,16 +891,9 @@ function BuilderManagementPage() {
           variant="destructive"
         />
         {/* Module Guide Modal */}
-        <ModuleGuideModal
-          module="builder"
-          isOpen={showGuide}
-          onClose={() => setShowGuide(false)}
-        />
+        <ModuleGuideModal module="builder" isOpen={showGuide} onClose={() => setShowGuide(false)} />
         {/* Workflow Guide Modal */}
-        <WorkflowGuideModal
-          isOpen={showWfGuide}
-          onClose={() => setShowWfGuide(false)}
-        />
+        <WorkflowGuideModal isOpen={showWfGuide} onClose={() => setShowWfGuide(false)} />
       </div>
     </AppShell>
   );

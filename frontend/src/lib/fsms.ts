@@ -43,7 +43,11 @@ export interface Plan extends Row {
 export const riskScore = (h: Pick<Hazard, "likelihood" | "severity">) => h.likelihood * h.severity;
 
 export const riskTone = (s: number) =>
-  s >= 15 ? "bg-rose-500/10 text-rose-700" : s >= 8 ? "bg-amber-500/10 text-amber-700" : "bg-emerald-500/10 text-emerald-700";
+  s >= 15
+    ? "bg-rose-500/10 text-rose-700"
+    : s >= 8
+      ? "bg-amber-500/10 text-amber-700"
+      : "bg-emerald-500/10 text-emerald-700";
 
 export const planStatusLabel: Record<PlanStatus, string> = {
   DRAFT: "NHÁP",
@@ -260,8 +264,20 @@ export const PRP_SEED: PrpProgram[] = [
     name: "Kiểm soát nhà xưởng & thiết bị",
     category: "Cơ sở hạ tầng",
     items: [
-      { id: "Q1", question: "Trần, tường, sàn khu sản xuất có nguyên vẹn, không bong tróc không?", type: "BOOLEAN", standard: "Không có hư hỏng", critical: false },
-      { id: "Q2", question: "Nhiệt độ khu chiết rót đo được là bao nhiêu (°C)?", type: "NUMBER", standard: "≤ 22°C", critical: false },
+      {
+        id: "Q1",
+        question: "Trần, tường, sàn khu sản xuất có nguyên vẹn, không bong tróc không?",
+        type: "BOOLEAN",
+        standard: "Không có hư hỏng",
+        critical: false,
+      },
+      {
+        id: "Q2",
+        question: "Nhiệt độ khu chiết rót đo được là bao nhiêu (°C)?",
+        type: "NUMBER",
+        standard: "≤ 22°C",
+        critical: false,
+      },
     ],
   },
   {
@@ -270,7 +286,13 @@ export const PRP_SEED: PrpProgram[] = [
     name: "Kiểm soát côn trùng & động vật gây hại",
     category: "Vệ sinh môi trường",
     items: [
-      { id: "Q1", question: "Bẫy côn trùng có được kiểm tra và ghi chép theo tần suất quy định không?", type: "BOOLEAN", standard: "100% bẫy được kiểm tra hàng tuần", critical: false },
+      {
+        id: "Q1",
+        question: "Bẫy côn trùng có được kiểm tra và ghi chép theo tần suất quy định không?",
+        type: "BOOLEAN",
+        standard: "100% bẫy được kiểm tra hàng tuần",
+        critical: false,
+      },
     ],
   },
 ];
@@ -334,7 +356,8 @@ export const NC_SEED: NC[] = [
     date: "20/05/2026",
     source: "HACCP_MONITORING",
     ref: "HP-001 / CCP Tiệt trùng UHT",
-    content: "Nhiệt độ tiệt trùng đo được 132°C (< giới hạn 137°C) tại ca chiều, lặp lại lần 2 trong tuần.",
+    content:
+      "Nhiệt độ tiệt trùng đo được 132°C (< giới hạn 137°C) tại ca chiều, lặp lại lần 2 trong tuần.",
     severity: "Cao",
     status: "CAPA",
     capaId: "CAPA-2026-0013",
@@ -391,7 +414,8 @@ export const CAPA_SEED: Capa[] = [
     rootCause: "Van điều tiết hơi của lò UHT bị kẹt do cặn, cảm biến nhiệt quá hạn hiệu chuẩn.",
     method: "5 Whys",
     action: "Thay van điều tiết hơi, hiệu chuẩn lại cảm biến nhiệt CCP2.",
-    preventive: "Đưa van vào danh mục bảo trì phòng ngừa 3 tháng/lần; cảnh báo hạn hiệu chuẩn tự động.",
+    preventive:
+      "Đưa van vào danh mục bảo trì phòng ngừa 3 tháng/lần; cảnh báo hạn hiệu chuẩn tự động.",
     owner: "Phòng Thiết bị",
     due: "30/06/2026",
     progress: 60,

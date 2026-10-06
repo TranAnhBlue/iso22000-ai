@@ -26,6 +26,19 @@ class TokenResponse(BaseModel):
     role: str
     department: Optional[str] = None
     phone: Optional[str] = None
+    email: Optional[str] = None
+
+
+class UserProfileUpdateRequest(BaseModel):
+    """Các trường người dùng được phép tự cập nhật cho chính mình.
+
+    Vai trò và phòng ban thuộc phạm vi phân quyền của quản trị viên, không nhận
+    từ API hồ sơ cá nhân để tránh tự ý nâng quyền hoặc chuyển phòng ban.
+    """
+
+    full_name: str = Field(..., min_length=2, max_length=100)
+    email: Optional[str] = Field(default=None, max_length=100)
+    phone: Optional[str] = Field(default=None, max_length=20)
 
 class DepartmentOption(BaseModel):
     role_code: str

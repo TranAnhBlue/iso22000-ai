@@ -30,11 +30,10 @@ interface WorkflowGuideModalProps {
   onClose: () => void;
 }
 
-export const WorkflowGuideModal: React.FC<WorkflowGuideModalProps> = ({
-  isOpen,
-  onClose,
-}) => {
-  const [activeTab, setActiveTab] = useState<"PRINCIPLES" | "NODES" | "STEPS" | "HACCP_RULES">("PRINCIPLES");
+export const WorkflowGuideModal: React.FC<WorkflowGuideModalProps> = ({ isOpen, onClose }) => {
+  const [activeTab, setActiveTab] = useState<"PRINCIPLES" | "NODES" | "STEPS" | "HACCP_RULES">(
+    "PRINCIPLES",
+  );
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -53,7 +52,8 @@ export const WorkflowGuideModal: React.FC<WorkflowGuideModalProps> = ({
                 </span>
               </DialogTitle>
               <DialogDescription className="text-xs text-slate-500 mt-1">
-                Nguyên tắc xây dựng lưu đồ công nghệ sản xuất, nhận diện điểm kiểm soát tới hạn và thiết lập luồng phê duyệt đa cấp.
+                Nguyên tắc xây dựng lưu đồ công nghệ sản xuất, nhận diện điểm kiểm soát tới hạn và
+                thiết lập luồng phê duyệt đa cấp.
               </DialogDescription>
             </div>
           </div>
@@ -116,7 +116,10 @@ export const WorkflowGuideModal: React.FC<WorkflowGuideModalProps> = ({
                 Mục Đích Của Lưu Đồ Công Đoạn & Quy Trình
               </h4>
               <p>
-                Lưu đồ quy trình là bức tranh tổng thể thể hiện dòng chảy liên tục của nguyên vật liệu, phụ gia, bán thành phẩm và sản phẩm cuối cùng. Lưu đồ là căn cứ bắt buộc để Đội An toàn thực phẩm tiến hành phân tích mối nguy, xác định các điểm kiểm soát tới hạn (CCP) và các chương trình tiên quyết điều hành (oPRP).
+                Lưu đồ quy trình là bức tranh tổng thể thể hiện dòng chảy liên tục của nguyên vật
+                liệu, phụ gia, bán thành phẩm và sản phẩm cuối cùng. Lưu đồ là căn cứ bắt buộc để
+                Đội An toàn thực phẩm tiến hành phân tích mối nguy, xác định các điểm kiểm soát tới
+                hạn (CCP) và các chương trình tiên quyết điều hành (oPRP).
               </p>
             </div>
 
@@ -127,7 +130,9 @@ export const WorkflowGuideModal: React.FC<WorkflowGuideModalProps> = ({
                   Tính Tuần Tự & Liên Tục
                 </div>
                 <p className="text-slate-600 text-[11px] leading-5">
-                  Lưu đồ phải bắt đầu từ khâu <b>Tiếp nhận nguyên vật liệu</b> và kết thúc ở khâu <b>Xuất kho thành phẩm / Giao hàng</b>. Không bỏ sót bất kỳ bước trung gian nào như chờ lắng, rã đông hay lưu bồn tạm.
+                  Lưu đồ phải bắt đầu từ khâu <b>Tiếp nhận nguyên vật liệu</b> và kết thúc ở khâu{" "}
+                  <b>Xuất kho thành phẩm / Giao hàng</b>. Không bỏ sót bất kỳ bước trung gian nào
+                  như chờ lắng, rã đông hay lưu bồn tạm.
                 </p>
               </div>
 
@@ -137,7 +142,9 @@ export const WorkflowGuideModal: React.FC<WorkflowGuideModalProps> = ({
                   Đầu Vào, Đầu Ra & Rẽ Nhánh
                 </div>
                 <p className="text-slate-600 text-[11px] leading-5">
-                  Tại các điểm phân loại hoặc kiểm nghiệm chất lượng, cần thể hiện rõ nhánh xử lý <b>ĐẠT</b> (chuyển tiếp công đoạn sau) và nhánh <b>KHÔNG ĐẠT</b> (cô lập, tái chế hoặc chuyển sang tiêu hủy).
+                  Tại các điểm phân loại hoặc kiểm nghiệm chất lượng, cần thể hiện rõ nhánh xử lý{" "}
+                  <b>ĐẠT</b> (chuyển tiếp công đoạn sau) và nhánh <b>KHÔNG ĐẠT</b> (cô lập, tái chế
+                  hoặc chuyển sang tiêu hủy).
                 </p>
               </div>
 
@@ -147,7 +154,9 @@ export const WorkflowGuideModal: React.FC<WorkflowGuideModalProps> = ({
                   Đánh Dấu Điểm Tới Hạn (CCP)
                 </div>
                 <p className="text-slate-600 text-[11px] leading-5">
-                  Mọi công đoạn được xác định là CCP (như gia nhiệt, tiệt trùng, rà kim loại, làm lạnh sâu) phải được đánh dấu nổi bật với mã hiệu (VD: CCP1, CCP2) và kèm theo yêu cầu kỹ thuật giám sát.
+                  Mọi công đoạn được xác định là CCP (như gia nhiệt, tiệt trùng, rà kim loại, làm
+                  lạnh sâu) phải được đánh dấu nổi bật với mã hiệu (VD: CCP1, CCP2) và kèm theo yêu
+                  cầu kỹ thuật giám sát.
                 </p>
               </div>
             </div>
@@ -171,7 +180,8 @@ export const WorkflowGuideModal: React.FC<WorkflowGuideModalProps> = ({
         {activeTab === "NODES" && (
           <div className="space-y-4 mt-4 text-xs text-slate-700">
             <p className="text-xs text-slate-600">
-              Trong Bộ thiết kế lưu đồ động, mỗi khối công đoạn (Node) được phân loại theo 4 vai trò chức năng:
+              Trong Bộ thiết kế lưu đồ động, mỗi khối công đoạn (Node) được phân loại theo 4 vai trò
+              chức năng:
             </p>
 
             <div className="space-y-3">
@@ -183,8 +193,12 @@ export const WorkflowGuideModal: React.FC<WorkflowGuideModalProps> = ({
                     Công Đoạn Sản Xuất (Process)
                   </span>
                   <div>
-                    <div className="font-bold text-emerald-950 text-xs">Các bước chế biến / gia công kỹ thuật</div>
-                    <div className="text-[11px] text-emerald-800">VD: Tiếp nhận nguyên liệu, Rửa sơ bộ, Cắt định hình, Phối trộn, Đóng gói...</div>
+                    <div className="font-bold text-emerald-950 text-xs">
+                      Các bước chế biến / gia công kỹ thuật
+                    </div>
+                    <div className="text-[11px] text-emerald-800">
+                      VD: Tiếp nhận nguyên liệu, Rửa sơ bộ, Cắt định hình, Phối trộn, Đóng gói...
+                    </div>
                   </div>
                 </div>
                 <span className="text-[11px] text-emerald-700 font-semibold bg-emerald-100 px-2.5 py-1 rounded-md border border-emerald-300">
@@ -200,8 +214,12 @@ export const WorkflowGuideModal: React.FC<WorkflowGuideModalProps> = ({
                     Điểm Rẽ Nhánh & Đánh Giá (Decision)
                   </span>
                   <div>
-                    <div className="font-bold text-amber-950 text-xs">Kiểm tra chỉ tiêu / Đạt hoặc Không đạt</div>
-                    <div className="text-[11px] text-amber-800">VD: Kiểm tra cảm quan đầu vào, đo độ ẩm bột, kiểm tra độ kín nắp bao bì...</div>
+                    <div className="font-bold text-amber-950 text-xs">
+                      Kiểm tra chỉ tiêu / Đạt hoặc Không đạt
+                    </div>
+                    <div className="text-[11px] text-amber-800">
+                      VD: Kiểm tra cảm quan đầu vào, đo độ ẩm bột, kiểm tra độ kín nắp bao bì...
+                    </div>
                   </div>
                 </div>
                 <span className="text-[11px] text-amber-700 font-semibold bg-amber-100 px-2.5 py-1 rounded-md border border-amber-300">
@@ -217,8 +235,13 @@ export const WorkflowGuideModal: React.FC<WorkflowGuideModalProps> = ({
                     Điểm Kiểm Soát Tới Hạn (CCP Check)
                   </span>
                   <div>
-                    <div className="font-bold text-rose-950 text-xs">Bước kiểm soát trọng yếu loại bỏ mối nguy ATTP</div>
-                    <div className="text-[11px] text-rose-800">VD: Thanh trùng sữa ≥ 85°C/15s, Dò kim loại đóng gói, Cấp đông nhanh ≤ -18°C...</div>
+                    <div className="font-bold text-rose-950 text-xs">
+                      Bước kiểm soát trọng yếu loại bỏ mối nguy ATTP
+                    </div>
+                    <div className="text-[11px] text-rose-800">
+                      VD: Thanh trùng sữa ≥ 85°C/15s, Dò kim loại đóng gói, Cấp đông nhanh ≤
+                      -18°C...
+                    </div>
                   </div>
                 </div>
                 <span className="text-[11px] text-rose-700 font-bold bg-rose-100 px-2.5 py-1 rounded-md border border-rose-300 animate-pulse">
@@ -234,8 +257,12 @@ export const WorkflowGuideModal: React.FC<WorkflowGuideModalProps> = ({
                     Bước Phê Duyệt (Approval)
                   </span>
                   <div>
-                    <div className="font-bold text-blue-950 text-xs">Chờ ký duyệt của Cán bộ phụ trách / Lãnh đạo</div>
-                    <div className="text-[11px] text-blue-800">VD: QA duyệt chứng nhận COA xuất kho, Trưởng ban ATTP ký biên bản đánh giá...</div>
+                    <div className="font-bold text-blue-950 text-xs">
+                      Chờ ký duyệt của Cán bộ phụ trách / Lãnh đạo
+                    </div>
+                    <div className="text-[11px] text-blue-800">
+                      VD: QA duyệt chứng nhận COA xuất kho, Trưởng ban ATTP ký biên bản đánh giá...
+                    </div>
                   </div>
                 </div>
                 <span className="text-[11px] text-blue-700 font-semibold bg-blue-100 px-2.5 py-1 rounded-md border border-blue-300">
@@ -261,7 +288,8 @@ export const WorkflowGuideModal: React.FC<WorkflowGuideModalProps> = ({
                 <div>
                   <div className="font-bold text-slate-900">Khai báo thông tin chung</div>
                   <div className="text-[11px] text-slate-600 mt-0.5">
-                    Nhập <b>Mã quy trình</b> (VD: <code>WF-HACCP-TEA</code>), <b>Tên quy trình</b>, chọn <b>Phân hệ</b> (HACCP, Đánh giá nội bộ, Mua hàng...) và <b>Phiên bản</b>.
+                    Nhập <b>Mã quy trình</b> (VD: <code>WF-HACCP-TEA</code>), <b>Tên quy trình</b>,
+                    chọn <b>Phân hệ</b> (HACCP, Đánh giá nội bộ, Mua hàng...) và <b>Phiên bản</b>.
                   </div>
                 </div>
               </div>
@@ -273,7 +301,9 @@ export const WorkflowGuideModal: React.FC<WorkflowGuideModalProps> = ({
                 <div>
                   <div className="font-bold text-slate-900">Thêm và sắp xếp các công đoạn</div>
                   <div className="text-[11px] text-slate-600 mt-0.5">
-                    Bấm nút <code>+ Thêm công đoạn</code>. Sử dụng các nút mũi tên lên/xuống ở Tab "Danh Sách Các Bước" để di chuyển vị trí các bước theo đúng trình tự công nghệ thực tế.
+                    Bấm nút <code>+ Thêm công đoạn</code>. Sử dụng các nút mũi tên lên/xuống ở Tab
+                    "Danh Sách Các Bước" để di chuyển vị trí các bước theo đúng trình tự công nghệ
+                    thực tế.
                   </div>
                 </div>
               </div>
@@ -283,13 +313,20 @@ export const WorkflowGuideModal: React.FC<WorkflowGuideModalProps> = ({
                   3
                 </span>
                 <div>
-                  <div className="font-bold text-slate-900">Cấu hình thuộc tính chi tiết cho từng bước</div>
+                  <div className="font-bold text-slate-900">
+                    Cấu hình thuộc tính chi tiết cho từng bước
+                  </div>
                   <div className="text-[11px] text-slate-600 mt-0.5">
-                    Bấm vào khối công đoạn cần cấu hình trên sơ đồ trực quan. Bảng bên phải sẽ mở ra cho phép:
+                    Bấm vào khối công đoạn cần cấu hình trên sơ đồ trực quan. Bảng bên phải sẽ mở ra
+                    cho phép:
                     <ul className="list-disc list-inside mt-1 space-y-0.5 text-slate-500">
                       <li>Đổi loại công đoạn (Process, Decision, CCP Check, Approval).</li>
-                      <li>Phân công <b>Phòng ban phụ trách</b> (Ban QLCL, Sản xuất, Thiết bị...).</li>
-                      <li>Ghi chú <b>Yêu cầu kỹ thuật / Giám sát</b> cụ thể.</li>
+                      <li>
+                        Phân công <b>Phòng ban phụ trách</b> (Ban QLCL, Sản xuất, Thiết bị...).
+                      </li>
+                      <li>
+                        Ghi chú <b>Yêu cầu kỹ thuật / Giám sát</b> cụ thể.
+                      </li>
                     </ul>
                   </div>
                 </div>
@@ -302,7 +339,9 @@ export const WorkflowGuideModal: React.FC<WorkflowGuideModalProps> = ({
                 <div>
                   <div className="font-bold text-slate-900">Đánh dấu và cài đặt ngưỡng CCP</div>
                   <div className="text-[11px] text-slate-600 mt-0.5">
-                    Nếu công đoạn là điểm kiểm soát tới hạn, tích chọn vào ô <b>Điểm Kiểm Soát Tới Hạn (CCP)</b>. Khối này sẽ tự động chuyển sang màu đỏ nổi bật và liên kết với phân hệ giám sát đo đạc.
+                    Nếu công đoạn là điểm kiểm soát tới hạn, tích chọn vào ô{" "}
+                    <b>Điểm Kiểm Soát Tới Hạn (CCP)</b>. Khối này sẽ tự động chuyển sang màu đỏ nổi
+                    bật và liên kết với phân hệ giám sát đo đạc.
                   </div>
                 </div>
               </div>
@@ -314,7 +353,8 @@ export const WorkflowGuideModal: React.FC<WorkflowGuideModalProps> = ({
                 <div>
                   <div className="font-bold text-slate-900">Lưu và ban hành quy trình</div>
                   <div className="text-[11px] text-slate-600 mt-0.5">
-                    Bấm <b>Lưu Quy Trình</b> ở góc trên bên phải. Hệ thống sẽ tự động đồng bộ sơ đồ vào thư viện quy trình động và hiển thị trên bảng lưu đồ của kế hoạch liên quan.
+                    Bấm <b>Lưu Quy Trình</b> ở góc trên bên phải. Hệ thống sẽ tự động đồng bộ sơ đồ
+                    vào thư viện quy trình động và hiển thị trên bảng lưu đồ của kế hoạch liên quan.
                   </div>
                 </div>
               </div>
@@ -331,7 +371,9 @@ export const WorkflowGuideModal: React.FC<WorkflowGuideModalProps> = ({
                 Xác Nhận Lưu Đồ Trên Thực Địa (On-site Confirmation)
               </h4>
               <p className="text-emerald-900 text-[11px]">
-                Theo chuẩn mực an toàn thực phẩm, Đội An toàn thực phẩm phải tiến hành thẩm tra thực tế tại hiện trường nhà máy trong suốt các giờ hoạt động để xác nhận tính chính xác của lưu đồ quy trình.
+                Theo chuẩn mực an toàn thực phẩm, Đội An toàn thực phẩm phải tiến hành thẩm tra thực
+                tế tại hiện trường nhà máy trong suốt các giờ hoạt động để xác nhận tính chính xác
+                của lưu đồ quy trình.
               </p>
             </div>
 
@@ -343,9 +385,12 @@ export const WorkflowGuideModal: React.FC<WorkflowGuideModalProps> = ({
               <div className="p-3 rounded-lg border border-slate-200 bg-slate-50 flex items-start gap-2.5">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
                 <div>
-                  <span className="font-bold text-slate-800">1. Đối chiếu đường đi nguyên liệu:</span>
+                  <span className="font-bold text-slate-800">
+                    1. Đối chiếu đường đi nguyên liệu:
+                  </span>
                   <span className="text-slate-600 text-[11px] ml-1">
-                    Kiểm tra đường đi của nguyên vật liệu có bị cắt ngang luồng phế thải hoặc luồng nhân viên không đảm bảo vệ sinh (nguy cơ nhiễm chéo).
+                    Kiểm tra đường đi của nguyên vật liệu có bị cắt ngang luồng phế thải hoặc luồng
+                    nhân viên không đảm bảo vệ sinh (nguy cơ nhiễm chéo).
                   </span>
                 </div>
               </div>
@@ -353,9 +398,12 @@ export const WorkflowGuideModal: React.FC<WorkflowGuideModalProps> = ({
               <div className="p-3 rounded-lg border border-slate-200 bg-slate-50 flex items-start gap-2.5">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
                 <div>
-                  <span className="font-bold text-slate-800">2. Kiểm tra thời gian chờ và nhiệt độ:</span>
+                  <span className="font-bold text-slate-800">
+                    2. Kiểm tra thời gian chờ và nhiệt độ:
+                  </span>
                   <span className="text-slate-600 text-[11px] ml-1">
-                    Đo đạc nhiệt độ thực tế tại từng công đoạn và thời gian chờ tối đa giữa các bước để đảm bảo vi sinh vật không thể sinh sôi phát triển.
+                    Đo đạc nhiệt độ thực tế tại từng công đoạn và thời gian chờ tối đa giữa các bước
+                    để đảm bảo vi sinh vật không thể sinh sôi phát triển.
                   </span>
                 </div>
               </div>
@@ -363,9 +411,12 @@ export const WorkflowGuideModal: React.FC<WorkflowGuideModalProps> = ({
               <div className="p-3 rounded-lg border border-slate-200 bg-slate-50 flex items-start gap-2.5">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
                 <div>
-                  <span className="font-bold text-slate-800">3. Rà soát điểm hồi lưu và tái chế (Rework):</span>
+                  <span className="font-bold text-slate-800">
+                    3. Rà soát điểm hồi lưu và tái chế (Rework):
+                  </span>
                   <span className="text-slate-600 text-[11px] ml-1">
-                    Nếu sản phẩm có tái chế hoặc phối trộn mẻ trước vào mẻ sau, phải thể hiện rõ nhánh hồi lưu và biện pháp kiểm soát dị ứng/chất lượng.
+                    Nếu sản phẩm có tái chế hoặc phối trộn mẻ trước vào mẻ sau, phải thể hiện rõ
+                    nhánh hồi lưu và biện pháp kiểm soát dị ứng/chất lượng.
                   </span>
                 </div>
               </div>
@@ -373,9 +424,12 @@ export const WorkflowGuideModal: React.FC<WorkflowGuideModalProps> = ({
               <div className="p-3 rounded-lg border border-slate-200 bg-slate-50 flex items-start gap-2.5">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
                 <div>
-                  <span className="font-bold text-slate-800">4. Biên bản xác nhận có chữ ký Đội ATTP:</span>
+                  <span className="font-bold text-slate-800">
+                    4. Biên bản xác nhận có chữ ký Đội ATTP:
+                  </span>
                   <span className="text-slate-600 text-[11px] ml-1">
-                    Biên bản họp thực địa xác nhận lưu đồ phải có chữ ký của đầy đủ các thành viên Đội ATTP (Quản đốc sản xuất, QA Lead, Kỹ thuật cơ điện).
+                    Biên bản họp thực địa xác nhận lưu đồ phải có chữ ký của đầy đủ các thành viên
+                    Đội ATTP (Quản đốc sản xuất, QA Lead, Kỹ thuật cơ điện).
                   </span>
                 </div>
               </div>

@@ -8,8 +8,14 @@
  * - BM05-KSTL: Kế hoạch & Báo cáo soát xét tài liệu định kỳ 3 năm
  */
 
-import { DocumentItem, DocumentChangeRequest, DocumentDistribution, ExternalDocument, PeriodicReviewItem, RecordRetention } from "@/routes/documents";
-
+import {
+  DocumentItem,
+  DocumentChangeRequest,
+  DocumentDistribution,
+  ExternalDocument,
+  PeriodicReviewItem,
+  RecordRetention,
+} from "@/routes/documents";
 
 const PRINT_CSS = `
   <style>
@@ -42,9 +48,13 @@ const PRINT_CSS = `
  */
 export function generateChangeRequestHtml(cr: DocumentChangeRequest): string {
   const changeTypeLabel =
-    cr.change_type === "NEW" ? "Soạn thảo mới" :
-    cr.change_type === "REVISION" ? "Sửa đổi / Bổ sung" :
-    cr.change_type === "OBSOLETE" ? "Ngưng áp dụng (Hủy bỏ)" : "Yêu cầu khác";
+    cr.change_type === "NEW"
+      ? "Soạn thảo mới"
+      : cr.change_type === "REVISION"
+        ? "Sửa đổi / Bổ sung"
+        : cr.change_type === "OBSOLETE"
+          ? "Ngưng áp dụng (Hủy bỏ)"
+          : "Yêu cầu khác";
 
   return `
     <!DOCTYPE html>
@@ -170,7 +180,10 @@ export function generateChangeRequestHtml(cr: DocumentChangeRequest): string {
  * 2. In Thông Báo Thay Đổi & Sổ Phân Phối Tài Liệu (BM02-KSTL)
  */
 export function generateDistributionNoticeHtml(dist: DocumentDistribution): string {
-  const methodText = dist.distribution_method === "PORTAL" ? "Bản điện tử (Phần mềm Portal)" : "Bản in giấy có dấu kiểm soát (Hardcopy)";
+  const methodText =
+    dist.distribution_method === "PORTAL"
+      ? "Bản điện tử (Phần mềm Portal)"
+      : "Bản in giấy có dấu kiểm soát (Hardcopy)";
 
   return `
     <!DOCTYPE html>
@@ -285,18 +298,25 @@ export function generateDistributionNoticeHtml(dist: DocumentDistribution): stri
  * 3. In Danh Mục Tài Liệu Nguồn Gốc Bên Ngoài (BM04-KSTL)
  */
 export function generateExternalDocsHtml(docs: ExternalDocument[]): string {
-  const rows = docs.map((d, index) => {
-    const categoryName =
-      d.category === "LAW_REGULATION" ? "Văn bản QPPL / Nghị định" :
-      d.category === "STANDARD_TCVN_ISO" ? "Tiêu chuẩn ISO / TCVN / Codex" :
-      d.category === "TECHNICAL_SPEC_CUSTOMER" ? "Tiêu chuẩn Kỹ thuật / Khách hàng" : "Hướng dẫn ngành";
+  const rows = docs
+    .map((d, index) => {
+      const categoryName =
+        d.category === "LAW_REGULATION"
+          ? "Văn bản QPPL / Nghị định"
+          : d.category === "STANDARD_TCVN_ISO"
+            ? "Tiêu chuẩn ISO / TCVN / Codex"
+            : d.category === "TECHNICAL_SPEC_CUSTOMER"
+              ? "Tiêu chuẩn Kỹ thuật / Khách hàng"
+              : "Hướng dẫn ngành";
 
-    const statusBadge =
-      d.status === "EFFECTIVE" ? "<span style='color: green; font-weight: bold;'>Còn hiệu lực</span>" :
-      d.status === "SUPERSEDED" ? `<span style='color: red; font-weight: bold;'>Đã thay thế (bởi ${d.superseded_by || "VB mới"})</span>` :
-      "<span style='color: gray; font-weight: bold;'>Hết hiệu lực</span>";
+      const statusBadge =
+        d.status === "EFFECTIVE"
+          ? "<span style='color: green; font-weight: bold;'>Còn hiệu lực</span>"
+          : d.status === "SUPERSEDED"
+            ? `<span style='color: red; font-weight: bold;'>Đã thay thế (bởi ${d.superseded_by || "VB mới"})</span>`
+            : "<span style='color: gray; font-weight: bold;'>Hết hiệu lực</span>";
 
-    return `
+      return `
       <tr>
         <td style="text-align: center;">${index + 1}</td>
         <td style="font-family: monospace; font-weight: bold;">${d.doc_code}</td>
@@ -309,7 +329,8 @@ export function generateExternalDocsHtml(docs: ExternalDocument[]): string {
         <td style="text-align: center;">${d.last_checked_date || "---"}</td>
       </tr>
     `;
-  }).join("");
+    })
+    .join("");
 
   return `
     <!DOCTYPE html>
@@ -390,13 +411,16 @@ export const generateExternalDocMasterListHtml = generateExternalDocsHtml;
  */
 
 export function generatePeriodicReviewsHtml(reviews: PeriodicReviewItem[]): string {
-  const rows = reviews.map((r, index) => {
-    const statusText =
-      r.review_status === "OVERDUE" ? "<span style='color: red; font-weight: bold;'>QUÁ HẠN SOÁT XÉT</span>" :
-      r.review_status === "DUE_SOON" ? `<span style='color: orange; font-weight: bold;'>SẮP ĐẾN HẠN (Còn ${r.days_remaining} ngày)</span>` :
-      "<span style='color: green; font-weight: bold;'>CÒN HIỆU LỰC</span>";
+  const rows = reviews
+    .map((r, index) => {
+      const statusText =
+        r.review_status === "OVERDUE"
+          ? "<span style='color: red; font-weight: bold;'>QUÁ HẠN SOÁT XÉT</span>"
+          : r.review_status === "DUE_SOON"
+            ? `<span style='color: orange; font-weight: bold;'>SẮP ĐẾN HẠN (Còn ${r.days_remaining} ngày)</span>`
+            : "<span style='color: green; font-weight: bold;'>CÒN HIỆU LỰC</span>";
 
-    return `
+      return `
       <tr>
         <td style="text-align: center;">${index + 1}</td>
         <td style="font-family: monospace; font-weight: bold;">${r.doc_code}</td>
@@ -410,7 +434,8 @@ export function generatePeriodicReviewsHtml(reviews: PeriodicReviewItem[]): stri
         <td style="text-align: center;">${statusText}</td>
       </tr>
     `;
-  }).join("");
+    })
+    .join("");
 
   return `
     <!DOCTYPE html>
@@ -501,7 +526,9 @@ export const generatePeriodicReviewHtml = generatePeriodicReviewsHtml;
  */
 
 export function generateMasterDocumentListHtml(docs: DocumentItem[]): string {
-  const rows = docs.map((d, index) => `
+  const rows = docs
+    .map(
+      (d, index) => `
     <tr>
       <td style="text-align: center;">${index + 1}</td>
       <td style="font-family: monospace; font-weight: bold;">${d.doc_code}</td>
@@ -514,7 +541,9 @@ export function generateMasterDocumentListHtml(docs: DocumentItem[]): string {
       <td style="text-align: center;">${d.security_level || "INTERNAL"}</td>
       <td style="text-align: center;">${d.review_due_date || "---"}</td>
     </tr>
-  `).join("");
+  `,
+    )
+    .join("");
 
   return `
     <!DOCTYPE html>
@@ -593,7 +622,9 @@ export function generateMasterDocumentListHtml(docs: DocumentItem[]): string {
  * 6. In Danh Mục Hồ Sơ Lưu Trữ (BM01-KSHS An Giang - QT-KSHS)
  */
 export function generateRecordRetentionMasterListHtml(records: RecordRetention[]): string {
-  const rows = records.map((r, idx) => `
+  const rows = records
+    .map(
+      (r, idx) => `
     <tr>
       <td style="text-align: center;">${idx + 1}</td>
       <td style="font-family: monospace; font-weight: bold;">${r.record_code}</td>
@@ -605,19 +636,26 @@ export function generateRecordRetentionMasterListHtml(records: RecordRetention[]
       <td style="font-size: 11px;">${r.disposal_method || "Máy cắt vụn & Xóa số"}</td>
       <td style="text-align: center;">
         <span class="badge" style="background-color: ${
-          r.status === "RETAINED" ? "#ecfdf5; color: #047857; border-color: #a7f3d0;" :
-          r.status === "READY_FOR_DISPOSAL" ? "#fffbeb; color: #b45309; border-color: #fde68a;" :
-          "#eff6ff; color: #1d4ed8; border-color: #bfdbfe;"
+          r.status === "RETAINED"
+            ? "#ecfdf5; color: #047857; border-color: #a7f3d0;"
+            : r.status === "READY_FOR_DISPOSAL"
+              ? "#fffbeb; color: #b45309; border-color: #fde68a;"
+              : "#eff6ff; color: #1d4ed8; border-color: #bfdbfe;"
         }">
           ${
-            r.status === "RETAINED" ? "Đang lưu trữ" :
-            r.status === "READY_FOR_DISPOSAL" ? "Chờ tiêu hủy" : "Đã tiêu hủy"
+            r.status === "RETAINED"
+              ? "Đang lưu trữ"
+              : r.status === "READY_FOR_DISPOSAL"
+                ? "Chờ tiêu hủy"
+                : "Đã tiêu hủy"
           }
         </span>
       </td>
       <td style="font-size: 11px;">${r.notes || (r.disposal_minutes_code ? `BB: ${r.disposal_minutes_code}` : "")}</td>
     </tr>
-  `).join("");
+  `,
+    )
+    .join("");
 
   return `
     <!DOCTYPE html>
@@ -696,4 +734,3 @@ export function generateRecordRetentionMasterListHtml(records: RecordRetention[]
     </html>
   `;
 }
-

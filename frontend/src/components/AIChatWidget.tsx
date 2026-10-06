@@ -66,7 +66,11 @@ export function AIChatWidget() {
     return !isNaN(val) && val >= 32 && val <= 800 ? val : 96;
   });
 
-  const dragRef = useRef<{ startY: number; startPos: number; moved: boolean }>({ startY: 0, startPos: 96, moved: false });
+  const dragRef = useRef<{ startY: number; startPos: number; moved: boolean }>({
+    startY: 0,
+    startPos: 96,
+    moved: false,
+  });
   const isDraggingRef = useRef(false);
 
   const [input, setInput] = useState("");
@@ -142,9 +146,12 @@ export function AIChatWidget() {
     setIsDocked((prev) => {
       const next = !prev;
       localStorage.setItem("wcert.ai_docked", String(next));
-      toast.success(next ? "Đã neo trợ lý AI sát mép phải" : "Đã chuyển sang nút nổi góc màn hình", {
-        duration: 2000,
-      });
+      toast.success(
+        next ? "Đã neo trợ lý AI sát mép phải" : "Đã chuyển sang nút nổi góc màn hình",
+        {
+          duration: 2000,
+        },
+      );
       return next;
     });
   };
@@ -269,7 +276,9 @@ export function AIChatWidget() {
           <div className="relative flex items-center justify-end">
             {/* Quick controls on hover: Dock to edge, Hide */}
             <div className="absolute -top-7 right-0 hidden group-hover:flex items-center gap-1.5 bg-slate-900/90 text-white rounded-lg px-2 py-0.5 text-[10px] shadow-lg backdrop-blur-sm animate-in fade-in slide-in-from-bottom-1 z-50 whitespace-nowrap">
-              <span className="text-slate-400 text-[9px] border-r border-slate-700 pr-1">Kéo để dời</span>
+              <span className="text-slate-400 text-[9px] border-r border-slate-700 pr-1">
+                Kéo để dời
+              </span>
               <button
                 type="button"
                 onClick={toggleDock}
@@ -310,10 +319,7 @@ export function AIChatWidget() {
 
       {/* 2. TRẠNG THÁI RÚT GỌN / THU NHỎ DƯỚI GÓC MÀN HÌNH (MINIMIZED) */}
       {widgetState === "minimized" && (
-        <div
-          style={{ bottom: `${posY}px` }}
-          className="fixed right-4 sm:right-6 z-40 font-sans"
-        >
+        <div style={{ bottom: `${posY}px` }} className="fixed right-4 sm:right-6 z-40 font-sans">
           <div className="flex items-center gap-2 rounded-full border border-primary/20 bg-background/95 px-3.5 py-2 shadow-xl backdrop-blur-md transition-all duration-300 hover:border-primary/40 animate-in fade-in slide-in-from-bottom-3">
             <button
               onClick={() => setWidgetState("open")}
@@ -385,10 +391,16 @@ export function AIChatWidget() {
               <div className="flex items-center gap-1">
                 <button
                   onClick={toggleDock}
-                  title={isDocked ? "Chuyển sang nút nổi góc màn hình" : "Neo nút sát mép phải màn hình để không che nút trong bảng"}
+                  title={
+                    isDocked
+                      ? "Chuyển sang nút nổi góc màn hình"
+                      : "Neo nút sát mép phải màn hình để không che nút trong bảng"
+                  }
                   className="rounded-lg p-1.5 text-white/80 hover:bg-white/20 hover:text-white transition"
                 >
-                  <Pin className={`h-3.5 w-3.5 ${isDocked ? "text-emerald-300 fill-emerald-300" : ""}`} />
+                  <Pin
+                    className={`h-3.5 w-3.5 ${isDocked ? "text-emerald-300 fill-emerald-300" : ""}`}
+                  />
                 </button>
 
                 <button
@@ -408,9 +420,7 @@ export function AIChatWidget() {
                 </button>
 
                 <button
-                  onClick={() =>
-                    setWidgetState(widgetState === "expanded" ? "open" : "expanded")
-                  }
+                  onClick={() => setWidgetState(widgetState === "expanded" ? "open" : "expanded")}
                   title={widgetState === "expanded" ? "Thu về kích thước chuẩn" : "Phóng to cửa sổ"}
                   className="rounded-lg p-1.5 text-white/80 hover:bg-white/20 hover:text-white transition"
                 >
@@ -431,137 +441,137 @@ export function AIChatWidget() {
               </div>
             </div>
 
-          {/* Vùng Tin nhắn Cuộn */}
-          <div className="flex-1 space-y-3 overflow-y-auto bg-muted/20 p-3.5 text-xs sm:p-4">
-            {msgs.map((m) => (
-              <div
-                key={m.id}
-                className={`flex gap-2.5 ${m.role === "user" ? "justify-end" : "justify-start"}`}
-              >
-                {m.role === "ai" && (
-                  <div className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-primary/10 text-primary border border-primary/20">
-                    <Bot className="h-4 w-4" />
-                  </div>
-                )}
-
+            {/* Vùng Tin nhắn Cuộn */}
+            <div className="flex-1 space-y-3 overflow-y-auto bg-muted/20 p-3.5 text-xs sm:p-4">
+              {msgs.map((m) => (
                 <div
-                  className={`group relative max-w-[85%] rounded-2xl px-3.5 py-2.5 shadow-sm leading-relaxed ${
-                    m.role === "user"
-                      ? "bg-primary text-primary-foreground rounded-tr-sm"
-                      : "bg-card border border-border/80 text-foreground rounded-tl-sm"
-                  }`}
+                  key={m.id}
+                  className={`flex gap-2.5 ${m.role === "user" ? "justify-end" : "justify-start"}`}
                 >
-                  <div className="whitespace-pre-wrap">{m.text}</div>
+                  {m.role === "ai" && (
+                    <div className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-primary/10 text-primary border border-primary/20">
+                      <Bot className="h-4 w-4" />
+                    </div>
+                  )}
+
                   <div
-                    className={`mt-1 flex items-center justify-between text-[10px] ${
-                      m.role === "user" ? "text-primary-foreground/75" : "text-muted-foreground"
+                    className={`group relative max-w-[85%] rounded-2xl px-3.5 py-2.5 shadow-sm leading-relaxed ${
+                      m.role === "user"
+                        ? "bg-primary text-primary-foreground rounded-tr-sm"
+                        : "bg-card border border-border/80 text-foreground rounded-tl-sm"
                     }`}
                   >
-                    <span>{m.timestamp}</span>
-                    {m.role === "ai" && (
-                      <button
-                        onClick={() => handleCopy(m.id, m.text)}
-                        title="Copy phản hồi"
-                        className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground"
-                      >
-                        {copiedId === m.id ? (
-                          <Check className="h-3 w-3 text-emerald-600" />
-                        ) : (
-                          <Copy className="h-3 w-3" />
-                        )}
-                      </button>
-                    )}
+                    <div className="whitespace-pre-wrap">{m.text}</div>
+                    <div
+                      className={`mt-1 flex items-center justify-between text-[10px] ${
+                        m.role === "user" ? "text-primary-foreground/75" : "text-muted-foreground"
+                      }`}
+                    >
+                      <span>{m.timestamp}</span>
+                      {m.role === "ai" && (
+                        <button
+                          onClick={() => handleCopy(m.id, m.text)}
+                          title="Copy phản hồi"
+                          className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground"
+                        >
+                          {copiedId === m.id ? (
+                            <Check className="h-3 w-3 text-emerald-600" />
+                          ) : (
+                            <Copy className="h-3 w-3" />
+                          )}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {m.role === "user" && (
+                    <div className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-muted border text-muted-foreground">
+                      <User className="h-4 w-4" />
+                    </div>
+                  )}
+                </div>
+              ))}
+
+              {/* Hiệu ứng gõ chữ (AI Typing Indicator) */}
+              {isTyping && (
+                <div className="flex items-center gap-2">
+                  <div className="grid h-7 w-7 place-items-center rounded-full bg-primary/10 text-primary border border-primary/20">
+                    <Bot className="h-4 w-4" />
+                  </div>
+                  <div className="rounded-2xl rounded-tl-sm border bg-card px-4 py-2 text-xs text-muted-foreground shadow-sm">
+                    <div className="flex items-center gap-1">
+                      <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-primary" />
+                      <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-primary [animation-delay:0.2s]" />
+                      <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-primary [animation-delay:0.4s]" />
+                      <span className="ml-1 text-[11px]">AI đang phân tích...</span>
+                    </div>
                   </div>
                 </div>
+              )}
 
-                {m.role === "user" && (
-                  <div className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-muted border text-muted-foreground">
-                    <User className="h-4 w-4" />
+              {/* Gợi ý câu hỏi khi hội thoại mới */}
+              {msgs.length <= 1 && (
+                <div className="space-y-2 pt-2">
+                  <div className="flex items-center gap-1 text-[11px] font-semibold text-muted-foreground">
+                    <Sparkles className="h-3 w-3 text-primary" />
+                    <span>Gợi ý chủ đề chuyên sâu:</span>
                   </div>
-                )}
-              </div>
-            ))}
-
-            {/* Hiệu ứng gõ chữ (AI Typing Indicator) */}
-            {isTyping && (
-              <div className="flex items-center gap-2">
-                <div className="grid h-7 w-7 place-items-center rounded-full bg-primary/10 text-primary border border-primary/20">
-                  <Bot className="h-4 w-4" />
-                </div>
-                <div className="rounded-2xl rounded-tl-sm border bg-card px-4 py-2 text-xs text-muted-foreground shadow-sm">
-                  <div className="flex items-center gap-1">
-                    <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-primary" />
-                    <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-primary [animation-delay:0.2s]" />
-                    <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-primary [animation-delay:0.4s]" />
-                    <span className="ml-1 text-[11px]">AI đang phân tích...</span>
+                  <div className="grid gap-1.5 sm:grid-cols-2">
+                    {SUGGESTIONS.map((s) => {
+                      const Icon = s.icon;
+                      return (
+                        <button
+                          key={s.label}
+                          onClick={() => send(s.query)}
+                          className="flex items-center gap-2 rounded-xl border border-border/80 bg-card p-2 text-left text-[11px] font-medium transition-all hover:border-primary/50 hover:bg-primary/5 hover:shadow-sm"
+                        >
+                          <div className="rounded-lg bg-primary/10 p-1.5 text-primary shrink-0">
+                            <Icon className="h-3.5 w-3.5" />
+                          </div>
+                          <span className="line-clamp-2 text-foreground/90">{s.label}</span>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            {/* Gợi ý câu hỏi khi hội thoại mới */}
-            {msgs.length <= 1 && (
-              <div className="space-y-2 pt-2">
-                <div className="flex items-center gap-1 text-[11px] font-semibold text-muted-foreground">
-                  <Sparkles className="h-3 w-3 text-primary" />
-                  <span>Gợi ý chủ đề chuyên sâu:</span>
-                </div>
-                <div className="grid gap-1.5 sm:grid-cols-2">
-                  {SUGGESTIONS.map((s) => {
-                    const Icon = s.icon;
-                    return (
-                      <button
-                        key={s.label}
-                        onClick={() => send(s.query)}
-                        className="flex items-center gap-2 rounded-xl border border-border/80 bg-card p-2 text-left text-[11px] font-medium transition-all hover:border-primary/50 hover:bg-primary/5 hover:shadow-sm"
-                      >
-                        <div className="rounded-lg bg-primary/10 p-1.5 text-primary shrink-0">
-                          <Icon className="h-3.5 w-3.5" />
-                        </div>
-                        <span className="line-clamp-2 text-foreground/90">{s.label}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
+              <div ref={messagesEndRef} />
+            </div>
 
-            <div ref={messagesEndRef} />
-          </div>
-
-          {/* Vùng Nhập Tin Nhắn */}
-          <div className="border-t bg-card/90 p-2.5 sm:p-3">
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                send();
-              }}
-              className="flex items-center gap-2"
-            >
-              <input
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="Hỏi AI về SOP, CCP, CAPA, ISO 22000..."
-                className="flex-1 rounded-xl border border-input bg-background px-3 py-2 text-xs outline-none transition focus:border-primary focus:ring-1 focus:ring-primary"
-              />
-              <button
-                type="submit"
-                disabled={!input.trim() || isTyping}
-                aria-label="Gửi tin nhắn"
-                className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground shadow-sm transition hover:opacity-90 active:scale-95 disabled:opacity-50"
+            {/* Vùng Nhập Tin Nhắn */}
+            <div className="border-t bg-card/90 p-2.5 sm:p-3">
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  send();
+                }}
+                className="flex items-center gap-2"
               >
-                <Send className="h-4 w-4" />
-              </button>
-            </form>
-            <div className="mt-1.5 text-center text-[10px] text-muted-foreground">
-              Nhấn <b>Enter</b> để gửi · AI hỗ trợ tra cứu tiêu chuẩn ISO 22000:2018
+                <input
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  placeholder="Hỏi AI về SOP, CCP, CAPA, ISO 22000..."
+                  className="flex-1 rounded-xl border border-input bg-background px-3 py-2 text-xs outline-none transition focus:border-primary focus:ring-1 focus:ring-primary"
+                />
+                <button
+                  type="submit"
+                  disabled={!input.trim() || isTyping}
+                  aria-label="Gửi tin nhắn"
+                  className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground shadow-sm transition hover:opacity-90 active:scale-95 disabled:opacity-50"
+                >
+                  <Send className="h-4 w-4" />
+                </button>
+              </form>
+              <div className="mt-1.5 text-center text-[10px] text-muted-foreground">
+                Nhấn <b>Enter</b> để gửi · AI hỗ trợ tra cứu tiêu chuẩn ISO 22000:2018
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    )}
-  </>
-);
+      )}
+    </>
+  );
 }
 
 function aiMock(q: string): string {
@@ -580,7 +590,12 @@ function aiMock(q: string): string {
 5. **Hồ sơ lưu trữ:** Biểu mẫu BM-IQC-01, Nhật ký lưu kho (tối thiểu 24 tháng).`;
   }
 
-  if (k.includes("ccp") || k.includes("mối nguy") || k.includes("gia nhiệt") || k.includes("tiệt trùng")) {
+  if (
+    k.includes("ccp") ||
+    k.includes("mối nguy") ||
+    k.includes("gia nhiệt") ||
+    k.includes("tiệt trùng")
+  ) {
     return `🛡️ **PHÂN TÍCH CCP CÔNG ĐOẠN GIA NHIỆT / THANH TRÙNG (ISO 22000 - ĐIỀU KHOẢN 8.5.4)**
 
 • **Mối nguy xác định:** Vi sinh vật gây bệnh sống sót (Salmonella, Listeria monocytogenes, E. coli O157:H7).
@@ -595,7 +610,12 @@ function aiMock(q: string): string {
   - Cô lập toàn bộ sản phẩm chế biến trong 15 phút gần nhất để xử lý lại.`;
   }
 
-  if (k.includes("capa") || k.includes("khắc phục") || k.includes("lỗi") || k.includes("không phù hợp")) {
+  if (
+    k.includes("capa") ||
+    k.includes("khắc phục") ||
+    k.includes("lỗi") ||
+    k.includes("không phù hợp")
+  ) {
     return `⚙️ **QUY TRÌNH HÀNH ĐỘNG KHẮC PHỤC & PHÒNG NGỪA (CAPA - MỤC 8.9 & 10.2)**
 
 1. **Khắc phục tức thời:** Cô lập lô sản phẩm không phù hợp, dán nhãn niêm phong, ngăn chặn phân phối ra thị trường.
@@ -608,7 +628,12 @@ function aiMock(q: string): string {
 4. **Thẩm tra hiệu lực sau 30 ngày:** Trưởng ban ATTP đánh giá lại tần suất sự cố tương tự.`;
   }
 
-  if (k.includes("báo cáo") || k.includes("đánh giá nội bộ") || k.includes("checklist") || k.includes("9.2")) {
+  if (
+    k.includes("báo cáo") ||
+    k.includes("đánh giá nội bộ") ||
+    k.includes("checklist") ||
+    k.includes("9.2")
+  ) {
     return `📊 **CHECKLIST ĐÁNH GIÁ NỘI BỘ HỆ THỐNG FSMS (ISO 22000 - ĐIỀU KHOẢN 9.2)**
 
 ✅ **Điều khoản 4 & 5:** Bối cảnh tổ chức & Cam kết của Ban lãnh đạo về ATTP.

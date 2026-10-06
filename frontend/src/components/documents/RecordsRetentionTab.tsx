@@ -72,15 +72,21 @@ export function RecordsRetentionTab({
 
   // Disposal modal state
   const [disposalDate, setDisposalDate] = useState(new Date().toISOString().split("T")[0]);
-  const [disposalCouncil, setDisposalCouncil] = useState("Hội đồng gồm: Đại diện QA, Quản đốc, Hành chính");
-  const [disposalMinutesCode, setDisposalMinutesCode] = useState(`BBTH-${new Date().getFullYear()}-01`);
+  const [disposalCouncil, setDisposalCouncil] = useState(
+    "Hội đồng gồm: Đại diện QA, Quản đốc, Hành chính",
+  );
+  const [disposalMinutesCode, setDisposalMinutesCode] = useState(
+    `BBTH-${new Date().getFullYear()}-01`,
+  );
   const [confirmExpired, setConfirmExpired] = useState(false);
 
   // KPIs
   const stats = useMemo(() => {
     const total = retentionRecords.length;
     const retained = retentionRecords.filter((r) => r.status === "RETAINED").length;
-    const readyForDisposal = retentionRecords.filter((r) => r.status === "READY_FOR_DISPOSAL").length;
+    const readyForDisposal = retentionRecords.filter(
+      (r) => r.status === "READY_FOR_DISPOSAL",
+    ).length;
     const disposed = retentionRecords.filter((r) => r.status === "DISPOSED").length;
     return { total, retained, readyForDisposal, disposed };
   }, [retentionRecords]);
@@ -163,7 +169,9 @@ export function RecordsRetentionTab({
     e.preventDefault();
     if (!disposingRecord) return;
     if (disposingRecord.status !== "READY_FOR_DISPOSAL" && !confirmExpired) {
-      toast.error("Vui lòng tích chọn xác nhận hồ sơ đã hết hạn bảo quản hoặc có quyết định tiêu hủy (BM02-KSHS).");
+      toast.error(
+        "Vui lòng tích chọn xác nhận hồ sơ đã hết hạn bảo quản hoặc có quyết định tiêu hủy (BM02-KSHS).",
+      );
       return;
     }
     if (!disposalMinutesCode.trim() || !disposalCouncil.trim()) {
@@ -188,7 +196,12 @@ export function RecordsRetentionTab({
 
   // Chuyển hồ sơ sang Chờ tiêu hủy (BM02-KSHS)
   const handleMarkReadyForDisposal = async (rec: RecordRetention) => {
-    if (!confirm(`Lập đề xuất chuyển hồ sơ "${rec.record_code} - ${rec.record_name}" sang trạng thái Chờ tiêu hủy (BM02-KSHS)?`)) return;
+    if (
+      !confirm(
+        `Lập đề xuất chuyển hồ sơ "${rec.record_code} - ${rec.record_name}" sang trạng thái Chờ tiêu hủy (BM02-KSHS)?`,
+      )
+    )
+      return;
     try {
       await api.put(`/documents/retention/${rec.retention_id}`, {
         status: "READY_FOR_DISPOSAL",
@@ -202,7 +215,12 @@ export function RecordsRetentionTab({
 
   // Hủy theo dõi hồ sơ (Soft-delete lưu vết)
   const handleDelete = async (id: string, code: string) => {
-    if (!confirm(`Bạn có chắc chắn muốn hủy theo dõi hồ sơ ${code} khỏi danh mục lưu trữ? Hệ thống sẽ lưu vết hủy theo chuẩn ISO 22000.`)) return;
+    if (
+      !confirm(
+        `Bạn có chắc chắn muốn hủy theo dõi hồ sơ ${code} khỏi danh mục lưu trữ? Hệ thống sẽ lưu vết hủy theo chuẩn ISO 22000.`,
+      )
+    )
+      return;
     try {
       await api.delete(`/documents/retention/${id}`);
       toast.success(`Đã hủy theo dõi hồ sơ ${code} (Lưu vết thành công)`);
@@ -233,7 +251,8 @@ export function RecordsRetentionTab({
             </span>
           </div>
           <p className="mt-1 text-xs text-muted-foreground">
-            Quy định địa điểm, thời hạn bảo quản và hình thức tiêu hủy các bằng chứng thực thi hệ thống Quản lý An toàn thực phẩm (hồ sơ CCP, OPRP, kiểm tra xuất xưởng...).
+            Quy định địa điểm, thời hạn bảo quản và hình thức tiêu hủy các bằng chứng thực thi hệ
+            thống Quản lý An toàn thực phẩm (hồ sơ CCP, OPRP, kiểm tra xuất xưởng...).
           </p>
         </div>
 
@@ -273,28 +292,35 @@ export function RecordsRetentionTab({
         <div className="rounded-xl border bg-card p-3.5 shadow-sm">
           <div className="text-xs text-muted-foreground">Tổng số loại hồ sơ kiểm soát</div>
           <div className="mt-1.5 text-2xl font-bold text-foreground">{stats.total}</div>
-          <div className="text-[11px] text-muted-foreground">Biểu mẫu hồ sơ có quy định lưu trữ</div>
+          <div className="text-[11px] text-muted-foreground">
+            Biểu mẫu hồ sơ có quy định lưu trữ
+          </div>
         </div>
 
         <div className="rounded-xl border border-emerald-200 bg-emerald-500/5 p-3.5 shadow-sm">
-          <div className="text-xs font-medium text-emerald-700 dark:text-emerald-300">Đang trong thời hạn lưu trữ</div>
+          <div className="text-xs font-medium text-emerald-700 dark:text-emerald-300">
+            Đang trong thời hạn lưu trữ
+          </div>
           <div className="mt-1.5 text-2xl font-bold text-emerald-700">{stats.retained}</div>
           <div className="text-[11px] text-emerald-600/80">Đảm bảo truy xuất nguồn gốc</div>
         </div>
 
         <div className="rounded-xl border border-amber-200 bg-amber-500/5 p-3.5 shadow-sm">
-          <div className="text-xs font-medium text-amber-700 dark:text-amber-300">Sẵn sàng / Chờ tiêu hủy</div>
+          <div className="text-xs font-medium text-amber-700 dark:text-amber-300">
+            Sẵn sàng / Chờ tiêu hủy
+          </div>
           <div className="mt-1.5 text-2xl font-bold text-amber-700">{stats.readyForDisposal}</div>
           <div className="text-[11px] text-amber-600/80">Đã hết thời hạn quy định</div>
         </div>
 
         <div className="rounded-xl border border-blue-200 bg-blue-500/5 p-3.5 shadow-sm">
-          <div className="text-xs font-medium text-blue-700 dark:text-blue-300">Đã tiêu hủy có biên bản</div>
+          <div className="text-xs font-medium text-blue-700 dark:text-blue-300">
+            Đã tiêu hủy có biên bản
+          </div>
           <div className="mt-1.5 text-2xl font-bold text-blue-700">{stats.disposed}</div>
           <div className="text-[11px] text-blue-600/80">Đúng quy trình BM02-KSHS</div>
         </div>
       </div>
-
 
       {/* Bộ lọc & Tìm kiếm */}
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-card p-3 shadow-sm">
@@ -381,21 +407,34 @@ export function RecordsRetentionTab({
                     <td className="px-3 py-3">
                       <div className="font-semibold text-foreground">{rec.record_name}</div>
                       {rec.responsible_person && (
-                        <div className="text-[11px] text-muted-foreground">Chịu trách nhiệm: {rec.responsible_person}</div>
+                        <div className="text-[11px] text-muted-foreground">
+                          Chịu trách nhiệm: {rec.responsible_person}
+                        </div>
                       )}
                     </td>
                     <td className="px-3 py-3 font-medium text-foreground">{rec.department}</td>
                     <td className="px-3 py-3 text-muted-foreground">{rec.storage_location}</td>
-                    <td className="px-3 py-3 text-center font-bold text-foreground">{rec.retention_period}</td>
-                    <td className="px-3 py-3 text-muted-foreground text-[11px]">{rec.disposal_method}</td>
+                    <td className="px-3 py-3 text-center font-bold text-foreground">
+                      {rec.retention_period}
+                    </td>
+                    <td className="px-3 py-3 text-muted-foreground text-[11px]">
+                      {rec.disposal_method}
+                    </td>
                     <td className="px-3 py-3 text-center">
-                      <span className={`inline-block rounded px-2 py-0.5 text-[10px] font-semibold border ${
-                        rec.status === "RETAINED" ? "bg-emerald-500/10 text-emerald-700 border-emerald-300" :
-                        rec.status === "READY_FOR_DISPOSAL" ? "bg-amber-500/10 text-amber-700 border-amber-300" :
-                        "bg-blue-500/10 text-blue-700 border-blue-300"
-                      }`}>
-                        {rec.status === "RETAINED" ? "Đang lưu trữ" :
-                         rec.status === "READY_FOR_DISPOSAL" ? "Chờ tiêu hủy" : "Đã tiêu hủy"}
+                      <span
+                        className={`inline-block rounded px-2 py-0.5 text-[10px] font-semibold border ${
+                          rec.status === "RETAINED"
+                            ? "bg-emerald-500/10 text-emerald-700 border-emerald-300"
+                            : rec.status === "READY_FOR_DISPOSAL"
+                              ? "bg-amber-500/10 text-amber-700 border-amber-300"
+                              : "bg-blue-500/10 text-blue-700 border-blue-300"
+                        }`}
+                      >
+                        {rec.status === "RETAINED"
+                          ? "Đang lưu trữ"
+                          : rec.status === "READY_FOR_DISPOSAL"
+                            ? "Chờ tiêu hủy"
+                            : "Đã tiêu hủy"}
                       </span>
                     </td>
                     <td className="px-3 py-3 text-right">
@@ -415,7 +454,9 @@ export function RecordsRetentionTab({
                             onClick={() => {
                               setDisposingRecord(rec);
                               setDisposalDate(new Date().toISOString().split("T")[0]);
-                              setDisposalMinutesCode(`BBTH-${new Date().getFullYear()}-${rec.record_code.replace(/[^A-Za-z0-9]/g, "").slice(-4) || "01"}`);
+                              setDisposalMinutesCode(
+                                `BBTH-${new Date().getFullYear()}-${rec.record_code.replace(/[^A-Za-z0-9]/g, "").slice(-4) || "01"}`,
+                              );
                               setConfirmExpired(rec.status === "READY_FOR_DISPOSAL");
                             }}
                             title="Lập phiếu & Biên bản tiêu hủy hồ sơ (BM02-KSHS)"
@@ -428,7 +469,7 @@ export function RecordsRetentionTab({
                         {rec.status === "DISPOSED" ? (
                           <span
                             className="inline-flex items-center gap-1 rounded bg-muted px-2 py-1 text-[11px] text-muted-foreground font-medium"
-                            title={`Đã tiêu hủy ngày ${rec.disposal_date || ''} (BB: ${rec.disposal_minutes_code || ''}). Dữ liệu đã khóa để lưu vết.`}
+                            title={`Đã tiêu hủy ngày ${rec.disposal_date || ""} (BB: ${rec.disposal_minutes_code || ""}). Dữ liệu đã khóa để lưu vết.`}
                           >
                             <Lock className="h-3 w-3 text-muted-foreground" />
                             Đã khóa
@@ -472,14 +513,18 @@ export function RecordsRetentionTab({
           <DialogHeader>
             <DialogTitle className="text-base font-bold flex items-center gap-2">
               <Archive className="h-5 w-5 text-primary" />
-              {editingRecord ? "Cập Nhật Hồ Sơ Lưu Trữ (BM01-KSHS)" : "Thêm Mới Hồ Sơ Lưu Trữ (BM01-KSHS)"}
+              {editingRecord
+                ? "Cập Nhật Hồ Sơ Lưu Trữ (BM01-KSHS)"
+                : "Thêm Mới Hồ Sơ Lưu Trữ (BM01-KSHS)"}
             </DialogTitle>
           </DialogHeader>
 
           <form onSubmit={handleSubmitForm} className="space-y-4">
             <div className="grid grid-cols-3 gap-3">
               <div>
-                <Label className="text-xs font-semibold">Mã biểu mẫu / Hồ sơ <span className="text-rose-500">*</span></Label>
+                <Label className="text-xs font-semibold">
+                  Mã biểu mẫu / Hồ sơ <span className="text-rose-500">*</span>
+                </Label>
                 <Input
                   value={formData.record_code}
                   onChange={(e) => setFormData({ ...formData, record_code: e.target.value })}
@@ -490,7 +535,9 @@ export function RecordsRetentionTab({
               </div>
 
               <div className="col-span-2">
-                <Label className="text-xs font-semibold">Tên hồ sơ ghi chép <span className="text-rose-500">*</span></Label>
+                <Label className="text-xs font-semibold">
+                  Tên hồ sơ ghi chép <span className="text-rose-500">*</span>
+                </Label>
                 <Input
                   value={formData.record_name}
                   onChange={(e) => setFormData({ ...formData, record_name: e.target.value })}
@@ -574,7 +621,8 @@ export function RecordsRetentionTab({
                   <option value="READY_FOR_DISPOSAL">Chờ tiêu hủy (Đã hết thời hạn lưu trữ)</option>
                 </select>
                 <p className="mt-1 text-[11px] text-muted-foreground">
-                  * Trạng thái "Đã tiêu hủy" chỉ được cấp sau khi lập và ký Biên bản tiêu hủy BM02-KSHS.
+                  * Trạng thái "Đã tiêu hủy" chỉ được cấp sau khi lập và ký Biên bản tiêu hủy
+                  BM02-KSHS.
                 </p>
               </div>
             </div>
@@ -591,7 +639,12 @@ export function RecordsRetentionTab({
             </div>
 
             <DialogFooter className="pt-2">
-              <Button type="button" variant="outline" size="sm" onClick={() => setIsFormOpen(false)}>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setIsFormOpen(false)}
+              >
                 Hủy
               </Button>
               <Button type="submit" size="sm" className="gap-1.5">
@@ -613,17 +666,29 @@ export function RecordsRetentionTab({
               </DialogTitle>
             </DialogHeader>
 
-
             <form onSubmit={handleConfirmDisposal} className="space-y-4">
               <div className="rounded-lg bg-muted/40 p-3 text-xs space-y-1">
-                <div><b>Mã biểu mẫu:</b> <span className="font-mono font-bold text-primary">{disposingRecord.record_code}</span></div>
-                <div><b>Tên hồ sơ:</b> {disposingRecord.record_name}</div>
-                <div><b>Bộ phận:</b> {disposingRecord.department}</div>
-                <div><b>Thời hạn lưu:</b> {disposingRecord.retention_period}</div>
+                <div>
+                  <b>Mã biểu mẫu:</b>{" "}
+                  <span className="font-mono font-bold text-primary">
+                    {disposingRecord.record_code}
+                  </span>
+                </div>
+                <div>
+                  <b>Tên hồ sơ:</b> {disposingRecord.record_name}
+                </div>
+                <div>
+                  <b>Bộ phận:</b> {disposingRecord.department}
+                </div>
+                <div>
+                  <b>Thời hạn lưu:</b> {disposingRecord.retention_period}
+                </div>
               </div>
 
               <div>
-                <Label className="text-xs font-semibold">Số biên bản tiêu hủy <span className="text-rose-500">*</span></Label>
+                <Label className="text-xs font-semibold">
+                  Số biên bản tiêu hủy <span className="text-rose-500">*</span>
+                </Label>
                 <Input
                   value={disposalMinutesCode}
                   onChange={(e) => setDisposalMinutesCode(e.target.value)}
@@ -633,7 +698,9 @@ export function RecordsRetentionTab({
               </div>
 
               <div>
-                <Label className="text-xs font-semibold">Ngày thực hiện tiêu hủy <span className="text-rose-500">*</span></Label>
+                <Label className="text-xs font-semibold">
+                  Ngày thực hiện tiêu hủy <span className="text-rose-500">*</span>
+                </Label>
                 <Input
                   type="date"
                   value={disposalDate}
@@ -644,7 +711,9 @@ export function RecordsRetentionTab({
               </div>
 
               <div>
-                <Label className="text-xs font-semibold">Thành phần Hội đồng tiêu hủy / Chứng kiến</Label>
+                <Label className="text-xs font-semibold">
+                  Thành phần Hội đồng tiêu hủy / Chứng kiến
+                </Label>
                 <Input
                   value={disposalCouncil}
                   onChange={(e) => setDisposalCouncil(e.target.value)}
@@ -661,20 +730,34 @@ export function RecordsRetentionTab({
                   onChange={(e) => setConfirmExpired(e.target.checked)}
                   className="mt-0.5 rounded border-rose-300 text-rose-600 focus:ring-rose-500"
                 />
-                <label htmlFor="confirm-expired-checkbox" className="text-xs cursor-pointer font-medium leading-relaxed">
-                  Xác nhận hồ sơ đã hết hạn lưu trữ hoặc có văn bản chấp thuận tiêu hủy của Ban Giám Đốc theo quy trình BM02-KSHS <span className="text-rose-600 font-bold">*</span>
+                <label
+                  htmlFor="confirm-expired-checkbox"
+                  className="text-xs cursor-pointer font-medium leading-relaxed"
+                >
+                  Xác nhận hồ sơ đã hết hạn lưu trữ hoặc có văn bản chấp thuận tiêu hủy của Ban Giám
+                  Đốc theo quy trình BM02-KSHS <span className="text-rose-600 font-bold">*</span>
                 </label>
               </div>
 
               <div className="rounded border border-amber-200 bg-amber-50 p-2 text-[11px] text-amber-800">
-                Lưu ý: Toàn bộ thông tin biên bản và lịch sử hồ sơ sau khi tiêu hủy sẽ được khóa vĩnh viễn để phục vụ thanh tra, đánh giá chứng nhận ISO 22000.
+                Lưu ý: Toàn bộ thông tin biên bản và lịch sử hồ sơ sau khi tiêu hủy sẽ được khóa
+                vĩnh viễn để phục vụ thanh tra, đánh giá chứng nhận ISO 22000.
               </div>
 
               <DialogFooter>
-                <Button type="button" variant="outline" size="sm" onClick={() => setDisposingRecord(null)}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setDisposingRecord(null)}
+                >
                   Hủy
                 </Button>
-                <Button type="submit" size="sm" className="gap-1.5 bg-rose-600 hover:bg-rose-700 text-white">
+                <Button
+                  type="submit"
+                  size="sm"
+                  className="gap-1.5 bg-rose-600 hover:bg-rose-700 text-white"
+                >
                   <CheckCircle2 className="h-3.5 w-3.5" />
                   Xác Nhận Tiêu Hủy
                 </Button>

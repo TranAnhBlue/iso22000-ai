@@ -241,36 +241,31 @@ export const STORAGE_CONDITIONS = [
   "Kho hóa chất chuyên dụng",
 ];
 
-export const SUPPLIER_STATUS_CONFIG: Record<
-  string,
-  { label: string; color: string; bg: string }
-> = {
-  APPROVED: {
-    label: "Đạt chuẩn (ASL)",
-    color: "text-emerald-700 dark:text-emerald-300",
-    bg: "bg-emerald-500/10 border-emerald-200 dark:border-emerald-800",
-  },
-  WARNING: {
-    label: "Cảnh báo rủi ro",
-    color: "text-amber-700 dark:text-amber-300",
-    bg: "bg-amber-500/10 border-amber-200 dark:border-amber-800",
-  },
-  SUSPENDED: {
-    label: "Ngừng hợp tác",
-    color: "text-rose-700 dark:text-rose-300",
-    bg: "bg-rose-500/10 border-rose-200 dark:border-rose-800",
-  },
-  PENDING_EVALUATION: {
-    label: "Chờ đánh giá",
-    color: "text-blue-700 dark:text-blue-300",
-    bg: "bg-blue-500/10 border-blue-200 dark:border-blue-800",
-  },
-};
+export const SUPPLIER_STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> =
+  {
+    APPROVED: {
+      label: "Đạt chuẩn (ASL)",
+      color: "text-emerald-700 dark:text-emerald-300",
+      bg: "bg-emerald-500/10 border-emerald-200 dark:border-emerald-800",
+    },
+    WARNING: {
+      label: "Cảnh báo rủi ro",
+      color: "text-amber-700 dark:text-amber-300",
+      bg: "bg-amber-500/10 border-amber-200 dark:border-amber-800",
+    },
+    SUSPENDED: {
+      label: "Ngừng hợp tác",
+      color: "text-rose-700 dark:text-rose-300",
+      bg: "bg-rose-500/10 border-rose-200 dark:border-rose-800",
+    },
+    PENDING_EVALUATION: {
+      label: "Chờ đánh giá",
+      color: "text-blue-700 dark:text-blue-300",
+      bg: "bg-blue-500/10 border-blue-200 dark:border-blue-800",
+    },
+  };
 
-export const LOT_STATUS_CONFIG: Record<
-  string,
-  { label: string; color: string; bg: string }
-> = {
+export const LOT_STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
   APPROVED: {
     label: "Đã duyệt nhập kho",
     color: "text-emerald-700 dark:text-emerald-300",
@@ -404,7 +399,8 @@ function PurchasingPage() {
     year: new Date().getFullYear(),
     title: `Kế hoạch Đánh giá Năng lực Nhà cung ứng Năm ${new Date().getFullYear()}`,
     department: "Phòng Đảm Bảo Chất Lượng (QA/QC)",
-    scope: "Toàn bộ nhà cung cấp nguyên liệu tươi sống, phụ gia thực phẩm và bao bì tiếp xúc trực tiếp",
+    scope:
+      "Toàn bộ nhà cung cấp nguyên liệu tươi sống, phụ gia thực phẩm và bao bì tiếp xúc trực tiếp",
     approved_by: "Giám Đốc Nhà Máy",
     approval_status: "APPROVED",
   });
@@ -437,11 +433,21 @@ function PurchasingPage() {
   const [isCoaAnalyzing, setIsCoaAnalyzing] = useState(false);
 
   // Deleting Confirmation States
-  const [deletingSupplierItem, setDeletingSupplierItem] = useState<{ id: string; name: string } | null>(null);
+  const [deletingSupplierItem, setDeletingSupplierItem] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
   const [deletingLotItem, setDeletingLotItem] = useState<{ id: string; code: string } | null>(null);
-  const [deletingInspectionItem, setDeletingInspectionItem] = useState<{ id: string; code: string } | null>(null);
-  const [deletingPlanItem, setDeletingPlanItem] = useState<{ id: number; code: string } | null>(null);
-  const [deletingEvalItem, setDeletingEvalItem] = useState<{ id: number; code: string } | null>(null);
+  const [deletingInspectionItem, setDeletingInspectionItem] = useState<{
+    id: string;
+    code: string;
+  } | null>(null);
+  const [deletingPlanItem, setDeletingPlanItem] = useState<{ id: number; code: string } | null>(
+    null,
+  );
+  const [deletingEvalItem, setDeletingEvalItem] = useState<{ id: number; code: string } | null>(
+    null,
+  );
 
   // Form States
   const [supplierForm, setSupplierForm] = useState({
@@ -511,15 +517,16 @@ function PurchasingPage() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [statsRes, supRes, lotsRes, inspRes, plansRes, evalsRes, tmplRes] = await Promise.allSettled([
-        api.get("/purchasing/stats"),
-        api.get("/purchasing/suppliers"),
-        api.get("/purchasing/lots"),
-        api.get("/purchasing/inspections"),
-        api.get("/purchasing/evaluation-plans"),
-        api.get("/purchasing/evaluations"),
-        api.get("/purchasing/evaluation-criteria-templates"),
-      ]);
+      const [statsRes, supRes, lotsRes, inspRes, plansRes, evalsRes, tmplRes] =
+        await Promise.allSettled([
+          api.get("/purchasing/stats"),
+          api.get("/purchasing/suppliers"),
+          api.get("/purchasing/lots"),
+          api.get("/purchasing/inspections"),
+          api.get("/purchasing/evaluation-plans"),
+          api.get("/purchasing/evaluations"),
+          api.get("/purchasing/evaluation-criteria-templates"),
+        ]);
       if (statsRes.status === "fulfilled") setStats(statsRes.value.data);
       if (supRes.status === "fulfilled") setSuppliers(supRes.value.data);
       if (lotsRes.status === "fulfilled") setLots(lotsRes.value.data);
@@ -545,10 +552,8 @@ function PurchasingPage() {
         s.supplier_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         s.supplier_code.toLowerCase().includes(searchQuery.toLowerCase()) ||
         s.category.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchCat =
-        selectedCategory === "ALL" || s.category === selectedCategory;
-      const matchStatus =
-        selectedStatus === "ALL" || s.status === selectedStatus;
+      const matchCat = selectedCategory === "ALL" || s.category === selectedCategory;
+      const matchStatus = selectedStatus === "ALL" || s.status === selectedStatus;
       return matchQuery && matchCat && matchStatus;
     });
   }, [suppliers, searchQuery, selectedCategory, selectedStatus]);
@@ -559,12 +564,9 @@ function PurchasingPage() {
       const matchQuery =
         l.lot_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
         l.material_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (l.supplier_name &&
-          l.supplier_name.toLowerCase().includes(searchQuery.toLowerCase()));
-      const matchCat =
-        selectedCategory === "ALL" || l.material_category === selectedCategory;
-      const matchStatus =
-        selectedStatus === "ALL" || l.status === selectedStatus;
+        (l.supplier_name && l.supplier_name.toLowerCase().includes(searchQuery.toLowerCase()));
+      const matchCat = selectedCategory === "ALL" || l.material_category === selectedCategory;
+      const matchStatus = selectedStatus === "ALL" || l.status === selectedStatus;
       return matchQuery && matchCat && matchStatus;
     });
   }, [lots, searchQuery, selectedCategory, selectedStatus]);
@@ -574,14 +576,10 @@ function PurchasingPage() {
     return inspections.filter((i) => {
       const matchQuery =
         i.inspection_code.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (i.lot_number &&
-          i.lot_number.toLowerCase().includes(searchQuery.toLowerCase())) ||
-        (i.material_name &&
-          i.material_name.toLowerCase().includes(searchQuery.toLowerCase())) ||
-        (i.supplier_name &&
-          i.supplier_name.toLowerCase().includes(searchQuery.toLowerCase()));
-      const matchStatus =
-        selectedStatus === "ALL" || i.status === selectedStatus;
+        (i.lot_number && i.lot_number.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (i.material_name && i.material_name.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (i.supplier_name && i.supplier_name.toLowerCase().includes(searchQuery.toLowerCase()));
+      const matchStatus = selectedStatus === "ALL" || i.status === selectedStatus;
       return matchQuery && matchStatus;
     });
   }, [inspections, searchQuery, selectedStatus]);
@@ -608,7 +606,8 @@ function PurchasingPage() {
         (e.supplier_code && e.supplier_code.toLowerCase().includes(evalSearch.toLowerCase())) ||
         e.evaluator_name.toLowerCase().includes(evalSearch.toLowerCase());
       const matchType = evalTypeFilter === "ALL" || e.criteria_type === evalTypeFilter;
-      const matchConclusion = evalConclusionFilter === "ALL" || e.conclusion === evalConclusionFilter;
+      const matchConclusion =
+        evalConclusionFilter === "ALL" || e.conclusion === evalConclusionFilter;
       return matchQuery && matchType && matchConclusion;
     });
   }, [evaluations, evalSearch, evalTypeFilter, evalConclusionFilter]);
@@ -731,15 +730,69 @@ function PurchasingPage() {
           module: "SUPPLIER_AUDIT",
           code: "FORM-VENDOR-01",
           title: "Bảng Đánh Giá Năng Lực & ATTP Nhà Cung Cấp (BM-NCC-01)",
-          description: "Đánh giá định kỳ hàng năm điều kiện nhà xưởng và chứng chỉ ISO 22000/HACCP của đối tác.",
+          description:
+            "Đánh giá định kỳ hàng năm điều kiện nhà xưởng và chứng chỉ ISO 22000/HACCP của đối tác.",
           version: "1.0",
           fields: [
-            { id: "v_name", name: "supplier_name", label: "Tên đối tác / Nhà cung cấp", type: "TEXT", required: true, default_value: supplier.supplier_name },
-            { id: "v_iso", name: "has_iso_cert", label: "Đã có chứng nhận ISO 22000 / HACCP còn hiệu lực?", type: "YESNO", required: true, default_value: true },
-            { id: "v_score", name: "quality_score", label: "Điểm chất lượng hàng hóa giao trong năm (Thang 1-100)", type: "NUMBER", required: true, min_val: 0, max_val: 100, default_value: supplier.rating_score || 95 },
-            { id: "v_delivery", name: "ontime_delivery_rate", label: "Tỷ lệ giao hàng đúng hẹn (%)", type: "NUMBER", required: true, unit: "%", min_val: 0, max_val: 100, default_value: 98 },
-            { id: "v_ranking", name: "supplier_ranking", label: "Xếp loại nhà cung cấp", type: "SELECT", options: ["Hạng A (Ưu tiên)", "Hạng B (Đạt chuẩn)", "Hạng C (Cần khắc phục)", "Hạng D (Đình chỉ)"], required: true, default_value: "Hạng A (Ưu tiên)" },
-            { id: "v_notes", name: "audit_notes", label: "Ghi chú & Kiến nghị hành động", type: "TEXT", required: false, default_value: "Đạt yêu cầu thẩm định định kỳ." },
+            {
+              id: "v_name",
+              name: "supplier_name",
+              label: "Tên đối tác / Nhà cung cấp",
+              type: "TEXT",
+              required: true,
+              default_value: supplier.supplier_name,
+            },
+            {
+              id: "v_iso",
+              name: "has_iso_cert",
+              label: "Đã có chứng nhận ISO 22000 / HACCP còn hiệu lực?",
+              type: "YESNO",
+              required: true,
+              default_value: true,
+            },
+            {
+              id: "v_score",
+              name: "quality_score",
+              label: "Điểm chất lượng hàng hóa giao trong năm (Thang 1-100)",
+              type: "NUMBER",
+              required: true,
+              min_val: 0,
+              max_val: 100,
+              default_value: supplier.rating_score || 95,
+            },
+            {
+              id: "v_delivery",
+              name: "ontime_delivery_rate",
+              label: "Tỷ lệ giao hàng đúng hẹn (%)",
+              type: "NUMBER",
+              required: true,
+              unit: "%",
+              min_val: 0,
+              max_val: 100,
+              default_value: 98,
+            },
+            {
+              id: "v_ranking",
+              name: "supplier_ranking",
+              label: "Xếp loại nhà cung cấp",
+              type: "SELECT",
+              options: [
+                "Hạng A (Ưu tiên)",
+                "Hạng B (Đạt chuẩn)",
+                "Hạng C (Cần khắc phục)",
+                "Hạng D (Đình chỉ)",
+              ],
+              required: true,
+              default_value: "Hạng A (Ưu tiên)",
+            },
+            {
+              id: "v_notes",
+              name: "audit_notes",
+              label: "Ghi chú & Kiến nghị hành động",
+              type: "TEXT",
+              required: false,
+              default_value: "Đạt yêu cầu thẩm định định kỳ.",
+            },
           ],
           status: "ACTIVE",
         });
@@ -754,7 +807,8 @@ function PurchasingPage() {
     if (!selectedSupplierForForm) return;
     try {
       // 1. Phân tích kết quả đánh giá từ biểu mẫu động
-      const hasIso = vals["has_iso_cert"] !== false && String(vals["has_iso_cert"]).toLowerCase() !== "false";
+      const hasIso =
+        vals["has_iso_cert"] !== false && String(vals["has_iso_cert"]).toLowerCase() !== "false";
       const ranking = String(vals["final_ranking"] || vals["supplier_ranking"] || "");
       const score = Number(vals["quality_score"] || selectedSupplierForForm.rating_score || 0);
 
@@ -762,10 +816,22 @@ function PurchasingPage() {
       let newRisk = "LOW";
 
       // Nếu không có chứng nhận ISO hoặc xếp Loại D (đình chỉ) hoặc điểm < 50 => Đình chỉ hợp tác (SUSPENDED)
-      if (!hasIso || ranking.includes("Loại D") || ranking.includes("Hạng D") || ranking.includes("Đình chỉ") || ranking.includes("Loại khỏi") || score < 50) {
+      if (
+        !hasIso ||
+        ranking.includes("Loại D") ||
+        ranking.includes("Hạng D") ||
+        ranking.includes("Đình chỉ") ||
+        ranking.includes("Loại khỏi") ||
+        score < 50
+      ) {
         newStatus = "SUSPENDED";
         newRisk = "HIGH";
-      } else if (ranking.includes("Loại C") || ranking.includes("Hạng C") || ranking.includes("khắc phục") || score < 75) {
+      } else if (
+        ranking.includes("Loại C") ||
+        ranking.includes("Hạng C") ||
+        ranking.includes("khắc phục") ||
+        score < 75
+      ) {
         newStatus = "WARNING";
         newRisk = "MEDIUM";
       } else {
@@ -773,13 +839,13 @@ function PurchasingPage() {
         newRisk = "LOW";
       }
 
-      const note = vals["audit_notes"] || (
-        newStatus === "SUSPENDED" 
-          ? "Đình chỉ: Không đạt thẩm định định kỳ ATTP / Thiếu chứng nhận ISO còn hiệu lực" 
-          : newStatus === "WARNING" 
-          ? "Cảnh báo: Cần khắc phục các điểm không phù hợp trước đợt giao hàng tiếp theo" 
-          : "Đạt chuẩn thẩm định năng lực & ATTP định kỳ"
-      );
+      const note =
+        vals["audit_notes"] ||
+        (newStatus === "SUSPENDED"
+          ? "Đình chỉ: Không đạt thẩm định định kỳ ATTP / Thiếu chứng nhận ISO còn hiệu lực"
+          : newStatus === "WARNING"
+            ? "Cảnh báo: Cần khắc phục các điểm không phù hợp trước đợt giao hàng tiếp theo"
+            : "Đạt chuẩn thẩm định năng lực & ATTP định kỳ");
       const today = new Date().toISOString().split("T")[0];
 
       // 2. Lưu kết quả submission vào Form Builder
@@ -801,8 +867,15 @@ function PurchasingPage() {
         evaluation_date: today,
       });
 
-      const statusLabel = newStatus === "APPROVED" ? "ĐẠT CHUẨN (APPROVED)" : newStatus === "WARNING" ? "CẢNH BÁO (WARNING)" : "ĐÌNH CHỈ / KHÔNG ĐẠT (SUSPENDED)";
-      toast.success(`Đã cập nhật trạng thái NCC "${selectedSupplierForForm.supplier_name}" -> ${statusLabel}!`);
+      const statusLabel =
+        newStatus === "APPROVED"
+          ? "ĐẠT CHUẨN (APPROVED)"
+          : newStatus === "WARNING"
+            ? "CẢNH BÁO (WARNING)"
+            : "ĐÌNH CHỈ / KHÔNG ĐẠT (SUSPENDED)";
+      toast.success(
+        `Đã cập nhật trạng thái NCC "${selectedSupplierForForm.supplier_name}" -> ${statusLabel}!`,
+      );
       setShowDynamicVendorModal(false);
       await fetchData();
     } catch (err: any) {
@@ -822,15 +895,64 @@ function PurchasingPage() {
           module: "IQC",
           code: "FORM-IQC-01",
           title: "Phiếu Nghiệm Thu Nguyên Liệu Thủy Sản Đầu Vào (IQC-01)",
-          description: "Đánh giá chất lượng cảm quan, nhiệt độ xe đông lạnh và phiếu COA nhà cung cấp theo ISO 22000.",
+          description:
+            "Đánh giá chất lượng cảm quan, nhiệt độ xe đông lạnh và phiếu COA nhà cung cấp theo ISO 22000.",
           version: "1.0",
           fields: [
-            { id: "f_lot", name: "lot_number", label: "Số Lô Nguyên Liệu", type: "TEXT", required: true, default_value: lot.lot_number },
-            { id: "f_material", name: "material_name", label: "Tên Nguyên Liệu", type: "TEXT", required: true, default_value: lot.material_name },
-            { id: "f_temp", name: "temp_delivery", label: "Nhiệt độ thùng xe lúc giao nhận (°C - Yêu cầu ≤ -18°C)", type: "NUMBER", required: true, unit: "°C", default_value: -19.2 },
-            { id: "f_sensory", name: "sensory_pass", label: "Cảm quan đạt độ tươi sống, không ươn hỏng, không mùi lạ?", type: "YESNO", required: true, default_value: true },
-            { id: "f_coa", name: "has_coa", label: "Hồ sơ COA & kiểm dịch đầy đủ hợp lệ?", type: "YESNO", required: true, default_value: true },
-            { id: "f_decision", name: "qc_decision", label: "Kết luận IQC Tiếp nhận", type: "SELECT", options: ["CHẤP NHẬN NHẬP KHO (PASS)", "CÁCH LY / BIỆT TRỮ (QUARANTINE)", "TỪ CHỐI NHẬN HÀNG (REJECT)"], required: true, default_value: "CHẤP NHẬN NHẬP KHO (PASS)" },
+            {
+              id: "f_lot",
+              name: "lot_number",
+              label: "Số Lô Nguyên Liệu",
+              type: "TEXT",
+              required: true,
+              default_value: lot.lot_number,
+            },
+            {
+              id: "f_material",
+              name: "material_name",
+              label: "Tên Nguyên Liệu",
+              type: "TEXT",
+              required: true,
+              default_value: lot.material_name,
+            },
+            {
+              id: "f_temp",
+              name: "temp_delivery",
+              label: "Nhiệt độ thùng xe lúc giao nhận (°C - Yêu cầu ≤ -18°C)",
+              type: "NUMBER",
+              required: true,
+              unit: "°C",
+              default_value: -19.2,
+            },
+            {
+              id: "f_sensory",
+              name: "sensory_pass",
+              label: "Cảm quan đạt độ tươi sống, không ươn hỏng, không mùi lạ?",
+              type: "YESNO",
+              required: true,
+              default_value: true,
+            },
+            {
+              id: "f_coa",
+              name: "has_coa",
+              label: "Hồ sơ COA & kiểm dịch đầy đủ hợp lệ?",
+              type: "YESNO",
+              required: true,
+              default_value: true,
+            },
+            {
+              id: "f_decision",
+              name: "qc_decision",
+              label: "Kết luận IQC Tiếp nhận",
+              type: "SELECT",
+              options: [
+                "CHẤP NHẬN NHẬP KHO (PASS)",
+                "CÁCH LY / BIỆT TRỮ (QUARANTINE)",
+                "TỪ CHỐI NHẬN HÀNG (REJECT)",
+              ],
+              required: true,
+              default_value: "CHẤP NHẬN NHẬP KHO (PASS)",
+            },
           ],
           status: "ACTIVE",
         });
@@ -863,7 +985,9 @@ function PurchasingPage() {
         status: newStatus,
       });
 
-      toast.success(`Đã lưu biên bản nghiệm thu IQC cho lô "${selectedLotForForm.lot_number}" thành công!`);
+      toast.success(
+        `Đã lưu biên bản nghiệm thu IQC cho lô "${selectedLotForForm.lot_number}" thành công!`,
+      );
       setShowDynamicIqcModal(false);
       fetchData();
     } catch (err: any) {
@@ -874,7 +998,9 @@ function PurchasingPage() {
   const handleOpenSupplierWorkflow = async () => {
     try {
       const res = await api.get("/builders/workflows");
-      const found = res.data.find((w: any) => w.code === "WF-SUPPLIER-AUDIT" || w.module === "SUPPLIER_AUDIT");
+      const found = res.data.find(
+        (w: any) => w.code === "WF-SUPPLIER-AUDIT" || w.module === "SUPPLIER_AUDIT",
+      );
       if (found) {
         setWorkflowTemplate(found);
       } else {
@@ -882,13 +1008,46 @@ function PurchasingPage() {
           module: "SUPPLIER_AUDIT",
           code: "WF-SUPPLIER-AUDIT",
           title: "Quy Trình Thẩm Định & Phê Duyệt Nhà Cung Cấp ASL",
-          description: "Quy trình 4 bước thẩm định hồ sơ pháp lý, đánh giá thực địa và cấp mã ASL chính thức.",
+          description:
+            "Quy trình 4 bước thẩm định hồ sơ pháp lý, đánh giá thực địa và cấp mã ASL chính thức.",
           version: "1.0",
           nodes: [
-            { id: "wf_1", type: "process", label: "1. Tiếp nhận Hồ sơ Năng lực & Pháp lý", role: "Phòng Mua hàng", description: "Thu thập ĐKKD, Chứng chỉ ATTP (ISO 22000/HACCP) và bảng giá.", is_ccp: false, step_number: 1 },
-            { id: "wf_2", type: "approval", label: "2. Thẩm tra Kỹ thuật & Thử nghiệm mẫu", role: "Phòng QC & QA", description: "Test mẫu thử nghiệm vi sinh, kim loại nặng và dư lượng kháng sinh.", is_ccp: false, step_number: 2 },
-            { id: "wf_3", type: "approval", label: "3. Đánh giá Thực địa Nhà xưởng", role: "Đoàn Đánh giá ISO", description: "Kiểm tra thực tế điều kiện vệ sinh, nhà xưởng và kho lạnh của đối tác.", is_ccp: false, step_number: 3 },
-            { id: "wf_4", type: "process", label: "4. Phê duyệt & Cấp mã Danh bạ ASL", role: "Ban Giám Đốc", description: "Ký quyết định công nhận nhà cung cấp chính thức và đưa vào ASL.", is_ccp: false, step_number: 4 },
+            {
+              id: "wf_1",
+              type: "process",
+              label: "1. Tiếp nhận Hồ sơ Năng lực & Pháp lý",
+              role: "Phòng Mua hàng",
+              description: "Thu thập ĐKKD, Chứng chỉ ATTP (ISO 22000/HACCP) và bảng giá.",
+              is_ccp: false,
+              step_number: 1,
+            },
+            {
+              id: "wf_2",
+              type: "approval",
+              label: "2. Thẩm tra Kỹ thuật & Thử nghiệm mẫu",
+              role: "Phòng QC & QA",
+              description: "Test mẫu thử nghiệm vi sinh, kim loại nặng và dư lượng kháng sinh.",
+              is_ccp: false,
+              step_number: 2,
+            },
+            {
+              id: "wf_3",
+              type: "approval",
+              label: "3. Đánh giá Thực địa Nhà xưởng",
+              role: "Đoàn Đánh giá ISO",
+              description: "Kiểm tra thực tế điều kiện vệ sinh, nhà xưởng và kho lạnh của đối tác.",
+              is_ccp: false,
+              step_number: 3,
+            },
+            {
+              id: "wf_4",
+              type: "process",
+              label: "4. Phê duyệt & Cấp mã Danh bạ ASL",
+              role: "Ban Giám Đốc",
+              description: "Ký quyết định công nhận nhà cung cấp chính thức và đưa vào ASL.",
+              is_ccp: false,
+              step_number: 4,
+            },
           ],
           edges: [
             { id: "e1_2", source: "wf_1", target: "wf_2", label: "Hồ sơ hợp lệ" },
@@ -916,9 +1075,7 @@ function PurchasingPage() {
       material_category: "Nguyên liệu tươi sống",
       received_date: today.toISOString().split("T")[0],
       mfg_date: today.toISOString().split("T")[0],
-      exp_date: new Date(today.getTime() + 180 * 24 * 60 * 60 * 1000)
-        .toISOString()
-        .split("T")[0],
+      exp_date: new Date(today.getTime() + 180 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
       quantity: 1000,
       unit: "kg",
       storage_condition: "Kho lạnh ≤ -18°C",
@@ -1122,9 +1279,10 @@ function PurchasingPage() {
   const handleApplyCoaToInspection = () => {
     if (!coaAiResult) return;
     const tmpl = AI_COA_TEMPLATES.find((t) => t.type === selectedCoaTemplate);
-    const matchedLot = lots.find((l) =>
-      l.material_name.toLowerCase().includes(tmpl?.title.toLowerCase().substring(0, 10) || "")
-    ) || lots[0];
+    const matchedLot =
+      lots.find((l) =>
+        l.material_name.toLowerCase().includes(tmpl?.title.toLowerCase().substring(0, 10) || ""),
+      ) || lots[0];
 
     handleOpenCreateInspection(matchedLot);
     setInspectionForm((prev) => ({
@@ -1145,7 +1303,8 @@ function PurchasingPage() {
       year: new Date().getFullYear(),
       title: `Kế hoạch Đánh giá Năng lực Nhà cung ứng Năm ${new Date().getFullYear()}`,
       department: "Phòng Đảm Bảo Chất Lượng (QA/QC)",
-      scope: "Toàn bộ nhà cung cấp nguyên liệu tươi sống, phụ gia thực phẩm và bao bì tiếp xúc trực tiếp",
+      scope:
+        "Toàn bộ nhà cung cấp nguyên liệu tươi sống, phụ gia thực phẩm và bao bì tiếp xúc trực tiếp",
       approved_by: "Giám Đốc Nhà Máy",
       approval_status: "APPROVED",
     });
@@ -1412,8 +1571,8 @@ function PurchasingPage() {
                     e.criteria_type === "AGRI_FRESH"
                       ? "BM03 (Nông sản tươi)"
                       : e.criteria_type === "AQUA_ANIMAL_FRESH"
-                      ? "TC Bổ sung (Thủy sản tươi)"
-                      : "BM04 (Khô, phụ gia, bao bì)"
+                        ? "TC Bổ sung (Thủy sản tươi)"
+                        : "BM04 (Khô, phụ gia, bao bì)"
                   }
                 </td>
                 <td class="text-center">${e.audit_type === "ON_SITE" ? "Tại cơ sở" : e.audit_type === "PERIODIC" ? "Định kỳ" : e.audit_type}</td>
@@ -1423,7 +1582,7 @@ function PurchasingPage() {
                   ${e.conclusion === "APPROVED" ? "DUY TRÌ (ĐẠT)" : e.conclusion === "CONDITIONAL" ? "CẦN CAPA" : "LOẠI BỎ"}
                 </td>
               </tr>
-            `
+            `,
                     )
                     .join("")
             }
@@ -1453,8 +1612,8 @@ function PurchasingPage() {
     const formTitle = isAgri
       ? "PHIẾU ĐÁNH GIÁ NHÀ CUNG CẤP NÔNG SẢN TƯƠI SỐNG (BM03)"
       : isAqua
-      ? "PHIẾU ĐÁNH GIÁ NHÀ CUNG CẤP THỦY HẢI SẢN TƯƠI SỐNG (BỘ TIÊU CHÍ BỔ SUNG)"
-      : "PHIẾU ĐÁNH GIÁ NHÀ CUNG CẤP NGUYÊN LIỆU KHÔ, PHỤ GIA & BAO BÌ (BM04)";
+        ? "PHIẾU ĐÁNH GIÁ NHÀ CUNG CẤP THỦY HẢI SẢN TƯƠI SỐNG (BỘ TIÊU CHÍ BỔ SUNG)"
+        : "PHIẾU ĐÁNH GIÁ NHÀ CUNG CẤP NGUYÊN LIỆU KHÔ, PHỤ GIA & BAO BÌ (BM04)";
 
     const html = `
       <!DOCTYPE html>
@@ -1528,8 +1687,9 @@ function PurchasingPage() {
             </tr>
           </thead>
           <tbody>
-            ${
-              (ev.criteria_scores || []).map((c, i) => `
+            ${(ev.criteria_scores || [])
+              .map(
+                (c, i) => `
                 <tr>
                   <td class="text-center">${i + 1}</td>
                   <td><strong>${c.name}</strong></td>
@@ -1539,8 +1699,9 @@ function PurchasingPage() {
                   <td class="text-center" style="font-weight: bold; color: ${c.pass_fail === "PASS" ? "#047857" : "#b91c1c"};">${c.pass_fail}</td>
                   <td style="font-size: 11px; font-style: italic;">${c.notes || "Đạt yêu cầu."}</td>
                 </tr>
-              `).join("")
-            }
+              `,
+              )
+              .join("")}
           </tbody>
           <tfoot>
             <tr style="background: #f3f4f6; font-weight: bold;">
@@ -1677,9 +1838,7 @@ function PurchasingPage() {
             <ShieldCheck className="h-3.5 w-3.5" />
             <span>
               {stats?.total_suppliers
-                ? Math.round(
-                    ((stats.approved_suppliers || 0) / stats.total_suppliers) * 100
-                  )
+                ? Math.round(((stats.approved_suppliers || 0) / stats.total_suppliers) * 100)
                 : 100}
               % Đạt chuẩn ISO 22000
             </span>
@@ -1797,9 +1956,7 @@ function PurchasingPage() {
             <span>Lô Nguyên vật liệu (FEFO)</span>
             <span
               className={`ml-1 rounded-full px-1.5 py-0.5 text-[11px] ${
-                activeTab === "lots"
-                  ? "bg-white/20 text-white"
-                  : "bg-muted text-muted-foreground"
+                activeTab === "lots" ? "bg-white/20 text-white" : "bg-muted text-muted-foreground"
               }`}
             >
               {lots.length}
@@ -1925,8 +2082,8 @@ function PurchasingPage() {
                   activeTab === "suppliers"
                     ? "Tìm kiếm mã NCC, tên nhà cung cấp, ngành hàng..."
                     : activeTab === "lots"
-                    ? "Tìm kiếm số lô, tên nguyên liệu, nhà cung cấp..."
-                    : "Tìm kiếm mã phiếu IQC, số lô, người kiểm..."
+                      ? "Tìm kiếm số lô, tên nguyên liệu, nhà cung cấp..."
+                      : "Tìm kiếm mã phiếu IQC, số lô, người kiểm..."
                 }
                 className="pl-9"
               />
@@ -1954,8 +2111,12 @@ function PurchasingPage() {
                 >
                   <option value="ALL">Tất cả bộ tiêu chí</option>
                   <option value="AGRI_FRESH">BM03 - Nông sản tươi (Biểu mẫu gốc)</option>
-                  <option value="AQUA_ANIMAL_FRESH">Bộ tiêu chí bổ sung — Thủy hải sản tươi (Tự xây dựng)</option>
-                  <option value="PROCESSED_DRY_PACKAGING">BM04 - Khô, phụ gia, bao bì (Biểu mẫu gốc)</option>
+                  <option value="AQUA_ANIMAL_FRESH">
+                    Bộ tiêu chí bổ sung — Thủy hải sản tươi (Tự xây dựng)
+                  </option>
+                  <option value="PROCESSED_DRY_PACKAGING">
+                    BM04 - Khô, phụ gia, bao bì (Biểu mẫu gốc)
+                  </option>
                 </select>
 
                 <select
@@ -2036,17 +2197,15 @@ function PurchasingPage() {
               disabled={loading}
               className="h-9 px-2.5"
             >
-              <RefreshCw
-                className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`}
-              />
+              <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
             </Button>
           </div>
         </div>
       )}
 
       {/* ==================== TAB 1: SUPPLIERS LIST ==================== */}
-      {activeTab === "suppliers" && (
-        suppliers.length === 0 ? (
+      {activeTab === "suppliers" &&
+        (suppliers.length === 0 ? (
           <EmptyState
             icon={Building2}
             title="Chưa có nhà cung cấp nào trong danh mục ASL"
@@ -2057,186 +2216,183 @@ function PurchasingPage() {
           />
         ) : (
           <div className="rounded-xl border border-border bg-card shadow-sm">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="border-b border-border bg-muted/40 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                <tr>
-                  <th className="px-4 py-3">Mã NCC</th>
-                  <th className="px-4 py-3">Nhà cung cấp & Liên hệ</th>
-                  <th className="px-4 py-3">Ngành hàng</th>
-                  <th className="px-4 py-3">Chứng chỉ ATTP</th>
-                  <th className="px-4 py-3">Điểm AI & Rủi ro</th>
-                  <th className="px-4 py-3">Trạng thái</th>
-                  <th className="px-4 py-3 text-right">Thao tác</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border/60">
-                {filteredSuppliers.length === 0 ? (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead className="border-b border-border bg-muted/40 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   <tr>
-                    <td colSpan={7} className="py-8 text-center text-muted-foreground">
-                      Không tìm thấy nhà cung cấp nào phù hợp.
-                    </td>
+                    <th className="px-4 py-3">Mã NCC</th>
+                    <th className="px-4 py-3">Nhà cung cấp & Liên hệ</th>
+                    <th className="px-4 py-3">Ngành hàng</th>
+                    <th className="px-4 py-3">Chứng chỉ ATTP</th>
+                    <th className="px-4 py-3">Điểm AI & Rủi ro</th>
+                    <th className="px-4 py-3">Trạng thái</th>
+                    <th className="px-4 py-3 text-right">Thao tác</th>
                   </tr>
-                ) : (
-                  filteredSuppliers.map((s) => {
-                    const statusCfg =
-                      SUPPLIER_STATUS_CONFIG[s.status] || SUPPLIER_STATUS_CONFIG.APPROVED;
-                    return (
-                      <tr
-                        key={s.supplier_id}
-                        className="transition-colors hover:bg-muted/30"
-                      >
-                        <td className="whitespace-nowrap px-4 py-3 font-mono font-medium text-primary">
-                          {s.supplier_code}
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="font-medium text-foreground">
-                            {s.supplier_name}
-                          </div>
-                          {s.contact_info && (
-                            <div className="mt-0.5 text-xs text-muted-foreground">
-                              {s.contact_info.contact_person || s.contact_info.phone || ""}
-                              {s.contact_info.email ? ` • ${s.contact_info.email}` : ""}
-                            </div>
-                          )}
-                        </td>
-                        <td className="whitespace-nowrap px-4 py-3">
-                          <span className="rounded-md bg-secondary px-2 py-1 text-xs font-medium text-secondary-foreground">
-                            {s.category}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="flex flex-wrap gap-1 max-w-[220px]">
-                            {s.certifications && s.certifications.length > 0 ? (
-                              s.certifications.map((c, i) => (
-                                <span
-                                  key={i}
-                                  className="inline-flex items-center gap-1 rounded bg-blue-500/10 px-1.5 py-0.5 text-[11px] font-medium text-blue-700 dark:text-blue-300"
-                                >
-                                  <Award className="h-3 w-3" />
-                                  {c}
-                                </span>
-                              ))
-                            ) : (
-                              <span className="text-xs text-muted-foreground italic">
-                                Chưa cập nhật
-                              </span>
+                </thead>
+                <tbody className="divide-y divide-border/60">
+                  {filteredSuppliers.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="py-8 text-center text-muted-foreground">
+                        Không tìm thấy nhà cung cấp nào phù hợp.
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredSuppliers.map((s) => {
+                      const statusCfg =
+                        SUPPLIER_STATUS_CONFIG[s.status] || SUPPLIER_STATUS_CONFIG.APPROVED;
+                      return (
+                        <tr key={s.supplier_id} className="transition-colors hover:bg-muted/30">
+                          <td className="whitespace-nowrap px-4 py-3 font-mono font-medium text-primary">
+                            {s.supplier_code}
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="font-medium text-foreground">{s.supplier_name}</div>
+                            {s.contact_info && (
+                              <div className="mt-0.5 text-xs text-muted-foreground">
+                                {s.contact_info.contact_person || s.contact_info.phone || ""}
+                                {s.contact_info.email ? ` • ${s.contact_info.email}` : ""}
+                              </div>
                             )}
-                          </div>
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-2">
-                            <div className="h-2 w-20 overflow-hidden rounded-full bg-muted">
-                              <div
-                                className={`h-full rounded-full transition-all ${
-                                  s.rating_score >= 85
-                                    ? "bg-emerald-500"
-                                    : s.rating_score >= 70
-                                    ? "bg-amber-500"
-                                    : "bg-rose-500"
-                                }`}
-                                style={{ width: `${Math.min(100, Math.max(0, s.rating_score))}%` }}
-                              />
+                          </td>
+                          <td className="whitespace-nowrap px-4 py-3">
+                            <span className="rounded-md bg-secondary px-2 py-1 text-xs font-medium text-secondary-foreground">
+                              {s.category}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex flex-wrap gap-1 max-w-[220px]">
+                              {s.certifications && s.certifications.length > 0 ? (
+                                s.certifications.map((c, i) => (
+                                  <span
+                                    key={i}
+                                    className="inline-flex items-center gap-1 rounded bg-blue-500/10 px-1.5 py-0.5 text-[11px] font-medium text-blue-700 dark:text-blue-300"
+                                  >
+                                    <Award className="h-3 w-3" />
+                                    {c}
+                                  </span>
+                                ))
+                              ) : (
+                                <span className="text-xs text-muted-foreground italic">
+                                  Chưa cập nhật
+                                </span>
+                              )}
                             </div>
-                            <span className="font-mono text-xs font-bold">
-                              {s.rating_score}
-                            </span>
-                          </div>
-                          <div className="mt-1 text-[11px] text-muted-foreground">
-                            Rủi ro:{" "}
-                            <span
-                              className={`font-semibold ${
-                                s.risk_level === "HIGH"
-                                  ? "text-rose-600"
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-2">
+                              <div className="h-2 w-20 overflow-hidden rounded-full bg-muted">
+                                <div
+                                  className={`h-full rounded-full transition-all ${
+                                    s.rating_score >= 85
+                                      ? "bg-emerald-500"
+                                      : s.rating_score >= 70
+                                        ? "bg-amber-500"
+                                        : "bg-rose-500"
+                                  }`}
+                                  style={{
+                                    width: `${Math.min(100, Math.max(0, s.rating_score))}%`,
+                                  }}
+                                />
+                              </div>
+                              <span className="font-mono text-xs font-bold">{s.rating_score}</span>
+                            </div>
+                            <div className="mt-1 text-[11px] text-muted-foreground">
+                              Rủi ro:{" "}
+                              <span
+                                className={`font-semibold ${
+                                  s.risk_level === "HIGH"
+                                    ? "text-rose-600"
+                                    : s.risk_level === "MEDIUM"
+                                      ? "text-amber-600"
+                                      : "text-emerald-600"
+                                }`}
+                              >
+                                {s.risk_level === "HIGH"
+                                  ? "Cao"
                                   : s.risk_level === "MEDIUM"
-                                  ? "text-amber-600"
-                                  : "text-emerald-600"
-                              }`}
+                                    ? "Trung bình"
+                                    : "Thấp"}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="whitespace-nowrap px-4 py-3">
+                            <span
+                              className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium ${statusCfg.bg} ${statusCfg.color}`}
                             >
-                              {s.risk_level === "HIGH"
-                                ? "Cao"
-                                : s.risk_level === "MEDIUM"
-                                ? "Trung bình"
-                                : "Thấp"}
+                              {statusCfg.label}
                             </span>
-                          </div>
-                        </td>
-                        <td className="whitespace-nowrap px-4 py-3">
-                          <span
-                            className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium ${statusCfg.bg} ${statusCfg.color}`}
-                          >
-                            {statusCfg.label}
-                          </span>
-                        </td>
-                        <td className="whitespace-nowrap px-4 py-3 text-right">
-                          <div className="flex items-center justify-end gap-1">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              title="Xem chi tiết & Lô hàng"
-                              onClick={() => setViewingSupplier(s)}
-                              className="h-8 w-8 p-0"
-                            >
-                              <Eye className="h-4 w-4 text-muted-foreground hover:text-foreground" />
-                            </Button>
+                          </td>
+                          <td className="whitespace-nowrap px-4 py-3 text-right">
+                            <div className="flex items-center justify-end gap-1">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                title="Xem chi tiết & Lô hàng"
+                                onClick={() => setViewingSupplier(s)}
+                                className="h-8 w-8 p-0"
+                              >
+                                <Eye className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+                              </Button>
 
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              title="Đánh giá bằng Form Động (BM-NCC-01)"
-                              onClick={() => handleOpenVendorDynamicForm(s)}
-                              className="h-8 w-8 p-0 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
-                            >
-                              <Sliders className="h-4 w-4" />
-                            </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                title="Đánh giá bằng Form Động (BM-NCC-01)"
+                                onClick={() => handleOpenVendorDynamicForm(s)}
+                                className="h-8 w-8 p-0 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
+                              >
+                                <Sliders className="h-4 w-4" />
+                              </Button>
 
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              title="AI Đánh giá lại rủi ro"
-                              onClick={() => handleAiEvaluateSupplier(s)}
-                              className="h-8 w-8 p-0 text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-950/30"
-                            >
-                              <Sparkles className="h-4 w-4" />
-                            </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                title="AI Đánh giá lại rủi ro"
+                                onClick={() => handleAiEvaluateSupplier(s)}
+                                className="h-8 w-8 p-0 text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-950/30"
+                              >
+                                <Sparkles className="h-4 w-4" />
+                              </Button>
 
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              title="Chỉnh sửa"
-                              onClick={() => handleOpenEditSupplier(s)}
-                              className="h-8 w-8 p-0"
-                            >
-                              <Pencil className="h-4 w-4 text-muted-foreground hover:text-foreground" />
-                            </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                title="Chỉnh sửa"
+                                onClick={() => handleOpenEditSupplier(s)}
+                                className="h-8 w-8 p-0"
+                              >
+                                <Pencil className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+                              </Button>
 
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              title="Xóa"
-                              onClick={() =>
-                                setDeletingSupplierItem({ id: s.supplier_id, name: s.supplier_name })
-                              }
-                              className="h-8 w-8 p-0 text-rose-600 hover:bg-rose-50 hover:text-rose-700 dark:hover:bg-rose-950/30"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                title="Xóa"
+                                onClick={() =>
+                                  setDeletingSupplierItem({
+                                    id: s.supplier_id,
+                                    name: s.supplier_name,
+                                  })
+                                }
+                                className="h-8 w-8 p-0 text-rose-600 hover:bg-rose-50 hover:text-rose-700 dark:hover:bg-rose-950/30"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
-        )
-      )}
+        ))}
 
       {/* ==================== TAB 2: MATERIAL LOTS LIST ==================== */}
-      {activeTab === "lots" && (
-        lots.length === 0 ? (
+      {activeTab === "lots" &&
+        (lots.length === 0 ? (
           <EmptyState
             icon={Package}
             title="Chưa có lô nguyên liệu nào được tiếp nhận"
@@ -2247,174 +2403,171 @@ function PurchasingPage() {
           />
         ) : (
           <div className="rounded-xl border border-border bg-card shadow-sm">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="border-b border-border bg-muted/40 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                <tr>
-                  <th className="px-4 py-3">Số Lô (Lot No.)</th>
-                  <th className="px-4 py-3">Tên Nguyên liệu</th>
-                  <th className="px-4 py-3">Nhà cung cấp</th>
-                  <th className="px-4 py-3">Ngày nhận & Hạn dùng (FEFO)</th>
-                  <th className="px-4 py-3">Số lượng</th>
-                  <th className="px-4 py-3">Bảo quản & COA</th>
-                  <th className="px-4 py-3">Trạng thái IQC</th>
-                  <th className="px-4 py-3 text-right">Thao tác</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border/60">
-                {filteredLots.length === 0 ? (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead className="border-b border-border bg-muted/40 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   <tr>
-                    <td colSpan={8} className="py-8 text-center text-muted-foreground">
-                      Không tìm thấy lô nguyên liệu nào.
-                    </td>
+                    <th className="px-4 py-3">Số Lô (Lot No.)</th>
+                    <th className="px-4 py-3">Tên Nguyên liệu</th>
+                    <th className="px-4 py-3">Nhà cung cấp</th>
+                    <th className="px-4 py-3">Ngày nhận & Hạn dùng (FEFO)</th>
+                    <th className="px-4 py-3">Số lượng</th>
+                    <th className="px-4 py-3">Bảo quản & COA</th>
+                    <th className="px-4 py-3">Trạng thái IQC</th>
+                    <th className="px-4 py-3 text-right">Thao tác</th>
                   </tr>
-                ) : (
-                  filteredLots.map((lot) => {
-                    const statusCfg =
-                      LOT_STATUS_CONFIG[lot.status] || LOT_STATUS_CONFIG.PENDING_IQC;
-                    return (
-                      <tr
-                        key={lot.material_lot_id}
-                        className="transition-colors hover:bg-muted/30"
-                      >
-                        <td className="whitespace-nowrap px-4 py-3 font-mono font-medium text-primary">
-                          {lot.lot_number}
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="font-medium text-foreground">
-                            {lot.material_name}
-                          </div>
-                          <span className="text-xs text-muted-foreground">
-                            {lot.material_category || "Nguyên liệu"}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="font-medium text-foreground">
-                            {lot.supplier_name || "Chưa gán NCC"}
-                          </div>
-                          {lot.supplier_code && (
-                            <span className="font-mono text-xs text-muted-foreground">
-                              {lot.supplier_code}
+                </thead>
+                <tbody className="divide-y divide-border/60">
+                  {filteredLots.length === 0 ? (
+                    <tr>
+                      <td colSpan={8} className="py-8 text-center text-muted-foreground">
+                        Không tìm thấy lô nguyên liệu nào.
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredLots.map((lot) => {
+                      const statusCfg =
+                        LOT_STATUS_CONFIG[lot.status] || LOT_STATUS_CONFIG.PENDING_IQC;
+                      return (
+                        <tr
+                          key={lot.material_lot_id}
+                          className="transition-colors hover:bg-muted/30"
+                        >
+                          <td className="whitespace-nowrap px-4 py-3 font-mono font-medium text-primary">
+                            {lot.lot_number}
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="font-medium text-foreground">{lot.material_name}</div>
+                            <span className="text-xs text-muted-foreground">
+                              {lot.material_category || "Nguyên liệu"}
                             </span>
-                          )}
-                        </td>
-                        <td className="whitespace-nowrap px-4 py-3">
-                          <div className="flex items-center gap-1.5 text-xs text-foreground">
-                            <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
-                            <span>Nhận: {lot.received_date}</span>
-                          </div>
-                          {lot.exp_date && (
-                            <div className="mt-0.5 text-xs text-amber-600 dark:text-amber-400">
-                              HSD: {lot.exp_date}
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="font-medium text-foreground">
+                              {lot.supplier_name || "Chưa gán NCC"}
                             </div>
-                          )}
-                        </td>
-                        <td className="whitespace-nowrap px-4 py-3 font-mono font-medium">
-                          {lot.quantity.toLocaleString("vi-VN")} {lot.unit}
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="text-xs font-medium text-muted-foreground">
-                            {lot.storage_condition}
-                          </div>
-                          {lot.coa_file_url ? (
-                            <a
-                              href={lot.coa_file_url}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="mt-1 inline-flex items-center gap-1 text-[11px] text-primary hover:underline"
+                            {lot.supplier_code && (
+                              <span className="font-mono text-xs text-muted-foreground">
+                                {lot.supplier_code}
+                              </span>
+                            )}
+                          </td>
+                          <td className="whitespace-nowrap px-4 py-3">
+                            <div className="flex items-center gap-1.5 text-xs text-foreground">
+                              <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+                              <span>Nhận: {lot.received_date}</span>
+                            </div>
+                            {lot.exp_date && (
+                              <div className="mt-0.5 text-xs text-amber-600 dark:text-amber-400">
+                                HSD: {lot.exp_date}
+                              </div>
+                            )}
+                          </td>
+                          <td className="whitespace-nowrap px-4 py-3 font-mono font-medium">
+                            {lot.quantity.toLocaleString("vi-VN")} {lot.unit}
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="text-xs font-medium text-muted-foreground">
+                              {lot.storage_condition}
+                            </div>
+                            {lot.coa_file_url ? (
+                              <a
+                                href={lot.coa_file_url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="mt-1 inline-flex items-center gap-1 text-[11px] text-primary hover:underline"
+                              >
+                                <FileText className="h-3 w-3" />
+                                <span>Phiếu COA</span>
+                                <ExternalLink className="h-2.5 w-2.5" />
+                              </a>
+                            ) : (
+                              <span className="text-[11px] text-muted-foreground italic">
+                                Chưa đính kèm COA
+                              </span>
+                            )}
+                          </td>
+                          <td className="whitespace-nowrap px-4 py-3">
+                            <span
+                              className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium ${statusCfg.bg} ${statusCfg.color}`}
                             >
-                              <FileText className="h-3 w-3" />
-                              <span>Phiếu COA</span>
-                              <ExternalLink className="h-2.5 w-2.5" />
-                            </a>
-                          ) : (
-                            <span className="text-[11px] text-muted-foreground italic">
-                              Chưa đính kèm COA
+                              {statusCfg.label}
                             </span>
-                          )}
-                        </td>
-                        <td className="whitespace-nowrap px-4 py-3">
-                          <span
-                            className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium ${statusCfg.bg} ${statusCfg.color}`}
-                          >
-                            {statusCfg.label}
-                          </span>
-                        </td>
-                        <td className="whitespace-nowrap px-4 py-3 text-right">
-                          <div className="flex items-center justify-end gap-1">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              title="Nghiệm thu IQC bằng Form Động (FORM-IQC-01)"
-                              onClick={() => handleOpenIqcDynamicForm(lot)}
-                              className="h-8 gap-1 border-sky-500/30 bg-sky-500/10 text-sky-700 hover:bg-sky-500/20 dark:text-sky-300 font-semibold text-xs"
-                            >
-                              <Sliders className="h-3.5 w-3.5" />
-                              <span>Form IQC</span>
-                            </Button>
-
-                            {lot.status === "PENDING_IQC" && (
+                          </td>
+                          <td className="whitespace-nowrap px-4 py-3 text-right">
+                            <div className="flex items-center justify-end gap-1">
                               <Button
                                 size="sm"
                                 variant="outline"
-                                onClick={() => handleOpenCreateInspection(lot)}
-                                className="h-8 gap-1 border-emerald-500/30 bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/20 dark:text-emerald-300"
+                                title="Nghiệm thu IQC bằng Form Động (FORM-IQC-01)"
+                                onClick={() => handleOpenIqcDynamicForm(lot)}
+                                className="h-8 gap-1 border-sky-500/30 bg-sky-500/10 text-sky-700 hover:bg-sky-500/20 dark:text-sky-300 font-semibold text-xs"
                               >
-                                <FileCheck className="h-3.5 w-3.5" />
-                                <span>IQC</span>
+                                <Sliders className="h-3.5 w-3.5" />
+                                <span>Form IQC</span>
                               </Button>
-                            )}
 
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              title="Xem chi tiết"
-                              onClick={() => setViewingLot(lot)}
-                              className="h-8 w-8 p-0"
-                            >
-                              <Eye className="h-4 w-4 text-muted-foreground hover:text-foreground" />
-                            </Button>
+                              {lot.status === "PENDING_IQC" && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleOpenCreateInspection(lot)}
+                                  className="h-8 gap-1 border-emerald-500/30 bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/20 dark:text-emerald-300"
+                                >
+                                  <FileCheck className="h-3.5 w-3.5" />
+                                  <span>IQC</span>
+                                </Button>
+                              )}
 
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              title="Chỉnh sửa"
-                              onClick={() => handleOpenEditLot(lot)}
-                              className="h-8 w-8 p-0"
-                            >
-                              <Pencil className="h-4 w-4 text-muted-foreground hover:text-foreground" />
-                            </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                title="Xem chi tiết"
+                                onClick={() => setViewingLot(lot)}
+                                className="h-8 w-8 p-0"
+                              >
+                                <Eye className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+                              </Button>
 
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              title="Xóa lô"
-                              onClick={() =>
-                                setDeletingLotItem({
-                                  id: lot.material_lot_id,
-                                  code: lot.lot_number,
-                                })
-                              }
-                              className="h-8 w-8 p-0 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                title="Chỉnh sửa"
+                                onClick={() => handleOpenEditLot(lot)}
+                                className="h-8 w-8 p-0"
+                              >
+                                <Pencil className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+                              </Button>
+
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                title="Xóa lô"
+                                onClick={() =>
+                                  setDeletingLotItem({
+                                    id: lot.material_lot_id,
+                                    code: lot.lot_number,
+                                  })
+                                }
+                                className="h-8 w-8 p-0 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
-        )
-      )}
+        ))}
 
       {/* ==================== TAB 3: IQC INSPECTIONS LIST ==================== */}
-      {activeTab === "inspections" && (
-        inspections.length === 0 ? (
+      {activeTab === "inspections" &&
+        (inspections.length === 0 ? (
           <EmptyState
             icon={ShieldCheck}
             title="Chưa có biên bản kiểm định tiếp nhận IQC nào"
@@ -2425,175 +2578,175 @@ function PurchasingPage() {
           />
         ) : (
           <div className="rounded-xl border border-border bg-card shadow-sm">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="border-b border-border bg-muted/40 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                <tr>
-                  <th className="px-4 py-3">Mã phiếu IQC</th>
-                  <th className="px-4 py-3">Lô & Nguyên liệu</th>
-                  <th className="px-4 py-3">Nhà cung cấp</th>
-                  <th className="px-4 py-3">Chỉ tiêu kiểm tra nhanh</th>
-                  <th className="px-4 py-3">Nhiệt độ / Độ ẩm</th>
-                  <th className="px-4 py-3">Kết luận IQC</th>
-                  <th className="px-4 py-3">Người kiểm & Ngày</th>
-                  <th className="px-4 py-3 text-right">Thao tác</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border/60">
-                {filteredInspections.length === 0 ? (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead className="border-b border-border bg-muted/40 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   <tr>
-                    <td colSpan={8} className="py-8 text-center text-muted-foreground">
-                      Không tìm thấy biên bản kiểm tra IQC nào.
-                    </td>
+                    <th className="px-4 py-3">Mã phiếu IQC</th>
+                    <th className="px-4 py-3">Lô & Nguyên liệu</th>
+                    <th className="px-4 py-3">Nhà cung cấp</th>
+                    <th className="px-4 py-3">Chỉ tiêu kiểm tra nhanh</th>
+                    <th className="px-4 py-3">Nhiệt độ / Độ ẩm</th>
+                    <th className="px-4 py-3">Kết luận IQC</th>
+                    <th className="px-4 py-3">Người kiểm & Ngày</th>
+                    <th className="px-4 py-3 text-right">Thao tác</th>
                   </tr>
-                ) : (
-                  filteredInspections.map((insp) => {
-                    const statusCfg =
-                      IQC_STATUS_CONFIG[insp.status] || IQC_STATUS_CONFIG.PASSED;
-                    const StatusIcon = statusCfg.icon;
-                    return (
-                      <tr
-                        key={insp.inspection_id}
-                        className="transition-colors hover:bg-muted/30"
-                      >
-                        <td className="whitespace-nowrap px-4 py-3 font-mono font-medium text-primary">
-                          {insp.inspection_code}
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="font-medium text-foreground">
-                            {insp.material_name || "Nguyên liệu"}
-                          </div>
-                          <span className="font-mono text-xs text-muted-foreground">
-                            Lô: {insp.lot_number}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 font-medium text-foreground">
-                          {insp.supplier_name || "N/A"}
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="flex flex-wrap gap-1">
-                            <span
-                              className={`inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium ${
-                                insp.sensory_check
-                                  ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
-                                  : "bg-rose-500/10 text-rose-700"
-                              }`}
-                            >
-                              Cảm quan: {insp.sensory_check ? "Đạt" : "Không đạt"}
-                            </span>
-                            <span
-                              className={`inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium ${
-                                insp.packaging_check
-                                  ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
-                                  : "bg-rose-500/10 text-rose-700"
-                              }`}
-                            >
-                              Bao bì: {insp.packaging_check ? "Đạt" : "Hỏng"}
-                            </span>
-                            <span
-                              className={`inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium ${
-                                insp.coa_compliance
-                                  ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
-                                  : "bg-rose-500/10 text-rose-700"
-                              }`}
-                            >
-                              COA: {insp.coa_compliance ? "Khớp" : "Lệch"}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="whitespace-nowrap px-4 py-3">
-                          {insp.temperature_c !== null && insp.temperature_c !== undefined && (
-                            <div className="flex items-center gap-1 text-xs text-foreground">
-                              <Thermometer className="h-3 w-3 text-sky-600" />
-                              <span>{insp.temperature_c} °C</span>
+                </thead>
+                <tbody className="divide-y divide-border/60">
+                  {filteredInspections.length === 0 ? (
+                    <tr>
+                      <td colSpan={8} className="py-8 text-center text-muted-foreground">
+                        Không tìm thấy biên bản kiểm tra IQC nào.
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredInspections.map((insp) => {
+                      const statusCfg = IQC_STATUS_CONFIG[insp.status] || IQC_STATUS_CONFIG.PASSED;
+                      const StatusIcon = statusCfg.icon;
+                      return (
+                        <tr
+                          key={insp.inspection_id}
+                          className="transition-colors hover:bg-muted/30"
+                        >
+                          <td className="whitespace-nowrap px-4 py-3 font-mono font-medium text-primary">
+                            {insp.inspection_code}
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="font-medium text-foreground">
+                              {insp.material_name || "Nguyên liệu"}
                             </div>
-                          )}
-                          {insp.moisture_content !== null && insp.moisture_content !== undefined && insp.moisture_content > 0 && (
-                            <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                              <Droplets className="h-3 w-3 text-blue-500" />
-                              <span>Độ ẩm: {insp.moisture_content}%</span>
+                            <span className="font-mono text-xs text-muted-foreground">
+                              Lô: {insp.lot_number}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 font-medium text-foreground">
+                            {insp.supplier_name || "N/A"}
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex flex-wrap gap-1">
+                              <span
+                                className={`inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium ${
+                                  insp.sensory_check
+                                    ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+                                    : "bg-rose-500/10 text-rose-700"
+                                }`}
+                              >
+                                Cảm quan: {insp.sensory_check ? "Đạt" : "Không đạt"}
+                              </span>
+                              <span
+                                className={`inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium ${
+                                  insp.packaging_check
+                                    ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+                                    : "bg-rose-500/10 text-rose-700"
+                                }`}
+                              >
+                                Bao bì: {insp.packaging_check ? "Đạt" : "Hỏng"}
+                              </span>
+                              <span
+                                className={`inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium ${
+                                  insp.coa_compliance
+                                    ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+                                    : "bg-rose-500/10 text-rose-700"
+                                }`}
+                              >
+                                COA: {insp.coa_compliance ? "Khớp" : "Lệch"}
+                              </span>
                             </div>
-                          )}
-                        </td>
-                        <td className="whitespace-nowrap px-4 py-3">
-                          <span
-                            className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-medium ${statusCfg.bg} ${statusCfg.color}`}
-                          >
-                            <StatusIcon className="h-3.5 w-3.5" />
-                            {statusCfg.label}
-                          </span>
-                        </td>
-                        <td className="whitespace-nowrap px-4 py-3">
-                          <div className="text-xs font-medium text-foreground">
-                            {insp.inspector_name || "QC Inspector"}
-                          </div>
-                          <div className="text-[11px] text-muted-foreground">
-                            {insp.inspected_at
-                              ? new Date(insp.inspected_at).toLocaleDateString("vi-VN")
-                              : ""}
-                          </div>
-                        </td>
-                        <td className="whitespace-nowrap px-4 py-3 text-right">
-                          <div className="flex items-center justify-end gap-1">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              title="In Phiếu Kiểm nghiệm IQC"
-                              onClick={() => {
-                                setViewingInspection(insp);
-                                setIsPrintIqcOpen(true);
-                              }}
-                              className="h-8 w-8 p-0 text-primary hover:bg-primary/10"
+                          </td>
+                          <td className="whitespace-nowrap px-4 py-3">
+                            {insp.temperature_c !== null && insp.temperature_c !== undefined && (
+                              <div className="flex items-center gap-1 text-xs text-foreground">
+                                <Thermometer className="h-3 w-3 text-sky-600" />
+                                <span>{insp.temperature_c} °C</span>
+                              </div>
+                            )}
+                            {insp.moisture_content !== null &&
+                              insp.moisture_content !== undefined &&
+                              insp.moisture_content > 0 && (
+                                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                  <Droplets className="h-3 w-3 text-blue-500" />
+                                  <span>Độ ẩm: {insp.moisture_content}%</span>
+                                </div>
+                              )}
+                          </td>
+                          <td className="whitespace-nowrap px-4 py-3">
+                            <span
+                              className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-medium ${statusCfg.bg} ${statusCfg.color}`}
                             >
-                              <Printer className="h-4 w-4" />
-                            </Button>
+                              <StatusIcon className="h-3.5 w-3.5" />
+                              {statusCfg.label}
+                            </span>
+                          </td>
+                          <td className="whitespace-nowrap px-4 py-3">
+                            <div className="text-xs font-medium text-foreground">
+                              {insp.inspector_name || "QC Inspector"}
+                            </div>
+                            <div className="text-[11px] text-muted-foreground">
+                              {insp.inspected_at
+                                ? new Date(insp.inspected_at).toLocaleDateString("vi-VN")
+                                : ""}
+                            </div>
+                          </td>
+                          <td className="whitespace-nowrap px-4 py-3 text-right">
+                            <div className="flex items-center justify-end gap-1">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                title="In Phiếu Kiểm nghiệm IQC"
+                                onClick={() => {
+                                  setViewingInspection(insp);
+                                  setIsPrintIqcOpen(true);
+                                }}
+                                className="h-8 w-8 p-0 text-primary hover:bg-primary/10"
+                              >
+                                <Printer className="h-4 w-4" />
+                              </Button>
 
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              title="Xem chi tiết"
-                              onClick={() => setViewingInspection(insp)}
-                              className="h-8 w-8 p-0"
-                            >
-                              <Eye className="h-4 w-4 text-muted-foreground hover:text-foreground" />
-                            </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                title="Xem chi tiết"
+                                onClick={() => setViewingInspection(insp)}
+                                className="h-8 w-8 p-0"
+                              >
+                                <Eye className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+                              </Button>
 
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              title="Chỉnh sửa"
-                              onClick={() => handleOpenEditInspection(insp)}
-                              className="h-8 w-8 p-0"
-                            >
-                              <Pencil className="h-4 w-4 text-muted-foreground hover:text-foreground" />
-                            </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                title="Chỉnh sửa"
+                                onClick={() => handleOpenEditInspection(insp)}
+                                className="h-8 w-8 p-0"
+                              >
+                                <Pencil className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+                              </Button>
 
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              title="Xóa biên bản"
-                              onClick={() =>
-                                setDeletingInspectionItem({
-                                  id: insp.inspection_id,
-                                  code: insp.inspection_code,
-                                })
-                              }
-                              className="h-8 w-8 p-0 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                title="Xóa biên bản"
+                                onClick={() =>
+                                  setDeletingInspectionItem({
+                                    id: insp.inspection_id,
+                                    code: insp.inspection_code,
+                                  })
+                                }
+                                className="h-8 w-8 p-0 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
-        )
-      )}
+        ))}
 
       {/* ==================== TAB 4: AI COA SMART INSPECTOR ==================== */}
       {activeTab === "ai_coa" && (
@@ -2610,7 +2763,9 @@ function PurchasingPage() {
                   Tự động Đối chiếu Chỉ tiêu COA theo Quy chuẩn QCVN & ISO 22000:2018
                 </h3>
                 <p className="text-xs text-muted-foreground max-w-3xl">
-                  AI phân tích các thông số vi sinh vật (Salmonella, E.coli), độc tố vi nấm (Aflatoxin), kim loại nặng (Chì, Cadmi, Thủy ngân), độ ẩm và nhãn dị nguyên để đưa ra kết luận chấp nhận/từ chối ngay tức thì.
+                  AI phân tích các thông số vi sinh vật (Salmonella, E.coli), độc tố vi nấm
+                  (Aflatoxin), kim loại nặng (Chì, Cadmi, Thủy ngân), độ ẩm và nhãn dị nguyên để đưa
+                  ra kết luận chấp nhận/từ chối ngay tức thì.
                 </p>
               </div>
 
@@ -2658,9 +2813,7 @@ function PurchasingPage() {
                   <div className="text-xs font-medium text-muted-foreground">
                     Nguyên liệu phân tích
                   </div>
-                  <div className="mt-1 font-bold text-foreground">
-                    {coaAiResult.material_name}
-                  </div>
+                  <div className="mt-1 font-bold text-foreground">{coaAiResult.material_name}</div>
                   <div className="mt-2 text-xs text-muted-foreground">
                     Quy chuẩn:{" "}
                     <span className="font-semibold text-primary">
@@ -2679,8 +2832,8 @@ function PurchasingPage() {
                         coaAiResult.overall_status === "PASSED"
                           ? "bg-emerald-500/10 border-emerald-300 text-emerald-700 dark:text-emerald-300"
                           : coaAiResult.overall_status === "REVIEW_REQUIRED"
-                          ? "bg-amber-500/10 border-amber-300 text-amber-700 dark:text-amber-300"
-                          : "bg-rose-500/10 border-rose-300 text-rose-700 dark:text-rose-300"
+                            ? "bg-amber-500/10 border-amber-300 text-amber-700 dark:text-amber-300"
+                            : "bg-rose-500/10 border-rose-300 text-rose-700 dark:text-rose-300"
                       }`}
                     >
                       {coaAiResult.overall_status === "PASSED" ? (
@@ -2738,9 +2891,7 @@ function PurchasingPage() {
                     <tbody className="divide-y divide-border/60">
                       {coaAiResult.parameters.map((p: any, idx: number) => (
                         <tr key={idx} className="hover:bg-muted/20">
-                          <td className="px-4 py-3 font-medium text-foreground">
-                            {p.name}
-                          </td>
+                          <td className="px-4 py-3 font-medium text-foreground">{p.name}</td>
                           <td className="px-4 py-3 font-mono font-semibold text-primary">
                             {p.tested_value}
                           </td>
@@ -2753,8 +2904,8 @@ function PurchasingPage() {
                                 p.risk_level === "SAFE"
                                   ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
                                   : p.risk_level === "WARNING"
-                                  ? "bg-amber-500/10 text-amber-700 dark:text-amber-300"
-                                  : "bg-rose-500/10 text-rose-700 dark:text-rose-300"
+                                    ? "bg-amber-500/10 text-amber-700 dark:text-amber-300"
+                                    : "bg-rose-500/10 text-rose-700 dark:text-rose-300"
                               }`}
                             >
                               {p.is_compliant ? (
@@ -2765,13 +2916,11 @@ function PurchasingPage() {
                               {p.risk_level === "SAFE"
                                 ? "Đạt"
                                 : p.risk_level === "WARNING"
-                                ? "Cảnh báo"
-                                : "Vi phạm"}
+                                  ? "Cảnh báo"
+                                  : "Vi phạm"}
                             </span>
                           </td>
-                          <td className="px-4 py-3 text-xs text-muted-foreground">
-                            {p.notes}
-                          </td>
+                          <td className="px-4 py-3 text-xs text-muted-foreground">{p.notes}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -2784,8 +2933,8 @@ function PurchasingPage() {
       )}
 
       {/* ==================== TAB 4: EVALUATION PLANS (BM02-KHĐGNCC) ==================== */}
-      {activeTab === "eval_plans" && (
-        evaluationPlans.length === 0 ? (
+      {activeTab === "eval_plans" &&
+        (evaluationPlans.length === 0 ? (
           <EmptyState
             icon={Calendar}
             title="Chưa có kế hoạch đánh giá nhà cung cấp nào"
@@ -2796,148 +2945,149 @@ function PurchasingPage() {
           />
         ) : (
           <div className="space-y-4">
-          <div className="rounded-xl border border-border bg-card shadow-sm">
-            <div className="flex items-center justify-between border-b border-border/80 px-4 py-3 bg-muted/20">
-              <div>
-                <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-primary" />
-                  Kế Hoạch Đánh Giá Năng Lực Nhà Cung Cấp Hàng Năm (BM02-KHĐGNCC)
-                </h3>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  Quy định lập lịch định kỳ và đột xuất đánh giá nhà cung ứng theo ISO 22000:2018
-                </p>
+            <div className="rounded-xl border border-border bg-card shadow-sm">
+              <div className="flex items-center justify-between border-b border-border/80 px-4 py-3 bg-muted/20">
+                <div>
+                  <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                    <Calendar className="h-4 w-4 text-primary" />
+                    Kế Hoạch Đánh Giá Năng Lực Nhà Cung Cấp Hàng Năm (BM02-KHĐGNCC)
+                  </h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Quy định lập lịch định kỳ và đột xuất đánh giá nhà cung ứng theo ISO 22000:2018
+                  </p>
+                </div>
+                <Button
+                  onClick={openNewPlan}
+                  size="sm"
+                  className="gap-1.5 bg-primary text-primary-foreground text-xs shadow-sm"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  <span>Thêm Kế Hoạch Năm</span>
+                </Button>
               </div>
-              <Button
-                onClick={openNewPlan}
-                size="sm"
-                className="gap-1.5 bg-primary text-primary-foreground text-xs shadow-sm"
-              >
-                <Plus className="h-3.5 w-3.5" />
-                <span>Thêm Kế Hoạch Năm</span>
-              </Button>
-            </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
-                <thead className="border-b border-border bg-muted/40 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  <tr>
-                    <th className="px-4 py-3">Mã Kế Hoạch</th>
-                    <th className="px-4 py-3">Năm & Tiêu Đề</th>
-                    <th className="px-4 py-3">Phòng Ban Chủ Trì</th>
-                    <th className="px-4 py-3">Phạm Vi Đánh Giá</th>
-                    <th className="px-4 py-3">Số NCC Đã ĐG</th>
-                    <th className="px-4 py-3">Trạng Thái Phê Duyệt</th>
-                    <th className="px-4 py-3 text-right">Thao Tác</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border/60">
-                  {filteredPlans.length === 0 ? (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm">
+                  <thead className="border-b border-border bg-muted/40 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                     <tr>
-                      <td colSpan={7} className="py-12 text-center text-muted-foreground">
-                        <div className="flex flex-col items-center justify-center gap-2">
-                          <Calendar className="h-8 w-8 text-muted-foreground/50" />
-                          <p className="text-sm">Không tìm thấy kế hoạch đánh giá nào phù hợp.</p>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={openNewPlan}
-                            className="mt-2 text-xs"
-                          >
-                            <Plus className="h-3.5 w-3.5 mr-1" />
-                            Lập Kế Hoạch BM02 Đầu Tiên
-                          </Button>
-                        </div>
-                      </td>
+                      <th className="px-4 py-3">Mã Kế Hoạch</th>
+                      <th className="px-4 py-3">Năm & Tiêu Đề</th>
+                      <th className="px-4 py-3">Phòng Ban Chủ Trì</th>
+                      <th className="px-4 py-3">Phạm Vi Đánh Giá</th>
+                      <th className="px-4 py-3">Số NCC Đã ĐG</th>
+                      <th className="px-4 py-3">Trạng Thái Phê Duyệt</th>
+                      <th className="px-4 py-3 text-right">Thao Tác</th>
                     </tr>
-                  ) : (
-                    filteredPlans.map((plan) => {
-                      const countEvals = evaluations.filter((e) => e.plan_id === plan.id).length;
-                      return (
-                        <tr key={plan.id} className="transition-colors hover:bg-muted/30">
-                          <td className="whitespace-nowrap px-4 py-3 font-mono font-medium text-primary">
-                            {plan.plan_code}
-                          </td>
-                          <td className="px-4 py-3">
-                            <div className="font-medium text-foreground">{plan.title}</div>
-                            <div className="text-xs text-muted-foreground mt-0.5">
-                              Năm thực hiện: <span className="font-semibold">{plan.year}</span>
-                            </div>
-                          </td>
-                          <td className="px-4 py-3 text-xs text-muted-foreground">
-                            {plan.department}
-                          </td>
-                          <td className="px-4 py-3 text-xs text-muted-foreground max-w-xs truncate">
-                            {plan.scope || "Toàn bộ nhà cung cấp trong danh bạ ASL"}
-                          </td>
-                          <td className="whitespace-nowrap px-4 py-3">
-                            <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
-                              {countEvals} đánh giá
-                            </span>
-                          </td>
-                          <td className="whitespace-nowrap px-4 py-3">
-                            {plan.approval_status === "APPROVED" ? (
-                              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-medium text-emerald-700 dark:text-emerald-300">
-                                <CheckCircle2 className="h-3 w-3" />
-                                Đã phê duyệt ({plan.approved_by || "BGĐ"})
+                  </thead>
+                  <tbody className="divide-y divide-border/60">
+                    {filteredPlans.length === 0 ? (
+                      <tr>
+                        <td colSpan={7} className="py-12 text-center text-muted-foreground">
+                          <div className="flex flex-col items-center justify-center gap-2">
+                            <Calendar className="h-8 w-8 text-muted-foreground/50" />
+                            <p className="text-sm">Không tìm thấy kế hoạch đánh giá nào phù hợp.</p>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={openNewPlan}
+                              className="mt-2 text-xs"
+                            >
+                              <Plus className="h-3.5 w-3.5 mr-1" />
+                              Lập Kế Hoạch BM02 Đầu Tiên
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredPlans.map((plan) => {
+                        const countEvals = evaluations.filter((e) => e.plan_id === plan.id).length;
+                        return (
+                          <tr key={plan.id} className="transition-colors hover:bg-muted/30">
+                            <td className="whitespace-nowrap px-4 py-3 font-mono font-medium text-primary">
+                              {plan.plan_code}
+                            </td>
+                            <td className="px-4 py-3">
+                              <div className="font-medium text-foreground">{plan.title}</div>
+                              <div className="text-xs text-muted-foreground mt-0.5">
+                                Năm thực hiện: <span className="font-semibold">{plan.year}</span>
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 text-xs text-muted-foreground">
+                              {plan.department}
+                            </td>
+                            <td className="px-4 py-3 text-xs text-muted-foreground max-w-xs truncate">
+                              {plan.scope || "Toàn bộ nhà cung cấp trong danh bạ ASL"}
+                            </td>
+                            <td className="whitespace-nowrap px-4 py-3">
+                              <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
+                                {countEvals} đánh giá
                               </span>
-                            ) : plan.approval_status === "PENDING" ? (
-                              <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2.5 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-300">
-                                <Clock className="h-3 w-3" />
-                                Chờ duyệt
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center gap-1 rounded-full bg-rose-500/10 px-2.5 py-0.5 text-xs font-medium text-rose-700 dark:text-rose-300">
-                                <XCircle className="h-3 w-3" />
-                                Từ chối
-                              </span>
-                            )}
-                          </td>
-                          <td className="whitespace-nowrap px-4 py-3 text-right">
-                            <div className="flex items-center justify-end gap-1.5">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handlePrintEvaluationPlan(plan)}
-                                title="In Kế Hoạch ĐG (BM02-KHĐGNCC)"
-                                className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
-                              >
-                                <Printer className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => openEditPlan(plan)}
-                                title="Chỉnh sửa Kế Hoạch"
-                                className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
-                              >
-                                <Pencil className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => setDeletingPlanItem({ id: plan.id, code: plan.plan_code })}
-                                title="Xóa Kế Hoạch"
-                                className="h-8 w-8 p-0 text-rose-500 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/30"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
+                            </td>
+                            <td className="whitespace-nowrap px-4 py-3">
+                              {plan.approval_status === "APPROVED" ? (
+                                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-medium text-emerald-700 dark:text-emerald-300">
+                                  <CheckCircle2 className="h-3 w-3" />
+                                  Đã phê duyệt ({plan.approved_by || "BGĐ"})
+                                </span>
+                              ) : plan.approval_status === "PENDING" ? (
+                                <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2.5 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-300">
+                                  <Clock className="h-3 w-3" />
+                                  Chờ duyệt
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 rounded-full bg-rose-500/10 px-2.5 py-0.5 text-xs font-medium text-rose-700 dark:text-rose-300">
+                                  <XCircle className="h-3 w-3" />
+                                  Từ chối
+                                </span>
+                              )}
+                            </td>
+                            <td className="whitespace-nowrap px-4 py-3 text-right">
+                              <div className="flex items-center justify-end gap-1.5">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handlePrintEvaluationPlan(plan)}
+                                  title="In Kế Hoạch ĐG (BM02-KHĐGNCC)"
+                                  className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+                                >
+                                  <Printer className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => openEditPlan(plan)}
+                                  title="Chỉnh sửa Kế Hoạch"
+                                  className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() =>
+                                    setDeletingPlanItem({ id: plan.id, code: plan.plan_code })
+                                  }
+                                  title="Xóa Kế Hoạch"
+                                  className="h-8 w-8 p-0 text-rose-500 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/30"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
-        </div>
-        )
-      )}
+        ))}
 
       {/* ==================== TAB 5: SUPPLIER EVALUATIONS (BM03 / BM03-TS / BM04) ==================== */}
-      {activeTab === "evaluations" && (
-        evaluations.length === 0 ? (
+      {activeTab === "evaluations" &&
+        (evaluations.length === 0 ? (
           <EmptyState
             icon={Award}
             title="Chưa có hồ sơ đánh giá nhà cung cấp nào"
@@ -2948,177 +3098,216 @@ function PurchasingPage() {
           />
         ) : (
           <div className="space-y-4">
-          <div className="rounded-xl border border-border bg-card shadow-sm">
-            <div className="flex items-center justify-between border-b border-border/80 px-4 py-3 bg-muted/20">
-              <div>
-                <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                  <Award className="h-4 w-4 text-emerald-600" />
-                  Hồ Sơ Đánh Giá Năng Lực Nhà Cung Ứng (BM03, TC Bổ Sung TS, BM04)
-                </h3>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  Thang điểm 100 điểm: Nông sản tươi (BM03 gốc), Thủy hải sản tươi (Bộ tiêu chí bổ sung do dự án tự xây dựng), Khô/Bao bì (BM04 gốc)
-                </p>
+            <div className="rounded-xl border border-border bg-card shadow-sm">
+              <div className="flex items-center justify-between border-b border-border/80 px-4 py-3 bg-muted/20">
+                <div>
+                  <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                    <Award className="h-4 w-4 text-emerald-600" />
+                    Hồ Sơ Đánh Giá Năng Lực Nhà Cung Ứng (BM03, TC Bổ Sung TS, BM04)
+                  </h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Thang điểm 100 điểm: Nông sản tươi (BM03 gốc), Thủy hải sản tươi (Bộ tiêu chí bổ
+                    sung do dự án tự xây dựng), Khô/Bao bì (BM04 gốc)
+                  </p>
+                </div>
+                <Button
+                  onClick={openNewEval}
+                  size="sm"
+                  className="gap-1.5 bg-primary text-primary-foreground text-xs shadow-sm"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  <span>Lập Phiếu Đánh Giá Mới</span>
+                </Button>
               </div>
-              <Button
-                onClick={openNewEval}
-                size="sm"
-                className="gap-1.5 bg-primary text-primary-foreground text-xs shadow-sm"
-              >
-                <Plus className="h-3.5 w-3.5" />
-                <span>Lập Phiếu Đánh Giá Mới</span>
-              </Button>
-            </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
-                <thead className="border-b border-border bg-muted/40 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  <tr>
-                    <th className="px-4 py-3">Mã Phiếu & Ngày</th>
-                    <th className="px-4 py-3">Nhà Cung Cấp</th>
-                    <th className="px-4 py-3">Bộ Tiêu Chí (Biểu Mẫu)</th>
-                    <th className="px-4 py-3">Hình Thức ĐG</th>
-                    <th className="px-4 py-3">Điểm / Hạng</th>
-                    <th className="px-4 py-3">Kết Luận Phê Duyệt</th>
-                    <th className="px-4 py-3">Chuyên Viên ĐG</th>
-                    <th className="px-4 py-3 text-right">Thao Tác</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border/60">
-                  {filteredEvaluations.length === 0 ? (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm">
+                  <thead className="border-b border-border bg-muted/40 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                     <tr>
-                      <td colSpan={8} className="py-12 text-center text-muted-foreground">
-                        <div className="flex flex-col items-center justify-center gap-2">
-                          <Award className="h-8 w-8 text-muted-foreground/50" />
-                          <p className="text-sm">Không tìm thấy biên bản đánh giá nhà cung cấp nào.</p>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={openNewEval}
-                            className="mt-2 text-xs"
-                          >
-                            <Plus className="h-3.5 w-3.5 mr-1" />
-                            Lập Phiếu Đánh Giá Đầu Tiên
-                          </Button>
-                        </div>
-                      </td>
+                      <th className="px-4 py-3">Mã Phiếu & Ngày</th>
+                      <th className="px-4 py-3">Nhà Cung Cấp</th>
+                      <th className="px-4 py-3">Bộ Tiêu Chí (Biểu Mẫu)</th>
+                      <th className="px-4 py-3">Hình Thức ĐG</th>
+                      <th className="px-4 py-3">Điểm / Hạng</th>
+                      <th className="px-4 py-3">Kết Luận Phê Duyệt</th>
+                      <th className="px-4 py-3">Chuyên Viên ĐG</th>
+                      <th className="px-4 py-3 text-right">Thao Tác</th>
                     </tr>
-                  ) : (
-                    filteredEvaluations.map((ev) => {
-                      const criteriaBadge =
-                        ev.criteria_type === "AGRI_FRESH"
-                          ? { label: "BM03: Nông sản tươi", color: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20" }
-                          : ev.criteria_type === "AQUA_ANIMAL_FRESH"
-                          ? { label: "TC Bổ sung: Thủy sản tươi", color: "bg-sky-500/10 text-sky-700 dark:text-sky-300 border-sky-500/20" }
-                          : { label: "BM04: Khô, phụ gia, bao bì", color: "bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20" };
+                  </thead>
+                  <tbody className="divide-y divide-border/60">
+                    {filteredEvaluations.length === 0 ? (
+                      <tr>
+                        <td colSpan={8} className="py-12 text-center text-muted-foreground">
+                          <div className="flex flex-col items-center justify-center gap-2">
+                            <Award className="h-8 w-8 text-muted-foreground/50" />
+                            <p className="text-sm">
+                              Không tìm thấy biên bản đánh giá nhà cung cấp nào.
+                            </p>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={openNewEval}
+                              className="mt-2 text-xs"
+                            >
+                              <Plus className="h-3.5 w-3.5 mr-1" />
+                              Lập Phiếu Đánh Giá Đầu Tiên
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredEvaluations.map((ev) => {
+                        const criteriaBadge =
+                          ev.criteria_type === "AGRI_FRESH"
+                            ? {
+                                label: "BM03: Nông sản tươi",
+                                color:
+                                  "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20",
+                              }
+                            : ev.criteria_type === "AQUA_ANIMAL_FRESH"
+                              ? {
+                                  label: "TC Bổ sung: Thủy sản tươi",
+                                  color:
+                                    "bg-sky-500/10 text-sky-700 dark:text-sky-300 border-sky-500/20",
+                                }
+                              : {
+                                  label: "BM04: Khô, phụ gia, bao bì",
+                                  color:
+                                    "bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20",
+                                };
 
-                      const conclusionBadge =
-                        ev.conclusion === "APPROVED"
-                          ? { label: "ĐẠT CHUẨN (ASL)", color: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300" }
-                          : ev.conclusion === "CONDITIONAL"
-                          ? { label: "CÓ ĐIỀU KIỆN", color: "bg-amber-500/10 text-amber-700 dark:text-amber-300" }
-                          : { label: "KHÔNG ĐẠT (LOẠI)", color: "bg-rose-500/10 text-rose-700 dark:text-rose-300" };
+                        const conclusionBadge =
+                          ev.conclusion === "APPROVED"
+                            ? {
+                                label: "ĐẠT CHUẨN (ASL)",
+                                color: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
+                              }
+                            : ev.conclusion === "CONDITIONAL"
+                              ? {
+                                  label: "CÓ ĐIỀU KIỆN",
+                                  color: "bg-amber-500/10 text-amber-700 dark:text-amber-300",
+                                }
+                              : {
+                                  label: "KHÔNG ĐẠT (LOẠI)",
+                                  color: "bg-rose-500/10 text-rose-700 dark:text-rose-300",
+                                };
 
-                      return (
-                        <tr key={ev.id} className="transition-colors hover:bg-muted/30">
-                          <td className="whitespace-nowrap px-4 py-3">
-                            <div className="font-mono font-medium text-primary">{ev.evaluation_code}</div>
-                            <div className="text-xs text-muted-foreground mt-0.5">{ev.evaluation_date}</div>
-                          </td>
-                          <td className="px-4 py-3">
-                            <div className="font-medium text-foreground">{ev.supplier_name}</div>
-                            <div className="font-mono text-xs text-muted-foreground">{ev.supplier_code}</div>
-                          </td>
-                          <td className="px-4 py-3">
-                            <span className={`inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium ${criteriaBadge.color}`}>
-                              {criteriaBadge.label}
-                            </span>
-                          </td>
-                          <td className="whitespace-nowrap px-4 py-3 text-xs text-muted-foreground">
-                            {ev.audit_type === "ON_SITE"
-                              ? "Hiện trường (On-site)"
-                              : ev.audit_type === "DESK_AUDIT"
-                              ? "Hồ sơ (Desk)"
-                              : "Bên thứ ba"}
-                          </td>
-                          <td className="whitespace-nowrap px-4 py-3">
-                            <div className="flex items-center gap-1.5">
-                              <span className="text-sm font-bold text-foreground">{ev.total_score}</span>
-                              <span className="text-xs text-muted-foreground">/ 100</span>
+                        return (
+                          <tr key={ev.id} className="transition-colors hover:bg-muted/30">
+                            <td className="whitespace-nowrap px-4 py-3">
+                              <div className="font-mono font-medium text-primary">
+                                {ev.evaluation_code}
+                              </div>
+                              <div className="text-xs text-muted-foreground mt-0.5">
+                                {ev.evaluation_date}
+                              </div>
+                            </td>
+                            <td className="px-4 py-3">
+                              <div className="font-medium text-foreground">{ev.supplier_name}</div>
+                              <div className="font-mono text-xs text-muted-foreground">
+                                {ev.supplier_code}
+                              </div>
+                            </td>
+                            <td className="px-4 py-3">
                               <span
-                                className={`ml-1 rounded px-1.5 py-0.5 text-xs font-bold ${
-                                  ev.grade === "A"
-                                    ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
-                                    : ev.grade === "B"
-                                    ? "bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300"
-                                    : ev.grade === "C"
-                                    ? "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300"
-                                    : "bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300"
-                                }`}
+                                className={`inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium ${criteriaBadge.color}`}
                               >
-                                Hạng {ev.grade}
+                                {criteriaBadge.label}
                               </span>
-                            </div>
-                          </td>
-                          <td className="whitespace-nowrap px-4 py-3">
-                            <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${conclusionBadge.color}`}>
-                              {ev.conclusion === "APPROVED" ? (
-                                <CheckCircle2 className="h-3 w-3" />
-                              ) : ev.conclusion === "CONDITIONAL" ? (
-                                <AlertTriangle className="h-3 w-3" />
-                              ) : (
-                                <XCircle className="h-3 w-3" />
+                            </td>
+                            <td className="whitespace-nowrap px-4 py-3 text-xs text-muted-foreground">
+                              {ev.audit_type === "ON_SITE"
+                                ? "Hiện trường (On-site)"
+                                : ev.audit_type === "DESK_AUDIT"
+                                  ? "Hồ sơ (Desk)"
+                                  : "Bên thứ ba"}
+                            </td>
+                            <td className="whitespace-nowrap px-4 py-3">
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-sm font-bold text-foreground">
+                                  {ev.total_score}
+                                </span>
+                                <span className="text-xs text-muted-foreground">/ 100</span>
+                                <span
+                                  className={`ml-1 rounded px-1.5 py-0.5 text-xs font-bold ${
+                                    ev.grade === "A"
+                                      ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
+                                      : ev.grade === "B"
+                                        ? "bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300"
+                                        : ev.grade === "C"
+                                          ? "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300"
+                                          : "bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300"
+                                  }`}
+                                >
+                                  Hạng {ev.grade}
+                                </span>
+                              </div>
+                            </td>
+                            <td className="whitespace-nowrap px-4 py-3">
+                              <span
+                                className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${conclusionBadge.color}`}
+                              >
+                                {ev.conclusion === "APPROVED" ? (
+                                  <CheckCircle2 className="h-3 w-3" />
+                                ) : ev.conclusion === "CONDITIONAL" ? (
+                                  <AlertTriangle className="h-3 w-3" />
+                                ) : (
+                                  <XCircle className="h-3 w-3" />
+                                )}
+                                {conclusionBadge.label}
+                              </span>
+                            </td>
+                            <td className="whitespace-nowrap px-4 py-3 text-xs text-muted-foreground">
+                              <div>{ev.evaluator_name}</div>
+                              {ev.approved_by && (
+                                <div className="text-[11px] text-muted-foreground/80">
+                                  Duyệt: {ev.approved_by}
+                                </div>
                               )}
-                              {conclusionBadge.label}
-                            </span>
-                          </td>
-                          <td className="whitespace-nowrap px-4 py-3 text-xs text-muted-foreground">
-                            <div>{ev.evaluator_name}</div>
-                            {ev.approved_by && (
-                              <div className="text-[11px] text-muted-foreground/80">Duyệt: {ev.approved_by}</div>
-                            )}
-                          </td>
-                          <td className="whitespace-nowrap px-4 py-3 text-right">
-                            <div className="flex items-center justify-end gap-1.5">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handlePrintEvaluation(ev)}
-                                title="In Phiếu ĐG (BM03/04)"
-                                className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
-                              >
-                                <Printer className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => openEditEval(ev)}
-                                title="Chỉnh sửa Phiếu ĐG"
-                                className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
-                              >
-                                <Pencil className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => setDeletingEvalItem({ id: ev.id, code: ev.evaluation_code })}
-                                title="Xóa Phiếu ĐG"
-                                className="h-8 w-8 p-0 text-rose-500 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/30"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
+                            </td>
+                            <td className="whitespace-nowrap px-4 py-3 text-right">
+                              <div className="flex items-center justify-end gap-1.5">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handlePrintEvaluation(ev)}
+                                  title="In Phiếu ĐG (BM03/04)"
+                                  className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+                                >
+                                  <Printer className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => openEditEval(ev)}
+                                  title="Chỉnh sửa Phiếu ĐG"
+                                  className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() =>
+                                    setDeletingEvalItem({ id: ev.id, code: ev.evaluation_code })
+                                  }
+                                  title="Xóa Phiếu ĐG"
+                                  className="h-8 w-8 p-0 text-rose-500 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/30"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
-        </div>
-        )
-      )}
+        ))}
       <Dialog open={isCreateSupplierOpen} onOpenChange={setIsCreateSupplierOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
@@ -3146,9 +3335,7 @@ function PurchasingPage() {
                 <Label>Phân loại Ngành hàng *</Label>
                 <select
                   value={supplierForm.category}
-                  onChange={(e) =>
-                    setSupplierForm({ ...supplierForm, category: e.target.value })
-                  }
+                  onChange={(e) => setSupplierForm({ ...supplierForm, category: e.target.value })}
                   className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
                 >
                   {SUPPLIER_CATEGORIES.map((c) => (
@@ -3187,9 +3374,7 @@ function PurchasingPage() {
                 <Label>Số điện thoại</Label>
                 <Input
                   value={supplierForm.phone}
-                  onChange={(e) =>
-                    setSupplierForm({ ...supplierForm, phone: e.target.value })
-                  }
+                  onChange={(e) => setSupplierForm({ ...supplierForm, phone: e.target.value })}
                   placeholder="0912.xxx.xxx"
                 />
               </div>
@@ -3198,9 +3383,7 @@ function PurchasingPage() {
                 <Input
                   type="email"
                   value={supplierForm.email}
-                  onChange={(e) =>
-                    setSupplierForm({ ...supplierForm, email: e.target.value })
-                  }
+                  onChange={(e) => setSupplierForm({ ...supplierForm, email: e.target.value })}
                   placeholder="ncc@domain.vn"
                 />
               </div>
@@ -3211,9 +3394,7 @@ function PurchasingPage() {
                 <Label>Địa chỉ nhà máy / Kho hàng</Label>
                 <Input
                   value={supplierForm.address}
-                  onChange={(e) =>
-                    setSupplierForm({ ...supplierForm, address: e.target.value })
-                  }
+                  onChange={(e) => setSupplierForm({ ...supplierForm, address: e.target.value })}
                   placeholder="Khu công nghiệp / Địa chỉ..."
                 />
               </div>
@@ -3221,9 +3402,7 @@ function PurchasingPage() {
                 <Label>Mã số thuế</Label>
                 <Input
                   value={supplierForm.tax_code}
-                  onChange={(e) =>
-                    setSupplierForm({ ...supplierForm, tax_code: e.target.value })
-                  }
+                  onChange={(e) => setSupplierForm({ ...supplierForm, tax_code: e.target.value })}
                   placeholder="Mã số thuế doanh nghiệp"
                 />
               </div>
@@ -3256,9 +3435,7 @@ function PurchasingPage() {
                           } else {
                             setSupplierForm({
                               ...supplierForm,
-                              certifications: supplierForm.certifications.filter(
-                                (c) => c !== cert
-                              ),
+                              certifications: supplierForm.certifications.filter((c) => c !== cert),
                             });
                           }
                         }}
@@ -3293,9 +3470,7 @@ function PurchasingPage() {
                 <Label>Trạng thái</Label>
                 <select
                   value={supplierForm.status}
-                  onChange={(e) =>
-                    setSupplierForm({ ...supplierForm, status: e.target.value })
-                  }
+                  onChange={(e) => setSupplierForm({ ...supplierForm, status: e.target.value })}
                   className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
                 >
                   <option value="APPROVED">Đạt chuẩn (APPROVED)</option>
@@ -3309,9 +3484,7 @@ function PurchasingPage() {
                 <Label>Mức độ rủi ro</Label>
                 <select
                   value={supplierForm.risk_level}
-                  onChange={(e) =>
-                    setSupplierForm({ ...supplierForm, risk_level: e.target.value })
-                  }
+                  onChange={(e) => setSupplierForm({ ...supplierForm, risk_level: e.target.value })}
                   className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
                 >
                   <option value="LOW">Thấp (LOW)</option>
@@ -3367,9 +3540,7 @@ function PurchasingPage() {
                 <Label>Mã số Lô (Lot Number) *</Label>
                 <Input
                   value={lotForm.lot_number}
-                  onChange={(e) =>
-                    setLotForm({ ...lotForm, lot_number: e.target.value })
-                  }
+                  onChange={(e) => setLotForm({ ...lotForm, lot_number: e.target.value })}
                   required
                 />
               </div>
@@ -3378,9 +3549,7 @@ function PurchasingPage() {
                 <Label>Nhà cung cấp xuất hàng *</Label>
                 <select
                   value={lotForm.supplier_id}
-                  onChange={(e) =>
-                    setLotForm({ ...lotForm, supplier_id: e.target.value })
-                  }
+                  onChange={(e) => setLotForm({ ...lotForm, supplier_id: e.target.value })}
                   className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
                   required
                 >
@@ -3399,9 +3568,7 @@ function PurchasingPage() {
                 <Label>Tên Nguyên vật liệu tiếp nhận *</Label>
                 <Input
                   value={lotForm.material_name}
-                  onChange={(e) =>
-                    setLotForm({ ...lotForm, material_name: e.target.value })
-                  }
+                  onChange={(e) => setLotForm({ ...lotForm, material_name: e.target.value })}
                   placeholder="VD: Cá ngừ fillet đông lạnh, Bột mì..."
                   required
                 />
@@ -3411,9 +3578,7 @@ function PurchasingPage() {
                 <Label>Phân loại</Label>
                 <select
                   value={lotForm.material_category}
-                  onChange={(e) =>
-                    setLotForm({ ...lotForm, material_category: e.target.value })
-                  }
+                  onChange={(e) => setLotForm({ ...lotForm, material_category: e.target.value })}
                   className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
                 >
                   {SUPPLIER_CATEGORIES.map((c) => (
@@ -3431,9 +3596,7 @@ function PurchasingPage() {
                 <Input
                   type="date"
                   value={lotForm.received_date}
-                  onChange={(e) =>
-                    setLotForm({ ...lotForm, received_date: e.target.value })
-                  }
+                  onChange={(e) => setLotForm({ ...lotForm, received_date: e.target.value })}
                   required
                 />
               </div>
@@ -3442,9 +3605,7 @@ function PurchasingPage() {
                 <Input
                   type="date"
                   value={lotForm.mfg_date}
-                  onChange={(e) =>
-                    setLotForm({ ...lotForm, mfg_date: e.target.value })
-                  }
+                  onChange={(e) => setLotForm({ ...lotForm, mfg_date: e.target.value })}
                 />
               </div>
               <div className="space-y-1.5">
@@ -3452,9 +3613,7 @@ function PurchasingPage() {
                 <Input
                   type="date"
                   value={lotForm.exp_date}
-                  onChange={(e) =>
-                    setLotForm({ ...lotForm, exp_date: e.target.value })
-                  }
+                  onChange={(e) => setLotForm({ ...lotForm, exp_date: e.target.value })}
                 />
               </div>
             </div>
@@ -3467,9 +3626,7 @@ function PurchasingPage() {
                   min={0.1}
                   step={0.1}
                   value={lotForm.quantity}
-                  onChange={(e) =>
-                    setLotForm({ ...lotForm, quantity: Number(e.target.value) })
-                  }
+                  onChange={(e) => setLotForm({ ...lotForm, quantity: Number(e.target.value) })}
                   required
                 />
               </div>
@@ -3477,9 +3634,7 @@ function PurchasingPage() {
                 <Label>Đơn vị tính *</Label>
                 <Input
                   value={lotForm.unit}
-                  onChange={(e) =>
-                    setLotForm({ ...lotForm, unit: e.target.value })
-                  }
+                  onChange={(e) => setLotForm({ ...lotForm, unit: e.target.value })}
                   placeholder="kg, tấn, lít, bao..."
                   required
                 />
@@ -3488,9 +3643,7 @@ function PurchasingPage() {
                 <Label>Điều kiện bảo quản</Label>
                 <select
                   value={lotForm.storage_condition}
-                  onChange={(e) =>
-                    setLotForm({ ...lotForm, storage_condition: e.target.value })
-                  }
+                  onChange={(e) => setLotForm({ ...lotForm, storage_condition: e.target.value })}
                   className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
                 >
                   {STORAGE_CONDITIONS.map((c) => (
@@ -3506,24 +3659,16 @@ function PurchasingPage() {
               <Label>Link Tệp Phiếu Kiểm nghiệm COA đính kèm</Label>
               <Input
                 value={lotForm.coa_file_url}
-                onChange={(e) =>
-                  setLotForm({ ...lotForm, coa_file_url: e.target.value })
-                }
+                onChange={(e) => setLotForm({ ...lotForm, coa_file_url: e.target.value })}
                 placeholder="https://iso22000.wcert.vn/coa/COA-xxxx.pdf"
               />
             </div>
 
             <DialogFooter className="pt-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setIsCreateLotOpen(false)}
-              >
+              <Button type="button" variant="outline" onClick={() => setIsCreateLotOpen(false)}>
                 Hủy bỏ
               </Button>
-              <Button type="submit">
-                {editingLot ? "Lưu thay đổi" : "Lưu Lô Nguyên liệu"}
-              </Button>
+              <Button type="submit">{editingLot ? "Lưu thay đổi" : "Lưu Lô Nguyên liệu"}</Button>
             </DialogFooter>
           </form>
         </DialogContent>
@@ -3795,14 +3940,16 @@ function PurchasingPage() {
                 <Label>Kết luận Kiểm định IQC *</Label>
                 <select
                   value={inspectionForm.status}
-                  onChange={(e) =>
-                    setInspectionForm({ ...inspectionForm, status: e.target.value })
-                  }
+                  onChange={(e) => setInspectionForm({ ...inspectionForm, status: e.target.value })}
                   className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm font-semibold"
                 >
                   <option value="PASSED">ĐẠT CHUẨN (PASSED) — Chấp nhận nhập kho</option>
-                  <option value="CONDITIONAL">CÁCH LY / CÓ ĐIỀU KIỆN — Tạm giữ chờ thẩm định thêm</option>
-                  <option value="REJECTED">TỪ CHỐI / TRẢ HÀNG (REJECTED) — Vi phạm tiêu chuẩn ATTP</option>
+                  <option value="CONDITIONAL">
+                    CÁCH LY / CÓ ĐIỀU KIỆN — Tạm giữ chờ thẩm định thêm
+                  </option>
+                  <option value="REJECTED">
+                    TỪ CHỐI / TRẢ HÀNG (REJECTED) — Vi phạm tiêu chuẩn ATTP
+                  </option>
                 </select>
               </div>
             </div>
@@ -3811,9 +3958,7 @@ function PurchasingPage() {
               <Label>Ghi chú chi tiết kết quả kiểm định & Hành động xử lý</Label>
               <textarea
                 value={inspectionForm.notes}
-                onChange={(e) =>
-                  setInspectionForm({ ...inspectionForm, notes: e.target.value })
-                }
+                onChange={(e) => setInspectionForm({ ...inspectionForm, notes: e.target.value })}
                 rows={3}
                 className="w-full rounded-md border border-input bg-background p-2 text-sm"
                 placeholder="Ghi nhận các thông số kiểm tra, tình trạng xe giao hàng, lý do cách ly hoặc chấp nhận..."
@@ -3837,10 +3982,7 @@ function PurchasingPage() {
       </Dialog>
 
       {/* ==================== MODAL: VIEW SUPPLIER DETAILS ==================== */}
-      <Dialog
-        open={!!viewingSupplier}
-        onOpenChange={(open) => !open && setViewingSupplier(null)}
-      >
+      <Dialog open={!!viewingSupplier} onOpenChange={(open) => !open && setViewingSupplier(null)}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           {viewingSupplier && (
             <div className="space-y-5">
@@ -3860,9 +4002,7 @@ function PurchasingPage() {
                 </div>
                 <div>
                   <div className="text-xs text-muted-foreground">Ngành hàng</div>
-                  <div className="font-semibold text-foreground">
-                    {viewingSupplier.category}
-                  </div>
+                  <div className="font-semibold text-foreground">{viewingSupplier.category}</div>
                 </div>
                 <div>
                   <div className="text-xs text-muted-foreground">Điểm AI Rating</div>
@@ -3875,8 +4015,8 @@ function PurchasingPage() {
                         viewingSupplier.risk_level === "HIGH"
                           ? "text-rose-600"
                           : viewingSupplier.risk_level === "MEDIUM"
-                          ? "text-amber-600"
-                          : "text-emerald-600"
+                            ? "text-amber-600"
+                            : "text-emerald-600"
                       }`}
                     >
                       (Rủi ro {viewingSupplier.risk_level})
@@ -3885,9 +4025,7 @@ function PurchasingPage() {
                 </div>
                 <div>
                   <div className="text-xs text-muted-foreground">Trạng thái ASL</div>
-                  <div className="font-semibold text-emerald-600">
-                    {viewingSupplier.status}
-                  </div>
+                  <div className="font-semibold text-emerald-600">{viewingSupplier.status}</div>
                 </div>
               </div>
 
@@ -3979,9 +4117,7 @@ function PurchasingPage() {
                 <div className="grid grid-cols-2 gap-2 rounded-lg bg-muted/30 p-3">
                   <div>
                     <span className="text-xs text-muted-foreground">Nguyên liệu:</span>
-                    <div className="font-bold text-foreground">
-                      {viewingLot.material_name}
-                    </div>
+                    <div className="font-bold text-foreground">{viewingLot.material_name}</div>
                   </div>
                   <div>
                     <span className="text-xs text-muted-foreground">Nhà cung cấp:</span>
@@ -4016,9 +4152,7 @@ function PurchasingPage() {
 
                 {viewingLot.coa_file_url && (
                   <div className="rounded border border-primary/20 bg-primary/5 p-2 text-xs flex items-center justify-between">
-                    <span className="font-medium text-primary">
-                      Phiếu kiểm nghiệm COA:
-                    </span>
+                    <span className="font-medium text-primary">Phiếu kiểm nghiệm COA:</span>
                     <a
                       href={viewingLot.coa_file_url}
                       target="_blank"
@@ -4088,7 +4222,9 @@ function PurchasingPage() {
                 </div>
                 <div>
                   <span className="text-muted-foreground">Biển số xe giao:</span>{" "}
-                  <b className="font-mono text-foreground">{viewingInspection.delivery_vehicle_plate || "Xe giao tại xưởng"}</b>
+                  <b className="font-mono text-foreground">
+                    {viewingInspection.delivery_vehicle_plate || "Xe giao tại xưởng"}
+                  </b>
                 </div>
                 <div>
                   <span className="text-muted-foreground">Tài xế giao nhận:</span>{" "}
@@ -4118,21 +4254,33 @@ function PurchasingPage() {
                   <tbody className="divide-y divide-border">
                     <tr>
                       <td className="p-2 font-medium">1. Cảm quan & Ngoại quan</td>
-                      <td className="p-2">Màu sắc, mùi vị đặc trưng tự nhiên, không ươn thối/mốc</td>
-                      <td className="p-2 font-semibold">
-                        {viewingInspection.sensory_check ? "Đạt cảm quan chuẩn" : "Không đạt cảm quan"}
+                      <td className="p-2">
+                        Màu sắc, mùi vị đặc trưng tự nhiên, không ươn thối/mốc
                       </td>
-                      <td className={`p-2 font-bold ${viewingInspection.sensory_check ? "text-emerald-600" : "text-rose-600"}`}>
+                      <td className="p-2 font-semibold">
+                        {viewingInspection.sensory_check
+                          ? "Đạt cảm quan chuẩn"
+                          : "Không đạt cảm quan"}
+                      </td>
+                      <td
+                        className={`p-2 font-bold ${viewingInspection.sensory_check ? "text-emerald-600" : "text-rose-600"}`}
+                      >
                         {viewingInspection.sensory_check ? "ĐẠT" : "K.ĐẠT"}
                       </td>
                     </tr>
                     <tr>
                       <td className="p-2 font-medium">2. Quy cách bao bì & Tem nhãn</td>
-                      <td className="p-2">Nguyên vẹn, không rách vỡ, có nhãn mác, NSX & HSD rõ ràng</td>
-                      <td className="p-2 font-semibold">
-                        {viewingInspection.packaging_check ? "Bao bì nguyên vẹn" : "Rách hỏng / Mất nhãn"}
+                      <td className="p-2">
+                        Nguyên vẹn, không rách vỡ, có nhãn mác, NSX & HSD rõ ràng
                       </td>
-                      <td className={`p-2 font-bold ${viewingInspection.packaging_check ? "text-emerald-600" : "text-rose-600"}`}>
+                      <td className="p-2 font-semibold">
+                        {viewingInspection.packaging_check
+                          ? "Bao bì nguyên vẹn"
+                          : "Rách hỏng / Mất nhãn"}
+                      </td>
+                      <td
+                        className={`p-2 font-bold ${viewingInspection.packaging_check ? "text-emerald-600" : "text-rose-600"}`}
+                      >
                         {viewingInspection.packaging_check ? "ĐẠT" : "K.ĐẠT"}
                       </td>
                     </tr>
@@ -4140,9 +4288,13 @@ function PurchasingPage() {
                       <td className="p-2 font-medium">3. Quy cách cỡ & Kích thước đồng đều</td>
                       <td className="p-2">Đạt chuẩn size/khối lượng theo hợp đồng mua hàng</td>
                       <td className="p-2 font-semibold">
-                        {viewingInspection.size_uniformity_check ? "Đồng đều đạt chuẩn" : "Lệch quy cách size"}
+                        {viewingInspection.size_uniformity_check
+                          ? "Đồng đều đạt chuẩn"
+                          : "Lệch quy cách size"}
                       </td>
-                      <td className={`p-2 font-bold ${viewingInspection.size_uniformity_check ? "text-emerald-600" : "text-rose-600"}`}>
+                      <td
+                        className={`p-2 font-bold ${viewingInspection.size_uniformity_check ? "text-emerald-600" : "text-rose-600"}`}
+                      >
                         {viewingInspection.size_uniformity_check ? "ĐẠT" : "K.ĐẠT"}
                       </td>
                     </tr>
@@ -4150,9 +4302,13 @@ function PurchasingPage() {
                       <td className="p-2 font-medium">4. Tỷ lệ dập nát, ươn hỏng, úa lá (%)</td>
                       <td className="p-2">Mức tối đa cho phép ≤ 2.0% tổng khối lượng</td>
                       <td className="p-2 font-mono font-semibold">
-                        {viewingInspection.defect_rate_percent !== null ? `${viewingInspection.defect_rate_percent}%` : "0.0%"}
+                        {viewingInspection.defect_rate_percent !== null
+                          ? `${viewingInspection.defect_rate_percent}%`
+                          : "0.0%"}
                       </td>
-                      <td className={`p-2 font-bold ${(viewingInspection.defect_rate_percent || 0) <= 2.0 ? "text-emerald-600" : "text-rose-600"}`}>
+                      <td
+                        className={`p-2 font-bold ${(viewingInspection.defect_rate_percent || 0) <= 2.0 ? "text-emerald-600" : "text-rose-600"}`}
+                      >
                         {(viewingInspection.defect_rate_percent || 0) <= 2.0 ? "ĐẠT" : "K.ĐẠT"}
                       </td>
                     </tr>
@@ -4160,9 +4316,13 @@ function PurchasingPage() {
                       <td className="p-2 font-medium">5. Tạp chất vật lý lạ (cát sạn, que cọng)</td>
                       <td className="p-2">Không có dị vật nguy hiểm, tạp chất ≤ 0.1%</td>
                       <td className="p-2 font-mono font-semibold">
-                        {viewingInspection.impurity_percent !== null ? `${viewingInspection.impurity_percent}%` : "0.0%"}
+                        {viewingInspection.impurity_percent !== null
+                          ? `${viewingInspection.impurity_percent}%`
+                          : "0.0%"}
                       </td>
-                      <td className={`p-2 font-bold ${(viewingInspection.impurity_percent || 0) <= 0.1 ? "text-emerald-600" : "text-rose-600"}`}>
+                      <td
+                        className={`p-2 font-bold ${(viewingInspection.impurity_percent || 0) <= 0.1 ? "text-emerald-600" : "text-rose-600"}`}
+                      >
                         {(viewingInspection.impurity_percent || 0) <= 0.1 ? "ĐẠT" : "K.ĐẠT"}
                       </td>
                     </tr>
@@ -4178,11 +4338,17 @@ function PurchasingPage() {
                     </tr>
                     <tr>
                       <td className="p-2 font-medium">7. Vệ sinh thùng xe giao hàng</td>
-                      <td className="p-2">Thùng xe sạch sẽ, không mùi lạ, bạt che kín, không côn trùng</td>
-                      <td className="p-2 font-semibold">
-                        {viewingInspection.vehicle_cleanliness_check ? "Sạch sẽ, đạt vệ sinh" : "Thùng xe ô nhiễm/mùi"}
+                      <td className="p-2">
+                        Thùng xe sạch sẽ, không mùi lạ, bạt che kín, không côn trùng
                       </td>
-                      <td className={`p-2 font-bold ${viewingInspection.vehicle_cleanliness_check ? "text-emerald-600" : "text-rose-600"}`}>
+                      <td className="p-2 font-semibold">
+                        {viewingInspection.vehicle_cleanliness_check
+                          ? "Sạch sẽ, đạt vệ sinh"
+                          : "Thùng xe ô nhiễm/mùi"}
+                      </td>
+                      <td
+                        className={`p-2 font-bold ${viewingInspection.vehicle_cleanliness_check ? "text-emerald-600" : "text-rose-600"}`}
+                      >
                         {viewingInspection.vehicle_cleanliness_check ? "ĐẠT" : "K.ĐẠT"}
                       </td>
                     </tr>
@@ -4198,11 +4364,17 @@ function PurchasingPage() {
                     </tr>
                     <tr>
                       <td className="p-2 font-medium">9. Đối chiếu Phiếu kiểm nghiệm COA</td>
-                      <td className="p-2">100% chỉ tiêu vi sinh & kim loại nặng trùng khớp quy chuẩn</td>
-                      <td className="p-2 font-semibold">
-                        {viewingInspection.coa_compliance ? "Trùng khớp COA đạt chuẩn" : "Không khớp COA"}
+                      <td className="p-2">
+                        100% chỉ tiêu vi sinh & kim loại nặng trùng khớp quy chuẩn
                       </td>
-                      <td className={`p-2 font-bold ${viewingInspection.coa_compliance ? "text-emerald-600" : "text-rose-600"}`}>
+                      <td className="p-2 font-semibold">
+                        {viewingInspection.coa_compliance
+                          ? "Trùng khớp COA đạt chuẩn"
+                          : "Không khớp COA"}
+                      </td>
+                      <td
+                        className={`p-2 font-bold ${viewingInspection.coa_compliance ? "text-emerald-600" : "text-rose-600"}`}
+                      >
                         {viewingInspection.coa_compliance ? "ĐẠT" : "K.ĐẠT"}
                       </td>
                     </tr>
@@ -4217,8 +4389,8 @@ function PurchasingPage() {
                   {viewingInspection.status === "PASSED"
                     ? "CHẤP NHẬN TIẾP NHẬN & NHẬP KHO CHÍNH THỨC"
                     : viewingInspection.status === "CONDITIONAL"
-                    ? "TẠM CÁCH LY THEO DÕI / TÁI KIỂM"
-                    : "TỪ CHỐI TIẾP NHẬN & TRẢ HÀNG VỀ NHÀ CUNG CẤP"}
+                      ? "TẠM CÁCH LY THEO DÕI / TÁI KIỂM"
+                      : "TỪ CHỐI TIẾP NHẬN & TRẢ HÀNG VỀ NHÀ CUNG CẤP"}
                 </span>
                 <p className="text-muted-foreground mt-1">
                   Ghi chú: {viewingInspection.notes || "Không có ghi chú thêm."}
@@ -4322,9 +4494,7 @@ function PurchasingPage() {
                   {suppliers.map((s, idx) => (
                     <tr key={s.supplier_id}>
                       <td className="p-2 font-mono">{idx + 1}</td>
-                      <td className="p-2 font-mono font-bold text-primary">
-                        {s.supplier_code}
-                      </td>
+                      <td className="p-2 font-mono font-bold text-primary">{s.supplier_code}</td>
                       <td className="p-2 font-medium">{s.supplier_name}</td>
                       <td className="p-2">{s.category}</td>
                       <td className="p-2 font-medium text-blue-600">
@@ -4408,8 +4578,8 @@ function PurchasingPage() {
                       aiEvalSupplier.risk_level === "LOW"
                         ? "text-emerald-600"
                         : aiEvalSupplier.risk_level === "MEDIUM"
-                        ? "text-amber-600"
-                        : "text-rose-600"
+                          ? "text-amber-600"
+                          : "text-rose-600"
                     }`}
                   >
                     RỦI RO {aiEvalSupplier.risk_level}
@@ -4471,12 +4641,27 @@ function PurchasingPage() {
               initialValues={{
                 vendor_name: selectedSupplierForForm.supplier_name,
                 supplier_name: selectedSupplierForForm.supplier_name,
-                has_iso_cert: selectedSupplierForForm.status !== "WARNING" && selectedSupplierForForm.status !== "SUSPENDED" && selectedSupplierForForm.status !== "REJECTED",
+                has_iso_cert:
+                  selectedSupplierForForm.status !== "WARNING" &&
+                  selectedSupplierForForm.status !== "SUSPENDED" &&
+                  selectedSupplierForForm.status !== "REJECTED",
                 quality_score: selectedSupplierForForm.rating_score || 95,
                 delivery_ontime_rate: 98,
                 ontime_delivery_rate: 98,
-                final_ranking: selectedSupplierForForm.status === "WARNING" ? "Loại C - Cần khắc phục" : selectedSupplierForForm.status === "SUSPENDED" || selectedSupplierForForm.status === "REJECTED" ? "Loại D - Loại khỏi danh bạ" : "Loại A - Ưu tiên hàng đầu",
-                supplier_ranking: selectedSupplierForForm.status === "WARNING" ? "Hạng C (Cần khắc phục)" : selectedSupplierForForm.status === "SUSPENDED" || selectedSupplierForForm.status === "REJECTED" ? "Hạng D (Đình chỉ)" : "Hạng A (Ưu tiên)",
+                final_ranking:
+                  selectedSupplierForForm.status === "WARNING"
+                    ? "Loại C - Cần khắc phục"
+                    : selectedSupplierForForm.status === "SUSPENDED" ||
+                        selectedSupplierForForm.status === "REJECTED"
+                      ? "Loại D - Loại khỏi danh bạ"
+                      : "Loại A - Ưu tiên hàng đầu",
+                supplier_ranking:
+                  selectedSupplierForForm.status === "WARNING"
+                    ? "Hạng C (Cần khắc phục)"
+                    : selectedSupplierForForm.status === "SUSPENDED" ||
+                        selectedSupplierForForm.status === "REJECTED"
+                      ? "Hạng D (Đình chỉ)"
+                      : "Hạng A (Ưu tiên)",
                 audit_notes: selectedSupplierForForm.evaluation_notes || "",
               }}
               onSubmit={handleSaveVendorDynamicForm}
@@ -4596,7 +4781,12 @@ function PurchasingPage() {
                 <Input
                   type="number"
                   value={planForm.year}
-                  onChange={(e) => setPlanForm({ ...planForm, year: parseInt(e.target.value) || new Date().getFullYear() })}
+                  onChange={(e) =>
+                    setPlanForm({
+                      ...planForm,
+                      year: parseInt(e.target.value) || new Date().getFullYear(),
+                    })
+                  }
                   required
                 />
               </div>
@@ -4658,11 +4848,7 @@ function PurchasingPage() {
             </div>
 
             <DialogFooter className="pt-3">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setIsCreatePlanOpen(false)}
-              >
+              <Button type="button" variant="outline" onClick={() => setIsCreatePlanOpen(false)}>
                 Hủy bỏ
               </Button>
               <Button type="submit" className="bg-primary text-primary-foreground">
@@ -4746,8 +4932,12 @@ function PurchasingPage() {
                   className="w-full h-9 rounded-md border border-input bg-background px-3 text-xs font-medium"
                 >
                   <option value="AGRI_FRESH">BM03: Nông sản tươi sống (Biểu mẫu gốc)</option>
-                  <option value="AQUA_ANIMAL_FRESH">Bộ TC Bổ sung: Thủy hải sản tươi sống (Do dự án tự xây dựng)</option>
-                  <option value="PROCESSED_DRY_PACKAGING">BM04: Khô, phụ gia, bao bì (Biểu mẫu gốc)</option>
+                  <option value="AQUA_ANIMAL_FRESH">
+                    Bộ TC Bổ sung: Thủy hải sản tươi sống (Do dự án tự xây dựng)
+                  </option>
+                  <option value="PROCESSED_DRY_PACKAGING">
+                    BM04: Khô, phụ gia, bao bì (Biểu mẫu gốc)
+                  </option>
                 </select>
               </div>
 
@@ -4789,11 +4979,10 @@ function PurchasingPage() {
             <div className="space-y-2 rounded-lg border border-border/80 bg-muted/20 p-3">
               <div className="flex items-center justify-between pb-1 border-b border-border/60">
                 <div className="text-xs font-bold uppercase tracking-wider text-foreground">
-                  Chi tiết bảng chấm điểm tiêu chí ({evalForm.criteria_scores?.length || 0} tiêu chí - Thang điểm 100)
+                  Chi tiết bảng chấm điểm tiêu chí ({evalForm.criteria_scores?.length || 0} tiêu chí
+                  - Thang điểm 100)
                 </div>
-                <div className="text-xs text-muted-foreground">
-                  Chuẩn ISO 22000
-                </div>
+                <div className="text-xs text-muted-foreground">Chuẩn ISO 22000</div>
               </div>
 
               <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
@@ -4841,9 +5030,7 @@ function PurchasingPage() {
 
                       <Input
                         value={crit.notes || ""}
-                        onChange={(e) =>
-                          handleCriteriaScoreChange(idx, crit.score, e.target.value)
-                        }
+                        onChange={(e) => handleCriteriaScoreChange(idx, crit.score, e.target.value)}
                         placeholder="Ghi chú thực tế..."
                         className="h-8 w-44 text-xs"
                       />
@@ -4856,7 +5043,9 @@ function PurchasingPage() {
             {/* Total Score & Rating Banner */}
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 rounded-lg border border-primary/30 bg-primary/5 p-3">
               <div className="space-y-1">
-                <span className="text-xs font-semibold uppercase text-muted-foreground">Tổng điểm đánh giá</span>
+                <span className="text-xs font-semibold uppercase text-muted-foreground">
+                  Tổng điểm đánh giá
+                </span>
                 <div className="flex items-baseline gap-1">
                   <span className="text-2xl font-black text-primary">{evalForm.total_score}</span>
                   <span className="text-xs text-muted-foreground">/ 100 điểm</span>
@@ -4864,41 +5053,53 @@ function PurchasingPage() {
               </div>
 
               <div className="space-y-1">
-                <span className="text-xs font-semibold uppercase text-muted-foreground">Xếp hạng năng lực</span>
+                <span className="text-xs font-semibold uppercase text-muted-foreground">
+                  Xếp hạng năng lực
+                </span>
                 <div>
                   <span
                     className={`inline-block rounded px-2.5 py-0.5 text-sm font-bold ${
                       evalForm.grade === "A"
                         ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
                         : evalForm.grade === "B"
-                        ? "bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300"
-                        : evalForm.grade === "C"
-                        ? "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300"
-                        : "bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300"
+                          ? "bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300"
+                          : evalForm.grade === "C"
+                            ? "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300"
+                            : "bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300"
                     }`}
                   >
-                    Hạng {evalForm.grade} ({evalForm.grade === "A" ? "Xuất sắc" : evalForm.grade === "B" ? "Khá" : evalForm.grade === "C" ? "Trung bình" : "Không đạt"})
+                    Hạng {evalForm.grade} (
+                    {evalForm.grade === "A"
+                      ? "Xuất sắc"
+                      : evalForm.grade === "B"
+                        ? "Khá"
+                        : evalForm.grade === "C"
+                          ? "Trung bình"
+                          : "Không đạt"}
+                    )
                   </span>
                 </div>
               </div>
 
               <div className="space-y-1">
-                <span className="text-xs font-semibold uppercase text-muted-foreground">Kết luận phê duyệt ASL</span>
+                <span className="text-xs font-semibold uppercase text-muted-foreground">
+                  Kết luận phê duyệt ASL
+                </span>
                 <div>
                   <span
                     className={`inline-block rounded px-2.5 py-0.5 text-sm font-bold ${
                       evalForm.conclusion === "APPROVED"
                         ? "bg-emerald-600 text-white"
                         : evalForm.conclusion === "CONDITIONAL"
-                        ? "bg-amber-500 text-white"
-                        : "bg-rose-600 text-white"
+                          ? "bg-amber-500 text-white"
+                          : "bg-rose-600 text-white"
                     }`}
                   >
                     {evalForm.conclusion === "APPROVED"
                       ? "ĐẠT CHUẨN (DUYỆT ASL)"
                       : evalForm.conclusion === "CONDITIONAL"
-                      ? "CÓ ĐIỀU KIỆN (KHẮC PHỤC)"
-                      : "KHÔNG ĐẠT (LOẠI BỎ)"}
+                        ? "CÓ ĐIỀU KIỆN (KHẮC PHỤC)"
+                        : "KHÔNG ĐẠT (LOẠI BỎ)"}
                   </span>
                 </div>
               </div>
@@ -4927,11 +5128,7 @@ function PurchasingPage() {
             </div>
 
             <DialogFooter className="pt-3">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setIsCreateEvalOpen(false)}
-              >
+              <Button type="button" variant="outline" onClick={() => setIsCreateEvalOpen(false)}>
                 Hủy bỏ
               </Button>
               <Button type="submit" className="bg-primary text-primary-foreground">

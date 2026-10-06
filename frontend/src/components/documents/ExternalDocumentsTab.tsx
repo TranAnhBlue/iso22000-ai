@@ -84,7 +84,9 @@ export function ExternalDocumentsTab({
     const total = externalDocs.length;
     const active = externalDocs.filter((d) => d.status === "ACTIVE").length;
     const qcvn = externalDocs.filter((d) => d.doc_type === "STANDARD_QCVN").length;
-    const laws = externalDocs.filter((d) => ["LAW", "DECREE", "CIRCULAR"].includes(d.doc_type)).length;
+    const laws = externalDocs.filter((d) =>
+      ["LAW", "DECREE", "CIRCULAR"].includes(d.doc_type),
+    ).length;
     return { total, active, qcvn, laws };
   }, [externalDocs]);
 
@@ -199,7 +201,8 @@ export function ExternalDocumentsTab({
             </span>
           </div>
           <p className="mt-1 text-xs text-muted-foreground">
-            Theo dõi tính hiệu lực của các văn bản pháp luật, Nghị định, Thông tư, Quy chuẩn QCVN, Tiêu chuẩn TCVN và Yêu cầu khách hàng liên quan đến ATTP.
+            Theo dõi tính hiệu lực của các văn bản pháp luật, Nghị định, Thông tư, Quy chuẩn QCVN,
+            Tiêu chuẩn TCVN và Yêu cầu khách hàng liên quan đến ATTP.
           </p>
         </div>
 
@@ -243,19 +246,25 @@ export function ExternalDocumentsTab({
         </div>
 
         <div className="rounded-xl border border-emerald-200 bg-emerald-500/5 p-3.5 shadow-sm">
-          <div className="text-xs font-medium text-emerald-700 dark:text-emerald-300">Đang có hiệu lực thi hành</div>
+          <div className="text-xs font-medium text-emerald-700 dark:text-emerald-300">
+            Đang có hiệu lực thi hành
+          </div>
           <div className="mt-1.5 text-2xl font-bold text-emerald-700">{stats.active}</div>
           <div className="text-[11px] text-emerald-600/80">Áp dụng vào kiểm soát ATTP</div>
         </div>
 
         <div className="rounded-xl border border-blue-200 bg-blue-500/5 p-3.5 shadow-sm">
-          <div className="text-xs font-medium text-blue-700 dark:text-blue-300">Luật & Thông tư quản lý</div>
+          <div className="text-xs font-medium text-blue-700 dark:text-blue-300">
+            Luật & Thông tư quản lý
+          </div>
           <div className="mt-1.5 text-2xl font-bold text-blue-700">{stats.laws}</div>
           <div className="text-[11px] text-blue-600/80">Bộ Y tế, NN&PTNT, Công Thương</div>
         </div>
 
         <div className="rounded-xl border border-purple-200 bg-purple-500/5 p-3.5 shadow-sm">
-          <div className="text-xs font-medium text-purple-700 dark:text-purple-300">Tiêu chuẩn & Quy chuẩn Kỹ thuật</div>
+          <div className="text-xs font-medium text-purple-700 dark:text-purple-300">
+            Tiêu chuẩn & Quy chuẩn Kỹ thuật
+          </div>
           <div className="mt-1.5 text-2xl font-bold text-purple-700">{stats.qcvn}</div>
           <div className="text-[11px] text-purple-600/80">QCVN, TCVN, CODEX Quốc tế</div>
         </div>
@@ -358,7 +367,11 @@ export function ExternalDocumentsTab({
                     </td>
                     <td className="px-3 py-3">
                       <div className="font-semibold text-foreground">{doc.doc_title}</div>
-                      {doc.notes && <div className="text-[11px] text-muted-foreground line-clamp-1">{doc.notes}</div>}
+                      {doc.notes && (
+                        <div className="text-[11px] text-muted-foreground line-clamp-1">
+                          {doc.notes}
+                        </div>
+                      )}
                     </td>
                     <td className="px-3 py-3 font-medium text-foreground">{doc.issuing_body}</td>
                     <td className="px-3 py-3">
@@ -366,19 +379,30 @@ export function ExternalDocumentsTab({
                         {DOC_TYPES[doc.doc_type] || doc.doc_type}
                       </span>
                     </td>
-                    <td className="px-3 py-3 text-center text-muted-foreground">{doc.effective_date || "---"}</td>
+                    <td className="px-3 py-3 text-center text-muted-foreground">
+                      {doc.effective_date || "---"}
+                    </td>
                     <td className="px-3 py-3">
                       <div className="font-medium text-foreground">{doc.managing_department}</div>
-                      <div className="text-[10px] text-muted-foreground">{doc.storage_location}</div>
+                      <div className="text-[10px] text-muted-foreground">
+                        {doc.storage_location}
+                      </div>
                     </td>
                     <td className="px-3 py-3 text-center">
-                      <span className={`inline-block rounded px-2 py-0.5 text-[10px] font-semibold border ${
-                        doc.status === "ACTIVE" ? "bg-emerald-500/10 text-emerald-700 border-emerald-300" :
-                        doc.status === "SUPERSEDED" ? "bg-rose-500/10 text-rose-700 border-rose-300" :
-                        "bg-amber-500/10 text-amber-700 border-amber-300"
-                      }`}>
-                        {doc.status === "ACTIVE" ? "Đang hiệu lực" :
-                         doc.status === "SUPERSEDED" ? "Hết hiệu lực" : "Đang rà soát"}
+                      <span
+                        className={`inline-block rounded px-2 py-0.5 text-[10px] font-semibold border ${
+                          doc.status === "ACTIVE"
+                            ? "bg-emerald-500/10 text-emerald-700 border-emerald-300"
+                            : doc.status === "SUPERSEDED"
+                              ? "bg-rose-500/10 text-rose-700 border-rose-300"
+                              : "bg-amber-500/10 text-amber-700 border-amber-300"
+                        }`}
+                      >
+                        {doc.status === "ACTIVE"
+                          ? "Đang hiệu lực"
+                          : doc.status === "SUPERSEDED"
+                            ? "Hết hiệu lực"
+                            : "Đang rà soát"}
                       </span>
                     </td>
                     <td className="px-3 py-3 text-right">
@@ -418,14 +442,18 @@ export function ExternalDocumentsTab({
           <DialogHeader>
             <DialogTitle className="text-base font-bold flex items-center gap-2">
               <Globe className="h-5 w-5 text-primary" />
-              {editingDoc ? "Cập Nhật Văn Bản Bên Ngoài (BM04-KSTL)" : "Thêm Mới Văn Bản Bên Ngoài (BM04-KSTL)"}
+              {editingDoc
+                ? "Cập Nhật Văn Bản Bên Ngoài (BM04-KSTL)"
+                : "Thêm Mới Văn Bản Bên Ngoài (BM04-KSTL)"}
             </DialogTitle>
           </DialogHeader>
 
           <form onSubmit={handleSubmitForm} className="space-y-4">
             <div className="grid grid-cols-3 gap-3">
               <div>
-                <Label className="text-xs font-semibold">Số hiệu / Mã văn bản <span className="text-rose-500">*</span></Label>
+                <Label className="text-xs font-semibold">
+                  Số hiệu / Mã văn bản <span className="text-rose-500">*</span>
+                </Label>
                 <Input
                   value={formData.doc_code}
                   onChange={(e) => setFormData({ ...formData, doc_code: e.target.value })}
@@ -436,7 +464,9 @@ export function ExternalDocumentsTab({
               </div>
 
               <div className="col-span-2">
-                <Label className="text-xs font-semibold">Cơ quan / Tổ chức ban hành <span className="text-rose-500">*</span></Label>
+                <Label className="text-xs font-semibold">
+                  Cơ quan / Tổ chức ban hành <span className="text-rose-500">*</span>
+                </Label>
                 <Input
                   value={formData.issuing_body}
                   onChange={(e) => setFormData({ ...formData, issuing_body: e.target.value })}
@@ -448,7 +478,9 @@ export function ExternalDocumentsTab({
             </div>
 
             <div>
-              <Label className="text-xs font-semibold">Tên gọi / Tiêu đề văn bản <span className="text-rose-500">*</span></Label>
+              <Label className="text-xs font-semibold">
+                Tên gọi / Tiêu đề văn bản <span className="text-rose-500">*</span>
+              </Label>
               <Input
                 value={formData.doc_title}
                 onChange={(e) => setFormData({ ...formData, doc_title: e.target.value })}
@@ -515,7 +547,9 @@ export function ExternalDocumentsTab({
                 <Label className="text-xs font-semibold">Bộ phận phụ trách theo dõi</Label>
                 <select
                   value={formData.managing_department}
-                  onChange={(e) => setFormData({ ...formData, managing_department: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, managing_department: e.target.value })
+                  }
                   className="h-9 w-full rounded-md border border-input bg-background px-3 text-xs shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
                 >
                   {DEPARTMENTS.map((dept) => (
@@ -549,7 +583,12 @@ export function ExternalDocumentsTab({
             </div>
 
             <DialogFooter className="pt-2">
-              <Button type="button" variant="outline" size="sm" onClick={() => setIsFormOpen(false)}>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setIsFormOpen(false)}
+              >
                 Hủy
               </Button>
               <Button type="submit" size="sm" className="gap-1.5">

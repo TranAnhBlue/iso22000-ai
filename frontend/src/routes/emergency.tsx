@@ -44,7 +44,10 @@ export const Route = createFileRoute("/emergency")({
   head: () => ({
     meta: [
       { title: "Ứng phó khẩn cấp – WCERT FSMS" },
-      { name: "description", content: "Chuẩn bị và ứng phó tình huống khẩn cấp, sự cố an toàn thực phẩm." },
+      {
+        name: "description",
+        content: "Chuẩn bị và ứng phó tình huống khẩn cấp, sự cố an toàn thực phẩm.",
+      },
     ],
   }),
   component: () => (
@@ -125,25 +128,73 @@ interface EmergencyDrillItem {
 }
 
 const SCENARIO_LABELS: Record<string, { label: string; icon: any; color: string }> = {
-  FIRE_EXPLOSION: { label: "Cháy, nổ xưởng & kho", icon: Flame, color: "text-rose-600 bg-rose-50 border-rose-200" },
-  CHEMICAL_SPILL: { label: "Tràn đổ hóa chất & rò rỉ khí gas", icon: Droplets, color: "text-amber-600 bg-amber-50 border-amber-200" },
-  WATER_OUTAGE: { label: "Mất nước & nhiễm bẩn nguồn nước", icon: Droplets, color: "text-cyan-600 bg-cyan-50 border-cyan-200" },
-  POWER_OUTAGE: { label: "Mất điện lưới đột ngột", icon: Zap, color: "text-yellow-600 bg-yellow-50 border-yellow-200" },
-  CHILLER_BREAKDOWN: { label: "Hỏng máy lạnh & tủ cấp đông", icon: Wind, color: "text-blue-600 bg-blue-50 border-blue-200" },
-  STEAM_OUTAGE: { label: "Gián đoạn nguồn hơi cấp lò hơi", icon: Activity, color: "text-orange-600 bg-orange-50 border-orange-200" },
-  BIOTERRORISM_SABOTAGE: { label: "Phá hoại an ninh thực phẩm - Food Defense", icon: Biohazard, color: "text-purple-600 bg-purple-50 border-purple-200" },
-  WORK_ACCIDENT: { label: "Tai nạn lao động ca sản xuất", icon: HeartPulse, color: "text-red-600 bg-red-50 border-red-200" },
-  NATURAL_DISASTER_EPIDEMIC: { label: "Thiên tai bão lũ & dịch bệnh", icon: AlertTriangle, color: "text-emerald-600 bg-emerald-50 border-emerald-200" },
+  FIRE_EXPLOSION: {
+    label: "Cháy, nổ xưởng & kho",
+    icon: Flame,
+    color: "text-rose-600 bg-rose-50 border-rose-200",
+  },
+  CHEMICAL_SPILL: {
+    label: "Tràn đổ hóa chất & rò rỉ khí gas",
+    icon: Droplets,
+    color: "text-amber-600 bg-amber-50 border-amber-200",
+  },
+  WATER_OUTAGE: {
+    label: "Mất nước & nhiễm bẩn nguồn nước",
+    icon: Droplets,
+    color: "text-cyan-600 bg-cyan-50 border-cyan-200",
+  },
+  POWER_OUTAGE: {
+    label: "Mất điện lưới đột ngột",
+    icon: Zap,
+    color: "text-yellow-600 bg-yellow-50 border-yellow-200",
+  },
+  CHILLER_BREAKDOWN: {
+    label: "Hỏng máy lạnh & tủ cấp đông",
+    icon: Wind,
+    color: "text-blue-600 bg-blue-50 border-blue-200",
+  },
+  STEAM_OUTAGE: {
+    label: "Gián đoạn nguồn hơi cấp lò hơi",
+    icon: Activity,
+    color: "text-orange-600 bg-orange-50 border-orange-200",
+  },
+  BIOTERRORISM_SABOTAGE: {
+    label: "Phá hoại an ninh thực phẩm - Food Defense",
+    icon: Biohazard,
+    color: "text-purple-600 bg-purple-50 border-purple-200",
+  },
+  WORK_ACCIDENT: {
+    label: "Tai nạn lao động ca sản xuất",
+    icon: HeartPulse,
+    color: "text-red-600 bg-red-50 border-red-200",
+  },
+  NATURAL_DISASTER_EPIDEMIC: {
+    label: "Thiên tai bão lũ & dịch bệnh",
+    icon: AlertTriangle,
+    color: "text-emerald-600 bg-emerald-50 border-emerald-200",
+  },
 };
 
 function getRiskBadge(score: number) {
   if (score >= 15) {
-    return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-800 border border-rose-300">Rất cao ({score})</span>;
+    return (
+      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-800 border border-rose-300">
+        Rất cao ({score})
+      </span>
+    );
   }
   if (score >= 8) {
-    return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-300">Trung bình ({score})</span>;
+    return (
+      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-300">
+        Trung bình ({score})
+      </span>
+    );
   }
-  return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-300">Thấp ({score})</span>;
+  return (
+    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-300">
+      Thấp ({score})
+    </span>
+  );
 }
 
 function EmergencyPage() {
@@ -170,7 +221,9 @@ function EmergencyPage() {
   // Search & Filters
   const [contactFilter, setContactFilter] = useState<"ALL" | "INTERNAL" | "EXTERNAL">("ALL");
   const [searchQuery, setSearchQuery] = useState("");
-  const [drillTypeFilter, setDrillTypeFilter] = useState<"ALL" | "DRILL" | "ACTUAL_INCIDENT">("ALL");
+  const [drillTypeFilter, setDrillTypeFilter] = useState<"ALL" | "DRILL" | "ACTUAL_INCIDENT">(
+    "ALL",
+  );
 
   // Modals state
   const [contactModalOpen, setContactModalOpen] = useState(false);
@@ -238,7 +291,7 @@ function EmergencyPage() {
         api.get("/emergency/drills"),
       ]);
       setStats(statsRes.data || {});
-      
+
       const normContacts: EmergencyContactItem[] = (contactsRes.data || []).map((c: any) => ({
         ...c,
         id: c.contact_id || c.id,
@@ -271,7 +324,8 @@ function EmergencyPage() {
         ...d,
         id: d.drill_id || d.id,
         drill_id: d.drill_id || d.id,
-        drill_type: d.record_type === "PLANNED_DRILL" ? "DRILL" : (d.record_type || d.drill_type || "DRILL"),
+        drill_type:
+          d.record_type === "PLANNED_DRILL" ? "DRILL" : d.record_type || d.drill_type || "DRILL",
         lead_evaluator: d.drill_leader || d.lead_evaluator || "",
         drill_leader: d.drill_leader || d.lead_evaluator || "",
         corrective_actions: d.corrective_actions_needed || d.corrective_actions || "",
@@ -324,13 +378,16 @@ function EmergencyPage() {
   // Filter drills
   const filteredDrills = useMemo(() => {
     return drills.filter((d) => {
-      const currentType = d.record_type === "PLANNED_DRILL" ? "DRILL" : (d.record_type || d.drill_type || "DRILL");
+      const currentType =
+        d.record_type === "PLANNED_DRILL" ? "DRILL" : d.record_type || d.drill_type || "DRILL";
       const matchesType = drillTypeFilter === "ALL" || currentType === drillTypeFilter;
       const q = searchQuery.toLowerCase();
       const code = (d.drill_code || "").toLowerCase();
       const title = (d.title || "").toLowerCase();
       const leader = (d.drill_leader || d.lead_evaluator || "").toLowerCase();
-      return matchesType && (!searchQuery || code.includes(q) || title.includes(q) || leader.includes(q));
+      return (
+        matchesType && (!searchQuery || code.includes(q) || title.includes(q) || leader.includes(q))
+      );
     });
   }, [drills, drillTypeFilter, searchQuery]);
 
@@ -421,7 +478,8 @@ function EmergencyPage() {
       description: "",
       likelihood: 2,
       severity: 4,
-      immediate_actions_text: "1. Báo động khẩn cấp\n2. Cắt nguồn năng lượng\n3. Sơ tán nhân sự\n4. Cô lập khu vực",
+      immediate_actions_text:
+        "1. Báo động khẩn cấp\n2. Cắt nguồn năng lượng\n3. Sơ tán nhân sự\n4. Cô lập khu vực",
       food_safety_controls: "Cách ly và niêm phong toàn bộ mẻ sản phẩm đang chế biến.",
       responsible_role: "Đội trưởng PCCC & An toàn ATTP",
       assembly_point: "Sân vận động trước cổng chính",
@@ -541,7 +599,8 @@ function EmergencyPage() {
     setEditingDrill(d);
     setDrillForm({
       drill_code: d.drill_code,
-      drill_type: d.record_type === "PLANNED_DRILL" ? "DRILL" : (d.record_type || d.drill_type || "DRILL"),
+      drill_type:
+        d.record_type === "PLANNED_DRILL" ? "DRILL" : d.record_type || d.drill_type || "DRILL",
       title: d.title,
       scenario_type: d.scenario_type,
       drill_date: d.drill_date,
@@ -551,7 +610,10 @@ function EmergencyPage() {
       duration_minutes: d.duration_minutes,
       response_time_minutes: d.response_time_minutes || 0,
       scenario_description: d.scenario_description || "",
-      evaluation_result: d.evaluation_result === "EXCELLENT" || d.evaluation_result === "SATISFACTORY" ? "PASS" : d.evaluation_result,
+      evaluation_result:
+        d.evaluation_result === "EXCELLENT" || d.evaluation_result === "SATISFACTORY"
+          ? "PASS"
+          : d.evaluation_result,
       findings: d.findings || d.notes || "",
       corrective_actions: d.corrective_actions_needed || d.corrective_actions || "",
     });
@@ -572,13 +634,16 @@ function EmergencyPage() {
       const payload = {
         drill_code: drillForm.drill_code,
         title: drillForm.title,
-        record_type: drillForm.drill_type === "ACTUAL_INCIDENT" ? "ACTUAL_INCIDENT" : "PLANNED_DRILL",
+        record_type:
+          drillForm.drill_type === "ACTUAL_INCIDENT" ? "ACTUAL_INCIDENT" : "PLANNED_DRILL",
         scenario_type: drillForm.scenario_type,
         drill_date: drillForm.drill_date,
         location: drillForm.location,
         participants_count: Number(drillForm.participants_count),
         drill_leader: drillForm.lead_evaluator,
-        response_time_minutes: drillForm.response_time_minutes ? Number(drillForm.response_time_minutes) : null,
+        response_time_minutes: drillForm.response_time_minutes
+          ? Number(drillForm.response_time_minutes)
+          : null,
         scenario_description: drillForm.scenario_description || null,
         evaluation_result: evalResultMap[drillForm.evaluation_result] || "SATISFACTORY",
         corrective_actions_needed: drillForm.corrective_actions || null,
@@ -619,8 +684,8 @@ function EmergencyPage() {
       d.evaluation_result === "PASS"
         ? "ĐẠT YÊU CẦU"
         : d.evaluation_result === "NEEDS_IMPROVEMENT"
-        ? "CẦN CẢI TIẾN THÊM"
-        : "KHÔNG ĐẠT (CẦN DIỄN TẬP LẠI)";
+          ? "CẦN CẢI TIẾN THÊM"
+          : "KHÔNG ĐẠT (CẦN DIỄN TẬP LẠI)";
 
     const html = `
       <div style="font-family: 'Times New Roman', serif; font-size: 13pt; line-height: 1.5; color: #111; max-width: 800px; margin: 0 auto; padding: 20px;">
@@ -746,24 +811,42 @@ function EmergencyPage() {
             >
               <BookOpen className="h-4 w-4" /> Hướng dẫn nghiệp vụ
             </Button>
-            <Button variant="outline" size="sm" onClick={fetchData} disabled={loading} className="gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={fetchData}
+              disabled={loading}
+              className="gap-2"
+            >
               <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
               Làm mới
             </Button>
             {canEdit && (
               <>
                 {activeTab === "contacts" && (
-                  <Button size="sm" onClick={openNewContact} className="gap-1.5 bg-emerald-600 hover:bg-emerald-700">
+                  <Button
+                    size="sm"
+                    onClick={openNewContact}
+                    className="gap-1.5 bg-emerald-600 hover:bg-emerald-700"
+                  >
                     <Plus className="h-4 w-4" /> Thêm đầu mối liên hệ
                   </Button>
                 )}
                 {activeTab === "procedures" && (
-                  <Button size="sm" onClick={openNewProcedure} className="gap-1.5 bg-emerald-600 hover:bg-emerald-700">
+                  <Button
+                    size="sm"
+                    onClick={openNewProcedure}
+                    className="gap-1.5 bg-emerald-600 hover:bg-emerald-700"
+                  >
                     <Plus className="h-4 w-4" /> Soạn kịch bản ứng phó
                   </Button>
                 )}
                 {activeTab === "drills" && (
-                  <Button size="sm" onClick={openNewDrill} className="gap-1.5 bg-emerald-600 hover:bg-emerald-700">
+                  <Button
+                    size="sm"
+                    onClick={openNewDrill}
+                    className="gap-1.5 bg-emerald-600 hover:bg-emerald-700"
+                  >
                     <Plus className="h-4 w-4" /> Ghi nhận diễn tập / sự cố
                   </Button>
                 )}
@@ -777,7 +860,9 @@ function EmergencyPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="p-4 rounded-xl border border-slate-200 bg-white shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Đầu mối khẩn cấp</span>
+            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+              Đầu mối khẩn cấp
+            </span>
             <div className="p-2 rounded-lg bg-emerald-50 text-emerald-600">
               <PhoneCall className="h-5 w-5" />
             </div>
@@ -795,7 +880,9 @@ function EmergencyPage() {
 
         <div className="p-4 rounded-xl border border-slate-200 bg-white shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Kịch bản đã thiết lập</span>
+            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+              Kịch bản đã thiết lập
+            </span>
             <div className="p-2 rounded-lg bg-blue-50 text-blue-600">
               <ShieldAlert className="h-5 w-5" />
             </div>
@@ -811,7 +898,9 @@ function EmergencyPage() {
 
         <div className="p-4 rounded-xl border border-slate-200 bg-white shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Kịch bản rủi ro cao</span>
+            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+              Kịch bản rủi ro cao
+            </span>
             <div className="p-2 rounded-lg bg-rose-50 text-rose-600">
               <AlertTriangle className="h-5 w-5" />
             </div>
@@ -827,13 +916,17 @@ function EmergencyPage() {
 
         <div className="p-4 rounded-xl border border-slate-200 bg-white shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Diễn tập trong năm</span>
+            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+              Diễn tập trong năm
+            </span>
             <div className="p-2 rounded-lg bg-amber-50 text-amber-600">
               <FileCheck2 className="h-5 w-5" />
             </div>
           </div>
           <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-bold text-slate-800">{stats.total_drills_this_year}</span>
+            <span className="text-2xl font-bold text-slate-800">
+              {stats.total_drills_this_year}
+            </span>
             <span className="text-xs text-slate-500">lần thực hiện</span>
           </div>
           <div className="mt-2 text-xs text-emerald-600 flex items-center gap-1 font-medium">
@@ -950,8 +1043,12 @@ function EmergencyPage() {
                           {c.contact_type === "INTERNAL" ? "Nội bộ nhà máy" : "Cứu trợ ngoại vi"}
                         </span>
                         <h4 className="font-bold text-base text-slate-900">{c.name}</h4>
-                        <p className="text-xs font-semibold text-emerald-700">{c.organization_or_role || c.role_title}</p>
-                        {c.department && <p className="text-xs text-slate-500 mt-0.5">{c.department}</p>}
+                        <p className="text-xs font-semibold text-emerald-700">
+                          {c.organization_or_role || c.role_title}
+                        </p>
+                        {c.department && (
+                          <p className="text-xs text-slate-500 mt-0.5">{c.department}</p>
+                        )}
                       </div>
                       {(c.priority_order ?? c.priority_level) === 1 && (
                         <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-700 border border-red-200">
@@ -968,9 +1065,7 @@ function EmergencyPage() {
                         </div>
                       )}
                       {c.notes && (
-                        <div className="text-[11px] text-slate-500 italic">
-                          {c.notes}
-                        </div>
+                        <div className="text-[11px] text-slate-500 italic">{c.notes}</div>
                       )}
                     </div>
                   </div>
@@ -986,10 +1081,20 @@ function EmergencyPage() {
 
                     {canEdit && (
                       <div className="flex items-center gap-1">
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:text-slate-900" onClick={() => openEditContact(c)}>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-slate-500 hover:text-slate-900"
+                          onClick={() => openEditContact(c)}
+                        >
                           <Edit2 className="h-3.5 w-3.5" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-500 hover:text-rose-700" onClick={() => handleDeleteContact(c.contact_id || c.id)}>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-rose-500 hover:text-rose-700"
+                          onClick={() => handleDeleteContact(c.contact_id || c.id)}
+                        >
                           <Trash2 className="h-3.5 w-3.5" />
                         </Button>
                       </div>
@@ -1016,7 +1121,8 @@ function EmergencyPage() {
               />
             </div>
             <div className="text-xs text-slate-500 font-medium">
-              Ma trận rủi ro: <strong>Khả năng (L: 1-5)</strong> × <strong>Mức độ (S: 1-5)</strong> = <strong>Điểm rủi ro (R: 1-25)</strong>
+              Ma trận rủi ro: <strong>Khả năng (L: 1-5)</strong> × <strong>Mức độ (S: 1-5)</strong>{" "}
+              = <strong>Điểm rủi ro (R: 1-25)</strong>
             </div>
           </div>
 
@@ -1046,7 +1152,9 @@ function EmergencyPage() {
                   >
                     <div>
                       <div className="flex items-start justify-between gap-2">
-                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold border ${meta.color}`}>
+                        <span
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold border ${meta.color}`}
+                        >
                           <IconComp className="h-3.5 w-3.5 shrink-0" />
                           {meta.label}
                         </span>
@@ -1054,30 +1162,44 @@ function EmergencyPage() {
                       </div>
 
                       <div className="mt-3">
-                        <div className="text-xs font-mono font-bold text-slate-400">{p.procedure_code || p.code}</div>
+                        <div className="text-xs font-mono font-bold text-slate-400">
+                          {p.procedure_code || p.code}
+                        </div>
                         <h4 className="font-bold text-base text-slate-900 mt-0.5">{p.title}</h4>
-                        {p.description && <p className="text-xs text-slate-600 mt-1 line-clamp-2">{p.description}</p>}
+                        {p.description && (
+                          <p className="text-xs text-slate-600 mt-1 line-clamp-2">
+                            {p.description}
+                          </p>
+                        )}
                       </div>
 
                       {/* Immediate Actions */}
                       {p.immediate_actions && p.immediate_actions.length > 0 && (
                         <div className="mt-3 p-2.5 rounded-lg bg-slate-50 border border-slate-100">
                           <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1 mb-1.5">
-                            <Zap className="h-3.5 w-3.5 text-amber-500" /> Các bước hành động tức thì:
+                            <Zap className="h-3.5 w-3.5 text-amber-500" /> Các bước hành động tức
+                            thì:
                           </span>
                           <ul className="space-y-1 text-xs text-slate-700 list-disc list-inside">
                             {p.immediate_actions.slice(0, 3).map((act: any, i: number) => {
-                              const label = typeof act === "string" 
-                                ? act 
-                                : `${act.step ? `Bước ${act.step}: ` : ""}${act.action || ""}${act.responsible ? ` (${act.responsible})` : ""}`;
+                              const label =
+                                typeof act === "string"
+                                  ? act
+                                  : `${act.step ? `Bước ${act.step}: ` : ""}${act.action || ""}${act.responsible ? ` (${act.responsible})` : ""}`;
                               return (
-                                <li key={i} className="truncate" title={typeof act === "string" ? act : act.action}>
+                                <li
+                                  key={i}
+                                  className="truncate"
+                                  title={typeof act === "string" ? act : act.action}
+                                >
                                   {label}
                                 </li>
                               );
                             })}
                             {p.immediate_actions.length > 3 && (
-                              <li className="text-slate-500 italic">+ {p.immediate_actions.length - 3} bước khác...</li>
+                              <li className="text-slate-500 italic">
+                                + {p.immediate_actions.length - 3} bước khác...
+                              </li>
                             )}
                           </ul>
                         </div>
@@ -1093,9 +1215,15 @@ function EmergencyPage() {
 
                     <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
                       <div className="flex items-center gap-2">
-                        <span>L: <strong>{p.likelihood}</strong></span>
-                        <span>S: <strong>{p.severity}</strong></span>
-                        <span>Điểm: <strong>{p.risk_score}</strong></span>
+                        <span>
+                          L: <strong>{p.likelihood}</strong>
+                        </span>
+                        <span>
+                          S: <strong>{p.severity}</strong>
+                        </span>
+                        <span>
+                          Điểm: <strong>{p.risk_score}</strong>
+                        </span>
                       </div>
 
                       <div className="flex items-center gap-1">
@@ -1165,7 +1293,13 @@ function EmergencyPage() {
                 onClick={() => setDrillTypeFilter("DRILL")}
                 className={drillTypeFilter === "DRILL" ? "bg-emerald-600" : ""}
               >
-                Diễn tập giả định ({drills.filter((d) => (d.record_type === "PLANNED_DRILL" || d.drill_type === "DRILL")).length})
+                Diễn tập giả định (
+                {
+                  drills.filter(
+                    (d) => d.record_type === "PLANNED_DRILL" || d.drill_type === "DRILL",
+                  ).length
+                }
+                )
               </Button>
               <Button
                 variant={drillTypeFilter === "ACTUAL_INCIDENT" ? "default" : "outline"}
@@ -1173,7 +1307,14 @@ function EmergencyPage() {
                 onClick={() => setDrillTypeFilter("ACTUAL_INCIDENT")}
                 className={drillTypeFilter === "ACTUAL_INCIDENT" ? "bg-emerald-600" : ""}
               >
-                Sự cố thực tế ({drills.filter((d) => (d.record_type === "ACTUAL_INCIDENT" || d.drill_type === "ACTUAL_INCIDENT")).length})
+                Sự cố thực tế (
+                {
+                  drills.filter(
+                    (d) =>
+                      d.record_type === "ACTUAL_INCIDENT" || d.drill_type === "ACTUAL_INCIDENT",
+                  ).length
+                }
+                )
               </Button>
             </div>
           </div>
@@ -1205,14 +1346,21 @@ function EmergencyPage() {
                 <tbody className="divide-y divide-slate-100">
                   {filteredDrills.map((d, idx) => {
                     const meta = SCENARIO_LABELS[d.scenario_type] || { label: d.scenario_type };
-                    const isActual = d.record_type === "ACTUAL_INCIDENT" || d.drill_type === "ACTUAL_INCIDENT";
+                    const isActual =
+                      d.record_type === "ACTUAL_INCIDENT" || d.drill_type === "ACTUAL_INCIDENT";
                     const result = d.evaluation_result;
-                    const isPass = result === "PASS" || result === "SATISFACTORY" || result === "EXCELLENT";
+                    const isPass =
+                      result === "PASS" || result === "SATISFACTORY" || result === "EXCELLENT";
                     const isNeedsImprovement = result === "NEEDS_IMPROVEMENT";
 
                     return (
-                      <tr key={d.drill_id || d.id || `drill-${idx}`} className="hover:bg-slate-50/70">
-                        <td className="py-3 px-4 font-mono font-bold text-slate-800">{d.drill_code}</td>
+                      <tr
+                        key={d.drill_id || d.id || `drill-${idx}`}
+                        className="hover:bg-slate-50/70"
+                      >
+                        <td className="py-3 px-4 font-mono font-bold text-slate-800">
+                          {d.drill_code}
+                        </td>
                         <td className="py-3 px-4">
                           <span
                             className={`inline-block px-2 py-0.5 rounded text-[11px] font-bold uppercase ${
@@ -1231,7 +1379,9 @@ function EmergencyPage() {
                         <td className="py-3 px-4 text-slate-600">{d.drill_date}</td>
                         <td className="py-3 px-4 text-xs text-slate-600">
                           <div>{d.location}</div>
-                          <div className="text-slate-400">{d.participants_count} người tham gia</div>
+                          <div className="text-slate-400">
+                            {d.participants_count} người tham gia
+                          </div>
                         </td>
                         <td className="py-3 px-4 text-xs font-semibold text-slate-700">
                           {d.response_time_minutes ? `${d.response_time_minutes} phút` : "--"}
@@ -1302,9 +1452,14 @@ function EmergencyPage() {
           <div className="bg-white rounded-xl shadow-xl max-w-lg w-full p-6 space-y-4">
             <div className="flex items-center justify-between border-b pb-3">
               <h3 className="font-bold text-lg text-slate-900">
-                {editingContact ? "Cập nhật đầu mối liên lạc" : "Thêm mới đầu mối liên lạc khẩn cấp"}
+                {editingContact
+                  ? "Cập nhật đầu mối liên lạc"
+                  : "Thêm mới đầu mối liên lạc khẩn cấp"}
               </h3>
-              <button onClick={() => setContactModalOpen(false)} className="text-slate-400 hover:text-slate-600">
+              <button
+                onClick={() => setContactModalOpen(false)}
+                className="text-slate-400 hover:text-slate-600"
+              >
                 <X className="h-5 w-5" />
               </button>
             </div>
@@ -1312,22 +1467,30 @@ function EmergencyPage() {
             <form onSubmit={handleSaveContact} className="space-y-3.5 text-sm">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Phân loại</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Phân loại
+                  </label>
                   <select
                     className="w-full border rounded-md p-2 bg-white text-sm"
                     value={contactForm.contact_type}
-                    onChange={(e) => setContactForm({ ...contactForm, contact_type: e.target.value })}
+                    onChange={(e) =>
+                      setContactForm({ ...contactForm, contact_type: e.target.value })
+                    }
                   >
                     <option value="INTERNAL">Nội bộ nhà máy</option>
                     <option value="EXTERNAL">Cứu viện bên ngoài (114, 115...)</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Mức ưu tiên liên lạc</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Mức ưu tiên liên lạc
+                  </label>
                   <select
                     className="w-full border rounded-md p-2 bg-white text-sm"
                     value={contactForm.priority_level}
-                    onChange={(e) => setContactForm({ ...contactForm, priority_level: Number(e.target.value) })}
+                    onChange={(e) =>
+                      setContactForm({ ...contactForm, priority_level: Number(e.target.value) })
+                    }
                   >
                     <option value={1}>Ưu tiên 1 (Gọi tức thì)</option>
                     <option value={2}>Ưu tiên 2 (Báo cáo thứ cấp)</option>
@@ -1337,7 +1500,9 @@ function EmergencyPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Tên cá nhân / Đơn vị tiếp nhận *</label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Tên cá nhân / Đơn vị tiếp nhận *
+                </label>
                 <Input
                   required
                   placeholder="Ví dụ: Đội PCCC & Cứu nạn Long Xuyên hoặc Nguyễn Văn A"
@@ -1348,7 +1513,9 @@ function EmergencyPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Chức danh / Nhiệm vụ *</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Chức danh / Nhiệm vụ *
+                  </label>
                   <Input
                     required
                     placeholder="Đội trưởng PCCC / Trực ban..."
@@ -1357,7 +1524,9 @@ function EmergencyPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Phòng ban / Cơ quan</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Phòng ban / Cơ quan
+                  </label>
                   <Input
                     placeholder="Ban QLCL / Công an Tỉnh..."
                     value={contactForm.department}
@@ -1368,26 +1537,36 @@ function EmergencyPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Số điện thoại chính (Hotline) *</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Số điện thoại chính (Hotline) *
+                  </label>
                   <Input
                     required
                     placeholder="114 / 0903..."
                     value={contactForm.phone_primary}
-                    onChange={(e) => setContactForm({ ...contactForm, phone_primary: e.target.value })}
+                    onChange={(e) =>
+                      setContactForm({ ...contactForm, phone_primary: e.target.value })
+                    }
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Số điện thoại phụ</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Số điện thoại phụ
+                  </label>
                   <Input
                     placeholder="0296..."
                     value={contactForm.phone_secondary}
-                    onChange={(e) => setContactForm({ ...contactForm, phone_secondary: e.target.value })}
+                    onChange={(e) =>
+                      setContactForm({ ...contactForm, phone_secondary: e.target.value })
+                    }
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Vị trí trực / Địa chỉ</label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Vị trí trực / Địa chỉ
+                </label>
                 <Input
                   placeholder="Nhà trực bảo vệ cổng chính / TP. Long Xuyên..."
                   value={contactForm.location}
@@ -1396,7 +1575,9 @@ function EmergencyPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Ghi chú thêm</label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Ghi chú thêm
+                </label>
                 <Input
                   placeholder="Thời gian ứng trực, hướng dẫn kết nối..."
                   value={contactForm.notes}
@@ -1423,9 +1604,14 @@ function EmergencyPage() {
           <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b pb-3">
               <h3 className="font-bold text-lg text-slate-900">
-                {editingProcedure ? "Cập nhật kịch bản ứng phó" : "Thiết lập kịch bản ứng phó khẩn cấp mới"}
+                {editingProcedure
+                  ? "Cập nhật kịch bản ứng phó"
+                  : "Thiết lập kịch bản ứng phó khẩn cấp mới"}
               </h3>
-              <button onClick={() => setProcedureModalOpen(false)} className="text-slate-400 hover:text-slate-600">
+              <button
+                onClick={() => setProcedureModalOpen(false)}
+                className="text-slate-400 hover:text-slate-600"
+              >
                 <X className="h-5 w-5" />
               </button>
             </div>
@@ -1433,7 +1619,9 @@ function EmergencyPage() {
             <form onSubmit={handleSaveProcedure} className="space-y-3.5 text-sm">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Mã quy trình (Code) *</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Mã quy trình (Code) *
+                  </label>
                   <Input
                     required
                     placeholder="SOP-EP-01"
@@ -1442,21 +1630,27 @@ function EmergencyPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Nhóm tình huống (7+2 nhóm) *</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Nhóm tình huống (7+2 nhóm) *
+                  </label>
                   <select
                     className="w-full border rounded-md p-2 bg-white text-sm"
                     value={procForm.scenario_type}
                     onChange={(e) => setProcForm({ ...procForm, scenario_type: e.target.value })}
                   >
                     {Object.entries(SCENARIO_LABELS).map(([key, val]) => (
-                      <option key={key} value={key}>{val.label}</option>
+                      <option key={key} value={key}>
+                        {val.label}
+                      </option>
                     ))}
                   </select>
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Tiêu đề kịch bản / Quy trình *</label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Tiêu đề kịch bản / Quy trình *
+                </label>
                 <Input
                   required
                   placeholder="Quy trình xử lý sự cố cháy nổ tại xưởng chế biến"
@@ -1467,14 +1661,20 @@ function EmergencyPage() {
 
               {/* Likelihood x Severity Matrix */}
               <div className="p-3 bg-slate-50 border rounded-lg">
-                <div className="text-xs font-bold text-slate-700 mb-2">Đánh giá ma trận rủi ro (Risk Matrix Scoring):</div>
+                <div className="text-xs font-bold text-slate-700 mb-2">
+                  Đánh giá ma trận rủi ro (Risk Matrix Scoring):
+                </div>
                 <div className="grid grid-cols-3 gap-3 items-center">
                   <div>
-                    <label className="block text-[11px] text-slate-600 mb-1">Khả năng (L: 1-5)</label>
+                    <label className="block text-[11px] text-slate-600 mb-1">
+                      Khả năng (L: 1-5)
+                    </label>
                     <select
                       className="w-full border rounded p-1.5 bg-white text-xs"
                       value={procForm.likelihood}
-                      onChange={(e) => setProcForm({ ...procForm, likelihood: Number(e.target.value) })}
+                      onChange={(e) =>
+                        setProcForm({ ...procForm, likelihood: Number(e.target.value) })
+                      }
                     >
                       <option value={1}>1 - Hiếm khi xảy ra</option>
                       <option value={2}>2 - Ít khi xảy ra</option>
@@ -1484,11 +1684,15 @@ function EmergencyPage() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-[11px] text-slate-600 mb-1">Mức độ nghiêm trọng (S: 1-5)</label>
+                    <label className="block text-[11px] text-slate-600 mb-1">
+                      Mức độ nghiêm trọng (S: 1-5)
+                    </label>
                     <select
                       className="w-full border rounded p-1.5 bg-white text-xs"
                       value={procForm.severity}
-                      onChange={(e) => setProcForm({ ...procForm, severity: Number(e.target.value) })}
+                      onChange={(e) =>
+                        setProcForm({ ...procForm, severity: Number(e.target.value) })
+                      }
                     >
                       <option value={1}>1 - Không đáng kể</option>
                       <option value={2}>2 - Nhỏ, xử lý tại chỗ</option>
@@ -1498,8 +1702,12 @@ function EmergencyPage() {
                     </select>
                   </div>
                   <div className="text-center pt-3">
-                    <div className="text-[11px] text-slate-500 font-medium">Điểm rủi ro (R = L × S):</div>
-                    <div className="mt-1">{getRiskBadge(procForm.likelihood * procForm.severity)}</div>
+                    <div className="text-[11px] text-slate-500 font-medium">
+                      Điểm rủi ro (R = L × S):
+                    </div>
+                    <div className="mt-1">
+                      {getRiskBadge(procForm.likelihood * procForm.severity)}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1514,7 +1722,9 @@ function EmergencyPage() {
                   className="w-full border rounded-md p-2 text-xs font-mono"
                   placeholder="1. Phát còi báo động khẩn cấp&#10;2. Cắt cầu dao điện tổng phân xưởng&#10;3. Sơ tán nhân sự theo lối thoát hiểm số 2&#10;4. Đội PCCC cơ sở tiếp cận dập lửa ban đầu"
                   value={procForm.immediate_actions_text}
-                  onChange={(e) => setProcForm({ ...procForm, immediate_actions_text: e.target.value })}
+                  onChange={(e) =>
+                    setProcForm({ ...procForm, immediate_actions_text: e.target.value })
+                  }
                 />
               </div>
 
@@ -1527,13 +1737,17 @@ function EmergencyPage() {
                   className="w-full border rounded-md p-2 text-xs"
                   placeholder="Cách ly toàn bộ nguyên liệu, bán thành phẩm trong vòng bán kính 20m. Khóa kho không cho xuất hàng..."
                   value={procForm.food_safety_controls}
-                  onChange={(e) => setProcForm({ ...procForm, food_safety_controls: e.target.value })}
+                  onChange={(e) =>
+                    setProcForm({ ...procForm, food_safety_controls: e.target.value })
+                  }
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Vai trò phụ trách chính</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Vai trò phụ trách chính
+                  </label>
                   <Input
                     placeholder="Đội trưởng PCCC & Trưởng ban ATTP"
                     value={procForm.responsible_role}
@@ -1541,7 +1755,9 @@ function EmergencyPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Điểm tập kết an toàn (Assembly Point)</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Điểm tập kết an toàn (Assembly Point)
+                  </label>
                   <Input
                     placeholder="Sân trước cổng chính nhà máy"
                     value={procForm.assembly_point}
@@ -1551,7 +1767,11 @@ function EmergencyPage() {
               </div>
 
               <div className="flex items-center justify-end gap-2 pt-3 border-t">
-                <Button type="button" variant="outline" onClick={() => setProcedureModalOpen(false)}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setProcedureModalOpen(false)}
+                >
                   Hủy bỏ
                 </Button>
                 <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700">
@@ -1569,9 +1789,14 @@ function EmergencyPage() {
           <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b pb-3">
               <h3 className="font-bold text-lg text-slate-900">
-                {editingDrill ? "Cập nhật biên bản diễn tập" : "Lập biên bản diễn tập / Xử lý sự cố mới"}
+                {editingDrill
+                  ? "Cập nhật biên bản diễn tập"
+                  : "Lập biên bản diễn tập / Xử lý sự cố mới"}
               </h3>
-              <button onClick={() => setDrillModalOpen(false)} className="text-slate-400 hover:text-slate-600">
+              <button
+                onClick={() => setDrillModalOpen(false)}
+                className="text-slate-400 hover:text-slate-600"
+              >
                 <X className="h-5 w-5" />
               </button>
             </div>
@@ -1579,7 +1804,9 @@ function EmergencyPage() {
             <form onSubmit={handleSaveDrill} className="space-y-3.5 text-sm">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Mã hồ sơ biên bản *</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Mã hồ sơ biên bản *
+                  </label>
                   <Input
                     required
                     placeholder="BM-EMRG-2026-001"
@@ -1588,20 +1815,26 @@ function EmergencyPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Phân loại tác nghiệp</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Phân loại tác nghiệp
+                  </label>
                   <select
                     className="w-full border rounded-md p-2 bg-white text-sm"
                     value={drillForm.drill_type}
                     onChange={(e) => setDrillForm({ ...drillForm, drill_type: e.target.value })}
                   >
                     <option value="DRILL">Diễn tập giả định định kỳ (Drill)</option>
-                    <option value="ACTUAL_INCIDENT">Xử lý sự cố thực tế phát sinh (Incident)</option>
+                    <option value="ACTUAL_INCIDENT">
+                      Xử lý sự cố thực tế phát sinh (Incident)
+                    </option>
                   </select>
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Tiêu đề đợt diễn tập / sự cố *</label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Tiêu đề đợt diễn tập / sự cố *
+                </label>
                 <Input
                   required
                   placeholder="Diễn tập ứng phó cháy nổ phân xưởng chế biến Q3/2026"
@@ -1612,19 +1845,25 @@ function EmergencyPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Nhóm tình huống</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Nhóm tình huống
+                  </label>
                   <select
                     className="w-full border rounded-md p-2 bg-white text-sm"
                     value={drillForm.scenario_type}
                     onChange={(e) => setDrillForm({ ...drillForm, scenario_type: e.target.value })}
                   >
                     {Object.entries(SCENARIO_LABELS).map(([key, val]) => (
-                      <option key={key} value={key}>{val.label}</option>
+                      <option key={key} value={key}>
+                        {val.label}
+                      </option>
                     ))}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Ngày thực hiện *</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Ngày thực hiện *
+                  </label>
                   <Input
                     type="date"
                     required
@@ -1636,23 +1875,31 @@ function EmergencyPage() {
 
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Địa điểm thực hiện</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Địa điểm thực hiện
+                  </label>
                   <Input
                     value={drillForm.location}
                     onChange={(e) => setDrillForm({ ...drillForm, location: e.target.value })}
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Số người tham gia</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Số người tham gia
+                  </label>
                   <Input
                     type="number"
                     min={1}
                     value={drillForm.participants_count}
-                    onChange={(e) => setDrillForm({ ...drillForm, participants_count: e.target.value })}
+                    onChange={(e) =>
+                      setDrillForm({ ...drillForm, participants_count: e.target.value })
+                    }
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Người chỉ huy / Đánh giá</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Người chỉ huy / Đánh giá
+                  </label>
                   <Input
                     required
                     value={drillForm.lead_evaluator}
@@ -1663,27 +1910,39 @@ function EmergencyPage() {
 
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Thời gian tổng (phút)</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Thời gian tổng (phút)
+                  </label>
                   <Input
                     type="number"
                     value={drillForm.duration_minutes}
-                    onChange={(e) => setDrillForm({ ...drillForm, duration_minutes: e.target.value })}
+                    onChange={(e) =>
+                      setDrillForm({ ...drillForm, duration_minutes: e.target.value })
+                    }
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">TG phản ứng tức thì (phút)</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    TG phản ứng tức thì (phút)
+                  </label>
                   <Input
                     type="number"
                     value={drillForm.response_time_minutes}
-                    onChange={(e) => setDrillForm({ ...drillForm, response_time_minutes: e.target.value })}
+                    onChange={(e) =>
+                      setDrillForm({ ...drillForm, response_time_minutes: e.target.value })
+                    }
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Kết quả đánh giá</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Kết quả đánh giá
+                  </label>
                   <select
                     className="w-full border rounded-md p-2 bg-white text-sm"
                     value={drillForm.evaluation_result}
-                    onChange={(e) => setDrillForm({ ...drillForm, evaluation_result: e.target.value })}
+                    onChange={(e) =>
+                      setDrillForm({ ...drillForm, evaluation_result: e.target.value })
+                    }
                   >
                     <option value="PASS">Đạt yêu cầu</option>
                     <option value="NEEDS_IMPROVEMENT">Cần cải tiến thêm</option>
@@ -1693,17 +1952,23 @@ function EmergencyPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Diễn biến tình huống / Kịch bản giả định</label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Diễn biến tình huống / Kịch bản giả định
+                </label>
                 <textarea
                   rows={2}
                   className="w-full border rounded-md p-2 text-xs"
                   value={drillForm.scenario_description}
-                  onChange={(e) => setDrillForm({ ...drillForm, scenario_description: e.target.value })}
+                  onChange={(e) =>
+                    setDrillForm({ ...drillForm, scenario_description: e.target.value })
+                  }
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Nhận xét & Phát hiện thực tế (Findings)</label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Nhận xét & Phát hiện thực tế (Findings)
+                </label>
                 <textarea
                   rows={2}
                   className="w-full border rounded-md p-2 text-xs"
@@ -1713,12 +1978,16 @@ function EmergencyPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Hành động khắc phục / Khuyến nghị cải tiến (CAPA)</label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Hành động khắc phục / Khuyến nghị cải tiến (CAPA)
+                </label>
                 <textarea
                   rows={2}
                   className="w-full border rounded-md p-2 text-xs"
                   value={drillForm.corrective_actions}
-                  onChange={(e) => setDrillForm({ ...drillForm, corrective_actions: e.target.value })}
+                  onChange={(e) =>
+                    setDrillForm({ ...drillForm, corrective_actions: e.target.value })
+                  }
                 />
               </div>
 
@@ -1741,10 +2010,15 @@ function EmergencyPage() {
           <div className="bg-white rounded-xl shadow-xl max-w-xl w-full p-6 space-y-4 max-h-[85vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b pb-3">
               <div>
-                <span className="text-xs font-mono font-bold text-slate-400">{viewDetailModal.procedure_code || viewDetailModal.code}</span>
+                <span className="text-xs font-mono font-bold text-slate-400">
+                  {viewDetailModal.procedure_code || viewDetailModal.code}
+                </span>
                 <h3 className="font-bold text-lg text-slate-900">{viewDetailModal.title}</h3>
               </div>
-              <button onClick={() => setViewDetailModal(null)} className="text-slate-400 hover:text-slate-600">
+              <button
+                onClick={() => setViewDetailModal(null)}
+                className="text-slate-400 hover:text-slate-600"
+              >
                 <X className="h-5 w-5" />
               </button>
             </div>
@@ -1752,7 +2026,9 @@ function EmergencyPage() {
             <div className="space-y-3 text-xs">
               <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-50 border">
                 <div>
-                  <strong>Nhóm tình huống:</strong> {SCENARIO_LABELS[viewDetailModal.scenario_type]?.label || viewDetailModal.scenario_type}
+                  <strong>Nhóm tình huống:</strong>{" "}
+                  {SCENARIO_LABELS[viewDetailModal.scenario_type]?.label ||
+                    viewDetailModal.scenario_type}
                 </div>
                 <div>{getRiskBadge(viewDetailModal.risk_score)}</div>
               </div>
@@ -1760,20 +2036,29 @@ function EmergencyPage() {
               {viewDetailModal.description && (
                 <div>
                   <strong className="text-slate-700 block mb-1">Mô tả sự cố:</strong>
-                  <p className="text-slate-600 bg-slate-50 p-2.5 rounded border">{viewDetailModal.description}</p>
+                  <p className="text-slate-600 bg-slate-50 p-2.5 rounded border">
+                    {viewDetailModal.description}
+                  </p>
                 </div>
               )}
 
               <div>
-                <strong className="text-slate-700 block mb-1">Quy trình các bước hành động tức thì:</strong>
+                <strong className="text-slate-700 block mb-1">
+                  Quy trình các bước hành động tức thì:
+                </strong>
                 <div className="space-y-2 bg-amber-50/60 p-3 rounded-lg border border-amber-200">
                   {(viewDetailModal.immediate_actions || []).length === 0 ? (
-                    <p className="text-slate-500 italic text-xs">Chưa có bước hành động nào được khai báo.</p>
+                    <p className="text-slate-500 italic text-xs">
+                      Chưa có bước hành động nào được khai báo.
+                    </p>
                   ) : (
                     (viewDetailModal.immediate_actions || []).map((act: any, idx: number) => {
                       if (typeof act === "string") {
                         return (
-                          <div key={idx} className="text-xs text-amber-950 flex items-start gap-2 bg-white/70 p-2 rounded border border-amber-100">
+                          <div
+                            key={idx}
+                            className="text-xs text-amber-950 flex items-start gap-2 bg-white/70 p-2 rounded border border-amber-100"
+                          >
                             <span className="shrink-0 w-5 h-5 rounded-full bg-amber-500 text-white font-bold flex items-center justify-center text-[10px]">
                               {idx + 1}
                             </span>
@@ -1782,18 +2067,28 @@ function EmergencyPage() {
                         );
                       }
                       return (
-                        <div key={idx} className="flex items-start gap-2.5 text-xs bg-white/80 p-2.5 rounded-lg border border-amber-100 shadow-2xs">
+                        <div
+                          key={idx}
+                          className="flex items-start gap-2.5 text-xs bg-white/80 p-2.5 rounded-lg border border-amber-100 shadow-2xs"
+                        >
                           <span className="shrink-0 w-6 h-6 rounded-full bg-amber-500 text-white font-bold flex items-center justify-center text-[11px]">
                             {act.step || idx + 1}
                           </span>
                           <div className="flex-1">
-                            <p className="font-medium text-slate-900 leading-relaxed">{act.action}</p>
+                            <p className="font-medium text-slate-900 leading-relaxed">
+                              {act.action}
+                            </p>
                             <div className="flex flex-wrap items-center gap-3 mt-1.5 text-[11px] text-slate-500">
                               {act.responsible && (
-                                <span>Phụ trách: <strong className="text-slate-700">{act.responsible}</strong></span>
+                                <span>
+                                  Phụ trách:{" "}
+                                  <strong className="text-slate-700">{act.responsible}</strong>
+                                </span>
                               )}
                               {act.deadline_minutes && (
-                                <span className="text-amber-700 font-medium">Thời hạn: <strong>{act.deadline_minutes} phút</strong></span>
+                                <span className="text-amber-700 font-medium">
+                                  Thời hạn: <strong>{act.deadline_minutes} phút</strong>
+                                </span>
                               )}
                             </div>
                           </div>
@@ -1806,7 +2101,9 @@ function EmergencyPage() {
 
               {viewDetailModal.food_safety_controls && (
                 <div>
-                  <strong className="text-slate-700 block mb-1">Kiểm soát an toàn thực phẩm:</strong>
+                  <strong className="text-slate-700 block mb-1">
+                    Kiểm soát an toàn thực phẩm:
+                  </strong>
                   <p className="text-emerald-900 bg-emerald-50 p-2.5 rounded border border-emerald-200">
                     {viewDetailModal.food_safety_controls}
                   </p>
@@ -1814,10 +2111,19 @@ function EmergencyPage() {
               )}
 
               <div className="grid grid-cols-2 gap-2 pt-2 border-t text-slate-600">
-                <div><strong>Phụ trách:</strong> {viewDetailModal.responsible_team || viewDetailModal.responsible_role || "--"}</div>
-                <div><strong>Điểm tập kết:</strong> {viewDetailModal.assembly_point || "--"}</div>
-                <div><strong>Trang bị:</strong> {viewDetailModal.equipment_needed || "--"}</div>
-                <div><strong>Trạng thái:</strong> {viewDetailModal.status}</div>
+                <div>
+                  <strong>Phụ trách:</strong>{" "}
+                  {viewDetailModal.responsible_team || viewDetailModal.responsible_role || "--"}
+                </div>
+                <div>
+                  <strong>Điểm tập kết:</strong> {viewDetailModal.assembly_point || "--"}
+                </div>
+                <div>
+                  <strong>Trang bị:</strong> {viewDetailModal.equipment_needed || "--"}
+                </div>
+                <div>
+                  <strong>Trạng thái:</strong> {viewDetailModal.status}
+                </div>
               </div>
             </div>
 
@@ -1829,11 +2135,7 @@ function EmergencyPage() {
       )}
 
       {/* Module Guide Modal */}
-      <ModuleGuideModal
-        module="emergency"
-        isOpen={showGuide}
-        onClose={() => setShowGuide(false)}
-      />
+      <ModuleGuideModal module="emergency" isOpen={showGuide} onClose={() => setShowGuide(false)} />
     </div>
   );
 }

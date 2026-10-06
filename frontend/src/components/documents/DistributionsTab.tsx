@@ -78,7 +78,9 @@ export function DistributionsTab({
   // Ack & Retrieval States
   const [ackSignerName, setAckSignerName] = useState("");
   const [retrievalDate, setRetrievalDate] = useState(new Date().toISOString().split("T")[0]);
-  const [retrievalNotes, setRetrievalNotes] = useState("Đã thu hồi bản cũ và đóng dấu 'HẾT HIỆU LỰC'");
+  const [retrievalNotes, setRetrievalNotes] = useState(
+    "Đã thu hồi bản cũ và đóng dấu 'HẾT HIỆU LỰC'",
+  );
 
   // KPIs
   const stats = useMemo(() => {
@@ -100,9 +102,7 @@ export function DistributionsTab({
 
       const matchDept = selectedDept === "ALL" || d.department_recipient === selectedDept;
       const matchAck =
-        selectedAck === "ALL" ? true :
-        selectedAck === "ACKED" ? d.acknowledged :
-        !d.acknowledged;
+        selectedAck === "ALL" ? true : selectedAck === "ACKED" ? d.acknowledged : !d.acknowledged;
 
       return matchSearch && matchDept && matchAck;
     });
@@ -199,10 +199,13 @@ export function DistributionsTab({
     if (!retrievingDist) return;
 
     try {
-      await api.put(`/documents/distributions/${retrievingDist.distribution_id}/retrieve-obsolete`, {
-        retrieval_date: retrievalDate,
-        notes: retrievalNotes,
-      });
+      await api.put(
+        `/documents/distributions/${retrievingDist.distribution_id}/retrieve-obsolete`,
+        {
+          retrieval_date: retrievalDate,
+          notes: retrievalNotes,
+        },
+      );
       toast.success("Đã ghi nhận thu hồi tài liệu hết hiệu lực!");
       setRetrievingDist(null);
       onRefresh();
@@ -244,7 +247,8 @@ export function DistributionsTab({
             </span>
           </div>
           <p className="mt-1 text-xs text-muted-foreground">
-            Quản lý việc chuyển giao tài liệu có kiểm soát tới các đơn vị sử dụng, ghi nhận ký nhận điện tử/bản in và thu hồi tiêu hủy các phiên bản lỗi thời.
+            Quản lý việc chuyển giao tài liệu có kiểm soát tới các đơn vị sử dụng, ghi nhận ký nhận
+            điện tử/bản in và thu hồi tiêu hủy các phiên bản lỗi thời.
           </p>
         </div>
 
@@ -274,13 +278,19 @@ export function DistributionsTab({
         <div className="rounded-xl border bg-card p-3.5 shadow-sm">
           <div className="text-xs text-muted-foreground">Tổng lượt phân phối</div>
           <div className="mt-1.5 text-2xl font-bold text-foreground">{stats.total}</div>
-          <div className="text-[11px] text-muted-foreground">Văn bản đã ban hành tới các đơn vị</div>
+          <div className="text-[11px] text-muted-foreground">
+            Văn bản đã ban hành tới các đơn vị
+          </div>
         </div>
 
         <div className="rounded-xl border border-emerald-200 bg-emerald-500/5 p-3.5 shadow-sm">
-          <div className="text-xs font-medium text-emerald-700 dark:text-emerald-300">Đã tiếp nhận & ký nhận</div>
+          <div className="text-xs font-medium text-emerald-700 dark:text-emerald-300">
+            Đã tiếp nhận & ký nhận
+          </div>
           <div className="mt-1.5 text-2xl font-bold text-emerald-700">{stats.acknowledged}</div>
-          <div className="text-[11px] text-emerald-600/80">Đơn vị đã xác nhận tiếp nhận áp dụng</div>
+          <div className="text-[11px] text-emerald-600/80">
+            Đơn vị đã xác nhận tiếp nhận áp dụng
+          </div>
         </div>
 
         <div className="rounded-xl border border-amber-200 bg-amber-500/5 p-3.5 shadow-sm">
@@ -290,7 +300,9 @@ export function DistributionsTab({
         </div>
 
         <div className="rounded-xl border border-rose-200 bg-rose-500/5 p-3.5 shadow-sm">
-          <div className="text-xs font-medium text-rose-700 dark:text-rose-300">Chưa thu hồi bản cũ</div>
+          <div className="text-xs font-medium text-rose-700 dark:text-rose-300">
+            Chưa thu hồi bản cũ
+          </div>
           <div className="mt-1.5 text-2xl font-bold text-rose-700">{stats.pendingRetrieval}</div>
           <div className="text-[11px] text-rose-600/80">Rủi ro sử dụng tài liệu lỗi thời</div>
         </div>
@@ -380,20 +392,30 @@ export function DistributionsTab({
                     </td>
                     <td className="px-3 py-3">
                       <div className="font-semibold text-foreground">{dist.doc_title}</div>
-                      <div className="font-mono text-[11px] text-muted-foreground">{dist.doc_code}</div>
+                      <div className="font-mono text-[11px] text-muted-foreground">
+                        {dist.doc_code}
+                      </div>
                     </td>
                     <td className="px-3 py-3 text-center font-bold">v{dist.version}</td>
                     <td className="px-3 py-3">
                       <div className="font-medium text-foreground">{dist.department_recipient}</div>
                     </td>
                     <td className="px-3 py-3">
-                      <span className={`inline-block rounded px-2 py-0.5 text-[11px] font-medium border ${
-                        dist.distribution_method === "PORTAL" ? "bg-blue-500/10 text-blue-700 border-blue-200" : "bg-purple-500/10 text-purple-700 border-purple-200"
-                      }`}>
-                        {dist.distribution_method === "PORTAL" ? "Portal điện tử" : `Bản in (SL: ${dist.copy_number})`}
+                      <span
+                        className={`inline-block rounded px-2 py-0.5 text-[11px] font-medium border ${
+                          dist.distribution_method === "PORTAL"
+                            ? "bg-blue-500/10 text-blue-700 border-blue-200"
+                            : "bg-purple-500/10 text-purple-700 border-purple-200"
+                        }`}
+                      >
+                        {dist.distribution_method === "PORTAL"
+                          ? "Portal điện tử"
+                          : `Bản in (SL: ${dist.copy_number})`}
                       </span>
                     </td>
-                    <td className="px-3 py-3 text-center text-muted-foreground">{dist.distribution_date}</td>
+                    <td className="px-3 py-3 text-center text-muted-foreground">
+                      {dist.distribution_date}
+                    </td>
 
                     {/* Trạng thái Ký nhận */}
                     <td className="px-3 py-3 text-center">
@@ -523,7 +545,9 @@ export function DistributionsTab({
 
             <div className="grid grid-cols-3 gap-3">
               <div>
-                <Label className="text-xs font-semibold">Mã hiệu tài liệu <span className="text-rose-500">*</span></Label>
+                <Label className="text-xs font-semibold">
+                  Mã hiệu tài liệu <span className="text-rose-500">*</span>
+                </Label>
                 <Input
                   value={formData.doc_code}
                   onChange={(e) => setFormData({ ...formData, doc_code: e.target.value })}
@@ -533,7 +557,9 @@ export function DistributionsTab({
               </div>
 
               <div className="col-span-2">
-                <Label className="text-xs font-semibold">Tên tài liệu / Quy trình <span className="text-rose-500">*</span></Label>
+                <Label className="text-xs font-semibold">
+                  Tên tài liệu / Quy trình <span className="text-rose-500">*</span>
+                </Label>
                 <Input
                   value={formData.doc_title}
                   onChange={(e) => setFormData({ ...formData, doc_title: e.target.value })}
@@ -569,7 +595,9 @@ export function DistributionsTab({
                 <Label className="text-xs font-semibold">Người phát hành (Doc Controller)</Label>
                 <Input
                   value={formData.distributed_by_name}
-                  onChange={(e) => setFormData({ ...formData, distributed_by_name: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, distributed_by_name: e.target.value })
+                  }
                   required
                   className="text-xs"
                 />
@@ -581,7 +609,9 @@ export function DistributionsTab({
                 <Label className="text-xs font-semibold">Đơn vị nhận tài liệu</Label>
                 <select
                   value={formData.department_recipient}
-                  onChange={(e) => setFormData({ ...formData, department_recipient: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, department_recipient: e.target.value })
+                  }
                   className="h-9 w-full rounded-md border border-input bg-background px-3 text-xs shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
                 >
                   {DEPARTMENTS.map((dept) => (
@@ -596,7 +626,9 @@ export function DistributionsTab({
                 <Label className="text-xs font-semibold">Hình thức phân phối</Label>
                 <select
                   value={formData.distribution_method}
-                  onChange={(e) => setFormData({ ...formData, distribution_method: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, distribution_method: e.target.value })
+                  }
                   className="h-9 w-full rounded-md border border-input bg-background px-3 text-xs shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
                 >
                   <option value="PORTAL">Bản điện tử (Portal ISO)</option>
@@ -610,7 +642,9 @@ export function DistributionsTab({
                   type="number"
                   min="1"
                   value={formData.copy_number}
-                  onChange={(e) => setFormData({ ...formData, copy_number: parseInt(e.target.value) || 1 })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, copy_number: parseInt(e.target.value) || 1 })
+                  }
                   className="text-xs"
                 />
               </div>
@@ -628,7 +662,12 @@ export function DistributionsTab({
             </div>
 
             <DialogFooter className="pt-2">
-              <Button type="button" variant="outline" size="sm" onClick={() => setIsCreateOpen(false)}>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setIsCreateOpen(false)}
+              >
                 Hủy bỏ
               </Button>
               <Button type="submit" size="sm" className="gap-1.5">
@@ -653,13 +692,25 @@ export function DistributionsTab({
 
             <form onSubmit={handleConfirmAck} className="space-y-4">
               <div className="rounded-lg bg-muted/40 p-3 text-xs space-y-1">
-                <div><b>Mã thông báo:</b> <span className="font-mono font-bold text-primary">{acknowledgingDist.notice_code}</span></div>
-                <div><b>Tài liệu:</b> [{acknowledgingDist.doc_code}] {acknowledgingDist.doc_title} (v{acknowledgingDist.version})</div>
-                <div><b>Đơn vị nhận:</b> {acknowledgingDist.department_recipient}</div>
+                <div>
+                  <b>Mã thông báo:</b>{" "}
+                  <span className="font-mono font-bold text-primary">
+                    {acknowledgingDist.notice_code}
+                  </span>
+                </div>
+                <div>
+                  <b>Tài liệu:</b> [{acknowledgingDist.doc_code}] {acknowledgingDist.doc_title} (v
+                  {acknowledgingDist.version})
+                </div>
+                <div>
+                  <b>Đơn vị nhận:</b> {acknowledgingDist.department_recipient}
+                </div>
               </div>
 
               <div>
-                <Label className="text-xs font-semibold">Họ tên cán bộ đại diện ký nhận <span className="text-rose-500">*</span></Label>
+                <Label className="text-xs font-semibold">
+                  Họ tên cán bộ đại diện ký nhận <span className="text-rose-500">*</span>
+                </Label>
                 <Input
                   value={ackSignerName}
                   onChange={(e) => setAckSignerName(e.target.value)}
@@ -670,14 +721,24 @@ export function DistributionsTab({
               </div>
 
               <div className="rounded border border-amber-200 bg-amber-50 p-2.5 text-[11px] text-amber-800">
-                Lưu ý: Bằng việc ký nhận, đơn vị cam kết phổ biến và huấn luyện cho toàn bộ nhân sự liên quan áp dụng đúng quy trình đã ban hành.
+                Lưu ý: Bằng việc ký nhận, đơn vị cam kết phổ biến và huấn luyện cho toàn bộ nhân sự
+                liên quan áp dụng đúng quy trình đã ban hành.
               </div>
 
               <DialogFooter>
-                <Button type="button" variant="outline" size="sm" onClick={() => setAcknowledgingDist(null)}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setAcknowledgingDist(null)}
+                >
                   Hủy
                 </Button>
-                <Button type="submit" size="sm" className="gap-1.5 bg-emerald-600 hover:bg-emerald-700">
+                <Button
+                  type="submit"
+                  size="sm"
+                  className="gap-1.5 bg-emerald-600 hover:bg-emerald-700"
+                >
                   <Check className="h-3.5 w-3.5" />
                   Xác Nhận Ký Nhận
                 </Button>
@@ -700,9 +761,18 @@ export function DistributionsTab({
 
             <form onSubmit={handleConfirmRetrieval} className="space-y-4">
               <div className="rounded-lg bg-muted/40 p-3 text-xs space-y-1">
-                <div><b>Mã thông báo:</b> <span className="font-mono font-bold text-primary">{retrievingDist.notice_code}</span></div>
-                <div><b>Tài liệu:</b> [{retrievingDist.doc_code}] {retrievingDist.doc_title}</div>
-                <div><b>Đơn vị:</b> {retrievingDist.department_recipient}</div>
+                <div>
+                  <b>Mã thông báo:</b>{" "}
+                  <span className="font-mono font-bold text-primary">
+                    {retrievingDist.notice_code}
+                  </span>
+                </div>
+                <div>
+                  <b>Tài liệu:</b> [{retrievingDist.doc_code}] {retrievingDist.doc_title}
+                </div>
+                <div>
+                  <b>Đơn vị:</b> {retrievingDist.department_recipient}
+                </div>
               </div>
 
               <div>
@@ -727,10 +797,19 @@ export function DistributionsTab({
               </div>
 
               <DialogFooter>
-                <Button type="button" variant="outline" size="sm" onClick={() => setRetrievingDist(null)}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setRetrievingDist(null)}
+                >
                   Hủy
                 </Button>
-                <Button type="submit" size="sm" className="gap-1.5 bg-rose-600 hover:bg-rose-700 text-white">
+                <Button
+                  type="submit"
+                  size="sm"
+                  className="gap-1.5 bg-rose-600 hover:bg-rose-700 text-white"
+                >
                   <Check className="h-3.5 w-3.5" />
                   Xác Nhận Đã Thu Hồi
                 </Button>

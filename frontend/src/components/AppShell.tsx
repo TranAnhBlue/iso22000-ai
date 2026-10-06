@@ -1,10 +1,28 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useEffect, useState, type ReactNode } from "react";
-import { canView, clearSession, getSession, getToken, roleLabel, setSession, type ModuleKey, type Session } from "@/lib/auth";
+import {
+  canView,
+  clearSession,
+  getSession,
+  getToken,
+  roleLabel,
+  setSession,
+  type ModuleKey,
+  type Session,
+} from "@/lib/auth";
 import { ModuleAccessProvider } from "@/lib/rbac";
 import logoImg from "@/assets/logo.png";
 import api from "@/lib/api";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { toast } from "sonner";
 import {
@@ -22,7 +40,6 @@ import {
   Lock,
   Sparkles,
   Bell,
-  RefreshCw,
   Menu,
   X,
   QrCode,
@@ -54,96 +71,330 @@ function getRoleQuickLinks(role: string): RoleQuickLink[] {
   // 1. Ban Giám Đốc
   if (["management", "executive"].includes(r)) {
     return [
-      { to: "/dashboard", label: "Trung tâm điều hành & Xem xét lãnh đạo", sublabel: "Báo cáo KPI & Đánh giá toàn diện FSMS", icon: LayoutDashboard, tone: "text-emerald-600 bg-emerald-50 hover:bg-emerald-100/80 border-emerald-200/60" },
-      { to: "/documents", label: "Phê duyệt tài liệu & SOPs cấp cao", sublabel: "Sổ tay ATTP, Chính sách chất lượng", icon: FileText, tone: "text-blue-600 bg-blue-50 hover:bg-blue-100/80 border-blue-200/60" },
-      { to: "/audits", label: "Kế hoạch ĐGNB & Báo cáo kết luận", sublabel: "Giám sát hiệu lực toàn diện hệ thống", icon: GraduationCap, tone: "text-purple-600 bg-purple-50 hover:bg-purple-100/80 border-purple-200/60" },
-      { to: "/traceability", label: "Kích hoạt lệnh thu hồi sản phẩm", sublabel: "Quản lý tình huống khẩn cấp & Thu hồi", icon: QrCode, tone: "text-rose-600 bg-rose-50 hover:bg-rose-100/80 border-rose-200/60" },
+      {
+        to: "/dashboard",
+        label: "Trung tâm điều hành & Xem xét lãnh đạo",
+        sublabel: "Báo cáo KPI & Đánh giá toàn diện FSMS",
+        icon: LayoutDashboard,
+        tone: "text-emerald-600 bg-emerald-50 hover:bg-emerald-100/80 border-emerald-200/60",
+      },
+      {
+        to: "/documents",
+        label: "Phê duyệt tài liệu & SOPs cấp cao",
+        sublabel: "Sổ tay ATTP, Chính sách chất lượng",
+        icon: FileText,
+        tone: "text-blue-600 bg-blue-50 hover:bg-blue-100/80 border-blue-200/60",
+      },
+      {
+        to: "/audits",
+        label: "Kế hoạch ĐGNB & Báo cáo kết luận",
+        sublabel: "Giám sát hiệu lực toàn diện hệ thống",
+        icon: GraduationCap,
+        tone: "text-purple-600 bg-purple-50 hover:bg-purple-100/80 border-purple-200/60",
+      },
+      {
+        to: "/traceability",
+        label: "Kích hoạt lệnh thu hồi sản phẩm",
+        sublabel: "Quản lý tình huống khẩn cấp & Thu hồi",
+        icon: QrCode,
+        tone: "text-rose-600 bg-rose-50 hover:bg-rose-100/80 border-rose-200/60",
+      },
     ];
   }
   // 2. Quản Trị Hệ Thống
   if (["admin"].includes(r)) {
     return [
-      { to: "/organization", label: "Cơ cấu tổ chức & Quản lý người dùng", sublabel: "Phân quyền RBAC, phòng ban & tài khoản", icon: Building2, tone: "text-purple-600 bg-purple-50 hover:bg-purple-100/80 border-purple-200/60" },
-      { to: "/builder", label: "Trình thiết kế biểu mẫu & Lưu đồ", sublabel: "Tùy biến Form điện tử & Workflow hệ thống", icon: Layers, tone: "text-amber-600 bg-amber-50 hover:bg-amber-100/80 border-amber-200/60" },
-      { to: "/dashboard", label: "Tổng quan dữ liệu & Giám sát hệ thống", sublabel: "Bảng điều hành quản trị tập trung", icon: LayoutDashboard, tone: "text-emerald-600 bg-emerald-50 hover:bg-emerald-100/80 border-emerald-200/60" },
-      { to: "/documents", label: "Quản trị danh mục tài liệu & SOPs", sublabel: "Phân cấp & lưu trữ hồ sơ tài liệu", icon: FileText, tone: "text-blue-600 bg-blue-50 hover:bg-blue-100/80 border-blue-200/60" },
+      {
+        to: "/organization",
+        label: "Cơ cấu tổ chức & Quản lý người dùng",
+        sublabel: "Phân quyền RBAC, phòng ban & tài khoản",
+        icon: Building2,
+        tone: "text-purple-600 bg-purple-50 hover:bg-purple-100/80 border-purple-200/60",
+      },
+      {
+        to: "/builder",
+        label: "Trình thiết kế biểu mẫu & Lưu đồ",
+        sublabel: "Tùy biến Form điện tử & Workflow hệ thống",
+        icon: Layers,
+        tone: "text-amber-600 bg-amber-50 hover:bg-amber-100/80 border-amber-200/60",
+      },
+      {
+        to: "/dashboard",
+        label: "Tổng quan dữ liệu & Giám sát hệ thống",
+        sublabel: "Bảng điều hành quản trị tập trung",
+        icon: LayoutDashboard,
+        tone: "text-emerald-600 bg-emerald-50 hover:bg-emerald-100/80 border-emerald-200/60",
+      },
+      {
+        to: "/documents",
+        label: "Quản trị danh mục tài liệu & SOPs",
+        sublabel: "Phân cấp & lưu trữ hồ sơ tài liệu",
+        icon: FileText,
+        tone: "text-blue-600 bg-blue-50 hover:bg-blue-100/80 border-blue-200/60",
+      },
     ];
   }
   // 3. Ban QLCL & ATTP / Đội Trưởng HACCP
   if (["qa", "qc", "qa_qc_manager", "iso_manager"].includes(r)) {
     return [
-      { to: "/haccp", label: "Kế hoạch HACCP & Điểm kiểm soát CCP", sublabel: "Phân tích mối nguy & Giám sát tới hạn", icon: ShieldAlert, tone: "text-rose-600 bg-rose-50 hover:bg-rose-100/80 border-rose-200/60" },
-      { to: "/capa", label: "Xử lý sự cố & Phê duyệt CAPA", sublabel: "Khắc phục & Ngăn ngừa nguyên nhân gốc", icon: AlertTriangle, tone: "text-amber-600 bg-amber-50 hover:bg-amber-100/80 border-amber-200/60" },
-      { to: "/audits", label: "Đánh giá nội bộ & Khóa đào tạo ATTP", sublabel: "Kế hoạch ĐGNB & Năng lực nhân sự", icon: GraduationCap, tone: "text-blue-600 bg-blue-50 hover:bg-blue-100/80 border-blue-200/60" },
-      { to: "/purchasing", label: "Đánh giá nhà cung cấp ASL & IQC", sublabel: "Kiểm định nguyên vật liệu tiếp nhận", icon: ShoppingCart, tone: "text-emerald-600 bg-emerald-50 hover:bg-emerald-100/80 border-emerald-200/60" },
+      {
+        to: "/haccp",
+        label: "Kế hoạch HACCP & Điểm kiểm soát CCP",
+        sublabel: "Phân tích mối nguy & Giám sát tới hạn",
+        icon: ShieldAlert,
+        tone: "text-rose-600 bg-rose-50 hover:bg-rose-100/80 border-rose-200/60",
+      },
+      {
+        to: "/capa",
+        label: "Xử lý sự cố & Phê duyệt CAPA",
+        sublabel: "Khắc phục & Ngăn ngừa nguyên nhân gốc",
+        icon: AlertTriangle,
+        tone: "text-amber-600 bg-amber-50 hover:bg-amber-100/80 border-amber-200/60",
+      },
+      {
+        to: "/audits",
+        label: "Đánh giá nội bộ & Khóa đào tạo ATTP",
+        sublabel: "Kế hoạch ĐGNB & Năng lực nhân sự",
+        icon: GraduationCap,
+        tone: "text-blue-600 bg-blue-50 hover:bg-blue-100/80 border-blue-200/60",
+      },
+      {
+        to: "/purchasing",
+        label: "Đánh giá nhà cung cấp ASL & IQC",
+        sublabel: "Kiểm định nguyên vật liệu tiếp nhận",
+        icon: ShoppingCart,
+        tone: "text-emerald-600 bg-emerald-50 hover:bg-emerald-100/80 border-emerald-200/60",
+      },
     ];
   }
   // 3.5 Phòng Mua Hàng & Cung Ứng
   if (["purchasing", "pur"].includes(r)) {
     return [
-      { to: "/purchasing", label: "Đánh giá nhà cung ứng & ASL", sublabel: "Kiểm soát nhà cung cấp bên ngoài", icon: ShoppingCart, tone: "text-emerald-600 bg-emerald-50 hover:bg-emerald-100/80 border-emerald-200/60" },
-      { to: "/inventory", label: "Tra cứu nguyên liệu & Tồn kho FEFO", sublabel: "Theo dõi định mức vật tư và xuất nhập kho", icon: Package, tone: "text-blue-600 bg-blue-50 hover:bg-blue-100/80 border-blue-200/60" },
-      { to: "/documents", label: "Quy trình mua hàng & Tiêu chuẩn vật tư", sublabel: "Tra cứu SOP tiếp nhận & tiêu chuẩn nguyên liệu", icon: FileText, tone: "text-purple-600 bg-purple-50 hover:bg-purple-100/80 border-purple-200/60" },
-      { to: "/capa", label: "Báo cáo sự không phù hợp NC", sublabel: "Phản ánh nguyên vật liệu không đạt chuẩn IQC", icon: AlertTriangle, tone: "text-amber-600 bg-amber-50 hover:bg-amber-100/80 border-amber-200/60" },
+      {
+        to: "/purchasing",
+        label: "Đánh giá nhà cung ứng & ASL",
+        sublabel: "Kiểm soát nhà cung cấp bên ngoài",
+        icon: ShoppingCart,
+        tone: "text-emerald-600 bg-emerald-50 hover:bg-emerald-100/80 border-emerald-200/60",
+      },
+      {
+        to: "/inventory",
+        label: "Tra cứu nguyên liệu & Tồn kho FEFO",
+        sublabel: "Theo dõi định mức vật tư và xuất nhập kho",
+        icon: Package,
+        tone: "text-blue-600 bg-blue-50 hover:bg-blue-100/80 border-blue-200/60",
+      },
+      {
+        to: "/documents",
+        label: "Quy trình mua hàng & Tiêu chuẩn vật tư",
+        sublabel: "Tra cứu SOP tiếp nhận & tiêu chuẩn nguyên liệu",
+        icon: FileText,
+        tone: "text-purple-600 bg-purple-50 hover:bg-purple-100/80 border-purple-200/60",
+      },
+      {
+        to: "/capa",
+        label: "Báo cáo sự không phù hợp NC",
+        sublabel: "Phản ánh nguyên vật liệu không đạt chuẩn IQC",
+        icon: AlertTriangle,
+        tone: "text-amber-600 bg-amber-50 hover:bg-amber-100/80 border-amber-200/60",
+      },
     ];
   }
   // 4. Phòng Sản Xuất
   if (["production"].includes(r)) {
     return [
-      { to: "/haccp", label: "Ghi nhận đo đạc điểm CCP theo ca", sublabel: "Nhập thông số giám sát nhiệt độ, thời gian", icon: Flame, tone: "text-rose-600 bg-rose-50 hover:bg-rose-100/80 border-rose-200/60" },
-      { to: "/prp", label: "Checklist vệ sinh nhà xưởng PRP/GMP", sublabel: "Vệ sinh thiết bị, cá nhân & nhà xưởng", icon: ClipboardCheck, tone: "text-emerald-600 bg-emerald-50 hover:bg-emerald-100/80 border-emerald-200/60" },
-      { to: "/inventory", label: "Quản lý mẻ sản xuất & Biệt trữ", sublabel: "Theo dõi tiến độ sản xuất & khóa lô khi có sự cố", icon: Package, tone: "text-blue-600 bg-blue-50 hover:bg-blue-100/80 border-blue-200/60" },
-      { to: "/capa", label: "Báo cáo sự không phù hợp NC", sublabel: "Khai báo sự cố phát sinh tại dây chuyền", icon: AlertTriangle, tone: "text-amber-600 bg-amber-50 hover:bg-amber-100/80 border-amber-200/60" },
+      {
+        to: "/haccp",
+        label: "Ghi nhận đo đạc điểm CCP theo ca",
+        sublabel: "Nhập thông số giám sát nhiệt độ, thời gian",
+        icon: Flame,
+        tone: "text-rose-600 bg-rose-50 hover:bg-rose-100/80 border-rose-200/60",
+      },
+      {
+        to: "/prp",
+        label: "Checklist vệ sinh nhà xưởng PRP/GMP",
+        sublabel: "Vệ sinh thiết bị, cá nhân & nhà xưởng",
+        icon: ClipboardCheck,
+        tone: "text-emerald-600 bg-emerald-50 hover:bg-emerald-100/80 border-emerald-200/60",
+      },
+      {
+        to: "/inventory",
+        label: "Quản lý mẻ sản xuất & Biệt trữ",
+        sublabel: "Theo dõi tiến độ sản xuất & khóa lô khi có sự cố",
+        icon: Package,
+        tone: "text-blue-600 bg-blue-50 hover:bg-blue-100/80 border-blue-200/60",
+      },
+      {
+        to: "/capa",
+        label: "Báo cáo sự không phù hợp NC",
+        sublabel: "Khai báo sự cố phát sinh tại dây chuyền",
+        icon: AlertTriangle,
+        tone: "text-amber-600 bg-amber-50 hover:bg-amber-100/80 border-amber-200/60",
+      },
     ];
   }
   // 5. Phòng Cơ Điện & Bảo Trì
   if (["maintenance", "maint"].includes(r)) {
     return [
-      { to: "/equipment", label: "Kiểm tra thiết bị & Kế hoạch bảo trì PM", sublabel: "Lập lịch bảo trì & cảnh báo hiệu chuẩn", icon: Wrench, tone: "text-amber-600 bg-amber-50 hover:bg-amber-100/80 border-amber-200/60" },
-      { to: "/equipment", label: "Nhật ký hiệu chuẩn thiết bị đo", sublabel: "Theo dõi tem kiểm định nhiệt kế, cân", icon: Wrench, tone: "text-blue-600 bg-blue-50 hover:bg-blue-100/80 border-blue-200/60" },
-      { to: "/emergency", label: "Phương án ứng phó sự cố máy móc & PCCC", sublabel: "Quy trình xử lý mất điện, hỏng lạnh", icon: Siren, tone: "text-rose-600 bg-rose-50 hover:bg-rose-100/80 border-rose-200/60" },
-      { to: "/capa", label: "Báo cáo sự không phù hợp NC", sublabel: "Sự cố hỏng hóc thiết bị ảnh hưởng ATTP", icon: AlertTriangle, tone: "text-purple-600 bg-purple-50 hover:bg-purple-100/80 border-purple-200/60" },
+      {
+        to: "/equipment",
+        label: "Kiểm tra thiết bị & Kế hoạch bảo trì PM",
+        sublabel: "Lập lịch bảo trì & cảnh báo hiệu chuẩn",
+        icon: Wrench,
+        tone: "text-amber-600 bg-amber-50 hover:bg-amber-100/80 border-amber-200/60",
+      },
+      {
+        to: "/equipment",
+        label: "Nhật ký hiệu chuẩn thiết bị đo",
+        sublabel: "Theo dõi tem kiểm định nhiệt kế, cân",
+        icon: Wrench,
+        tone: "text-blue-600 bg-blue-50 hover:bg-blue-100/80 border-blue-200/60",
+      },
+      {
+        to: "/emergency",
+        label: "Phương án ứng phó sự cố máy móc & PCCC",
+        sublabel: "Quy trình xử lý mất điện, hỏng lạnh",
+        icon: Siren,
+        tone: "text-rose-600 bg-rose-50 hover:bg-rose-100/80 border-rose-200/60",
+      },
+      {
+        to: "/capa",
+        label: "Báo cáo sự không phù hợp NC",
+        sublabel: "Sự cố hỏng hóc thiết bị ảnh hưởng ATTP",
+        icon: AlertTriangle,
+        tone: "text-purple-600 bg-purple-50 hover:bg-purple-100/80 border-purple-200/60",
+      },
     ];
   }
   // 6. Bộ phận Kho Vận & Logistics
   if (["warehouse", "logistics", "wh"].includes(r)) {
     return [
-      { to: "/inventory", label: "Quản lý tồn kho theo nguyên tắc FEFO", sublabel: "Kiểm soát hạn sử dụng & xuất trước", icon: Package, tone: "text-blue-600 bg-blue-50 hover:bg-blue-100/80 border-blue-200/60" },
-      { to: "/inventory", label: "Hồ sơ mẫu lưu đối chứng", sublabel: "Theo dõi tủ mẫu & thời hạn lưu trữ", icon: Package, tone: "text-purple-600 bg-purple-50 hover:bg-purple-100/80 border-purple-200/60" },
-      { to: "/inventory", label: "Kiểm tra phương tiện vận chuyển PTVC", sublabel: "Biểu mẫu kiểm tra thùng xe trước bốc xếp", icon: Truck, tone: "text-emerald-600 bg-emerald-50 hover:bg-emerald-100/80 border-emerald-200/60" },
-      { to: "/inventory", label: "Biên bản tiêu hủy thực phẩm không phù hợp", sublabel: "Lập biên bản hội đồng 3 bên", icon: AlertTriangle, tone: "text-rose-600 bg-rose-50 hover:bg-rose-100/80 border-rose-200/60" },
+      {
+        to: "/inventory",
+        label: "Quản lý tồn kho theo nguyên tắc FEFO",
+        sublabel: "Kiểm soát hạn sử dụng & xuất trước",
+        icon: Package,
+        tone: "text-blue-600 bg-blue-50 hover:bg-blue-100/80 border-blue-200/60",
+      },
+      {
+        to: "/inventory",
+        label: "Hồ sơ mẫu lưu đối chứng",
+        sublabel: "Theo dõi tủ mẫu & thời hạn lưu trữ",
+        icon: Package,
+        tone: "text-purple-600 bg-purple-50 hover:bg-purple-100/80 border-purple-200/60",
+      },
+      {
+        to: "/inventory",
+        label: "Kiểm tra phương tiện vận chuyển PTVC",
+        sublabel: "Biểu mẫu kiểm tra thùng xe trước bốc xếp",
+        icon: Truck,
+        tone: "text-emerald-600 bg-emerald-50 hover:bg-emerald-100/80 border-emerald-200/60",
+      },
+      {
+        to: "/inventory",
+        label: "Biên bản tiêu hủy thực phẩm không phù hợp",
+        sublabel: "Lập biên bản hội đồng 3 bên",
+        icon: AlertTriangle,
+        tone: "text-rose-600 bg-rose-50 hover:bg-rose-100/80 border-rose-200/60",
+      },
     ];
   }
   // 7. Phòng Hành Chính - Kế Toán
   if (["hr_accounting", "admin_acct"].includes(r)) {
     return [
-      { to: "/audits", label: "Hồ sơ đào tạo & Sát hạch ATTP", sublabel: "Chứng chỉ nhân sự & đánh giá năng lực", icon: GraduationCap, tone: "text-blue-600 bg-blue-50 hover:bg-blue-100/80 border-blue-200/60" },
-      { to: "/audits", label: "Khai báo sức khỏe nhân sự đầu ca", sublabel: "Kiểm soát dịch bệnh & đình chỉ ca nhiễm khuẩn", icon: UserCheck, tone: "text-emerald-600 bg-emerald-50 hover:bg-emerald-100/80 border-emerald-200/60" },
-      { to: "/organization", label: "Cơ cấu tổ chức & Nhân sự", sublabel: "Sơ đồ phòng ban & danh sách người dùng", icon: Building2, tone: "text-purple-600 bg-purple-50 hover:bg-purple-100/80 border-purple-200/60" },
+      {
+        to: "/audits",
+        label: "Hồ sơ đào tạo & Sát hạch ATTP",
+        sublabel: "Chứng chỉ nhân sự & đánh giá năng lực",
+        icon: GraduationCap,
+        tone: "text-blue-600 bg-blue-50 hover:bg-blue-100/80 border-blue-200/60",
+      },
+      {
+        to: "/audits",
+        label: "Khai báo sức khỏe nhân sự đầu ca",
+        sublabel: "Kiểm soát dịch bệnh & đình chỉ ca nhiễm khuẩn",
+        icon: UserCheck,
+        tone: "text-emerald-600 bg-emerald-50 hover:bg-emerald-100/80 border-emerald-200/60",
+      },
+      {
+        to: "/organization",
+        label: "Cơ cấu tổ chức & Nhân sự",
+        sublabel: "Sơ đồ phòng ban & danh sách người dùng",
+        icon: Building2,
+        tone: "text-purple-600 bg-purple-50 hover:bg-purple-100/80 border-purple-200/60",
+      },
     ];
   }
   // 8. Cán Bộ Nhân Viên
   return [
-    { to: "/documents", label: "Tra cứu tài liệu & SOPs ban hành", sublabel: "Xem chính sách, quy trình áp dụng tại vị trí", icon: FileText, tone: "text-blue-600 bg-blue-50 hover:bg-blue-100/80 border-blue-200/60" },
-    { to: "/capa", label: "Báo cáo sự không phù hợp NC", sublabel: "Đề xuất cải tiến & phản ánh sự cố ATTP", icon: AlertTriangle, tone: "text-amber-600 bg-amber-50 hover:bg-amber-100/80 border-amber-200/60" },
-    { to: "/audits", label: "Khai báo sức khỏe ca làm việc", sublabel: "Khai báo thân nhiệt & tình trạng sức khỏe cá nhân", icon: UserCheck, tone: "text-emerald-600 bg-emerald-50 hover:bg-emerald-100/80 border-emerald-200/60" },
+    {
+      to: "/documents",
+      label: "Tra cứu tài liệu & SOPs ban hành",
+      sublabel: "Xem chính sách, quy trình áp dụng tại vị trí",
+      icon: FileText,
+      tone: "text-blue-600 bg-blue-50 hover:bg-blue-100/80 border-blue-200/60",
+    },
+    {
+      to: "/capa",
+      label: "Báo cáo sự không phù hợp NC",
+      sublabel: "Đề xuất cải tiến & phản ánh sự cố ATTP",
+      icon: AlertTriangle,
+      tone: "text-amber-600 bg-amber-50 hover:bg-amber-100/80 border-amber-200/60",
+    },
+    {
+      to: "/audits",
+      label: "Khai báo sức khỏe ca làm việc",
+      sublabel: "Khai báo thân nhiệt & tình trạng sức khỏe cá nhân",
+      icon: UserCheck,
+      tone: "text-emerald-600 bg-emerald-50 hover:bg-emerald-100/80 border-emerald-200/60",
+    },
   ];
 }
 
 const NAV = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, module: "dashboard" as ModuleKey },
-  { to: "/organization", label: "Tổ chức & Người dùng", icon: Users, module: "organization" as ModuleKey },
+  {
+    to: "/organization",
+    label: "Tổ chức & Người dùng",
+    icon: Users,
+    module: "organization" as ModuleKey,
+  },
   { to: "/documents", label: "Tài liệu & Hồ sơ", icon: FileText, module: "documents" as ModuleKey },
-  { to: "/audits", label: "Đánh giá nội bộ & Đào tạo", icon: GraduationCap, module: "audits" as ModuleKey },
+  {
+    to: "/audits",
+    label: "Đánh giá nội bộ & Đào tạo",
+    icon: GraduationCap,
+    module: "audits" as ModuleKey,
+  },
   { to: "/haccp", label: "HACCP & Mối nguy", icon: ShieldAlert, module: "haccp" as ModuleKey },
   { to: "/prp", label: "PRP / GMP / SSOP", icon: ClipboardCheck, module: "prp" as ModuleKey },
   { to: "/capa", label: "CAPA & Không phù hợp", icon: AlertTriangle, module: "capa" as ModuleKey },
   { to: "/equipment", label: "Thiết bị & Bảo trì", icon: Wrench, module: "equipment" as ModuleKey },
-  { to: "/inventory", label: "Kho & Tồn kho FEFO", icon: Package, module: "inventory" as ModuleKey },
-  { to: "/traceability", label: "Truy xuất 1 Chạm", icon: QrCode, module: "traceability" as ModuleKey },
-  { to: "/purchasing", label: "Nhà cung cấp & IQC", icon: ShoppingCart, module: "purchasing" as ModuleKey },
+  {
+    to: "/inventory",
+    label: "Kho & Tồn kho FEFO",
+    icon: Package,
+    module: "inventory" as ModuleKey,
+  },
+  {
+    to: "/traceability",
+    label: "Truy xuất 1 Chạm",
+    icon: QrCode,
+    module: "traceability" as ModuleKey,
+  },
+  {
+    to: "/purchasing",
+    label: "Nhà cung cấp & IQC",
+    icon: ShoppingCart,
+    module: "purchasing" as ModuleKey,
+  },
   { to: "/emergency", label: "Ứng phó khẩn cấp", icon: Siren, module: "emergency" as ModuleKey },
-  { to: "/change-management", label: "Quản lý thay đổi", icon: GitCompare, module: "change_management" as ModuleKey },
+  {
+    to: "/change-management",
+    label: "Quản lý thay đổi",
+    icon: GitCompare,
+    module: "change_management" as ModuleKey,
+  },
   { to: "/builder", label: "Biểu mẫu & Lưu đồ", icon: Layers, module: "builder" as ModuleKey },
 ] as const;
 
@@ -159,7 +410,9 @@ interface ExecutiveAlert {
 
 export function AppShell({ children, module }: { children: ReactNode; module?: ModuleKey }) {
   const [session, setS] = useState<Session | null>(null);
-  const [checking, setChecking] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profileForm, setProfileForm] = useState({ full_name: "", email: "", phone: "" });
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [alerts, setAlerts] = useState<ExecutiveAlert[]>([]);
   const [unreadCount, setUnreadCount] = useState<number>(0);
@@ -185,7 +438,8 @@ export function AppShell({ children, module }: { children: ReactNode; module?: M
 
     // Tự động đồng bộ chính xác dữ liệu từ CSDL (SĐT, phòng ban, vai trò thực tế)
     if (s.userId) {
-      api.get(`/auth/me?user_id=${s.userId}`)
+      api
+        .get(`/auth/me?user_id=${s.userId}`)
         .then((res) => {
           const data = res.data;
           const updatedSession: Session = {
@@ -195,6 +449,7 @@ export function AppShell({ children, module }: { children: ReactNode; module?: M
             department: data.department,
             username: data.username,
             phone: data.phone || undefined,
+            email: data.email || undefined,
           };
           setSession(updatedSession, data.access_token);
           setS(updatedSession);
@@ -228,7 +483,9 @@ export function AppShell({ children, module }: { children: ReactNode; module?: M
       }
       try {
         const [alertsRes, readIdsRes] = await Promise.allSettled([
-          api.get<ExecutiveAlert[]>(`/dashboard/executive-alerts?role=${encodeURIComponent(session.role)}`),
+          api.get<ExecutiveAlert[]>(
+            `/dashboard/executive-alerts?role=${encodeURIComponent(session.role)}`,
+          ),
           api.get<string[]>("/dashboard/alerts/read-ids"),
         ]);
 
@@ -237,12 +494,16 @@ export function AppShell({ children, module }: { children: ReactNode; module?: M
           readIdsRes.value.data.forEach((id) => localReadIds.add(id));
           try {
             localStorage.setItem("wcert.read_alerts", JSON.stringify(Array.from(localReadIds)));
-          } catch {}
+          } catch {
+            // Storage can be unavailable in restricted browser contexts.
+          }
         }
 
         if (alertsRes.status === "fulfilled" && Array.isArray(alertsRes.value.data)) {
           setAlerts(alertsRes.value.data);
-          const unread = alertsRes.value.data.filter((a) => !localReadIds.has(a.alert_id || a.title)).length;
+          const unread = alertsRes.value.data.filter(
+            (a) => !localReadIds.has(a.alert_id || a.title),
+          ).length;
           setUnreadCount(unread);
         }
       } catch {
@@ -280,7 +541,9 @@ export function AppShell({ children, module }: { children: ReactNode; module?: M
     existing.add(alertId);
     try {
       localStorage.setItem("wcert.read_alerts", JSON.stringify(Array.from(existing)));
-    } catch {}
+    } catch {
+      // Keep the in-memory read state when browser storage is unavailable.
+    }
     setUnreadCount((prev) => Math.max(0, prev - 1));
     try {
       await api.post("/dashboard/alerts/mark-read", { alert_id: alertId });
@@ -295,7 +558,9 @@ export function AppShell({ children, module }: { children: ReactNode; module?: M
     allIds.forEach((id) => existing.add(id));
     try {
       localStorage.setItem("wcert.read_alerts", JSON.stringify(Array.from(existing)));
-    } catch {}
+    } catch {
+      // Keep the in-memory read state when browser storage is unavailable.
+    }
     setUnreadCount(0);
     try {
       await api.post("/dashboard/alerts/mark-read", { alert_ids: allIds });
@@ -305,30 +570,50 @@ export function AppShell({ children, module }: { children: ReactNode; module?: M
     toast.success("Đã đánh dấu tất cả thông báo là đã đọc.");
   };
 
-  // Hàm kiểm tra lại phân quyền từ backend
-  const handleCheckRoleUpdate = async () => {
-    if (!session.userId) return;
-    setChecking(true);
+  const openProfile = async () => {
+    setUserPopoverOpen(false);
+    setProfileForm({
+      full_name: session.name || "",
+      email: session.email || "",
+      phone: session.phone || "",
+    });
+    setProfileOpen(true);
     try {
-      const res = await api.get(`/auth/me?user_id=${session.userId}`);
+      const res = await api.get("/auth/me");
+      const data = res.data;
+      setProfileForm({
+        full_name: data.full_name || "",
+        email: data.email || "",
+        phone: data.phone || "",
+      });
+    } catch {
+      toast.error("Không tải được thông tin hồ sơ mới nhất.");
+    }
+  };
+
+  const saveProfile = async () => {
+    if (!session) return;
+    setProfileSaving(true);
+    try {
+      const res = await api.patch("/auth/me", profileForm);
       const data = res.data;
       const updatedSession: Session = {
         ...session,
-        role: data.role,
         name: data.full_name,
-        department: data.department,
         username: data.username,
-        phone: data.phone || session.phone || "0912.888.999",
+        role: data.role,
+        department: data.department,
+        phone: data.phone || undefined,
+        email: data.email || undefined,
       };
       setSession(updatedSession, data.access_token);
       setS(updatedSession);
-      toast.success("Đã đồng bộ phân quyền mới nhất từ hệ thống!");
-      window.location.reload();
-    } catch (err) {
-      console.error("Lỗi khi kiểm tra phân quyền:", err);
-      toast.error("Không thể kết nối đến máy chủ xác thực.");
+      setProfileOpen(false);
+      toast.success("Đã cập nhật hồ sơ cá nhân.");
+    } catch (err: any) {
+      toast.error(err?.response?.data?.detail || "Không thể cập nhật hồ sơ.");
     } finally {
-      setChecking(false);
+      setProfileSaving(false);
     }
   };
 
@@ -352,12 +637,16 @@ export function AppShell({ children, module }: { children: ReactNode; module?: M
           <div className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-amber-500/10 text-amber-600">
             <ShieldAlert className="h-8 w-8" />
           </div>
-          <h2 className="mt-4 text-xl sm:text-2xl font-bold tracking-tight">Tài khoản chưa được phân quyền</h2>
+          <h2 className="mt-4 text-xl sm:text-2xl font-bold tracking-tight">
+            Tài khoản chưa được phân quyền
+          </h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            Xin chào <b>{session.name}</b>, tài khoản của bạn đã được tạo thành công nhưng chưa được gán vai trò phòng ban cụ thể trong hệ thống.
+            Xin chào <b>{session.name}</b>, tài khoản của bạn đã được tạo thành công nhưng chưa được
+            gán vai trò phòng ban cụ thể trong hệ thống.
           </p>
           <div className="mt-4 rounded-lg bg-muted p-3 text-xs text-muted-foreground">
-            Vui lòng liên hệ <b>Quản trị viên (Admin)</b> để được cấp quyền vào các phân hệ nghiệp vụ.
+            Vui lòng liên hệ <b>Quản trị viên (Admin)</b> để được cấp quyền vào các phân hệ nghiệp
+            vụ.
           </div>
 
           <div className="mt-6 flex flex-col gap-2">
@@ -385,7 +674,9 @@ export function AppShell({ children, module }: { children: ReactNode; module?: M
         <div className="flex h-16 items-center gap-3 border-b px-5">
           <img src={logoImg} alt="WCERT" className="h-10 w-auto object-contain" />
           <div className="flex flex-col">
-            <span className="text-sm font-bold tracking-tight text-primary leading-tight">WCERT FSMS</span>
+            <span className="text-sm font-bold tracking-tight text-primary leading-tight">
+              WCERT FSMS
+            </span>
             <span className="text-[10px] text-muted-foreground font-medium">ISO 22000:2018</span>
           </div>
         </div>
@@ -417,7 +708,8 @@ export function AppShell({ children, module }: { children: ReactNode; module?: M
           >
             <div className="flex items-center justify-between font-semibold text-primary">
               <span className="flex items-center gap-1.5">
-                <Sparkles className="h-3.5 w-3.5 shrink-0 text-emerald-600 animate-pulse" /> Trợ lý AI
+                <Sparkles className="h-3.5 w-3.5 shrink-0 text-emerald-600 animate-pulse" /> Trợ lý
+                AI
               </span>
               <span className="text-[10px] bg-emerald-600 text-white px-2 py-0.5 rounded-full font-medium shadow-xs group-hover:scale-105 transition">
                 Mở chat
@@ -444,8 +736,12 @@ export function AppShell({ children, module }: { children: ReactNode; module?: M
               <div className="flex items-center gap-2.5">
                 <img src={logoImg} alt="WCERT" className="h-9 w-auto object-contain" />
                 <div className="flex flex-col">
-                  <span className="text-sm font-bold tracking-tight text-primary leading-tight">WCERT FSMS</span>
-                  <span className="text-[10px] text-muted-foreground font-medium">ISO 22000:2018</span>
+                  <span className="text-sm font-bold tracking-tight text-primary leading-tight">
+                    WCERT FSMS
+                  </span>
+                  <span className="text-[10px] text-muted-foreground font-medium">
+                    ISO 22000:2018
+                  </span>
                 </div>
               </div>
               <button
@@ -465,11 +761,17 @@ export function AppShell({ children, module }: { children: ReactNode; module?: M
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="text-sm font-bold text-foreground truncate">{session.name}</div>
-                  <div className="text-xs font-semibold text-emerald-700 truncate">{roleLabel(session.role)}</div>
-                  <div className="text-[11px] text-muted-foreground truncate">{session.department || "Ban QLCL & ATTP"}</div>
+                  <div className="text-xs font-semibold text-emerald-700 truncate">
+                    {roleLabel(session.role)}
+                  </div>
+                  <div className="text-[11px] text-muted-foreground truncate">
+                    {session.department || "Ban QLCL & ATTP"}
+                  </div>
                   <div className="text-[11px] text-emerald-700 font-mono font-medium flex items-center gap-1 mt-0.5">
                     <Phone className="w-2.5 h-2.5 text-emerald-600 shrink-0" />
-                    <span>{session.phone && session.phone.trim() ? session.phone : "Chưa cập nhật"}</span>
+                    <span>
+                      {session.phone && session.phone.trim() ? session.phone : "Chưa cập nhật"}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -531,7 +833,11 @@ export function AppShell({ children, module }: { children: ReactNode; module?: M
             >
               <Menu className="h-5 w-5" />
             </button>
-            <img src={logoImg} alt="WCERT" className="h-8 w-auto object-contain lg:hidden shrink-0" />
+            <img
+              src={logoImg}
+              alt="WCERT"
+              className="h-8 w-auto object-contain lg:hidden shrink-0"
+            />
             <div className="min-w-0 flex flex-col sm:flex-row sm:items-center sm:gap-2">
               <h1 className="text-xs sm:text-sm font-bold md:text-base truncate text-slate-800">
                 WCERT FSMS
@@ -559,7 +865,11 @@ export function AppShell({ children, module }: { children: ReactNode; module?: M
                 </button>
               </PopoverTrigger>
 
-              <PopoverContent align="end" sideOffset={8} className="w-80 sm:w-96 p-0 shadow-2xl border-slate-200 rounded-2xl overflow-hidden">
+              <PopoverContent
+                align="end"
+                sideOffset={8}
+                className="w-80 sm:w-96 p-0 shadow-2xl border-slate-200 rounded-2xl overflow-hidden"
+              >
                 <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/80 px-4 py-3">
                   <div className="flex items-center gap-2">
                     <Bell className="h-4 w-4 text-emerald-600" />
@@ -583,8 +893,12 @@ export function AppShell({ children, module }: { children: ReactNode; module?: M
                       <div className="mx-auto w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center">
                         <CheckCircle2 className="w-5 h-5" />
                       </div>
-                      <p className="font-semibold text-slate-700">Không có cảnh báo mới nào cho vai trò của bạn</p>
-                      <p className="text-[11px] text-slate-400">Tất cả các chỉ số CCP, CAPA và hồ sơ ATTP đang vận hành an toàn.</p>
+                      <p className="font-semibold text-slate-700">
+                        Không có cảnh báo mới nào cho vai trò của bạn
+                      </p>
+                      <p className="text-[11px] text-slate-400">
+                        Tất cả các chỉ số CCP, CAPA và hồ sơ ATTP đang vận hành an toàn.
+                      </p>
                     </div>
                   ) : (
                     alerts.map((a) => (
@@ -620,8 +934,8 @@ export function AppShell({ children, module }: { children: ReactNode; module?: M
                                   a.severity === "CRITICAL"
                                     ? "bg-rose-100 text-rose-700"
                                     : a.severity === "WARNING"
-                                    ? "bg-amber-100 text-amber-700"
-                                    : "bg-blue-100 text-blue-700"
+                                      ? "bg-amber-100 text-amber-700"
+                                      : "bg-blue-100 text-blue-700"
                                 }`}
                               >
                                 {a.category}
@@ -693,7 +1007,11 @@ export function AppShell({ children, module }: { children: ReactNode; module?: M
                 </button>
               </PopoverTrigger>
 
-              <PopoverContent align="end" sideOffset={8} className="w-80 sm:w-96 p-0 shadow-2xl border-slate-200 rounded-2xl overflow-hidden">
+              <PopoverContent
+                align="end"
+                sideOffset={8}
+                className="w-80 sm:w-96 p-0 shadow-2xl border-slate-200 rounded-2xl overflow-hidden"
+              >
                 {/* User Info Header with Phone */}
                 <div className="p-4 bg-gradient-to-br from-slate-900 to-slate-800 text-white space-y-3">
                   <div className="flex items-center gap-3">
@@ -703,7 +1021,7 @@ export function AppShell({ children, module }: { children: ReactNode; module?: M
                     <div className="min-w-0 flex-1">
                       <div className="text-sm font-bold text-white truncate">{session.name}</div>
                       <div className="text-xs text-slate-300 font-mono truncate">
-                        @{session.username || session.userId || "admin"}
+                        @{session.username || "—"}
                       </div>
                     </div>
                   </div>
@@ -711,12 +1029,14 @@ export function AppShell({ children, module }: { children: ReactNode; module?: M
                   <div className="pt-2.5 border-t border-slate-700/80 space-y-1.5 text-xs text-slate-300">
                     <div className="flex items-center justify-between">
                       <span className="text-slate-400">Vai trò:</span>
-                      <span className="font-semibold text-emerald-400">{roleLabel(session.role)}</span>
+                      <span className="font-semibold text-emerald-400">
+                        {roleLabel(session.role)}
+                      </span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-slate-400">Phòng ban:</span>
                       <span className="font-semibold text-slate-200 truncate max-w-[190px]">
-                        {session.department || "Ban QLCL & ATTP"}
+                        {session.department || "Chưa cập nhật"}
                       </span>
                     </div>
                     <div className="flex items-center justify-between pt-0.5">
@@ -733,7 +1053,9 @@ export function AppShell({ children, module }: { children: ReactNode; module?: M
                 <div className="px-3 pt-3 pb-1 border-b border-slate-100 bg-slate-50/70">
                   <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 flex items-center justify-between">
                     <span>Lối tắt chuyên môn</span>
-                    <span className="text-emerald-700 font-semibold truncate max-w-[150px]">{roleLabel(session.role)}</span>
+                    <span className="text-emerald-700 font-semibold truncate max-w-[150px]">
+                      {roleLabel(session.role)}
+                    </span>
                   </div>
                 </div>
 
@@ -766,15 +1088,11 @@ export function AppShell({ children, module }: { children: ReactNode; module?: M
                 {/* System Actions List */}
                 <div className="p-2 border-t border-slate-100 bg-slate-50/40 space-y-1 text-xs">
                   <button
-                    onClick={() => {
-                      setUserPopoverOpen(false);
-                      handleCheckRoleUpdate();
-                    }}
-                    disabled={checking}
+                    onClick={openProfile}
                     className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-slate-700 hover:bg-slate-100 hover:text-slate-900 font-medium transition"
                   >
-                    <RefreshCw className={`w-4 h-4 text-emerald-600 ${checking ? "animate-spin" : ""}`} />
-                    {checking ? "Đang đồng bộ..." : "Kiểm tra / Đồng bộ quyền từ CSDL (F5)"}
+                    <UserCheck className="w-4 h-4 text-emerald-600" />
+                    Hồ sơ cá nhân
                   </button>
 
                   <div className="my-1 border-t border-slate-100" />
@@ -792,6 +1110,60 @@ export function AppShell({ children, module }: { children: ReactNode; module?: M
                 </div>
               </PopoverContent>
             </Popover>
+            <Dialog open={profileOpen} onOpenChange={setProfileOpen}>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Hồ sơ cá nhân</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 py-2">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="profile-username">Tên đăng nhập</Label>
+                    <Input id="profile-username" value={session.username || ""} disabled />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="profile-name">Họ và tên</Label>
+                    <Input
+                      id="profile-name"
+                      value={profileForm.full_name}
+                      onChange={(e) =>
+                        setProfileForm({ ...profileForm, full_name: e.target.value })
+                      }
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="profile-email">Email</Label>
+                    <Input
+                      id="profile-email"
+                      type="email"
+                      value={profileForm.email}
+                      onChange={(e) => setProfileForm({ ...profileForm, email: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="profile-phone">Số điện thoại</Label>
+                    <Input
+                      id="profile-phone"
+                      value={profileForm.phone}
+                      onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })}
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Vai trò và phòng ban được quản trị viên phân quyền trong mục Cơ cấu tổ chức.
+                  </p>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setProfileOpen(false)}>
+                    Hủy
+                  </Button>
+                  <Button
+                    onClick={saveProfile}
+                    disabled={profileSaving || profileForm.full_name.trim().length < 2}
+                  >
+                    {profileSaving ? "Đang lưu..." : "Lưu thay đổi"}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </div>
         </header>
 
@@ -803,7 +1175,8 @@ export function AppShell({ children, module }: { children: ReactNode; module?: M
               </div>
               <h2 className="mt-4 text-lg font-semibold">Không có quyền truy cập</h2>
               <p className="mt-2 text-sm text-muted-foreground">
-                Vai trò <b>{roleLabel(session.role)}</b> không được phép truy cập module này. Vui lòng liên hệ Quản trị hệ thống.
+                Vai trò <b>{roleLabel(session.role)}</b> không được phép truy cập module này. Vui
+                lòng liên hệ Quản trị hệ thống.
               </p>
             </div>
           ) : (

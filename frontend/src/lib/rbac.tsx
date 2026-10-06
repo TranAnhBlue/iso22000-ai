@@ -92,4 +92,3 @@ export function ModuleAccessProvider({
 export function useModuleAccess() {
   return useContext(ModuleAccessContext);
 }
-

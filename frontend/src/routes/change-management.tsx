@@ -40,7 +40,11 @@ export const Route = createFileRoute("/change-management")({
   head: () => ({
     meta: [
       { title: "Quản Lý Hoạch Định Sự Thay Đổi – WCERT ISO 22000:2018" },
-      { name: "description", content: "Hệ thống quản lý và đánh giá tác động của mọi sự thay đổi tới kế hoạch HACCP, PRP và an toàn thực phẩm theo ISO 22000:2018." },
+      {
+        name: "description",
+        content:
+          "Hệ thống quản lý và đánh giá tác động của mọi sự thay đổi tới kế hoạch HACCP, PRP và an toàn thực phẩm theo ISO 22000:2018.",
+      },
     ],
   }),
   component: () => (
@@ -87,20 +91,54 @@ interface ChangeStats {
 }
 
 const CHANGE_TYPES: Record<string, { label: string; color: string }> = {
-  PRODUCT_NEW: { label: "Sản phẩm mới", color: "bg-purple-500/10 text-purple-700 border-purple-500/20" },
-  EQUIPMENT_NEW: { label: "Thiết bị / Máy móc mới", color: "bg-blue-500/10 text-blue-700 border-blue-500/20" },
-  REGULATION_UPDATE: { label: "Quy định / Luật ATTP mới", color: "bg-amber-500/10 text-amber-700 border-amber-500/20" },
-  PROCESS_CHANGE: { label: "Thay đổi quy trình chế biến", color: "bg-emerald-500/10 text-emerald-700 border-emerald-500/20" },
-  SUPPLIER_CHANGE: { label: "Thay đổi nhà cung ứng", color: "bg-sky-500/10 text-sky-700 border-sky-500/20" },
-  RAW_MATERIAL_CHANGE: { label: "Thay đổi nguyên liệu / bao bì", color: "bg-indigo-500/10 text-indigo-700 border-indigo-500/20" },
+  PRODUCT_NEW: {
+    label: "Sản phẩm mới",
+    color: "bg-purple-500/10 text-purple-700 border-purple-500/20",
+  },
+  EQUIPMENT_NEW: {
+    label: "Thiết bị / Máy móc mới",
+    color: "bg-blue-500/10 text-blue-700 border-blue-500/20",
+  },
+  REGULATION_UPDATE: {
+    label: "Quy định / Luật ATTP mới",
+    color: "bg-amber-500/10 text-amber-700 border-amber-500/20",
+  },
+  PROCESS_CHANGE: {
+    label: "Thay đổi quy trình chế biến",
+    color: "bg-emerald-500/10 text-emerald-700 border-emerald-500/20",
+  },
+  SUPPLIER_CHANGE: {
+    label: "Thay đổi nhà cung ứng",
+    color: "bg-sky-500/10 text-sky-700 border-sky-500/20",
+  },
+  RAW_MATERIAL_CHANGE: {
+    label: "Thay đổi nguyên liệu / bao bì",
+    color: "bg-indigo-500/10 text-indigo-700 border-indigo-500/20",
+  },
   OTHER: { label: "Thay đổi khác", color: "bg-slate-500/10 text-slate-700 border-slate-500/20" },
 };
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: any }> = {
-  DRAFT: { label: "Dự thảo", color: "bg-slate-500/10 text-slate-700 border-slate-500/20", icon: Clock },
-  UNDER_REVIEW: { label: "Đang đánh giá", color: "bg-amber-500/10 text-amber-700 border-amber-500/20", icon: AlertTriangle },
-  APPROVED: { label: "Đã phê duyệt", color: "bg-blue-500/10 text-blue-700 border-blue-500/20", icon: CheckCircle2 },
-  IMPLEMENTED: { label: "Đã triển khai & Thẩm tra", color: "bg-emerald-500/10 text-emerald-700 border-emerald-500/20", icon: ShieldCheck },
+  DRAFT: {
+    label: "Dự thảo",
+    color: "bg-slate-500/10 text-slate-700 border-slate-500/20",
+    icon: Clock,
+  },
+  UNDER_REVIEW: {
+    label: "Đang đánh giá",
+    color: "bg-amber-500/10 text-amber-700 border-amber-500/20",
+    icon: AlertTriangle,
+  },
+  APPROVED: {
+    label: "Đã phê duyệt",
+    color: "bg-blue-500/10 text-blue-700 border-blue-500/20",
+    icon: CheckCircle2,
+  },
+  IMPLEMENTED: {
+    label: "Đã triển khai & Thẩm tra",
+    color: "bg-emerald-500/10 text-emerald-700 border-emerald-500/20",
+    icon: ShieldCheck,
+  },
   REJECTED: { label: "Từ chối", color: "bg-rose-500/10 text-rose-700 border-rose-500/20", icon: X },
 };
 
@@ -150,7 +188,16 @@ function ChangeManagementPage() {
         api.get("/change-management/stats"),
       ]);
       setRequests(resReqs.data || []);
-      setStats(resStats.data || { total: 0, draft: 0, under_review: 0, approved: 0, implemented: 0, high_impact: 0 });
+      setStats(
+        resStats.data || {
+          total: 0,
+          draft: 0,
+          under_review: 0,
+          approved: 0,
+          implemented: 0,
+          high_impact: 0,
+        },
+      );
     } catch (err: any) {
       console.error(err);
       toast.error("Không thể tải danh sách phiếu thay đổi");
@@ -214,7 +261,7 @@ function ChangeManagementPage() {
     change_id: string,
     nextStatus: string,
     actorName: string,
-    note?: string
+    note?: string,
   ) => {
     try {
       await api.patch(`/change-management/requests/${change_id}/status`, {
@@ -222,7 +269,9 @@ function ChangeManagementPage() {
         actor_name: actorName,
         note,
       });
-      toast.success(`Đã cập nhật trạng thái sang: ${STATUS_CONFIG[nextStatus]?.label || nextStatus}`);
+      toast.success(
+        `Đã cập nhật trạng thái sang: ${STATUS_CONFIG[nextStatus]?.label || nextStatus}`,
+      );
       if (selectedCR && selectedCR.change_id === change_id) {
         setSelectedCR((prev) => (prev ? { ...prev, review_status: nextStatus as any } : null));
       }
@@ -302,13 +351,13 @@ function ChangeManagementPage() {
           <table style="width: 100%; border-collapse: collapse; margin-top: 4px;" border="1">
             <tr>
               <td style="padding: 6px; width: 35%; background-color: #f8fafc;">Ảnh hưởng Kế hoạch HACCP / CCP:</td>
-              <td style="padding: 6px; font-weight: bold; color: ${r.impact_assessment?.affects_haccp_plan ? '#b91c1c' : '#047857'};">
+              <td style="padding: 6px; font-weight: bold; color: ${r.impact_assessment?.affects_haccp_plan ? "#b91c1c" : "#047857"};">
                 ${r.impact_assessment?.affects_haccp_plan ? "CÓ (Bắt buộc rà soát lại mối nguy và Cây quyết định Codex)" : "KHÔNG"}
               </td>
             </tr>
             <tr>
               <td style="padding: 6px; background-color: #f8fafc;">Ảnh hưởng Chương trình tiên quyết PRP:</td>
-              <td style="padding: 6px; font-weight: bold; color: ${r.impact_assessment?.affects_prp ? '#b91c1c' : '#047857'};">
+              <td style="padding: 6px; font-weight: bold; color: ${r.impact_assessment?.affects_prp ? "#b91c1c" : "#047857"};">
                 ${r.impact_assessment?.affects_prp ? "CÓ (Cần cập nhật SOP vệ sinh/bảo trì liên quan)" : "KHÔNG"}
               </td>
             </tr>
@@ -319,8 +368,8 @@ function ChangeManagementPage() {
                   r.impact_assessment?.food_safety_impact_level === "HIGH"
                     ? "MỨC CAO (Nguy cơ phát sinh mối nguy mới vượt ngưỡng chấp nhận)"
                     : r.impact_assessment?.food_safety_impact_level === "MEDIUM"
-                    ? "MỨC VỪA (Cần kiểm soát qua chương trình PRP)"
-                    : "MỨC THẤP (Không tác động trực tiếp tới chất lượng sản phẩm)"
+                      ? "MỨC VỪA (Cần kiểm soát qua chương trình PRP)"
+                      : "MỨC THẤP (Không tác động trực tiếp tới chất lượng sản phẩm)"
                 }
               </td>
             </tr>
@@ -420,7 +469,9 @@ function ChangeManagementPage() {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-muted-foreground">Tổng Số Phiếu Thay Đổi</span>
+            <span className="text-xs font-medium text-muted-foreground">
+              Tổng Số Phiếu Thay Đổi
+            </span>
             <div className="rounded-lg bg-primary/10 p-2 text-primary">
               <GitCompare className="h-4 w-4" />
             </div>
@@ -434,34 +485,46 @@ function ChangeManagementPage() {
 
         <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-amber-700 dark:text-amber-300">Đang Đánh Giá Tác Động</span>
+            <span className="text-xs font-medium text-amber-700 dark:text-amber-300">
+              Đang Đánh Giá Tác Động
+            </span>
             <div className="rounded-lg bg-amber-500/10 p-2 text-amber-600">
               <Clock className="h-4 w-4" />
             </div>
           </div>
-          <div className="mt-2 text-2xl font-bold text-amber-900 dark:text-amber-100">{stats.under_review}</div>
+          <div className="mt-2 text-2xl font-bold text-amber-900 dark:text-amber-100">
+            {stats.under_review}
+          </div>
           <div className="mt-1 text-xs text-amber-700/80">Cần rà soát HACCP & PRP</div>
         </div>
 
         <div className="rounded-xl border border-blue-500/20 bg-blue-500/5 p-4 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-blue-700 dark:text-blue-300">Đã Phê Duyệt Phương Án</span>
+            <span className="text-xs font-medium text-blue-700 dark:text-blue-300">
+              Đã Phê Duyệt Phương Án
+            </span>
             <div className="rounded-lg bg-blue-500/10 p-2 text-blue-600">
               <CheckCircle2 className="h-4 w-4" />
             </div>
           </div>
-          <div className="mt-2 text-2xl font-bold text-blue-900 dark:text-blue-100">{stats.approved}</div>
+          <div className="mt-2 text-2xl font-bold text-blue-900 dark:text-blue-100">
+            {stats.approved}
+          </div>
           <div className="mt-1 text-xs text-blue-700/80">Chuẩn bị nguồn lực triển khai</div>
         </div>
 
         <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-emerald-700 dark:text-emerald-300">Đã Triển Khai & Thẩm Tra</span>
+            <span className="text-xs font-medium text-emerald-700 dark:text-emerald-300">
+              Đã Triển Khai & Thẩm Tra
+            </span>
             <div className="rounded-lg bg-emerald-500/10 p-2 text-emerald-600">
               <ShieldCheck className="h-4 w-4" />
             </div>
           </div>
-          <div className="mt-2 text-2xl font-bold text-emerald-900 dark:text-emerald-100">{stats.implemented}</div>
+          <div className="mt-2 text-2xl font-bold text-emerald-900 dark:text-emerald-100">
+            {stats.implemented}
+          </div>
           <div className="mt-1 text-xs text-emerald-700/80">Hiệu lực hệ thống được đảm bảo</div>
         </div>
       </div>
@@ -519,128 +582,138 @@ function ChangeManagementPage() {
         />
       ) : (
         <div className="overflow-x-auto rounded-xl border border-border bg-card shadow-sm">
-        <table className="w-full text-left text-sm">
-          <thead className="border-b border-border bg-muted/40 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            <tr>
-              <th className="px-4 py-3">Mã Phiếu & Ngày</th>
-              <th className="px-4 py-3">Tiêu Đề & Phân Loại</th>
-              <th className="px-4 py-3">Đánh Giá Tác Động ATTP</th>
-              <th className="px-4 py-3">Người Đề Xuất</th>
-              <th className="px-4 py-3">Trạng Thái</th>
-              <th className="px-4 py-3 text-right">Thao Tác</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border/60">
-            {loading ? (
+          <table className="w-full text-left text-sm">
+            <thead className="border-b border-border bg-muted/40 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               <tr>
-                <td colSpan={6} className="py-8 text-center text-muted-foreground text-xs">
-                  Đang tải dữ liệu phiếu thay đổi...
-                </td>
+                <th className="px-4 py-3">Mã Phiếu & Ngày</th>
+                <th className="px-4 py-3">Tiêu Đề & Phân Loại</th>
+                <th className="px-4 py-3">Đánh Giá Tác Động ATTP</th>
+                <th className="px-4 py-3">Người Đề Xuất</th>
+                <th className="px-4 py-3">Trạng Thái</th>
+                <th className="px-4 py-3 text-right">Thao Tác</th>
               </tr>
-            ) : filteredRequests.length === 0 ? (
-              <tr>
-                <td colSpan={6} className="py-12 text-center text-muted-foreground text-xs">
-                  Không tìm thấy phiếu yêu cầu thay đổi nào.
-                </td>
-              </tr>
-            ) : (
-              filteredRequests.map((r) => {
-                const typeObj = CHANGE_TYPES[r.change_type] || CHANGE_TYPES.OTHER;
-                const statusObj = STATUS_CONFIG[r.review_status] || STATUS_CONFIG.DRAFT;
-                const StatusIcon = statusObj.icon;
+            </thead>
+            <tbody className="divide-y divide-border/60">
+              {loading ? (
+                <tr>
+                  <td colSpan={6} className="py-8 text-center text-muted-foreground text-xs">
+                    Đang tải dữ liệu phiếu thay đổi...
+                  </td>
+                </tr>
+              ) : filteredRequests.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="py-12 text-center text-muted-foreground text-xs">
+                    Không tìm thấy phiếu yêu cầu thay đổi nào.
+                  </td>
+                </tr>
+              ) : (
+                filteredRequests.map((r) => {
+                  const typeObj = CHANGE_TYPES[r.change_type] || CHANGE_TYPES.OTHER;
+                  const statusObj = STATUS_CONFIG[r.review_status] || STATUS_CONFIG.DRAFT;
+                  const StatusIcon = statusObj.icon;
 
-                return (
-                  <tr key={r.change_id} className="transition-colors hover:bg-muted/30">
-                    <td className="whitespace-nowrap px-4 py-3">
-                      <div className="font-mono font-bold text-primary text-xs">{r.change_code}</div>
-                      <div className="text-[11px] text-muted-foreground mt-0.5">{r.proposed_date}</div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="font-medium text-foreground text-xs max-w-sm line-clamp-1">{r.title}</div>
-                      <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${typeObj.color}`}>
-                        {typeObj.label}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        <span
-                          className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                            r.impact_assessment?.food_safety_impact_level === "HIGH"
-                              ? "bg-rose-500/10 text-rose-700 border border-rose-500/20"
-                              : r.impact_assessment?.food_safety_impact_level === "MEDIUM"
-                              ? "bg-amber-500/10 text-amber-700 border border-amber-500/20"
-                              : "bg-emerald-500/10 text-emerald-700 border border-emerald-500/20"
-                          }`}
-                        >
-                          Tác động: {r.impact_assessment?.food_safety_impact_level || "MEDIUM"}
-                        </span>
-                        {r.impact_assessment?.affects_haccp_plan && (
-                          <span className="bg-purple-500/10 text-purple-700 border border-purple-500/20 px-1.5 py-0.5 rounded text-[10px] font-semibold">
-                            Ảnh hưởng HACCP
-                          </span>
-                        )}
-                        {r.impact_assessment?.affects_prp && (
-                          <span className="bg-sky-500/10 text-sky-700 border border-sky-500/20 px-1.5 py-0.5 rounded text-[10px] font-semibold">
-                            Ảnh hưởng PRP
-                          </span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="whitespace-nowrap px-4 py-3 text-xs">
-                      <div className="font-medium text-foreground">{r.proposed_by_name}</div>
-                      {r.approved_by_name && (
-                        <div className="text-[11px] text-muted-foreground mt-0.5">
-                          Duyệt: {r.approved_by_name}
+                  return (
+                    <tr key={r.change_id} className="transition-colors hover:bg-muted/30">
+                      <td className="whitespace-nowrap px-4 py-3">
+                        <div className="font-mono font-bold text-primary text-xs">
+                          {r.change_code}
                         </div>
-                      )}
-                    </td>
-                    <td className="whitespace-nowrap px-4 py-3">
-                      <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border ${statusObj.color}`}>
-                        <StatusIcon className="h-3 w-3" />
-                        {statusObj.label}
-                      </span>
-                    </td>
-                    <td className="whitespace-nowrap px-4 py-3 text-right">
-                      <div className="flex items-center justify-end gap-1">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            setSelectedCR(r);
-                            setDetailModalOpen(true);
-                          }}
-                          className="h-8 px-2 text-xs"
-                          title="Xem chi tiết & Quản lý quy trình"
+                        <div className="text-[11px] text-muted-foreground mt-0.5">
+                          {r.proposed_date}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="font-medium text-foreground text-xs max-w-sm line-clamp-1">
+                          {r.title}
+                        </div>
+                        <span
+                          className={`inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${typeObj.color}`}
                         >
-                          Chi tiết
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handlePrint(r)}
-                          className="h-8 w-8 p-0 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
-                          title="In biểu mẫu BM-CHANGE-01"
+                          {typeObj.label}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <span
+                            className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                              r.impact_assessment?.food_safety_impact_level === "HIGH"
+                                ? "bg-rose-500/10 text-rose-700 border border-rose-500/20"
+                                : r.impact_assessment?.food_safety_impact_level === "MEDIUM"
+                                  ? "bg-amber-500/10 text-amber-700 border border-amber-500/20"
+                                  : "bg-emerald-500/10 text-emerald-700 border border-emerald-500/20"
+                            }`}
+                          >
+                            Tác động: {r.impact_assessment?.food_safety_impact_level || "MEDIUM"}
+                          </span>
+                          {r.impact_assessment?.affects_haccp_plan && (
+                            <span className="bg-purple-500/10 text-purple-700 border border-purple-500/20 px-1.5 py-0.5 rounded text-[10px] font-semibold">
+                              Ảnh hưởng HACCP
+                            </span>
+                          )}
+                          {r.impact_assessment?.affects_prp && (
+                            <span className="bg-sky-500/10 text-sky-700 border border-sky-500/20 px-1.5 py-0.5 rounded text-[10px] font-semibold">
+                              Ảnh hưởng PRP
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="whitespace-nowrap px-4 py-3 text-xs">
+                        <div className="font-medium text-foreground">{r.proposed_by_name}</div>
+                        {r.approved_by_name && (
+                          <div className="text-[11px] text-muted-foreground mt-0.5">
+                            Duyệt: {r.approved_by_name}
+                          </div>
+                        )}
+                      </td>
+                      <td className="whitespace-nowrap px-4 py-3">
+                        <span
+                          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border ${statusObj.color}`}
                         >
-                          <Printer className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDelete(r.change_id)}
-                          className="h-8 w-8 p-0 text-rose-600 hover:text-rose-700 hover:bg-rose-50"
-                          title="Xóa phiếu"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table>
-      </div>
+                          <StatusIcon className="h-3 w-3" />
+                          {statusObj.label}
+                        </span>
+                      </td>
+                      <td className="whitespace-nowrap px-4 py-3 text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedCR(r);
+                              setDetailModalOpen(true);
+                            }}
+                            className="h-8 px-2 text-xs"
+                            title="Xem chi tiết & Quản lý quy trình"
+                          >
+                            Chi tiết
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handlePrint(r)}
+                            className="h-8 w-8 p-0 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+                            title="In biểu mẫu BM-CHANGE-01"
+                          >
+                            <Printer className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDelete(r.change_id)}
+                            className="h-8 w-8 p-0 text-rose-600 hover:text-rose-700 hover:bg-rose-50"
+                            title="Xóa phiếu"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
       )}
 
       {/* MODAL: CREATE CHANGE REQUEST */}
@@ -697,7 +770,9 @@ function ChangeManagementPage() {
                   <Label>Mức độ tác động an toàn thực phẩm *</Label>
                   <select
                     value={formData.food_safety_impact_level}
-                    onChange={(e) => setFormData({ ...formData, food_safety_impact_level: e.target.value as any })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, food_safety_impact_level: e.target.value as any })
+                    }
                     className="w-full h-9 rounded-md border border-input bg-background px-3 text-xs font-semibold"
                   >
                     <option value="LOW">Mức Thấp (Không ảnh hưởng chất lượng sản phẩm)</option>
@@ -742,10 +817,14 @@ function ChangeManagementPage() {
                     <input
                       type="checkbox"
                       checked={formData.affects_haccp_plan}
-                      onChange={(e) => setFormData({ ...formData, affects_haccp_plan: e.target.checked })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, affects_haccp_plan: e.target.checked })
+                      }
                       className="rounded border-input text-primary focus:ring-primary h-4 w-4"
                     />
-                    <span className="font-medium text-foreground">Ảnh hưởng Kế hoạch HACCP / CCP</span>
+                    <span className="font-medium text-foreground">
+                      Ảnh hưởng Kế hoạch HACCP / CCP
+                    </span>
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer border rounded-md p-2 bg-background">
                     <input
@@ -758,7 +837,9 @@ function ChangeManagementPage() {
                   </label>
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-[11px]">Tài liệu / SOP cần cập nhật (phân cách bằng dấu phẩy):</Label>
+                  <Label className="text-[11px]">
+                    Tài liệu / SOP cần cập nhật (phân cách bằng dấu phẩy):
+                  </Label>
                   <Input
                     placeholder="VD: HACCP-2026-CB01, SOP-CCP-02, BM-KTNL-01"
                     value={formData.affected_docs}
@@ -796,7 +877,9 @@ function ChangeManagementPage() {
                   rows={2}
                   placeholder="Các bước triển khai, thời gian thử nghiệm, phân công trách nhiệm..."
                   value={formData.implementation_plan}
-                  onChange={(e) => setFormData({ ...formData, implementation_plan: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, implementation_plan: e.target.value })
+                  }
                   className="text-xs"
                 />
               </div>
@@ -811,7 +894,11 @@ function ChangeManagementPage() {
                 >
                   Hủy bỏ
                 </Button>
-                <Button type="submit" size="sm" className="text-xs bg-primary text-primary-foreground">
+                <Button
+                  type="submit"
+                  size="sm"
+                  className="text-xs bg-primary text-primary-foreground"
+                >
                   Lưu Phiếu Yêu Cầu
                 </Button>
               </div>
@@ -827,8 +914,12 @@ function ChangeManagementPage() {
             <div className="flex items-center justify-between border-b border-border pb-3">
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="font-mono text-xs font-bold text-primary">{selectedCR.change_code}</span>
-                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${STATUS_CONFIG[selectedCR.review_status]?.color}`}>
+                  <span className="font-mono text-xs font-bold text-primary">
+                    {selectedCR.change_code}
+                  </span>
+                  <span
+                    className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${STATUS_CONFIG[selectedCR.review_status]?.color}`}
+                  >
                     {STATUS_CONFIG[selectedCR.review_status]?.label}
                   </span>
                 </div>
@@ -858,12 +949,16 @@ function ChangeManagementPage() {
                 </div>
                 <div>
                   <span className="text-muted-foreground">Người đề xuất:</span>
-                  <div className="font-medium text-foreground mt-0.5">{selectedCR.proposed_by_name} ({selectedCR.proposed_date})</div>
+                  <div className="font-medium text-foreground mt-0.5">
+                    {selectedCR.proposed_by_name} ({selectedCR.proposed_date})
+                  </div>
                 </div>
                 <div>
                   <span className="text-muted-foreground">Người phê duyệt:</span>
                   <div className="font-medium text-foreground mt-0.5">
-                    {selectedCR.approved_by_name ? `${selectedCR.approved_by_name} (${selectedCR.approval_date})` : "Chưa phê duyệt"}
+                    {selectedCR.approved_by_name
+                      ? `${selectedCR.approved_by_name} (${selectedCR.approval_date})`
+                      : "Chưa phê duyệt"}
                   </div>
                 </div>
               </div>
@@ -892,7 +987,13 @@ function ChangeManagementPage() {
                   {selectedCR.review_status === "DRAFT" && (
                     <Button
                       size="sm"
-                      onClick={() => handleUpdateStatus(selectedCR.change_id, "UNDER_REVIEW", "Ban Thẩm Định ATTP")}
+                      onClick={() =>
+                        handleUpdateStatus(
+                          selectedCR.change_id,
+                          "UNDER_REVIEW",
+                          "Ban Thẩm Định ATTP",
+                        )
+                      }
                       className="text-xs bg-amber-600 hover:bg-amber-700 text-white"
                     >
                       <ArrowRight className="h-3.5 w-3.5 mr-1" />
@@ -904,7 +1005,13 @@ function ChangeManagementPage() {
                     <>
                       <Button
                         size="sm"
-                        onClick={() => handleUpdateStatus(selectedCR.change_id, "APPROVED", "Lê Hoàng Nam (Đội trưởng Đội ATTP)")}
+                        onClick={() =>
+                          handleUpdateStatus(
+                            selectedCR.change_id,
+                            "APPROVED",
+                            "Lê Hoàng Nam (Đội trưởng Đội ATTP)",
+                          )
+                        }
                         className="text-xs bg-blue-600 hover:bg-blue-700 text-white"
                       >
                         <Check className="h-3.5 w-3.5 mr-1" />
@@ -913,7 +1020,14 @@ function ChangeManagementPage() {
                       <Button
                         size="sm"
                         variant="destructive"
-                        onClick={() => handleUpdateStatus(selectedCR.change_id, "REJECTED", "Ban Giám Đốc", "Không đáp ứng tiêu chuẩn ATTP")}
+                        onClick={() =>
+                          handleUpdateStatus(
+                            selectedCR.change_id,
+                            "REJECTED",
+                            "Ban Giám Đốc",
+                            "Không đáp ứng tiêu chuẩn ATTP",
+                          )
+                        }
                         className="text-xs"
                       >
                         <X className="h-3.5 w-3.5 mr-1" />
@@ -925,7 +1039,14 @@ function ChangeManagementPage() {
                   {selectedCR.review_status === "APPROVED" && (
                     <Button
                       size="sm"
-                      onClick={() => handleUpdateStatus(selectedCR.change_id, "IMPLEMENTED", "Lê Hoàng Nam (QA)", "Đã thẩm tra nghiệm thu đạt chuẩn.")}
+                      onClick={() =>
+                        handleUpdateStatus(
+                          selectedCR.change_id,
+                          "IMPLEMENTED",
+                          "Lê Hoàng Nam (QA)",
+                          "Đã thẩm tra nghiệm thu đạt chuẩn.",
+                        )
+                      }
                       className="text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
                     >
                       <ShieldCheck className="h-3.5 w-3.5 mr-1" />

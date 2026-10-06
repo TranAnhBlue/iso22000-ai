@@ -33,7 +33,10 @@ export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "WCERT FSMS – Hệ Thống Quản Lý ATTP Theo Chuẩn ISO 22000:2018" },
-      { name: "description", content: "Nền tảng số hoá quản lý An toàn thực phẩm theo ISO 22000:2018 với trợ lý AI." },
+      {
+        name: "description",
+        content: "Nền tảng số hoá quản lý An toàn thực phẩm theo ISO 22000:2018 với trợ lý AI.",
+      },
     ],
   }),
   component: LoginPage,
@@ -44,13 +47,6 @@ interface DepartmentOption {
   role_name: string;
   description: string;
 }
-
-const DEMO_ACCOUNTS = [
-  { label: "Admin", user: "admin", pass: "admin123", role: "Quản trị hệ thống", tone: "bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100" },
-  { label: "Ban QLCL", user: "qa", pass: "qa123", role: "Ban QLCL & ATTP", tone: "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100" },
-  { label: "Sản Xuất", user: "production", pass: "prod123", role: "Phòng Sản xuất", tone: "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100" },
-  { label: "Thiết Bị", user: "maintenance", pass: "maint123", role: "Phòng Thiết bị", tone: "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100" },
-];
 
 function LoginPage() {
   const { departments } = useDepartments();
@@ -70,20 +66,12 @@ function LoginPage() {
   }, [navigate]);
 
   // Form states
-  const [username, setUsername] = useState("admin");
-  const [password, setPassword] = useState("admin123");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [department, setDepartment] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-
-  const handleFillDemo = (user: string, pass: string) => {
-    setIsLogin(true);
-    setUsername(user);
-    setPassword(pass);
-    setErrorMsg("");
-    toast.info(`Đã điền tài khoản mẫu [${user}]`);
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -103,8 +91,9 @@ function LoginPage() {
             username: data.username,
             department: data.department,
             phone: data.phone || undefined,
+            email: data.email || undefined,
           },
-          data.access_token
+          data.access_token,
         );
         toast.success(`Đăng nhập thành công! Chào mừng ${data.full_name}`);
         const target = getDefaultRouteForRole(data.role);
@@ -129,14 +118,15 @@ function LoginPage() {
             department: data.department,
             phone: data.phone || phone.trim() || undefined,
           },
-          data.access_token
+          data.access_token,
         );
         toast.success(`Tạo tài khoản thành công! Chào mừng ${data.full_name}`);
         const target = getDefaultRouteForRole(data.role);
         navigate({ to: target as any, replace: true });
       }
     } catch (err: any) {
-      const msg = err.response?.data?.detail || "Đã xảy ra lỗi, vui lòng kiểm tra lại thông tin đăng nhập.";
+      const msg =
+        err.response?.data?.detail || "Đã xảy ra lỗi, vui lòng kiểm tra lại thông tin đăng nhập.";
       setErrorMsg(msg);
       toast.error(msg);
     } finally {
@@ -195,7 +185,8 @@ function LoginPage() {
               </h1>
               <p className="text-sm sm:text-base text-slate-600 leading-relaxed max-w-2xl pt-1">
                 Số hóa toàn diện 12 phân hệ nghiệp vụ Quản lý chất lượng & ATTP. Tích hợp Trợ lý AI
-                soạn thảo quy trình SOP, phân tích mối nguy HACCP, tự động tìm nguyên nhân gốc rễ 5-Why / Ishikawa và truy xuất nguồn gốc tức thì.
+                soạn thảo quy trình SOP, phân tích mối nguy HACCP, tự động tìm nguyên nhân gốc rễ
+                5-Why / Ishikawa và truy xuất nguồn gốc tức thì.
               </p>
             </div>
 
@@ -236,19 +227,27 @@ function LoginPage() {
             <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-emerald-900 to-slate-900 text-white shadow-xl grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
               <div>
                 <div className="text-xl sm:text-2xl font-black text-emerald-400">100%</div>
-                <div className="text-[10px] sm:text-xs text-slate-300 font-medium">Chuẩn ISO 22000</div>
+                <div className="text-[10px] sm:text-xs text-slate-300 font-medium">
+                  Chuẩn ISO 22000
+                </div>
               </div>
               <div>
                 <div className="text-xl sm:text-2xl font-black text-teal-300">12</div>
-                <div className="text-[10px] sm:text-xs text-slate-300 font-medium">Phân Hệ Nghiệp Vụ</div>
+                <div className="text-[10px] sm:text-xs text-slate-300 font-medium">
+                  Phân Hệ Nghiệp Vụ
+                </div>
               </div>
               <div>
                 <div className="text-xl sm:text-2xl font-black text-amber-400">&lt; 1 Giây</div>
-                <div className="text-[10px] sm:text-xs text-slate-300 font-medium">Truy Xuất Lô Hàng</div>
+                <div className="text-[10px] sm:text-xs text-slate-300 font-medium">
+                  Truy Xuất Lô Hàng
+                </div>
               </div>
               <div>
                 <div className="text-xl sm:text-2xl font-black text-rose-400">24/7</div>
-                <div className="text-[10px] sm:text-xs text-slate-300 font-medium">Cảnh Báo Khẩn Cấp</div>
+                <div className="text-[10px] sm:text-xs text-slate-300 font-medium">
+                  Cảnh Báo Khẩn Cấp
+                </div>
               </div>
             </div>
           </div>
@@ -338,7 +337,10 @@ function LoginPage() {
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div className="space-y-1.5">
-                        <Label htmlFor="department" className="text-xs font-semibold text-slate-700">
+                        <Label
+                          htmlFor="department"
+                          className="text-xs font-semibold text-slate-700"
+                        >
                           Phòng ban trực thuộc <span className="text-rose-500">*</span>
                         </Label>
                         <div className="relative">
@@ -451,29 +453,6 @@ function LoginPage() {
                   )}
                 </Button>
               </form>
-
-              {/* QUICK DEMO CREDENTIALS BAR */}
-              <div className="pt-3 border-t border-slate-100 space-y-2.5">
-                <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 text-center">
-                  ⚡ Chọn Tài Khoản Trải Nghiệm Mẫu:
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  {DEMO_ACCOUNTS.map((acc) => (
-                    <button
-                      key={acc.user}
-                      type="button"
-                      onClick={() => handleFillDemo(acc.user, acc.pass)}
-                      className={`px-2.5 py-1.5 rounded-lg border text-left text-xs font-medium transition-all ${acc.tone}`}
-                    >
-                      <div className="font-bold flex items-center justify-between">
-                        <span>{acc.label}</span>
-                        <span className="text-[10px] font-mono opacity-70">@{acc.user}</span>
-                      </div>
-                      <div className="text-[10px] opacity-80 truncate">{acc.role}</div>
-                    </button>
-                  ))}
-                </div>
-              </div>
             </div>
           </div>
         </div>
@@ -482,8 +461,12 @@ function LoginPage() {
       {/* FOOTER */}
       <footer className="w-full border-t border-slate-200/60 bg-white/60 backdrop-blur-xs py-4 text-center text-xs text-slate-500">
         <div className="mx-auto max-w-7xl px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
-          <span>© {new Date().getFullYear()} WCERT — Food Safety Management System. Bảo lưu mọi quyền.</span>
-          <span className="text-[11px] text-slate-400 font-mono">Phiên bản: v2.4.0 (ISO 22000:2018 Standard)</span>
+          <span>
+            © {new Date().getFullYear()} WCERT — Food Safety Management System. Bảo lưu mọi quyền.
+          </span>
+          <span className="text-[11px] text-slate-400 font-mono">
+            Phiên bản: v2.4.0 (ISO 22000:2018 Standard)
+          </span>
         </div>
       </footer>
     </div>

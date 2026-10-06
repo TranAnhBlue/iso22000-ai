@@ -48,8 +48,8 @@ export function ConfirmDialog({
                 variant === "destructive"
                   ? "bg-rose-100 text-rose-600"
                   : variant === "warning"
-                  ? "bg-amber-100 text-amber-600"
-                  : "bg-blue-100 text-blue-600"
+                    ? "bg-amber-100 text-amber-600"
+                    : "bg-blue-100 text-blue-600"
               }`}
             >
               {variant === "destructive" ? (

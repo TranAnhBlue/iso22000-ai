@@ -319,7 +319,8 @@ const AI_DEVIATION_PRESETS = [
     unit: "°C",
     batch_number: "LOT-2026-DEV01",
     critical_limit_text: "Nhiệt độ tâm sản phẩm >= 75.0°C trong thời gian >= 15 giây",
-    description: "Nồi hấp bị sụt áp suất hơi do rò rỉ van cấp nhiệt, nhiệt độ tâm chỉ đạt 71.5°C trong 10 giây.",
+    description:
+      "Nồi hấp bị sụt áp suất hơi do rò rỉ van cấp nhiệt, nhiệt độ tâm chỉ đạt 71.5°C trong 10 giây.",
   },
   {
     title: "Sự cố 2: Máy dò kim loại không phát hiện que thử chuẩn Fe 1.5mm",
@@ -328,7 +329,8 @@ const AI_DEVIATION_PRESETS = [
     unit: "mm",
     batch_number: "LOT-2026-DEV02",
     critical_limit_text: "Fe <= 1.5mm; Non-Fe <= 2.0mm; SUS <= 2.5mm",
-    description: "Kiểm tra đầu ca máy dò kim loại không phát tín hiệu còi báo khi que thử Fe 1.5mm đi qua cổng.",
+    description:
+      "Kiểm tra đầu ca máy dò kim loại không phát tín hiệu còi báo khi que thử Fe 1.5mm đi qua cổng.",
   },
   {
     title: "Sự cố 3: Nhiệt độ tâm sau ra đông IQF chỉ đạt -14.2°C (Yêu cầu <= -18.0°C)",
@@ -337,13 +339,16 @@ const AI_DEVIATION_PRESETS = [
     unit: "°C",
     batch_number: "LOT-2026-DEV03",
     critical_limit_text: "Nhiệt độ tâm sau IQF <= -18.0°C",
-    description: "Băng chuyền chạy quá tải, nhiệt độ tâm cá fillet khi ra khỏi hầm cấp đông chỉ đạt -14.2°C.",
+    description:
+      "Băng chuyền chạy quá tải, nhiệt độ tâm cá fillet khi ra khỏi hầm cấp đông chỉ đạt -14.2°C.",
   },
 ];
 
 // ==================== MAIN COMPONENT ====================
 function HACCPModule() {
-  const [activeTab, setActiveTab] = useState<"flowchart" | "ccp_plan" | "hazards" | "logs" | "reviews" | "ipqc" | "ai">("flowchart");
+  const [activeTab, setActiveTab] = useState<
+    "flowchart" | "ccp_plan" | "hazards" | "logs" | "reviews" | "ipqc" | "ai"
+  >("flowchart");
   const [showGuide, setShowGuide] = useState(false);
   const [showWfGuide, setShowWfGuide] = useState(false);
 
@@ -362,7 +367,9 @@ function HACCPModule() {
   const [loading, setLoading] = useState<boolean>(true);
 
   // IPQC Filters & Modals
-  const [ipqcSubTab, setIpqcSubTab] = useState<"metal_detector" | "process_stages">("metal_detector");
+  const [ipqcSubTab, setIpqcSubTab] = useState<"metal_detector" | "process_stages">(
+    "metal_detector",
+  );
   const [mdSearch, setMdSearch] = useState("");
   const [mdResultFilter, setMdResultFilter] = useState("ALL");
   const [stageSearch, setStageSearch] = useState("");
@@ -402,13 +409,17 @@ function HACCPModule() {
     shift_name: "Ca 1",
     batch_number: "",
     product_name: "Gạo lứt đỏ sấy ăn liền",
-    criteria_data_str: JSON.stringify({
-      drying_temp_c: 85,
-      drying_time_min: 45,
-      moisture_percent: 11.5,
-      cooling_temp_c: 28,
-      appearance: "Hạt nở đều, giòn rụm, màu nâu đỏ tự nhiên"
-    }, null, 2),
+    criteria_data_str: JSON.stringify(
+      {
+        drying_temp_c: 85,
+        drying_time_min: 45,
+        moisture_percent: 11.5,
+        cooling_temp_c: 28,
+        appearance: "Hạt nở đều, giòn rụm, màu nâu đỏ tự nhiên",
+      },
+      null,
+      2,
+    ),
     overall_status: "PASSED",
     deviations: "",
     corrective_actions: "",
@@ -429,7 +440,8 @@ function HACCPModule() {
     review_date: new Date().toISOString().split("T")[0],
     review_type: "PERIODIC",
     change_request_id: "",
-    scope_and_objective: "Thẩm tra định kỳ toàn diện kế hoạch HACCP, tính đầy đủ của hồ sơ giám sát CCP và hiệu lực phân tích mối nguy.",
+    scope_and_objective:
+      "Thẩm tra định kỳ toàn diện kế hoạch HACCP, tính đầy đủ của hồ sơ giám sát CCP và hiệu lực phân tích mối nguy.",
     reviewers: "Nguyễn Văn An (Trưởng ban HACCP), Trần Thị Mai (QA)",
     ccp_audit_summary: "Đạt yêu cầu kiểm soát giới hạn tới hạn.",
     prp_audit_summary: "Các chương trình tiên quyết duy trì vệ sinh tốt.",
@@ -563,18 +575,19 @@ function HACCPModule() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [sRes, plRes, stRes, hzRes, ccpRes, lgRes, revRes, crRes, mdRes, ipqcRes] = await Promise.all([
-        api.get("/haccp/stats"),
-        api.get("/haccp/plans"),
-        api.get("/haccp/process-steps"),
-        api.get("/haccp/hazards"),
-        api.get("/haccp/ccp-definitions"),
-        api.get("/haccp/ccp-logs"),
-        api.get("/haccp/reviews"),
-        api.get("/change-management/requests"),
-        api.get("/haccp/metal-detector-logs"),
-        api.get("/haccp/in-process-qc-logs"),
-      ]);
+      const [sRes, plRes, stRes, hzRes, ccpRes, lgRes, revRes, crRes, mdRes, ipqcRes] =
+        await Promise.all([
+          api.get("/haccp/stats"),
+          api.get("/haccp/plans"),
+          api.get("/haccp/process-steps"),
+          api.get("/haccp/hazards"),
+          api.get("/haccp/ccp-definitions"),
+          api.get("/haccp/ccp-logs"),
+          api.get("/haccp/reviews"),
+          api.get("/change-management/requests"),
+          api.get("/haccp/metal-detector-logs"),
+          api.get("/haccp/in-process-qc-logs"),
+        ]);
       setStats(sRes.data);
       setPlans(plRes.data);
       if (plRes.data.length > 0 && selectedPlanId === "ALL") {
@@ -607,7 +620,8 @@ function HACCPModule() {
       review_date: new Date().toISOString().split("T")[0],
       review_type: "PERIODIC",
       change_request_id: "",
-      scope_and_objective: "Thẩm tra định kỳ toàn diện kế hoạch HACCP, tính đầy đủ của hồ sơ giám sát CCP và hiệu lực phân tích mối nguy.",
+      scope_and_objective:
+        "Thẩm tra định kỳ toàn diện kế hoạch HACCP, tính đầy đủ của hồ sơ giám sát CCP và hiệu lực phân tích mối nguy.",
       reviewers: "Nguyễn Văn An (Trưởng ban HACCP), Trần Thị Mai (QA)",
       ccp_audit_summary: "Đạt yêu cầu kiểm soát giới hạn tới hạn.",
       prp_audit_summary: "Các chương trình tiên quyết duy trì vệ sinh tốt.",
@@ -656,7 +670,9 @@ function HACCPModule() {
     try {
       const payload = {
         ...reviewForm,
-        change_request_id: reviewForm.change_request_id ? Number(reviewForm.change_request_id) : null,
+        change_request_id: reviewForm.change_request_id
+          ? Number(reviewForm.change_request_id)
+          : null,
         approval_date: reviewForm.approval_date || null,
       };
       if (editingReview) {
@@ -716,10 +732,10 @@ function HACCPModule() {
                 rev.review_type === "PERIODIC"
                   ? "Thẩm tra định kỳ 6 tháng"
                   : rev.review_type === "POST_CHANGE"
-                  ? "Thẩm tra sau thay đổi"
-                  : rev.review_type === "INCIDENT_TRIGGERED"
-                  ? "Thẩm tra sau sự cố CCP/NC"
-                  : "Thẩm tra thường niên"
+                    ? "Thẩm tra sau thay đổi"
+                    : rev.review_type === "INCIDENT_TRIGGERED"
+                      ? "Thẩm tra sau sự cố CCP/NC"
+                      : "Thẩm tra thường niên"
               }</td>
             </tr>
             <tr>
@@ -785,18 +801,26 @@ function HACCPModule() {
         </table>
 
         <div style="border: 2px solid ${
-          rev.conclusion === "COMPLIANT" ? "#047857" : rev.conclusion === "NEEDS_UPDATE" ? "#d97706" : "#b91c1c"
+          rev.conclusion === "COMPLIANT"
+            ? "#047857"
+            : rev.conclusion === "NEEDS_UPDATE"
+              ? "#d97706"
+              : "#b91c1c"
         }; padding: 12px; border-radius: 4px; margin-bottom: 20px; text-align: center;">
           <strong style="font-size: 12pt; text-transform: uppercase;">KẾT LUẬN THẨM TRA: </strong>
           <span style="font-size: 12pt; font-weight: bold; color: ${
-            rev.conclusion === "COMPLIANT" ? "#047857" : rev.conclusion === "NEEDS_UPDATE" ? "#d97706" : "#b91c1c"
+            rev.conclusion === "COMPLIANT"
+              ? "#047857"
+              : rev.conclusion === "NEEDS_UPDATE"
+                ? "#d97706"
+                : "#b91c1c"
           };">
             ${
               rev.conclusion === "COMPLIANT"
                 ? "KẾ HOẠCH HACCP & OPRP HOÀN TOÀN PHÙ HỢP & CÓ HIỆU LỰC"
                 : rev.conclusion === "NEEDS_UPDATE"
-                ? "CẦN CẬP NHẬT / SỬA ĐỔI BỔ SUNG KẾ HOẠCH (KÍCH HOẠT ĐIỀU 6.3)"
-                : "KHIẾM KHUYẾT NGHIÊM TRỌNG - ĐÌNH CHỈ / TÁI THẨM ĐỊNH TOÀN DIỆN"
+                  ? "CẦN CẬP NHẬT / SỬA ĐỔI BỔ SUNG KẾ HOẠCH (KÍCH HOẠT ĐIỀU 6.3)"
+                  : "KHIẾM KHUYẾT NGHIÊM TRỌNG - ĐÌNH CHỈ / TÁI THẨM ĐỊNH TOÀN DIỆN"
             }
           </span>
         </div>
@@ -890,7 +914,9 @@ function HACCPModule() {
             </tr>
           </thead>
           <tbody>
-            ${ccps.map((c) => `
+            ${ccps
+              .map(
+                (c) => `
               <tr>
                 <td style="text-align: center; font-weight: bold; color: #b91c1c;">${c.ccp_code}</td>
                 <td><strong>${c.step_name}</strong></td>
@@ -900,7 +926,9 @@ function HACCPModule() {
                 <td>${c.corrective_action_plan || "Cô lập lô, điều chỉnh thiết bị"}</td>
                 <td style="text-align: center;">${c.responsible_role || "KCS / QC Ca"}</td>
               </tr>
-            `).join("")}
+            `,
+              )
+              .join("")}
           </tbody>
         </table>
 
@@ -986,19 +1014,23 @@ function HACCPModule() {
             </tr>
           </thead>
           <tbody>
-            ${logs.map((l) => `
+            ${logs
+              .map(
+                (l) => `
               <tr>
                 <td style="text-align: center; font-weight: bold; color: #b91c1c;">${l.ccp_code}</td>
                 <td style="font-family: monospace; font-weight: bold;">${l.batch_number}</td>
                 <td style="text-align: center;">${l.test_time || "Hôm nay"}</td>
                 <td style="text-align: center; font-weight: bold;">${l.measured_value} ${l.unit}</td>
                 <td>${l.critical_limit_text || "Tiêu chuẩn"}</td>
-                <td style="text-align: center; font-weight: bold; color: ${l.status === 'PASS' || l.status === 'PASSED' ? '#047857' : '#b91c1c'};">
-                  ${l.status === 'PASS' || l.status === 'PASSED' ? '✓ ĐẠT' : '✕ KHÔNG ĐẠT'}
+                <td style="text-align: center; font-weight: bold; color: ${l.status === "PASS" || l.status === "PASSED" ? "#047857" : "#b91c1c"};">
+                  ${l.status === "PASS" || l.status === "PASSED" ? "✓ ĐẠT" : "✕ KHÔNG ĐẠT"}
                 </td>
                 <td>${l.inspector_name || "QC Ca"}</td>
               </tr>
-            `).join("")}
+            `,
+              )
+              .join("")}
           </tbody>
         </table>
 
@@ -1077,7 +1109,8 @@ function HACCPModule() {
   const filteredReviews = useMemo(() => {
     return reviews.filter((r) => {
       const matchType = reviewFilterType === "ALL" || r.review_type === reviewFilterType;
-      const matchConclusion = reviewFilterConclusion === "ALL" || r.conclusion === reviewFilterConclusion;
+      const matchConclusion =
+        reviewFilterConclusion === "ALL" || r.conclusion === reviewFilterConclusion;
       const matchSearch =
         !reviewSearch.trim() ||
         r.review_code.toLowerCase().includes(reviewSearch.toLowerCase()) ||
@@ -1276,18 +1309,18 @@ function HACCPModule() {
           <tbody>
             <tr>
               <td><b>Thử nghiệm độ nhạy máy dò</b></td>
-              <td class="${log.fe_detected ? 'status-pass' : 'status-fail'}">
+              <td class="${log.fe_detected ? "status-pass" : "status-fail"}">
                 ${log.fe_detected ? "✓ ĐÃ PHÁT HIỆN" : "✗ KHÔNG PHÁT HIỆN"}
               </td>
-              <td class="${log.sus_detected ? 'status-pass' : 'status-fail'}">
+              <td class="${log.sus_detected ? "status-pass" : "status-fail"}">
                 ${log.sus_detected ? "✓ ĐÃ PHÁT HIỆN" : "✗ KHÔNG PHÁT HIỆN"}
               </td>
-              <td class="${log.rejection_mechanism_working ? 'status-pass' : 'status-fail'}">
+              <td class="${log.rejection_mechanism_working ? "status-pass" : "status-fail"}">
                 ${log.rejection_mechanism_working ? "✓ HOẠT ĐỘNG TỐT" : "✗ KHÔNG HOẠT ĐỘNG"}
               </td>
               <td><b>${log.metal_detected_count}</b> lần</td>
-              <td class="${log.test_result === 'PASSED' ? 'status-pass' : 'status-fail'}">
-                ${log.test_result === 'PASSED' ? 'ĐẠT TIÊU CHUẨN' : 'KHÔNG ĐẠT'}
+              <td class="${log.test_result === "PASSED" ? "status-pass" : "status-fail"}">
+                ${log.test_result === "PASSED" ? "ĐẠT TIÊU CHUẨN" : "KHÔNG ĐẠT"}
               </td>
               <td>${log.corrective_action || "Không có sự cố"}</td>
             </tr>
@@ -1334,13 +1367,17 @@ function HACCPModule() {
       shift_name: "Ca 1",
       batch_number: `LOT-2026-B0${Math.floor(Math.random() * 8 + 1)}`,
       product_name: "Gạo lứt đỏ sấy ăn liền",
-      criteria_data_str: JSON.stringify({
-        drying_temp_c: 85,
-        drying_time_min: 45,
-        moisture_percent: 11.5,
-        cooling_temp_c: 28,
-        appearance: "Hạt nở đều, giòn rụm, màu nâu đỏ tự nhiên"
-      }, null, 2),
+      criteria_data_str: JSON.stringify(
+        {
+          drying_temp_c: 85,
+          drying_time_min: 45,
+          moisture_percent: 11.5,
+          cooling_temp_c: 28,
+          appearance: "Hạt nở đều, giòn rụm, màu nâu đỏ tự nhiên",
+        },
+        null,
+        2,
+      ),
       overall_status: "PASSED",
       deviations: "",
       corrective_actions: "",
@@ -1430,12 +1467,16 @@ function HACCPModule() {
   };
 
   const handlePrintStageLog = (log: InProcessQCLog) => {
-    const criteriaRows = Object.entries(log.criteria_data || {}).map(([key, val]) => `
+    const criteriaRows = Object.entries(log.criteria_data || {})
+      .map(
+        ([key, val]) => `
       <tr>
         <td style="font-weight: 600; text-align: left; padding: 6px 10px;">${key}</td>
-        <td style="font-weight: bold; color: #0284c7; padding: 6px 10px;">${typeof val === 'boolean' ? (val ? 'ĐẠT (YES)' : 'KHÔNG (NO)') : val}</td>
+        <td style="font-weight: bold; color: #0284c7; padding: 6px 10px;">${typeof val === "boolean" ? (val ? "ĐẠT (YES)" : "KHÔNG (NO)") : val}</td>
       </tr>
-    `).join("");
+    `,
+      )
+      .join("");
 
     const html = `
       <!DOCTYPE html>
@@ -1550,7 +1591,8 @@ function HACCPModule() {
       version: "1.0",
       team_leader: "Trưởng ban HACCP / QA",
       approved_by: "Giám đốc Nhà máy",
-      scope_description: "Áp dụng cho toàn bộ dây chuyền sản xuất từ khâu tiếp nhận nguyên liệu đến lưu kho thành phẩm.",
+      scope_description:
+        "Áp dụng cho toàn bộ dây chuyền sản xuất từ khâu tiếp nhận nguyên liệu đến lưu kho thành phẩm.",
       status: "ACTIVE",
     });
     setShowPlanModal(true);
@@ -1597,7 +1639,7 @@ function HACCPModule() {
   const handleOpenCreateStep = () => {
     setEditingStep(null);
     setStepForm({
-      plan_id: currentPlan?.plan_id || (plans[0]?.plan_id || ""),
+      plan_id: currentPlan?.plan_id || plans[0]?.plan_id || "",
       step_number: filteredSteps.length + 1,
       step_name: "",
       product_line: currentPlan?.product_line || "Chế biến Thủy hải sản",
@@ -1677,7 +1719,8 @@ function HACCPModule() {
       module: "HACCP_FLOW",
       code: currentPlan?.plan_code ? `WF-${currentPlan.plan_code}` : "WF-HACCP-FLOW",
       title: currentPlan ? `Lưu Đồ: ${currentPlan.plan_name}` : "Lưu Đồ Quy Trình Công Đoạn HACCP",
-      description: currentPlan?.scope_description || "Lưu đồ công đoạn sản xuất tuần tự theo chuẩn FSMS",
+      description:
+        currentPlan?.scope_description || "Lưu đồ công đoạn sản xuất tuần tự theo chuẩn FSMS",
       version: currentPlan?.version || "1.0",
       nodes,
       edges,
@@ -1688,13 +1731,13 @@ function HACCPModule() {
   // ==================== ACTIONS: CCP ====================
   const handleOpenCreateCCP = () => {
     setEditingCCP(null);
-    const initialPlanId = selectedPlanId !== "ALL" ? selectedPlanId : (plans[0]?.plan_id || "");
+    const initialPlanId = selectedPlanId !== "ALL" ? selectedPlanId : plans[0]?.plan_id || "";
     setCcpModalPlanId(initialPlanId);
     const planSteps = steps.filter((s) => s.plan_id === initialPlanId);
     setCcpForm({
       ccp_code: `CCP ${ccps.length + 1}`,
       name: "",
-      process_step_id: planSteps.length > 0 ? planSteps[0].step_id : (steps[0]?.step_id || ""),
+      process_step_id: planSteps.length > 0 ? planSteps[0].step_id : steps[0]?.step_id || "",
       hazard_description: "",
       param_name: "Nhiệt độ tâm",
       min_val: "75.0",
@@ -1714,7 +1757,8 @@ function HACCPModule() {
   const handleOpenEditCCP = (ccp: CCPDefinition) => {
     setEditingCCP(ccp);
     const linkedStep = steps.find((s) => s.step_id === ccp.process_step_id);
-    const planId = linkedStep?.plan_id || (selectedPlanId !== "ALL" ? selectedPlanId : (plans[0]?.plan_id || ""));
+    const planId =
+      linkedStep?.plan_id || (selectedPlanId !== "ALL" ? selectedPlanId : plans[0]?.plan_id || "");
     setCcpModalPlanId(planId);
     const cl = ccp.critical_limit || {};
     setCcpForm({
@@ -1745,7 +1789,9 @@ function HACCPModule() {
         min_val: ccpForm.min_val ? parseFloat(ccpForm.min_val) : null,
         max_val: ccpForm.max_val ? parseFloat(ccpForm.max_val) : null,
         unit: ccpForm.unit,
-        condition_text: ccpForm.condition_text || `${ccpForm.param_name}: ${ccpForm.min_val || ""} ${ccpForm.unit}`,
+        condition_text:
+          ccpForm.condition_text ||
+          `${ccpForm.param_name}: ${ccpForm.min_val || ""} ${ccpForm.unit}`,
       };
       if (ccpForm.time_min_sec) {
         clObj.time_min_sec = parseInt(ccpForm.time_min_sec);
@@ -1833,7 +1879,9 @@ function HACCPModule() {
       const saved = res.data;
 
       if (saved.status === "CRITICAL") {
-        toast.error(`CẢNH BÁO VI PHẠM: Giá trị ${saved.measured_value}${saved.unit} vượt ngoài giới hạn tới hạn!`);
+        toast.error(
+          `CẢNH BÁO VI PHẠM: Giá trị ${saved.measured_value}${saved.unit} vượt ngoài giới hạn tới hạn!`,
+        );
       } else if (saved.status === "WARNING") {
         toast.warning(`LƯU Ý: Giá trị ${saved.measured_value}${saved.unit} sát ngưỡng tới hạn.`);
       } else {
@@ -1861,11 +1909,47 @@ function HACCPModule() {
           title: "Phiếu Giám Sát Điểm Kiểm Soát Tới Hạn CCP (Form Tùy Biến)",
           version: "1.1",
           fields: [
-            { id: "batch", name: "batch_number", label: "Mã Lô Sản Xuất", type: "TEXT", required: true, default_value: "LOT-2026-B01" },
-            { id: "temp", name: "measured_temp", label: "Nhiệt độ đo tâm (°C - Giới hạn ≥ 85.0°C)", type: "NUMBER", required: true, unit: "°C", default_value: 85.5 },
-            { id: "time", name: "holding_time", label: "Thời gian giữ nhiệt (Phút)", type: "NUMBER", required: true, unit: "phút", default_value: 15 },
-            { id: "is_pass", name: "is_pass", label: "Kết luận: Đạt Giới Hạn Tới Hạn?", type: "YESNO", required: true, default_value: true },
-            { id: "notes", name: "notes", label: "Ghi chú & Hành động khắc phục", type: "TEXT", required: false },
+            {
+              id: "batch",
+              name: "batch_number",
+              label: "Mã Lô Sản Xuất",
+              type: "TEXT",
+              required: true,
+              default_value: "LOT-2026-B01",
+            },
+            {
+              id: "temp",
+              name: "measured_temp",
+              label: "Nhiệt độ đo tâm (°C - Giới hạn ≥ 85.0°C)",
+              type: "NUMBER",
+              required: true,
+              unit: "°C",
+              default_value: 85.5,
+            },
+            {
+              id: "time",
+              name: "holding_time",
+              label: "Thời gian giữ nhiệt (Phút)",
+              type: "NUMBER",
+              required: true,
+              unit: "phút",
+              default_value: 15,
+            },
+            {
+              id: "is_pass",
+              name: "is_pass",
+              label: "Kết luận: Đạt Giới Hạn Tới Hạn?",
+              type: "YESNO",
+              required: true,
+              default_value: true,
+            },
+            {
+              id: "notes",
+              name: "notes",
+              label: "Ghi chú & Hành động khắc phục",
+              type: "TEXT",
+              required: false,
+            },
           ],
           status: "ACTIVE",
         });
@@ -1879,11 +1963,11 @@ function HACCPModule() {
   // ==================== ACTIONS: HAZARDS ====================
   const handleOpenCreateHazard = () => {
     setEditingHazard(null);
-    const initialPlanId = selectedPlanId !== "ALL" ? selectedPlanId : (plans[0]?.plan_id || "");
+    const initialPlanId = selectedPlanId !== "ALL" ? selectedPlanId : plans[0]?.plan_id || "";
     setHazardModalPlanId(initialPlanId);
     const planSteps = steps.filter((s) => s.plan_id === initialPlanId);
     setHazardForm({
-      step_id: planSteps.length > 0 ? planSteps[0].step_id : (steps[0]?.step_id || ""),
+      step_id: planSteps.length > 0 ? planSteps[0].step_id : steps[0]?.step_id || "",
       hazard_type: "BIOLOGICAL",
       hazard_name: "",
       potential_consequence: "",
@@ -1904,7 +1988,8 @@ function HACCPModule() {
   const handleOpenEditHazard = (h: HazardAnalysis) => {
     setEditingHazard(h);
     const linkedStep = steps.find((s) => s.step_id === h.step_id);
-    const planId = linkedStep?.plan_id || (selectedPlanId !== "ALL" ? selectedPlanId : (plans[0]?.plan_id || ""));
+    const planId =
+      linkedStep?.plan_id || (selectedPlanId !== "ALL" ? selectedPlanId : plans[0]?.plan_id || "");
     setHazardModalPlanId(planId);
     setHazardForm({
       step_id: h.step_id,
@@ -1974,7 +2059,9 @@ function HACCPModule() {
       setAiHazardResults(res.data);
       toast.success("Trợ lý AI đã phân tích ma trận mối nguy thành công!");
     } catch (err: any) {
-      toast.error("Lỗi khi chạy AI phân tích mối nguy: " + (err.response?.data?.detail || err.message));
+      toast.error(
+        "Lỗi khi chạy AI phân tích mối nguy: " + (err.response?.data?.detail || err.message),
+      );
     } finally {
       setAiLoading(false);
     }
@@ -2033,16 +2120,49 @@ function HACCPModule() {
 
   // Helper colors
   const getRiskBadge = (score: number) => {
-    if (score >= 6) return <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-rose-100 text-rose-800 border border-rose-300">Cao ({score})</span>;
-    if (score >= 3) return <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-300">Vừa ({score})</span>;
-    return <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-emerald-100 text-emerald-800 border border-emerald-300">Thấp ({score})</span>;
+    if (score >= 6)
+      return (
+        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-rose-100 text-rose-800 border border-rose-300">
+          Cao ({score})
+        </span>
+      );
+    if (score >= 3)
+      return (
+        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-300">
+          Vừa ({score})
+        </span>
+      );
+    return (
+      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-emerald-100 text-emerald-800 border border-emerald-300">
+        Thấp ({score})
+      </span>
+    );
   };
 
   const getClassBadge = (cls: string) => {
-    if (cls === "CCP") return <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-black bg-rose-600 text-white shadow-sm">★ CCP</span>;
-    if (cls === "OPRP") return <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-500 text-white shadow-sm">oPRP</span>;
-    if (cls === "PRP") return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 border border-blue-300">PRP</span>;
-    return <span className="inline-flex items-center px-2 py-0.5 rounded text-xs text-slate-600 bg-slate-100">K.Ý nghĩa</span>;
+    if (cls === "CCP")
+      return (
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-black bg-rose-600 text-white shadow-sm">
+          ★ CCP
+        </span>
+      );
+    if (cls === "OPRP")
+      return (
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-500 text-white shadow-sm">
+          oPRP
+        </span>
+      );
+    if (cls === "PRP")
+      return (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 border border-blue-300">
+          PRP
+        </span>
+      );
+    return (
+      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs text-slate-600 bg-slate-100">
+        K.Ý nghĩa
+      </span>
+    );
   };
 
   const getLogStatusBadge = (s: string, exceeded: boolean) => {
@@ -2142,7 +2262,9 @@ function HACCPModule() {
             </div>
           </div>
           <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-3xl font-black text-emerald-700">{stats?.in_limit_percentage ?? 100}%</span>
+            <span className="text-3xl font-black text-emerald-700">
+              {stats?.in_limit_percentage ?? 100}%
+            </span>
             <span className="text-xs font-semibold text-slate-500">
               ({stats?.normal_logs_count ?? 5}/{stats?.total_logs_today ?? 6} mẻ)
             </span>
@@ -2161,7 +2283,9 @@ function HACCPModule() {
             </div>
           </div>
           <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-3xl font-black text-amber-700">{stats?.warning_logs_count ?? 1}</span>
+            <span className="text-3xl font-black text-amber-700">
+              {stats?.warning_logs_count ?? 1}
+            </span>
             <span className="text-xs font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded border border-amber-200">
               Tiệm cận ±5%
             </span>
@@ -2175,12 +2299,16 @@ function HACCPModule() {
             <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
               Vi Phạm Tới Hạn (24h)
             </span>
-            <div className={`p-2 rounded-lg ${(stats?.critical_breaches_count ?? 0) > 0 ? "bg-rose-100 text-rose-600 border border-rose-200" : "bg-emerald-100 text-emerald-600 border border-emerald-200"}`}>
+            <div
+              className={`p-2 rounded-lg ${(stats?.critical_breaches_count ?? 0) > 0 ? "bg-rose-100 text-rose-600 border border-rose-200" : "bg-emerald-100 text-emerald-600 border border-emerald-200"}`}
+            >
               <ShieldCheck className="h-4 w-4" />
             </div>
           </div>
           <div className="mt-3 flex items-baseline gap-2">
-            <span className={`text-3xl font-black ${(stats?.critical_breaches_count ?? 0) > 0 ? "text-rose-600" : "text-slate-900"}`}>
+            <span
+              className={`text-3xl font-black ${(stats?.critical_breaches_count ?? 0) > 0 ? "text-rose-600" : "text-slate-900"}`}
+            >
               {stats?.critical_breaches_count ?? 0}
             </span>
             <span className="text-xs font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded border border-emerald-200">
@@ -2354,7 +2482,9 @@ function HACCPModule() {
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-700">
                 <div>
                   <span className="text-slate-500 font-semibold">Mã kế hoạch:</span>
-                  <div className="font-mono font-bold text-emerald-700 mt-0.5">{currentPlan.plan_code}</div>
+                  <div className="font-mono font-bold text-emerald-700 mt-0.5">
+                    {currentPlan.plan_code}
+                  </div>
                 </div>
                 <div>
                   <span className="text-slate-500 font-semibold">Dây chuyền áp dụng:</span>
@@ -2383,7 +2513,8 @@ function HACCPModule() {
                   Sơ Đồ Lưu Đồ Quy Trình Công Đoạn Tuần Tự
                 </h3>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Lưu đồ thể hiện toàn bộ các bước sản xuất từ tiếp nhận đến thành phẩm và vị trí các điểm kiểm soát tới hạn CCP.
+                  Lưu đồ thể hiện toàn bộ các bước sản xuất từ tiếp nhận đến thành phẩm và vị trí
+                  các điểm kiểm soát tới hạn CCP.
                 </p>
               </div>
 
@@ -2413,7 +2544,9 @@ function HACCPModule() {
               <div className="flex items-center gap-2.5">
                 <Sparkles className="w-4 h-4 text-blue-600 shrink-0" />
                 <span>
-                  <strong>Hướng Dẫn Chuẩn Hóa Lưu Đồ Công Đoạn:</strong> Đảm bảo tính tuần tự liên tục từ tiếp nhận đến xuất kho, xác định đầy đủ thông số kỹ thuật (nhiệt độ, thời gian, thiết bị) và đánh dấu nổi bật các điểm kiểm soát tới hạn CCP/oPRP.
+                  <strong>Hướng Dẫn Chuẩn Hóa Lưu Đồ Công Đoạn:</strong> Đảm bảo tính tuần tự liên
+                  tục từ tiếp nhận đến xuất kho, xác định đầy đủ thông số kỹ thuật (nhiệt độ, thời
+                  gian, thiết bị) và đánh dấu nổi bật các điểm kiểm soát tới hạn CCP/oPRP.
                 </span>
               </div>
               <button
@@ -2437,78 +2570,80 @@ function HACCPModule() {
               />
             ) : (
               <div className="max-w-2xl mx-auto space-y-3 py-2">
-              {filteredSteps.map((step, idx) => (
-                <React.Fragment key={step.step_id}>
-                  {/* Step Card */}
-                  <div
-                    className={`p-4 rounded-2xl border transition-all flex items-start justify-between gap-4 ${
-                      step.is_ccp_or_oprp
-                        ? "bg-rose-50 border-rose-300 shadow-sm hover:border-rose-400"
-                        : "bg-white border-slate-200 hover:border-slate-300 shadow-sm"
-                    }`}
-                  >
-                    <div className="flex items-start gap-3.5">
-                      <div
-                        className={`w-8 h-8 rounded-xl flex items-center justify-center font-black text-sm shrink-0 ${
-                          step.is_ccp_or_oprp ? "bg-rose-600 text-white" : "bg-emerald-600 text-white"
-                        }`}
-                      >
-                        {step.step_number}
-                      </div>
-
-                      <div>
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <h4 className="text-sm font-bold text-slate-900">{step.step_name}</h4>
-                          {step.is_ccp_or_oprp && (
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-600 text-white flex items-center gap-1 animate-pulse">
-                              <Flame className="w-3 h-3" /> ★ ĐIỂM KIỂM SOÁT TỚI HẠN (CCP)
-                            </span>
-                          )}
-                          <span className="text-[10px] px-2 py-0.5 rounded bg-slate-100 text-slate-600 font-semibold border border-slate-200">
-                            {step.hazard_count} mối nguy
-                          </span>
+                {filteredSteps.map((step, idx) => (
+                  <React.Fragment key={step.step_id}>
+                    {/* Step Card */}
+                    <div
+                      className={`p-4 rounded-2xl border transition-all flex items-start justify-between gap-4 ${
+                        step.is_ccp_or_oprp
+                          ? "bg-rose-50 border-rose-300 shadow-sm hover:border-rose-400"
+                          : "bg-white border-slate-200 hover:border-slate-300 shadow-sm"
+                      }`}
+                    >
+                      <div className="flex items-start gap-3.5">
+                        <div
+                          className={`w-8 h-8 rounded-xl flex items-center justify-center font-black text-sm shrink-0 ${
+                            step.is_ccp_or_oprp
+                              ? "bg-rose-600 text-white"
+                              : "bg-emerald-600 text-white"
+                          }`}
+                        >
+                          {step.step_number}
                         </div>
 
-                        {step.description && (
-                          <p className="text-xs text-slate-600 mt-1.5 leading-relaxed bg-slate-50 p-2.5 rounded-lg border border-slate-200">
-                            {step.description}
-                          </p>
-                        )}
+                        <div>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h4 className="text-sm font-bold text-slate-900">{step.step_name}</h4>
+                            {step.is_ccp_or_oprp && (
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-600 text-white flex items-center gap-1 animate-pulse">
+                                <Flame className="w-3 h-3" /> ★ ĐIỂM KIỂM SOÁT TỚI HẠN (CCP)
+                              </span>
+                            )}
+                            <span className="text-[10px] px-2 py-0.5 rounded bg-slate-100 text-slate-600 font-semibold border border-slate-200">
+                              {step.hazard_count} mối nguy
+                            </span>
+                          </div>
+
+                          {step.description && (
+                            <p className="text-xs text-slate-600 mt-1.5 leading-relaxed bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+                              {step.description}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <button
+                          onClick={() => handleOpenEditStep(step)}
+                          className="p-1.5 rounded-lg bg-slate-100 text-slate-600 hover:text-slate-900 hover:bg-slate-200 transition-colors"
+                          title="Chỉnh sửa công đoạn"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => setDeletingStep(step)}
+                          className="p-1.5 rounded-lg bg-rose-50 text-rose-600 hover:text-rose-800 hover:bg-rose-100 transition-colors"
+                          title="Xóa công đoạn"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      <button
-                        onClick={() => handleOpenEditStep(step)}
-                        className="p-1.5 rounded-lg bg-slate-100 text-slate-600 hover:text-slate-900 hover:bg-slate-200 transition-colors"
-                        title="Chỉnh sửa công đoạn"
-                      >
-                        <Pencil className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => setDeletingStep(step)}
-                        className="p-1.5 rounded-lg bg-rose-50 text-rose-600 hover:text-rose-800 hover:bg-rose-100 transition-colors"
-                        title="Xóa công đoạn"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Flow Arrow */}
-                  {idx < filteredSteps.length - 1 && (
-                    <div className="flex flex-col items-center my-0.5">
-                      <div className="w-0.5 h-3 bg-slate-300" />
-                      <div className="px-3 py-0.5 rounded-full bg-white border border-slate-300 text-[10px] font-bold text-slate-600 flex items-center gap-1 font-mono shadow-sm">
-                        <ChevronDown className="w-3 h-3 text-slate-400" />
-                        <span>{step.is_ccp_or_oprp ? "Kiểm soát CCP Đạt" : "Chuyển tiếp"}</span>
+                    {/* Flow Arrow */}
+                    {idx < filteredSteps.length - 1 && (
+                      <div className="flex flex-col items-center my-0.5">
+                        <div className="w-0.5 h-3 bg-slate-300" />
+                        <div className="px-3 py-0.5 rounded-full bg-white border border-slate-300 text-[10px] font-bold text-slate-600 flex items-center gap-1 font-mono shadow-sm">
+                          <ChevronDown className="w-3 h-3 text-slate-400" />
+                          <span>{step.is_ccp_or_oprp ? "Kiểm soát CCP Đạt" : "Chuyển tiếp"}</span>
+                        </div>
+                        <div className="w-0.5 h-3 bg-slate-300" />
                       </div>
-                      <div className="w-0.5 h-3 bg-slate-300" />
-                    </div>
-                  )}
-                </React.Fragment>
-              ))}
-            </div>
+                    )}
+                  </React.Fragment>
+                ))}
+              </div>
             )}
           </div>
         </div>
@@ -2537,7 +2672,11 @@ function HACCPModule() {
                 <option value="ACTIVE">Hoạt động (ACTIVE)</option>
                 <option value="INACTIVE">Tạm dừng (INACTIVE)</option>
               </select>
-              <Button onClick={handleOpenCreateCCP} size="sm" className="bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-sm">
+              <Button
+                onClick={handleOpenCreateCCP}
+                size="sm"
+                className="bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-sm"
+              >
                 <Plus className="h-4 w-4 mr-2" /> Thêm Điểm CCP Mới
               </Button>
             </div>
@@ -2554,78 +2693,108 @@ function HACCPModule() {
             />
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {filteredCCPs.map((ccp) => {
-              const cl = ccp.critical_limit || {};
-              const isOprp = ccp.ccp_code.startsWith("oPRP");
-              return (
-                <div key={ccp.ccp_id} className="bg-white border border-slate-200 hover:border-slate-300 rounded-2xl p-5 shadow-sm space-y-4 relative overflow-hidden">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-2.5">
-                      <span className={`px-3 py-1 rounded-lg text-sm font-black tracking-wider text-white ${isOprp ? "bg-amber-600" : "bg-rose-600"}`}>
-                        {ccp.ccp_code}
-                      </span>
-                      <div>
-                        <h4 className="font-bold text-base text-slate-900">{ccp.name}</h4>
-                        <p className="text-xs text-slate-500">Công đoạn: {ccp.step_name || "Chưa gán công đoạn"}</p>
+              {filteredCCPs.map((ccp) => {
+                const cl = ccp.critical_limit || {};
+                const isOprp = ccp.ccp_code.startsWith("oPRP");
+                return (
+                  <div
+                    key={ccp.ccp_id}
+                    className="bg-white border border-slate-200 hover:border-slate-300 rounded-2xl p-5 shadow-sm space-y-4 relative overflow-hidden"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-2.5">
+                        <span
+                          className={`px-3 py-1 rounded-lg text-sm font-black tracking-wider text-white ${isOprp ? "bg-amber-600" : "bg-rose-600"}`}
+                        >
+                          {ccp.ccp_code}
+                        </span>
+                        <div>
+                          <h4 className="font-bold text-base text-slate-900">{ccp.name}</h4>
+                          <p className="text-xs text-slate-500">
+                            Công đoạn: {ccp.step_name || "Chưa gán công đoạn"}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleOpenEditCCP(ccp)}
+                          className="h-8 w-8 text-slate-500 hover:text-slate-900"
+                          title="Chỉnh sửa điểm CCP"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setDeletingCCP(ccp)}
+                          className="h-8 w-8 text-slate-500 hover:text-rose-600"
+                          title="Xóa điểm CCP"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
                     </div>
-                    <div className="flex items-center gap-1">
-                      <Button variant="ghost" size="icon" onClick={() => handleOpenEditCCP(ccp)} className="h-8 w-8 text-slate-500 hover:text-slate-900" title="Chỉnh sửa điểm CCP">
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" onClick={() => setDeletingCCP(ccp)} className="h-8 w-8 text-slate-500 hover:text-rose-600" title="Xóa điểm CCP">
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
 
-                  {/* Hazard Description */}
-                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs">
-                    <span className="font-bold text-rose-700 uppercase text-[10px] tracking-wider block mb-1">Mối nguy cần kiểm soát:</span>
-                    <p className="text-slate-700 leading-relaxed">{ccp.hazard_description}</p>
-                  </div>
-
-                  {/* Critical Limit */}
-                  <div className="bg-rose-50 border border-rose-300 p-3.5 rounded-xl text-xs space-y-1">
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-rose-800 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
-                        <Flame className="h-3.5 w-3.5 text-rose-600" /> Giới Hạn Tới Hạn (Critical Limit):
+                    {/* Hazard Description */}
+                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs">
+                      <span className="font-bold text-rose-700 uppercase text-[10px] tracking-wider block mb-1">
+                        Mối nguy cần kiểm soát:
                       </span>
-                      <span className="font-mono text-xs px-2 py-0.5 rounded bg-rose-100 text-rose-800 font-bold border border-rose-200">
-                        {cl.param || "Thông số kỹ thuật"}
-                      </span>
+                      <p className="text-slate-700 leading-relaxed">{ccp.hazard_description}</p>
                     </div>
-                    <p className="text-slate-900 font-black text-sm pt-1">
-                      {cl.condition_text || `${cl.min_val ? ">= " + cl.min_val : ""} ${cl.max_val ? "<= " + cl.max_val : ""} ${cl.unit || ""}`}
-                    </p>
-                  </div>
 
-                  {/* Monitoring & Action details */}
-                  <div className="grid grid-cols-2 gap-3 text-xs text-slate-700 pt-1">
-                    <div>
-                      <span className="text-slate-500 block text-[11px] font-semibold">Tần suất & Phương pháp:</span>
-                      <span className="font-bold text-slate-800">{ccp.monitoring_frequency}</span>
-                      <p className="text-[11px] text-slate-500 truncate">{ccp.monitoring_method}</p>
+                    {/* Critical Limit */}
+                    <div className="bg-rose-50 border border-rose-300 p-3.5 rounded-xl text-xs space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-rose-800 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                          <Flame className="h-3.5 w-3.5 text-rose-600" /> Giới Hạn Tới Hạn (Critical
+                          Limit):
+                        </span>
+                        <span className="font-mono text-xs px-2 py-0.5 rounded bg-rose-100 text-rose-800 font-bold border border-rose-200">
+                          {cl.param || "Thông số kỹ thuật"}
+                        </span>
+                      </div>
+                      <p className="text-slate-900 font-black text-sm pt-1">
+                        {cl.condition_text ||
+                          `${cl.min_val ? ">= " + cl.min_val : ""} ${cl.max_val ? "<= " + cl.max_val : ""} ${cl.unit || ""}`}
+                      </p>
                     </div>
-                    <div>
-                      <span className="text-slate-500 block text-[11px] font-semibold">Người phụ trách:</span>
-                      <span className="font-bold text-emerald-700">{ccp.responsible_role}</span>
-                    </div>
-                  </div>
 
-                  <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
-                    <Button
-                      size="sm"
-                      onClick={() => handleOpenCreateLog(ccp)}
-                      className="w-full bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 text-xs font-bold py-1.5 shadow-none"
-                    >
-                      <Thermometer className="h-3.5 w-3.5 mr-1.5 text-emerald-600" /> Ghi Nhật Ký Đo Đạc Cho {ccp.ccp_code}
-                    </Button>
+                    {/* Monitoring & Action details */}
+                    <div className="grid grid-cols-2 gap-3 text-xs text-slate-700 pt-1">
+                      <div>
+                        <span className="text-slate-500 block text-[11px] font-semibold">
+                          Tần suất & Phương pháp:
+                        </span>
+                        <span className="font-bold text-slate-800">{ccp.monitoring_frequency}</span>
+                        <p className="text-[11px] text-slate-500 truncate">
+                          {ccp.monitoring_method}
+                        </p>
+                      </div>
+                      <div>
+                        <span className="text-slate-500 block text-[11px] font-semibold">
+                          Người phụ trách:
+                        </span>
+                        <span className="font-bold text-emerald-700">{ccp.responsible_role}</span>
+                      </div>
+                    </div>
+
+                    <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
+                      <Button
+                        size="sm"
+                        onClick={() => handleOpenCreateLog(ccp)}
+                        className="w-full bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 text-xs font-bold py-1.5 shadow-none"
+                      >
+                        <Thermometer className="h-3.5 w-3.5 mr-1.5 text-emerald-600" /> Ghi Nhật Ký
+                        Đo Đạc Cho {ccp.ccp_code}
+                      </Button>
+                    </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
           )}
         </div>
       )}
@@ -2659,7 +2828,11 @@ function HACCPModule() {
               </select>
             </div>
 
-            <Button onClick={handleOpenCreateHazard} size="sm" className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-sm">
+            <Button
+              onClick={handleOpenCreateHazard}
+              size="sm"
+              className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-sm"
+            >
               <Plus className="h-4 w-4 mr-2" /> Thêm Mối Nguy Mới
             </Button>
           </div>
@@ -2676,57 +2849,70 @@ function HACCPModule() {
           ) : (
             <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
               <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs text-slate-800">
-                <thead className="bg-slate-50 text-slate-700 uppercase font-bold border-b border-slate-200">
-                  <tr>
-                    <th className="p-3.5">Công đoạn</th>
-                    <th className="p-3.5">Mối nguy cụ thể</th>
-                    <th className="p-3.5">Loại</th>
-                    <th className="p-3.5 text-center">Ma trận rủi ro</th>
-                    <th className="p-3.5">Biện pháp kiểm soát</th>
-                    <th className="p-3.5 text-center">Codex Q1-Q4</th>
-                    <th className="p-3.5 text-center">Phân loại</th>
-                    <th className="p-3.5 text-right">Thao tác</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {filteredHazards.map((h) => (
-                    <tr key={h.hazard_id} className="hover:bg-slate-50 transition-colors">
-                      <td className="p-3.5 font-bold text-slate-900">
-                        {h.step_number ? `${h.step_number}. ` : ""}{h.step_name || "Công đoạn"}
-                      </td>
-                      <td className="p-3.5">
-                        <div className="font-bold text-slate-900 max-w-xs">{h.hazard_name}</div>
-                        {h.potential_consequence && (
-                          <div className="text-[11px] text-slate-500 mt-0.5">{h.potential_consequence}</div>
-                        )}
-                      </td>
-                      <td className="p-3.5 font-mono text-slate-700">{h.hazard_type}</td>
-                      <td className="p-3.5 text-center">
-                        {getRiskBadge(h.risk_score)}
-                        <div className="text-[10px] text-slate-500 mt-0.5">K:{h.likelihood} × N:{h.severity}</div>
-                      </td>
-                      <td className="p-3.5 text-slate-700 max-w-xs">{h.control_measure}</td>
-                      <td className="p-3.5 text-center font-mono text-[11px] text-slate-600 font-bold">
-                        {h.q1 || "-"}/{h.q2 || "-"}/{h.q3 || "-"}/{h.q4 || "-"}
-                      </td>
-                      <td className="p-3.5 text-center">{getClassBadge(h.classification)}</td>
-                      <td className="p-3.5 text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          <button onClick={() => handleOpenEditHazard(h)} className="p-1 text-slate-500 hover:text-slate-900" title="Chỉnh sửa mối nguy">
-                            <Pencil className="h-3.5 w-3.5" />
-                          </button>
-                          <button onClick={() => setDeletingHazard(h)} className="p-1 text-slate-500 hover:text-rose-600" title="Xóa mối nguy">
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
-                        </div>
-                      </td>
+                <table className="w-full text-left text-xs text-slate-800">
+                  <thead className="bg-slate-50 text-slate-700 uppercase font-bold border-b border-slate-200">
+                    <tr>
+                      <th className="p-3.5">Công đoạn</th>
+                      <th className="p-3.5">Mối nguy cụ thể</th>
+                      <th className="p-3.5">Loại</th>
+                      <th className="p-3.5 text-center">Ma trận rủi ro</th>
+                      <th className="p-3.5">Biện pháp kiểm soát</th>
+                      <th className="p-3.5 text-center">Codex Q1-Q4</th>
+                      <th className="p-3.5 text-center">Phân loại</th>
+                      <th className="p-3.5 text-right">Thao tác</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {filteredHazards.map((h) => (
+                      <tr key={h.hazard_id} className="hover:bg-slate-50 transition-colors">
+                        <td className="p-3.5 font-bold text-slate-900">
+                          {h.step_number ? `${h.step_number}. ` : ""}
+                          {h.step_name || "Công đoạn"}
+                        </td>
+                        <td className="p-3.5">
+                          <div className="font-bold text-slate-900 max-w-xs">{h.hazard_name}</div>
+                          {h.potential_consequence && (
+                            <div className="text-[11px] text-slate-500 mt-0.5">
+                              {h.potential_consequence}
+                            </div>
+                          )}
+                        </td>
+                        <td className="p-3.5 font-mono text-slate-700">{h.hazard_type}</td>
+                        <td className="p-3.5 text-center">
+                          {getRiskBadge(h.risk_score)}
+                          <div className="text-[10px] text-slate-500 mt-0.5">
+                            K:{h.likelihood} × N:{h.severity}
+                          </div>
+                        </td>
+                        <td className="p-3.5 text-slate-700 max-w-xs">{h.control_measure}</td>
+                        <td className="p-3.5 text-center font-mono text-[11px] text-slate-600 font-bold">
+                          {h.q1 || "-"}/{h.q2 || "-"}/{h.q3 || "-"}/{h.q4 || "-"}
+                        </td>
+                        <td className="p-3.5 text-center">{getClassBadge(h.classification)}</td>
+                        <td className="p-3.5 text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            <button
+                              onClick={() => handleOpenEditHazard(h)}
+                              className="p-1 text-slate-500 hover:text-slate-900"
+                              title="Chỉnh sửa mối nguy"
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              onClick={() => setDeletingHazard(h)}
+                              className="p-1 text-slate-500 hover:text-rose-600"
+                              title="Xóa mối nguy"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
-          </div>
           )}
         </div>
       )}
@@ -2772,7 +2958,11 @@ function HACCPModule() {
                 Mở Phiếu Form Động
               </Button>
 
-              <Button onClick={() => handleOpenCreateLog()} size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm">
+              <Button
+                onClick={() => handleOpenCreateLog()}
+                size="sm"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm"
+              >
                 <Plus className="h-4 w-4 mr-1.5" /> Ghi Nhật Ký Đo Nhanh
               </Button>
             </div>
@@ -2790,41 +2980,51 @@ function HACCPModule() {
           ) : (
             <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
               <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs text-slate-800">
-                <thead className="bg-slate-50 text-slate-700 uppercase font-bold border-b border-slate-200">
-                  <tr>
-                    <th className="p-3.5">Mã CCP</th>
-                    <th className="p-3.5">Mã Lô Hàng</th>
-                    <th className="p-3.5">Thời Gian Đo</th>
-                    <th className="p-3.5">Giá Trị Đo Thực Tế</th>
-                    <th className="p-3.5">Giới Hạn Tới Hạn</th>
-                    <th className="p-3.5 text-center">Trạng Thái</th>
-                    <th className="p-3.5">Người Giám Sát</th>
-                    <th className="p-3.5">Ghi Chú / Khắc Phục</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {filteredLogs.map((l) => (
-                    <tr key={l.log_id} className="hover:bg-slate-50 transition-colors">
-                      <td className="p-3.5">
-                        <span className="font-bold text-rose-700">{l.ccp_code}</span>
-                        <div className="text-[11px] text-slate-500">{l.ccp_name}</div>
-                      </td>
-                      <td className="p-3.5 font-mono font-bold text-slate-900">{l.batch_number}</td>
-                      <td className="p-3.5 text-slate-500">{l.test_time || "Hôm nay"}</td>
-                      <td className="p-3.5 font-mono font-black text-sm text-slate-900">
-                        {l.measured_value} {l.unit}
-                      </td>
-                      <td className="p-3.5 text-slate-600">{l.critical_limit_text || "Tiêu chuẩn"}</td>
-                      <td className="p-3.5 text-center">{getLogStatusBadge(l.status, l.is_critical_limit_exceeded)}</td>
-                      <td className="p-3.5 text-slate-700 font-medium">{l.inspector_name || "QC Ca"}</td>
-                      <td className="p-3.5 text-slate-600 max-w-xs">{l.deviation_action || l.notes || "Bình thường"}</td>
+                <table className="w-full text-left text-xs text-slate-800">
+                  <thead className="bg-slate-50 text-slate-700 uppercase font-bold border-b border-slate-200">
+                    <tr>
+                      <th className="p-3.5">Mã CCP</th>
+                      <th className="p-3.5">Mã Lô Hàng</th>
+                      <th className="p-3.5">Thời Gian Đo</th>
+                      <th className="p-3.5">Giá Trị Đo Thực Tế</th>
+                      <th className="p-3.5">Giới Hạn Tới Hạn</th>
+                      <th className="p-3.5 text-center">Trạng Thái</th>
+                      <th className="p-3.5">Người Giám Sát</th>
+                      <th className="p-3.5">Ghi Chú / Khắc Phục</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {filteredLogs.map((l) => (
+                      <tr key={l.log_id} className="hover:bg-slate-50 transition-colors">
+                        <td className="p-3.5">
+                          <span className="font-bold text-rose-700">{l.ccp_code}</span>
+                          <div className="text-[11px] text-slate-500">{l.ccp_name}</div>
+                        </td>
+                        <td className="p-3.5 font-mono font-bold text-slate-900">
+                          {l.batch_number}
+                        </td>
+                        <td className="p-3.5 text-slate-500">{l.test_time || "Hôm nay"}</td>
+                        <td className="p-3.5 font-mono font-black text-sm text-slate-900">
+                          {l.measured_value} {l.unit}
+                        </td>
+                        <td className="p-3.5 text-slate-600">
+                          {l.critical_limit_text || "Tiêu chuẩn"}
+                        </td>
+                        <td className="p-3.5 text-center">
+                          {getLogStatusBadge(l.status, l.is_critical_limit_exceeded)}
+                        </td>
+                        <td className="p-3.5 text-slate-700 font-medium">
+                          {l.inspector_name || "QC Ca"}
+                        </td>
+                        <td className="p-3.5 text-slate-600 max-w-xs">
+                          {l.deviation_action || l.notes || "Bình thường"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
-          </div>
           )}
         </div>
       )}
@@ -2839,14 +3039,20 @@ function HACCPModule() {
                 <Sparkles className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="text-base font-bold text-slate-900">Trợ Lý AI Gợi Ý Mối Nguy Theo Công Đoạn</h3>
-                <p className="text-xs text-slate-500">Tự động phân tích tác nhân vi sinh, hóa học và phân loại CCP/oPRP theo Codex.</p>
+                <h3 className="text-base font-bold text-slate-900">
+                  Trợ Lý AI Gợi Ý Mối Nguy Theo Công Đoạn
+                </h3>
+                <p className="text-xs text-slate-500">
+                  Tự động phân tích tác nhân vi sinh, hóa học và phân loại CCP/oPRP theo Codex.
+                </p>
               </div>
             </div>
 
             <div className="space-y-3 pt-2">
               <div>
-                <Label className="text-xs font-bold text-slate-700">Chọn công đoạn mẫu hoặc nhập mới:</Label>
+                <Label className="text-xs font-bold text-slate-700">
+                  Chọn công đoạn mẫu hoặc nhập mới:
+                </Label>
                 <select
                   className="w-full mt-1 bg-white border border-slate-300 rounded-lg p-2 text-xs text-slate-800 focus:outline-none"
                   onChange={(e) => {
@@ -2898,7 +3104,10 @@ function HACCPModule() {
                   Kết quả phân tích từ Trợ Lý AI:
                 </div>
                 {aiHazardResults.hazards?.map((item: any, idx: number) => (
-                  <div key={idx} className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs space-y-2">
+                  <div
+                    key={idx}
+                    className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs space-y-2"
+                  >
                     <div className="flex items-start justify-between">
                       <span className="font-bold text-slate-900">{item.hazard_name}</span>
                       <span className="px-2 py-0.5 rounded bg-rose-100 text-rose-800 font-mono text-[10px] font-bold border border-rose-200">
@@ -2926,8 +3135,13 @@ function HACCPModule() {
                 <AlertOctagon className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="text-base font-bold text-slate-900">AI Xử Lý Sự Cố Vi Phạm CCP Khẩn Cấp</h3>
-                <p className="text-xs text-slate-500">Tư vấn phương án cô lập lô hàng, biệt trữ kho và hành động khắc phục CAPA theo ISO 8.9.</p>
+                <h3 className="text-base font-bold text-slate-900">
+                  AI Xử Lý Sự Cố Vi Phạm CCP Khẩn Cấp
+                </h3>
+                <p className="text-xs text-slate-500">
+                  Tư vấn phương án cô lập lô hàng, biệt trữ kho và hành động khắc phục CAPA theo ISO
+                  8.9.
+                </p>
               </div>
             </div>
 
@@ -2950,9 +3164,24 @@ function HACCPModule() {
               </div>
 
               <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 text-xs space-y-1.5 text-slate-700">
-                <div>Điểm kiểm soát: <span className="font-bold text-rose-700">{aiDevPreset.ccp_code}</span></div>
-                <div>Lô hàng sự cố: <span className="font-mono font-bold text-slate-900">{aiDevPreset.batch_number}</span></div>
-                <div>Giá trị vi phạm: <span className="font-bold text-rose-700">{aiDevPreset.measured_value}{aiDevPreset.unit}</span> ({aiDevPreset.critical_limit_text})</div>
+                <div>
+                  Điểm kiểm soát:{" "}
+                  <span className="font-bold text-rose-700">{aiDevPreset.ccp_code}</span>
+                </div>
+                <div>
+                  Lô hàng sự cố:{" "}
+                  <span className="font-mono font-bold text-slate-900">
+                    {aiDevPreset.batch_number}
+                  </span>
+                </div>
+                <div>
+                  Giá trị vi phạm:{" "}
+                  <span className="font-bold text-rose-700">
+                    {aiDevPreset.measured_value}
+                    {aiDevPreset.unit}
+                  </span>{" "}
+                  ({aiDevPreset.critical_limit_text})
+                </div>
                 <p className="text-slate-600 mt-1">{aiDevPreset.description}</p>
               </div>
 
@@ -2961,7 +3190,9 @@ function HACCPModule() {
                 disabled={aiDevLoading}
                 className="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs py-2 shadow-sm"
               >
-                {aiDevLoading ? "Đang tạo quy trình xử lý khẩn cấp..." : "Chạy AI Lập Phương Án Khắc Phục"}
+                {aiDevLoading
+                  ? "Đang tạo quy trình xử lý khẩn cấp..."
+                  : "Chạy AI Lập Phương Án Khắc Phục"}
               </Button>
             </div>
 
@@ -2973,7 +3204,9 @@ function HACCPModule() {
                 <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-xs space-y-2 leading-relaxed">
                   <div className="font-bold text-slate-900">1. Hành động cô lập tức thời:</div>
                   <p className="text-slate-700">{aiDevResults.immediate_action}</p>
-                  <div className="font-bold text-slate-900 pt-1">2. Biện pháp xử lý lô sản phẩm:</div>
+                  <div className="font-bold text-slate-900 pt-1">
+                    2. Biện pháp xử lý lô sản phẩm:
+                  </div>
                   <p className="text-slate-700">{aiDevResults.product_disposition}</p>
                 </div>
               </div>
@@ -2998,7 +3231,9 @@ function HACCPModule() {
                   </span>
                 </h3>
                 <p className="text-xs text-slate-200 mt-1 max-w-2xl leading-relaxed">
-                  Đánh giá toàn diện định kỳ hoặc sau thay đổi đối với phân tích mối nguy, hồ sơ giám sát CCP/OPRP, hiệu lực CAPA và năng lực duy trì an toàn thực phẩm của nhà máy.
+                  Đánh giá toàn diện định kỳ hoặc sau thay đổi đối với phân tích mối nguy, hồ sơ
+                  giám sát CCP/OPRP, hiệu lực CAPA và năng lực duy trì an toàn thực phẩm của nhà
+                  máy.
                 </p>
               </div>
             </div>
@@ -3054,7 +3289,8 @@ function HACCPModule() {
               </div>
             </div>
             <div className="text-xs text-slate-500 font-semibold">
-              Tổng số đợt: <span className="text-slate-900 font-bold">{filteredReviews.length}</span>
+              Tổng số đợt:{" "}
+              <span className="text-slate-900 font-bold">{filteredReviews.length}</span>
             </div>
           </div>
 
@@ -3071,187 +3307,195 @@ function HACCPModule() {
           ) : (
             <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
               <div className="overflow-x-auto">
-              <table className="w-full text-xs text-left border-collapse">
-                <thead>
-                  <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase tracking-wider text-[10px]">
-                    <th className="p-3.5">Mã & Kế hoạch</th>
-                    <th className="p-3.5">Ngày & Loại Thẩm Tra</th>
-                    <th className="p-3.5">Phạm vi & Đoàn thẩm tra</th>
-                    <th className="p-3.5 text-center">3 Trụ Cột Thẩm Tra</th>
-                    <th className="p-3.5 text-center">Kết Luận</th>
-                    <th className="p-3.5">Phê Duyệt</th>
-                    <th className="p-3.5 text-right">Thao Tác</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {filteredReviews.length === 0 ? (
-                    <tr>
-                      <td colSpan={7} className="p-8 text-center text-slate-400">
-                        <ClipboardCheck className="w-10 h-10 mx-auto mb-2 text-slate-300" />
-                        Chưa có đợt thẩm tra kế hoạch HACCP nào phù hợp điều kiện lọc.
-                      </td>
+                <table className="w-full text-xs text-left border-collapse">
+                  <thead>
+                    <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase tracking-wider text-[10px]">
+                      <th className="p-3.5">Mã & Kế hoạch</th>
+                      <th className="p-3.5">Ngày & Loại Thẩm Tra</th>
+                      <th className="p-3.5">Phạm vi & Đoàn thẩm tra</th>
+                      <th className="p-3.5 text-center">3 Trụ Cột Thẩm Tra</th>
+                      <th className="p-3.5 text-center">Kết Luận</th>
+                      <th className="p-3.5">Phê Duyệt</th>
+                      <th className="p-3.5 text-right">Thao Tác</th>
                     </tr>
-                  ) : (
-                    filteredReviews.map((rev) => {
-                      const linkedPlan = plans.find((p) => p.plan_id === rev.plan_id || p.id === rev.plan_id);
-                      const linkedCR = changeRequests.find((cr) => cr.id === rev.change_request_id);
-                      return (
-                        <tr key={rev.id} className="hover:bg-slate-50 transition-colors">
-                          <td className="p-3.5">
-                            <div className="font-mono font-bold text-slate-900">{rev.review_code}</div>
-                            <div className="text-[11px] text-slate-600 mt-0.5 font-medium">
-                              {linkedPlan ? linkedPlan.plan_name : "Kế hoạch toàn bộ"}
-                            </div>
-                          </td>
-                          <td className="p-3.5">
-                            <div className="font-semibold text-slate-800">{rev.review_date}</div>
-                            <div className="mt-1 flex flex-wrap items-center gap-1">
-                              {rev.review_type === "PERIODIC" && (
-                                <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
-                                  Định kỳ
-                                </span>
-                              )}
-                              {rev.review_type === "POST_CHANGE" && (
-                                <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-purple-50 text-purple-700 border border-purple-200">
-                                  Sau thay đổi
-                                </span>
-                              )}
-                              {rev.review_type === "INCIDENT_TRIGGERED" && (
-                                <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
-                                  Sau sự cố
-                                </span>
-                              )}
-                              {rev.review_type === "ANNUAL" && (
-                                <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-300">
-                                  Thường niên
-                                </span>
-                              )}
-                              {linkedCR && (
-                                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-amber-50 text-amber-800 border border-amber-200">
-                                  MCR: {linkedCR.request_code}
-                                </span>
-                              )}
-                            </div>
-                          </td>
-                          <td className="p-3.5 max-w-xs">
-                            <div className="text-slate-800 line-clamp-2 leading-relaxed font-medium">
-                              {rev.scope_and_objective}
-                            </div>
-                            <div className="text-[11px] text-slate-500 mt-1">
-                              <span className="font-semibold">Đoàn:</span> {rev.reviewers}
-                            </div>
-                          </td>
-                          <td className="p-3.5">
-                            <div className="flex flex-col gap-1 items-center">
-                              <div className="flex items-center gap-1.5 text-[10px]">
-                                <span className="text-slate-500">Mối nguy:</span>
-                                {rev.hazard_analysis_validity ? (
-                                  <span className="font-bold text-emerald-600 flex items-center gap-0.5">
-                                    <Check className="w-3 h-3" /> Đạt
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {filteredReviews.length === 0 ? (
+                      <tr>
+                        <td colSpan={7} className="p-8 text-center text-slate-400">
+                          <ClipboardCheck className="w-10 h-10 mx-auto mb-2 text-slate-300" />
+                          Chưa có đợt thẩm tra kế hoạch HACCP nào phù hợp điều kiện lọc.
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredReviews.map((rev) => {
+                        const linkedPlan = plans.find(
+                          (p) => p.plan_id === rev.plan_id || p.id === rev.plan_id,
+                        );
+                        const linkedCR = changeRequests.find(
+                          (cr) => cr.id === rev.change_request_id,
+                        );
+                        return (
+                          <tr key={rev.id} className="hover:bg-slate-50 transition-colors">
+                            <td className="p-3.5">
+                              <div className="font-mono font-bold text-slate-900">
+                                {rev.review_code}
+                              </div>
+                              <div className="text-[11px] text-slate-600 mt-0.5 font-medium">
+                                {linkedPlan ? linkedPlan.plan_name : "Kế hoạch toàn bộ"}
+                              </div>
+                            </td>
+                            <td className="p-3.5">
+                              <div className="font-semibold text-slate-800">{rev.review_date}</div>
+                              <div className="mt-1 flex flex-wrap items-center gap-1">
+                                {rev.review_type === "PERIODIC" && (
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                                    Định kỳ
                                   </span>
-                                ) : (
-                                  <span className="font-bold text-rose-600 flex items-center gap-0.5">
-                                    <XCircle className="w-3 h-3" /> Cần sửa
+                                )}
+                                {rev.review_type === "POST_CHANGE" && (
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-purple-50 text-purple-700 border border-purple-200">
+                                    Sau thay đổi
+                                  </span>
+                                )}
+                                {rev.review_type === "INCIDENT_TRIGGERED" && (
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                                    Sau sự cố
+                                  </span>
+                                )}
+                                {rev.review_type === "ANNUAL" && (
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-300">
+                                    Thường niên
+                                  </span>
+                                )}
+                                {linkedCR && (
+                                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                                    MCR: {linkedCR.request_code}
                                   </span>
                                 )}
                               </div>
-                              <div className="flex items-center gap-1.5 text-[10px]">
-                                <span className="text-slate-500">Hồ sơ CCP:</span>
-                                {rev.monitoring_records_adequate ? (
-                                  <span className="font-bold text-emerald-600 flex items-center gap-0.5">
-                                    <Check className="w-3 h-3" /> Đầy đủ
-                                  </span>
-                                ) : (
-                                  <span className="font-bold text-rose-600 flex items-center gap-0.5">
-                                    <XCircle className="w-3 h-3" /> Thiếu
-                                  </span>
-                                )}
+                            </td>
+                            <td className="p-3.5 max-w-xs">
+                              <div className="text-slate-800 line-clamp-2 leading-relaxed font-medium">
+                                {rev.scope_and_objective}
                               </div>
-                              <div className="flex items-center gap-1.5 text-[10px]">
-                                <span className="text-slate-500">Hiệu lực CAPA:</span>
-                                {rev.corrective_actions_effective ? (
-                                  <span className="font-bold text-emerald-600 flex items-center gap-0.5">
-                                    <Check className="w-3 h-3" /> Tốt
-                                  </span>
-                                ) : (
-                                  <span className="font-bold text-rose-600 flex items-center gap-0.5">
-                                    <XCircle className="w-3 h-3" /> Tồn tại
-                                  </span>
-                                )}
+                              <div className="text-[11px] text-slate-500 mt-1">
+                                <span className="font-semibold">Đoàn:</span> {rev.reviewers}
                               </div>
-                            </div>
-                          </td>
-                          <td className="p-3.5 text-center">
-                            {rev.conclusion === "COMPLIANT" && (
-                              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                Hiệu Lực (Đạt)
-                              </span>
-                            )}
-                            {rev.conclusion === "NEEDS_UPDATE" && (
-                              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
-                                Cần Cập Nhật
-                              </span>
-                            )}
-                            {rev.conclusion === "CRITICAL_DEFICIENCY" && (
-                              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
-                                Khiếm Khuyết Lớn
-                              </span>
-                            )}
-                          </td>
-                          <td className="p-3.5 text-[11px]">
-                            <div className="font-semibold text-slate-800">{rev.approved_by || "Chưa duyệt"}</div>
-                            <div className="text-slate-500">{rev.approval_date || "-"}</div>
-                            <div className="mt-0.5">
-                              <span
-                                className={`inline-block px-1.5 py-0.2 rounded text-[9px] font-bold ${
-                                  rev.status === "APPROVED"
-                                    ? "bg-emerald-100 text-emerald-800"
-                                    : "bg-slate-100 text-slate-700"
-                                }`}
-                              >
-                                {rev.status}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="p-3.5 text-right">
-                            <div className="flex items-center justify-end gap-1">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handlePrintHACCPReview(rev)}
-                                title="In biên bản thẩm tra HACCP (BM-HACCP-REV-01)"
-                                className="h-7 w-7 p-0 text-slate-600 hover:text-emerald-700 hover:bg-emerald-50"
-                              >
-                                <Printer className="w-3.5 h-3.5" />
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => openEditReview(rev)}
-                                title="Chỉnh sửa biên bản"
-                                className="h-7 w-7 p-0 text-slate-600 hover:text-blue-700 hover:bg-blue-50"
-                              >
-                                <Pencil className="w-3.5 h-3.5" />
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleDeleteReview(rev.id)}
-                                title="Xóa biên bản"
-                                className="h-7 w-7 p-0 text-slate-600 hover:text-rose-700 hover:bg-rose-50"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </Button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
+                            </td>
+                            <td className="p-3.5">
+                              <div className="flex flex-col gap-1 items-center">
+                                <div className="flex items-center gap-1.5 text-[10px]">
+                                  <span className="text-slate-500">Mối nguy:</span>
+                                  {rev.hazard_analysis_validity ? (
+                                    <span className="font-bold text-emerald-600 flex items-center gap-0.5">
+                                      <Check className="w-3 h-3" /> Đạt
+                                    </span>
+                                  ) : (
+                                    <span className="font-bold text-rose-600 flex items-center gap-0.5">
+                                      <XCircle className="w-3 h-3" /> Cần sửa
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-1.5 text-[10px]">
+                                  <span className="text-slate-500">Hồ sơ CCP:</span>
+                                  {rev.monitoring_records_adequate ? (
+                                    <span className="font-bold text-emerald-600 flex items-center gap-0.5">
+                                      <Check className="w-3 h-3" /> Đầy đủ
+                                    </span>
+                                  ) : (
+                                    <span className="font-bold text-rose-600 flex items-center gap-0.5">
+                                      <XCircle className="w-3 h-3" /> Thiếu
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-1.5 text-[10px]">
+                                  <span className="text-slate-500">Hiệu lực CAPA:</span>
+                                  {rev.corrective_actions_effective ? (
+                                    <span className="font-bold text-emerald-600 flex items-center gap-0.5">
+                                      <Check className="w-3 h-3" /> Tốt
+                                    </span>
+                                  ) : (
+                                    <span className="font-bold text-rose-600 flex items-center gap-0.5">
+                                      <XCircle className="w-3 h-3" /> Tồn tại
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </td>
+                            <td className="p-3.5 text-center">
+                              {rev.conclusion === "COMPLIANT" && (
+                                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                  Hiệu Lực (Đạt)
+                                </span>
+                              )}
+                              {rev.conclusion === "NEEDS_UPDATE" && (
+                                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                                  Cần Cập Nhật
+                                </span>
+                              )}
+                              {rev.conclusion === "CRITICAL_DEFICIENCY" && (
+                                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                                  Khiếm Khuyết Lớn
+                                </span>
+                              )}
+                            </td>
+                            <td className="p-3.5 text-[11px]">
+                              <div className="font-semibold text-slate-800">
+                                {rev.approved_by || "Chưa duyệt"}
+                              </div>
+                              <div className="text-slate-500">{rev.approval_date || "-"}</div>
+                              <div className="mt-0.5">
+                                <span
+                                  className={`inline-block px-1.5 py-0.2 rounded text-[9px] font-bold ${
+                                    rev.status === "APPROVED"
+                                      ? "bg-emerald-100 text-emerald-800"
+                                      : "bg-slate-100 text-slate-700"
+                                  }`}
+                                >
+                                  {rev.status}
+                                </span>
+                              </div>
+                            </td>
+                            <td className="p-3.5 text-right">
+                              <div className="flex items-center justify-end gap-1">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handlePrintHACCPReview(rev)}
+                                  title="In biên bản thẩm tra HACCP (BM-HACCP-REV-01)"
+                                  className="h-7 w-7 p-0 text-slate-600 hover:text-emerald-700 hover:bg-emerald-50"
+                                >
+                                  <Printer className="w-3.5 h-3.5" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => openEditReview(rev)}
+                                  title="Chỉnh sửa biên bản"
+                                  className="h-7 w-7 p-0 text-slate-600 hover:text-blue-700 hover:bg-blue-50"
+                                >
+                                  <Pencil className="w-3.5 h-3.5" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleDeleteReview(rev.id)}
+                                  title="Xóa biên bản"
+                                  className="h-7 w-7 p-0 text-slate-600 hover:text-rose-700 hover:bg-rose-50"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </Button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
-          </div>
           )}
         </div>
       )}
@@ -3273,7 +3517,8 @@ function HACCPModule() {
                   </span>
                 </h3>
                 <p className="text-xs text-slate-200 mt-1 max-w-2xl leading-relaxed">
-                  Giám sát điểm kiểm soát CCP máy dò kim loại với thanh chuẩn Fe 0.5mm, SUS 0.8mm (BM06-KSQT) và kiểm soát chất lượng các công đoạn chế biến (BM01-05 KSQT).
+                  Giám sát điểm kiểm soát CCP máy dò kim loại với thanh chuẩn Fe 0.5mm, SUS 0.8mm
+                  (BM06-KSQT) và kiểm soát chất lượng các công đoạn chế biến (BM01-05 KSQT).
                 </p>
               </div>
             </div>
@@ -3350,7 +3595,8 @@ function HACCPModule() {
                   </div>
                 </div>
                 <div className="text-xs text-slate-500 font-semibold">
-                  Hiển thị <span className="text-indigo-600 font-bold">{filteredMDLogs.length}</span> bản ghi
+                  Hiển thị{" "}
+                  <span className="text-indigo-600 font-bold">{filteredMDLogs.length}</span> bản ghi
                 </div>
               </div>
 
@@ -3387,7 +3633,8 @@ function HACCPModule() {
                                 {log.machine_name}
                               </div>
                               <div className="text-[11px] text-slate-500 font-mono mt-0.5">
-                                {log.machine_code} • {log.log_date} {log.check_time} ({log.shift_name})
+                                {log.machine_code} • {log.log_date} {log.check_time} (
+                                {log.shift_name})
                               </div>
                             </td>
                             <td className="p-3.5">
@@ -3456,8 +3703,12 @@ function HACCPModule() {
                               )}
                             </td>
                             <td className="p-3.5">
-                              <div className="font-semibold text-slate-800">{log.checked_by_name}</div>
-                              <div className="text-[11px] text-slate-500">Duyệt: {log.verified_by_name || "-"}</div>
+                              <div className="font-semibold text-slate-800">
+                                {log.checked_by_name}
+                              </div>
+                              <div className="text-[11px] text-slate-500">
+                                Duyệt: {log.verified_by_name || "-"}
+                              </div>
                             </td>
                             <td className="p-3.5 text-right">
                               <div className="flex items-center justify-end gap-1">
@@ -3545,7 +3796,9 @@ function HACCPModule() {
                   </div>
                 </div>
                 <div className="text-xs text-slate-500 font-semibold">
-                  Hiển thị <span className="text-blue-600 font-bold">{filteredStageLogs.length}</span> bản ghi
+                  Hiển thị{" "}
+                  <span className="text-blue-600 font-bold">{filteredStageLogs.length}</span> bản
+                  ghi
                 </div>
               </div>
 
@@ -3578,7 +3831,9 @@ function HACCPModule() {
                               <div className="font-bold text-slate-900 font-mono text-blue-700">
                                 {log.inspection_code}
                               </div>
-                              <div className="font-semibold text-slate-800 mt-0.5">{log.stage_name}</div>
+                              <div className="font-semibold text-slate-800 mt-0.5">
+                                {log.stage_name}
+                              </div>
                               <div className="text-[11px] text-slate-500">
                                 {log.log_date} {log.check_time} ({log.shift_name})
                               </div>
@@ -3622,12 +3877,18 @@ function HACCPModule() {
                                   {log.deviations}
                                 </div>
                               ) : (
-                                <div className="text-slate-400 italic text-[11px]">Không có sai lệch</div>
+                                <div className="text-slate-400 italic text-[11px]">
+                                  Không có sai lệch
+                                </div>
                               )}
                             </td>
                             <td className="p-3.5">
-                              <div className="font-semibold text-slate-800">{log.inspector_name}</div>
-                              <div className="text-[11px] text-slate-500">Giám sát: {log.supervisor_name || "-"}</div>
+                              <div className="font-semibold text-slate-800">
+                                {log.inspector_name}
+                              </div>
+                              <div className="text-[11px] text-slate-500">
+                                Giám sát: {log.supervisor_name || "-"}
+                              </div>
                             </td>
                             <td className="p-3.5 text-right">
                               <div className="flex items-center justify-end gap-1">
@@ -3678,7 +3939,9 @@ function HACCPModule() {
           <DialogHeader>
             <DialogTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
               <Cpu className="w-5 h-5 text-indigo-600" />
-              {editingMDLog ? "Cập Nhật Nhật Ký Kiểm Tra Máy Dò Kim Loại (BM06)" : "Ghi Nhật Ký Kiểm Tra Máy Dò Kim Loại Mới (BM06)"}
+              {editingMDLog
+                ? "Cập Nhật Nhật Ký Kiểm Tra Máy Dò Kim Loại (BM06)"
+                : "Ghi Nhật Ký Kiểm Tra Máy Dò Kim Loại Mới (BM06)"}
             </DialogTitle>
           </DialogHeader>
 
@@ -3775,7 +4038,9 @@ function HACCPModule() {
                 <div className="flex items-center justify-between p-2.5 bg-white border border-indigo-100 rounded-lg">
                   <div>
                     <div className="font-bold text-slate-800">Thanh thử Fe (Kim loại sắt)</div>
-                    <div className="text-[11px] text-slate-500">Đường kính chuẩn: Ø {mdForm.fe_standard_mm} mm</div>
+                    <div className="text-[11px] text-slate-500">
+                      Đường kính chuẩn: Ø {mdForm.fe_standard_mm} mm
+                    </div>
                   </div>
                   <label className="flex items-center gap-2 cursor-pointer font-bold text-slate-700 text-xs">
                     <input
@@ -3791,7 +4056,9 @@ function HACCPModule() {
                 <div className="flex items-center justify-between p-2.5 bg-white border border-indigo-100 rounded-lg">
                   <div>
                     <div className="font-bold text-slate-800">Thanh thử SUS (Kim loại Inox)</div>
-                    <div className="text-[11px] text-slate-500">Đường kính chuẩn: Ø {mdForm.sus_standard_mm} mm</div>
+                    <div className="text-[11px] text-slate-500">
+                      Đường kính chuẩn: Ø {mdForm.sus_standard_mm} mm
+                    </div>
                   </div>
                   <label className="flex items-center gap-2 cursor-pointer font-bold text-slate-700 text-xs">
                     <input
@@ -3807,14 +4074,20 @@ function HACCPModule() {
 
               <div className="flex items-center justify-between p-2.5 bg-white border border-indigo-100 rounded-lg">
                 <div>
-                  <div className="font-bold text-slate-800">Cơ cấu gạt / thổi khí loại bỏ sản phẩm nhiễm kim loại</div>
-                  <div className="text-[11px] text-slate-500">Hệ thống cơ khí tự động đẩy sản phẩm lỗi ra thùng chứa cách ly</div>
+                  <div className="font-bold text-slate-800">
+                    Cơ cấu gạt / thổi khí loại bỏ sản phẩm nhiễm kim loại
+                  </div>
+                  <div className="text-[11px] text-slate-500">
+                    Hệ thống cơ khí tự động đẩy sản phẩm lỗi ra thùng chứa cách ly
+                  </div>
                 </div>
                 <label className="flex items-center gap-2 cursor-pointer font-bold text-slate-700 text-xs">
                   <input
                     type="checkbox"
                     checked={mdForm.rejection_mechanism_working}
-                    onChange={(e) => setMdForm({ ...mdForm, rejection_mechanism_working: e.target.checked })}
+                    onChange={(e) =>
+                      setMdForm({ ...mdForm, rejection_mechanism_working: e.target.checked })
+                    }
                     className="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500"
                   />
                   Hoạt động bình thường
@@ -3822,19 +4095,25 @@ function HACCPModule() {
               </div>
 
               <div>
-                <Label className="text-slate-700 font-bold">Số Lần Phát Hiện Kim Loại Thực Tế Trong Ca</Label>
+                <Label className="text-slate-700 font-bold">
+                  Số Lần Phát Hiện Kim Loại Thực Tế Trong Ca
+                </Label>
                 <Input
                   type="number"
                   min={0}
                   value={mdForm.metal_detected_count}
-                  onChange={(e) => setMdForm({ ...mdForm, metal_detected_count: parseInt(e.target.value) || 0 })}
+                  onChange={(e) =>
+                    setMdForm({ ...mdForm, metal_detected_count: parseInt(e.target.value) || 0 })
+                  }
                   className="mt-1 text-xs bg-white border-slate-300 font-mono font-bold w-32"
                 />
               </div>
             </div>
 
             <div>
-              <Label className="text-slate-700 font-bold">Hành Động Khắc Phục (Nếu máy dò không phát hiện hoặc cơ cấu hỏng)</Label>
+              <Label className="text-slate-700 font-bold">
+                Hành Động Khắc Phục (Nếu máy dò không phát hiện hoặc cơ cấu hỏng)
+              </Label>
               <Input
                 value={mdForm.corrective_action}
                 onChange={(e) => setMdForm({ ...mdForm, corrective_action: e.target.value })}
@@ -3877,10 +4156,18 @@ function HACCPModule() {
             </div>
 
             <DialogFooter className="pt-2">
-              <Button type="button" variant="outline" onClick={() => setShowMDModal(false)} className="text-xs">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowMDModal(false)}
+                className="text-xs"
+              >
                 Hủy bỏ
               </Button>
-              <Button type="submit" className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold">
+              <Button
+                type="submit"
+                className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold"
+              >
                 {editingMDLog ? "Lưu Cập Nhật" : "Lưu Nhật Ký Máy Dò"}
               </Button>
             </DialogFooter>
@@ -3894,7 +4181,9 @@ function HACCPModule() {
           <DialogHeader>
             <DialogTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
               <Layers className="w-5 h-5 text-blue-600" />
-              {editingStageLog ? "Cập Nhật Phiếu Kiểm Soát Quá Trình (IPQC)" : "Ghi Phiếu Kiểm Soát Quá Trình Mới (IPQC)"}
+              {editingStageLog
+                ? "Cập Nhật Phiếu Kiểm Soát Quá Trình (IPQC)"
+                : "Ghi Phiếu Kiểm Soát Quá Trình Mới (IPQC)"}
             </DialogTitle>
           </DialogHeader>
 
@@ -3920,19 +4209,42 @@ function HACCPModule() {
                     let sampleCriteria = {};
                     if (code === "PREPARATION") {
                       name = "Công đoạn sơ chế, rửa & thái";
-                      sampleCriteria = { wash_water_chlorine_ppm: 50, wash_water_temp_c: 18, cutting_size_mm: 5 };
+                      sampleCriteria = {
+                        wash_water_chlorine_ppm: 50,
+                        wash_water_temp_c: 18,
+                        cutting_size_mm: 5,
+                      };
                     } else if (code === "DRYING_COOLING") {
                       name = "Công đoạn sấy & làm nguội";
-                      sampleCriteria = { drying_temp_c: 85, drying_time_min: 45, moisture_percent: 11.5, cooling_temp_c: 28 };
+                      sampleCriteria = {
+                        drying_temp_c: 85,
+                        drying_time_min: 45,
+                        moisture_percent: 11.5,
+                        cooling_temp_c: 28,
+                      };
                     } else if (code === "GRINDING_SIEVING") {
                       name = "Công đoạn nghiền & rây sàng";
-                      sampleCriteria = { sieve_mesh_mesh: 80, fineness_percent: 98.5, magnetic_trap_ok: true };
+                      sampleCriteria = {
+                        sieve_mesh_mesh: 80,
+                        fineness_percent: 98.5,
+                        magnetic_trap_ok: true,
+                      };
                     } else if (code === "GELATINIZATION") {
                       name = "Công đoạn nấu chín / Hồ hóa";
-                      sampleCriteria = { cooking_temp_c: 98, cooking_time_min: 25, brix_degree: 16.5, ph_level: 6.2 };
+                      sampleCriteria = {
+                        cooking_temp_c: 98,
+                        cooking_time_min: 25,
+                        brix_degree: 16.5,
+                        ph_level: 6.2,
+                      };
                     } else if (code === "PACKAGING") {
                       name = "Công đoạn đóng gói & niêm phong";
-                      sampleCriteria = { sealing_temp_c: 165, seal_leak_test: "PASSED", net_weight_g: 250, label_ok: true };
+                      sampleCriteria = {
+                        sealing_temp_c: 165,
+                        seal_leak_test: "PASSED",
+                        net_weight_g: 250,
+                        label_ok: true,
+                      };
                     }
                     setStageForm({
                       ...stageForm,
@@ -4022,8 +4334,12 @@ function HACCPModule() {
 
             <div>
               <div className="flex items-center justify-between mb-1">
-                <Label className="text-slate-700 font-bold">Thông Số Kỹ Thuật Công Đoạn Đo Kiểm (JSON)</Label>
-                <span className="text-[10px] text-slate-500">Định dạng JSON chứa các cặp chỉ tiêu & giá trị đo</span>
+                <Label className="text-slate-700 font-bold">
+                  Thông Số Kỹ Thuật Công Đoạn Đo Kiểm (JSON)
+                </Label>
+                <span className="text-[10px] text-slate-500">
+                  Định dạng JSON chứa các cặp chỉ tiêu & giá trị đo
+                </span>
               </div>
               <textarea
                 rows={4}
@@ -4084,7 +4400,9 @@ function HACCPModule() {
                 <textarea
                   rows={2}
                   value={stageForm.corrective_actions}
-                  onChange={(e) => setStageForm({ ...stageForm, corrective_actions: e.target.value })}
+                  onChange={(e) =>
+                    setStageForm({ ...stageForm, corrective_actions: e.target.value })
+                  }
                   placeholder="Biện pháp xử lý ngay: điều chỉnh van gia nhiệt, sấy lại mẻ..."
                   className="w-full mt-1 bg-white border border-slate-300 rounded-md p-2 text-xs text-slate-800"
                 />
@@ -4092,10 +4410,18 @@ function HACCPModule() {
             </div>
 
             <DialogFooter className="pt-2">
-              <Button type="button" variant="outline" onClick={() => setShowStageModal(false)} className="text-xs">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowStageModal(false)}
+                className="text-xs"
+              >
                 Hủy bỏ
               </Button>
-              <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold">
+              <Button
+                type="submit"
+                className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold"
+              >
                 {editingStageLog ? "Lưu Cập Nhật" : "Lưu Phiếu IPQC"}
               </Button>
             </DialogFooter>
@@ -4109,7 +4435,9 @@ function HACCPModule() {
           <DialogHeader>
             <DialogTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
               <ClipboardCheck className="w-5 h-5 text-emerald-600" />
-              {editingReview ? "Cập Nhật Biên Bản Thẩm Tra Kế Hoạch HACCP" : "Lập Biên Bản Thẩm Tra Kế Hoạch HACCP Mới"}
+              {editingReview
+                ? "Cập Nhật Biên Bản Thẩm Tra Kế Hoạch HACCP"
+                : "Lập Biên Bản Thẩm Tra Kế Hoạch HACCP Mới"}
             </DialogTitle>
           </DialogHeader>
 
@@ -4171,10 +4499,14 @@ function HACCPModule() {
                 </select>
               </div>
               <div>
-                <Label className="text-slate-700 font-semibold">Liên kết Yêu cầu thay đổi (MCR)</Label>
+                <Label className="text-slate-700 font-semibold">
+                  Liên kết Yêu cầu thay đổi (MCR)
+                </Label>
                 <select
                   value={reviewForm.change_request_id || ""}
-                  onChange={(e) => setReviewForm({ ...reviewForm, change_request_id: e.target.value })}
+                  onChange={(e) =>
+                    setReviewForm({ ...reviewForm, change_request_id: e.target.value })
+                  }
                   className="w-full mt-1 h-9 px-3 py-1 bg-white border border-slate-300 rounded-md text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 >
                   <option value="">-- Không liên kết thay đổi --</option>
@@ -4193,14 +4525,18 @@ function HACCPModule() {
                 <textarea
                   rows={2}
                   value={reviewForm.scope_and_objective}
-                  onChange={(e) => setReviewForm({ ...reviewForm, scope_and_objective: e.target.value })}
+                  onChange={(e) =>
+                    setReviewForm({ ...reviewForm, scope_and_objective: e.target.value })
+                  }
                   placeholder="Mục đích, phạm vi dây chuyền hoặc công đoạn được thẩm tra..."
                   className="w-full mt-1 bg-white border border-slate-300 rounded-md p-2 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   required
                 />
               </div>
               <div>
-                <Label className="text-slate-700 font-bold">Thành Phần Đoàn / Người Thẩm Tra *</Label>
+                <Label className="text-slate-700 font-bold">
+                  Thành Phần Đoàn / Người Thẩm Tra *
+                </Label>
                 <textarea
                   rows={2}
                   value={reviewForm.reviewers}
@@ -4222,7 +4558,9 @@ function HACCPModule() {
                   <input
                     type="checkbox"
                     checked={reviewForm.hazard_analysis_validity}
-                    onChange={(e) => setReviewForm({ ...reviewForm, hazard_analysis_validity: e.target.checked })}
+                    onChange={(e) =>
+                      setReviewForm({ ...reviewForm, hazard_analysis_validity: e.target.checked })
+                    }
                     className="w-4 h-4 text-emerald-600 rounded"
                   />
                   <span className="text-[11px] font-medium text-slate-800">
@@ -4233,7 +4571,12 @@ function HACCPModule() {
                   <input
                     type="checkbox"
                     checked={reviewForm.monitoring_records_adequate}
-                    onChange={(e) => setReviewForm({ ...reviewForm, monitoring_records_adequate: e.target.checked })}
+                    onChange={(e) =>
+                      setReviewForm({
+                        ...reviewForm,
+                        monitoring_records_adequate: e.target.checked,
+                      })
+                    }
                     className="w-4 h-4 text-emerald-600 rounded"
                   />
                   <span className="text-[11px] font-medium text-slate-800">
@@ -4244,7 +4587,12 @@ function HACCPModule() {
                   <input
                     type="checkbox"
                     checked={reviewForm.corrective_actions_effective}
-                    onChange={(e) => setReviewForm({ ...reviewForm, corrective_actions_effective: e.target.checked })}
+                    onChange={(e) =>
+                      setReviewForm({
+                        ...reviewForm,
+                        corrective_actions_effective: e.target.checked,
+                      })
+                    }
                     className="w-4 h-4 text-emerald-600 rounded"
                   />
                   <span className="text-[11px] font-medium text-slate-800">
@@ -4256,11 +4604,15 @@ function HACCPModule() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
-                <Label className="text-slate-700 font-semibold">Tóm Tắt Thẩm Tra Giám Sát CCP</Label>
+                <Label className="text-slate-700 font-semibold">
+                  Tóm Tắt Thẩm Tra Giám Sát CCP
+                </Label>
                 <textarea
                   rows={2}
                   value={reviewForm.ccp_audit_summary || ""}
-                  onChange={(e) => setReviewForm({ ...reviewForm, ccp_audit_summary: e.target.value })}
+                  onChange={(e) =>
+                    setReviewForm({ ...reviewForm, ccp_audit_summary: e.target.value })
+                  }
                   placeholder="Ghi nhận về việc kiểm soát ngưỡng tới hạn, tần suất giám sát..."
                   className="w-full mt-1 bg-white border border-slate-300 rounded-md p-2 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 />
@@ -4270,7 +4622,9 @@ function HACCPModule() {
                 <textarea
                   rows={2}
                   value={reviewForm.prp_audit_summary || ""}
-                  onChange={(e) => setReviewForm({ ...reviewForm, prp_audit_summary: e.target.value })}
+                  onChange={(e) =>
+                    setReviewForm({ ...reviewForm, prp_audit_summary: e.target.value })
+                  }
                   placeholder="Ghi nhận về vệ sinh nhà xưởng, nước đá, bảo hộ lao động..."
                   className="w-full mt-1 bg-white border border-slate-300 rounded-md p-2 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 />
@@ -4290,11 +4644,15 @@ function HACCPModule() {
                 />
               </div>
               <div>
-                <Label className="text-slate-700 font-bold">Hành Động Cần Thực Hiện / Khắc Phục *</Label>
+                <Label className="text-slate-700 font-bold">
+                  Hành Động Cần Thực Hiện / Khắc Phục *
+                </Label>
                 <textarea
                   rows={2}
                   value={reviewForm.required_actions || ""}
-                  onChange={(e) => setReviewForm({ ...reviewForm, required_actions: e.target.value })}
+                  onChange={(e) =>
+                    setReviewForm({ ...reviewForm, required_actions: e.target.value })
+                  }
                   placeholder="Yêu cầu sửa đổi kế hoạch, bổ sung huấn luyện, hiệu chuẩn lại..."
                   className="w-full mt-1 bg-white border border-slate-300 rounded-md p-2 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   required
@@ -4441,10 +4799,20 @@ function HACCPModule() {
               />
             </div>
             <DialogFooter className="pt-2">
-              <Button type="button" variant="outline" size="sm" onClick={() => setShowPlanModal(false)} className="border-slate-300 text-slate-700">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setShowPlanModal(false)}
+                className="border-slate-300 text-slate-700"
+              >
                 Hủy
               </Button>
-              <Button type="submit" size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold">
+              <Button
+                type="submit"
+                size="sm"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold"
+              >
                 Lưu Kế Hoạch
               </Button>
             </DialogFooter>
@@ -4467,7 +4835,9 @@ function HACCPModule() {
                 <Input
                   type="number"
                   value={stepForm.step_number}
-                  onChange={(e) => setStepForm({ ...stepForm, step_number: parseInt(e.target.value) || 1 })}
+                  onChange={(e) =>
+                    setStepForm({ ...stepForm, step_number: parseInt(e.target.value) || 1 })
+                  }
                   className="mt-1 text-xs bg-white border-slate-300 text-slate-900 font-bold"
                 />
               </div>
@@ -4514,7 +4884,9 @@ function HACCPModule() {
             </div>
 
             <div>
-              <Label className="text-slate-700 font-semibold">Mô tả thao tác / Yêu cầu kỹ thuật</Label>
+              <Label className="text-slate-700 font-semibold">
+                Mô tả thao tác / Yêu cầu kỹ thuật
+              </Label>
               <textarea
                 rows={3}
                 value={stepForm.description}
@@ -4525,10 +4897,20 @@ function HACCPModule() {
             </div>
 
             <DialogFooter className="pt-2">
-              <Button type="button" variant="outline" size="sm" onClick={() => setShowStepModal(false)} className="border-slate-300 text-slate-700">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setShowStepModal(false)}
+                className="border-slate-300 text-slate-700"
+              >
                 Hủy
               </Button>
-              <Button type="submit" size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold">
+              <Button
+                type="submit"
+                size="sm"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold"
+              >
                 Lưu Công Đoạn
               </Button>
             </DialogFooter>
@@ -4544,12 +4926,15 @@ function HACCPModule() {
               initialData={currentWorkflowData}
               onSave={async (wf) => {
                 try {
-                  const targetPlanId = selectedPlanId !== "ALL" ? selectedPlanId : (currentPlan?.plan_id || plans[0]?.plan_id);
+                  const targetPlanId =
+                    selectedPlanId !== "ALL"
+                      ? selectedPlanId
+                      : currentPlan?.plan_id || plans[0]?.plan_id;
                   if (targetPlanId) {
                     const stepPayload = wf.nodes.map((n, idx) => ({
                       step_id: n.id && n.id.length === 36 ? n.id : undefined,
                       step_number: idx + 1,
-                      step_name: n.label.replace(/^\d+[\.\:\-]\s*/, ""),
+                      step_name: n.label.replace(/^\d+[.:-]\s*/, ""),
                       description: n.description || "",
                       is_ccp_or_oprp: !!n.is_ccp,
                       product_line: currentPlan?.product_line || "Chế biến Thủy hải sản",
@@ -4661,7 +5046,9 @@ function HACCPModule() {
             </div>
 
             <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl space-y-2">
-              <span className="font-bold text-rose-800 uppercase text-[11px] block">Cấu hình Giới hạn tới hạn (Critical Limit):</span>
+              <span className="font-bold text-rose-800 uppercase text-[11px] block">
+                Cấu hình Giới hạn tới hạn (Critical Limit):
+              </span>
               <div className="grid grid-cols-3 gap-2">
                 <div>
                   <Label className="text-slate-700 text-[11px] font-semibold">Tối thiểu</Label>
@@ -4719,10 +5106,20 @@ function HACCPModule() {
             </div>
 
             <DialogFooter className="pt-2">
-              <Button type="button" variant="outline" size="sm" onClick={() => setShowCCPModal(false)} className="border-slate-300 text-slate-700">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setShowCCPModal(false)}
+                className="border-slate-300 text-slate-700"
+              >
                 Hủy
               </Button>
-              <Button type="submit" size="sm" className="bg-rose-600 hover:bg-rose-700 text-white font-bold">
+              <Button
+                type="submit"
+                size="sm"
+                className="bg-rose-600 hover:bg-rose-700 text-white font-bold"
+              >
                 Lưu Điểm CCP
               </Button>
             </DialogFooter>
@@ -4809,7 +5206,9 @@ function HACCPModule() {
                 <Label className="text-slate-700 font-semibold">Khả năng xảy ra (1-3)</Label>
                 <select
                   value={hazardForm.likelihood}
-                  onChange={(e) => setHazardForm({ ...hazardForm, likelihood: parseInt(e.target.value) || 2 })}
+                  onChange={(e) =>
+                    setHazardForm({ ...hazardForm, likelihood: parseInt(e.target.value) || 2 })
+                  }
                   className="w-full mt-1 bg-white border border-slate-300 rounded p-1.5 text-xs text-slate-900"
                 >
                   <option value={1}>1 - Thấp</option>
@@ -4821,7 +5220,9 @@ function HACCPModule() {
                 <Label className="text-slate-700 font-semibold">Mức độ nghiêm trọng (1-3)</Label>
                 <select
                   value={hazardForm.severity}
-                  onChange={(e) => setHazardForm({ ...hazardForm, severity: parseInt(e.target.value) || 2 })}
+                  onChange={(e) =>
+                    setHazardForm({ ...hazardForm, severity: parseInt(e.target.value) || 2 })
+                  }
                   className="w-full mt-1 bg-white border border-slate-300 rounded p-1.5 text-xs text-slate-900"
                 >
                   <option value={1}>1 - Thấp</option>
@@ -4859,10 +5260,20 @@ function HACCPModule() {
             </div>
 
             <DialogFooter className="pt-2">
-              <Button type="button" variant="outline" size="sm" onClick={() => setShowHazardModal(false)} className="border-slate-300 text-slate-700">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setShowHazardModal(false)}
+                className="border-slate-300 text-slate-700"
+              >
                 Hủy
               </Button>
-              <Button type="submit" size="sm" className="bg-blue-600 hover:bg-blue-700 text-white font-bold">
+              <Button
+                type="submit"
+                size="sm"
+                className="bg-blue-600 hover:bg-blue-700 text-white font-bold"
+              >
                 Lưu Mối Nguy
               </Button>
             </DialogFooter>
@@ -4888,7 +5299,11 @@ function HACCPModule() {
                   const target = ccps.find((c) => c.ccp_id === e.target.value);
                   if (target) {
                     setSelectedCCPForLog(target);
-                    setLogForm({ ...logForm, ccp_id: target.ccp_id, unit: target.critical_limit?.unit || "°C" });
+                    setLogForm({
+                      ...logForm,
+                      ccp_id: target.ccp_id,
+                      unit: target.critical_limit?.unit || "°C",
+                    });
                   }
                 }}
                 className="w-full mt-1 bg-white border border-slate-300 rounded-lg p-2 text-xs text-slate-900 font-bold"
@@ -4932,7 +5347,9 @@ function HACCPModule() {
             </div>
 
             <div>
-              <Label className="text-slate-700 font-semibold">Hành động khắc phục (nếu vượt ngưỡng)</Label>
+              <Label className="text-slate-700 font-semibold">
+                Hành động khắc phục (nếu vượt ngưỡng)
+              </Label>
               <Input
                 value={logForm.deviation_action}
                 onChange={(e) => setLogForm({ ...logForm, deviation_action: e.target.value })}
@@ -4942,10 +5359,20 @@ function HACCPModule() {
             </div>
 
             <DialogFooter className="pt-2">
-              <Button type="button" variant="outline" size="sm" onClick={() => setShowLogModal(false)} className="border-slate-300 text-slate-700">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setShowLogModal(false)}
+                className="border-slate-300 text-slate-700"
+              >
                 Hủy
               </Button>
-              <Button type="submit" size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold">
+              <Button
+                type="submit"
+                size="sm"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold"
+              >
                 Xác Nhận Lưu Nhật Ký
               </Button>
             </DialogFooter>
@@ -4973,7 +5400,7 @@ function HACCPModule() {
             </div>
 
             <DynamicFormRenderer
-              key={`${formTemplateCCP.template_id || 'ccp-form'}-${showDynamicFormLog}`}
+              key={`${formTemplateCCP.template_id || "ccp-form"}-${showDynamicFormLog}`}
               template={formTemplateCCP}
               initialValues={{
                 batch_number: "LOT-2026-B01",
@@ -4990,35 +5417,61 @@ function HACCPModule() {
                 try {
                   // 1. Lưu vào Form Builder Submissions
                   await api.post("/builders/submissions", {
-                    template_id: formTemplateCCP.template_id || "00000000-0000-0000-0000-000000000000",
+                    template_id:
+                      formTemplateCCP.template_id || "00000000-0000-0000-0000-000000000000",
                     submitted_by_name: "Nguyễn Văn An (Trưởng ca Sản xuất & QC)",
                     form_data: formData,
                     status: "COMPLETED",
                   });
 
                   // 2. Tự động ghi nhận log vào bảng Giám Sát CCP (ccp_monitoring_logs)
-                  const targetCcp = ccps.find((c) => c.ccp_code === "CCP 1" || (c.name && c.name.toLowerCase().includes("thanh trùng"))) || ccps[0];
+                  const targetCcp =
+                    ccps.find(
+                      (c) =>
+                        c.ccp_code === "CCP 1" ||
+                        (c.name && c.name.toLowerCase().includes("thanh trùng")),
+                    ) || ccps[0];
                   if (targetCcp) {
-                    const tempVal = parseFloat(formData["core_temperature_c"] || formData["measured_temp"] || formData["measured_value"] || 85.5);
-                    const isPass = formData["is_limit_pass"] !== false && formData["is_pass"] !== false && String(formData["is_limit_pass"]).toLowerCase() !== "false";
-                    
+                    const tempVal = parseFloat(
+                      formData["core_temperature_c"] ||
+                        formData["measured_temp"] ||
+                        formData["measured_value"] ||
+                        85.5,
+                    );
+                    const isPass =
+                      formData["is_limit_pass"] !== false &&
+                      formData["is_pass"] !== false &&
+                      String(formData["is_limit_pass"]).toLowerCase() !== "false";
+
                     const logPayload = {
                       ccp_id: targetCcp.ccp_id,
                       batch_number: String(formData["batch_number"] || "LOT-2026-B01").trim(),
                       measured_value: isNaN(tempVal) ? 85.5 : tempVal,
                       unit: "°C",
-                      deviation_action: !isPass ? "Biệt trữ lô hàng, tái gia nhiệt lại hoặc xử lý theo quy trình ứng phó sai lệch CCP" : null,
-                      notes: String(formData["notes"] || formData["qc_signature"] || `Ghi nhận qua phiếu kiểm soát CCP động ${formTemplateCCP.code}`),
+                      deviation_action: !isPass
+                        ? "Biệt trữ lô hàng, tái gia nhiệt lại hoặc xử lý theo quy trình ứng phó sai lệch CCP"
+                        : null,
+                      notes: String(
+                        formData["notes"] ||
+                          formData["qc_signature"] ||
+                          `Ghi nhận qua phiếu kiểm soát CCP động ${formTemplateCCP.code}`,
+                      ),
                     };
 
                     const res = await api.post("/haccp/ccp-logs", logPayload);
                     const saved = res.data;
                     if (saved.status === "CRITICAL") {
-                      toast.error(`CẢNH BÁO VI PHẠM: Giá trị ${saved.measured_value}${saved.unit} vượt ngoài giới hạn tới hạn!`);
+                      toast.error(
+                        `CẢNH BÁO VI PHẠM: Giá trị ${saved.measured_value}${saved.unit} vượt ngoài giới hạn tới hạn!`,
+                      );
                     } else if (saved.status === "WARNING") {
-                      toast.warning(`LƯU Ý: Giá trị ${saved.measured_value}${saved.unit} sát ngưỡng tới hạn.`);
+                      toast.warning(
+                        `LƯU Ý: Giá trị ${saved.measured_value}${saved.unit} sát ngưỡng tới hạn.`,
+                      );
                     } else {
-                      toast.success(`Đã ghi nhận nhật ký đo CCP [${targetCcp.ccp_code}] thành công!`);
+                      toast.success(
+                        `Đã ghi nhận nhật ký đo CCP [${targetCcp.ccp_code}] thành công!`,
+                      );
                     }
                   } else {
                     toast.success("Đã ghi nhận phiếu giám sát CCP vào cơ sở dữ liệu!");
@@ -5043,20 +5496,48 @@ function HACCPModule() {
               <div className="flex items-center gap-3">
                 <img src={logoImg} alt="Logo" className="h-12 w-auto" />
                 <div>
-                  <h2 className="text-lg font-black uppercase text-slate-900">BẢNG KẾ HOẠCH KIỂM SOÁT MỐI NGUY & ĐIỂM CCP (HACCP PLAN)</h2>
-                  <p className="text-xs text-slate-500">Tiêu chuẩn ISO 22000:2018 Điều khoản 8.5.4 • Mã hồ sơ: BM-HACCP-01</p>
+                  <h2 className="text-lg font-black uppercase text-slate-900">
+                    BẢNG KẾ HOẠCH KIỂM SOÁT MỐI NGUY & ĐIỂM CCP (HACCP PLAN)
+                  </h2>
+                  <p className="text-xs text-slate-500">
+                    Tiêu chuẩn ISO 22000:2018 Điều khoản 8.5.4 • Mã hồ sơ: BM-HACCP-01
+                  </p>
                 </div>
               </div>
-              <Button size="sm" onClick={handlePrintHaccpPlan} className="bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold">
+              <Button
+                size="sm"
+                onClick={handlePrintHaccpPlan}
+                className="bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold"
+              >
                 <Printer className="w-3.5 h-3.5 mr-1" /> In Bản Cứng
               </Button>
             </div>
 
             <div className="grid grid-cols-2 gap-4 text-xs">
-              <div>Kế hoạch: <strong className="text-slate-900">{currentPlan?.plan_name || "Chế biến Cá Ngừ"}</strong></div>
-              <div>Mã hiệu: <strong className="text-slate-900">{currentPlan?.plan_code || "HACCP-2026-01"} (Ver {currentPlan?.version || "2.1"})</strong></div>
-              <div>Trưởng ban HACCP: <strong className="text-slate-900">{currentPlan?.team_leader || "Nguyễn Văn An"}</strong></div>
-              <div>Người phê duyệt: <strong className="text-slate-900">{currentPlan?.approved_by || "Lê Hoàng Quân (Giám đốc)"}</strong></div>
+              <div>
+                Kế hoạch:{" "}
+                <strong className="text-slate-900">
+                  {currentPlan?.plan_name || "Chế biến Cá Ngừ"}
+                </strong>
+              </div>
+              <div>
+                Mã hiệu:{" "}
+                <strong className="text-slate-900">
+                  {currentPlan?.plan_code || "HACCP-2026-01"} (Ver {currentPlan?.version || "2.1"})
+                </strong>
+              </div>
+              <div>
+                Trưởng ban HACCP:{" "}
+                <strong className="text-slate-900">
+                  {currentPlan?.team_leader || "Nguyễn Văn An"}
+                </strong>
+              </div>
+              <div>
+                Người phê duyệt:{" "}
+                <strong className="text-slate-900">
+                  {currentPlan?.approved_by || "Lê Hoàng Quân (Giám đốc)"}
+                </strong>
+              </div>
             </div>
 
             <table className="w-full text-left text-xs border border-slate-300">
@@ -5074,11 +5555,17 @@ function HACCPModule() {
               <tbody className="divide-y divide-slate-200">
                 {ccps.map((c) => (
                   <tr key={c.ccp_id}>
-                    <td className="p-2 font-bold border-r border-slate-300 text-rose-700">{c.ccp_code}</td>
+                    <td className="p-2 font-bold border-r border-slate-300 text-rose-700">
+                      {c.ccp_code}
+                    </td>
                     <td className="p-2 border-r border-slate-300">{c.step_name}</td>
                     <td className="p-2 border-r border-slate-300">{c.hazard_description}</td>
-                    <td className="p-2 font-bold border-r border-slate-300 text-slate-900">{c.critical_limit?.condition_text || "Đạt chuẩn"}</td>
-                    <td className="p-2 border-r border-slate-300">{c.monitoring_frequency} ({c.monitoring_method})</td>
+                    <td className="p-2 font-bold border-r border-slate-300 text-slate-900">
+                      {c.critical_limit?.condition_text || "Đạt chuẩn"}
+                    </td>
+                    <td className="p-2 border-r border-slate-300">
+                      {c.monitoring_frequency} ({c.monitoring_method})
+                    </td>
                     <td className="p-2 border-r border-slate-300">{c.corrective_action_plan}</td>
                     <td className="p-2 font-semibold text-emerald-700">{c.responsible_role}</td>
                   </tr>
@@ -5087,7 +5574,12 @@ function HACCPModule() {
             </table>
 
             <div className="flex justify-end pt-4">
-              <Button variant="outline" size="sm" onClick={() => setShowPrintPlanModal(false)} className="text-xs border-slate-300 text-slate-700">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowPrintPlanModal(false)}
+                className="text-xs border-slate-300 text-slate-700"
+              >
                 Đóng
               </Button>
             </div>
@@ -5100,10 +5592,16 @@ function HACCPModule() {
           <div className="w-full max-w-4xl bg-white text-slate-900 p-8 rounded-2xl shadow-2xl space-y-6 max-h-[90vh] overflow-y-auto border border-slate-200">
             <div className="flex items-center justify-between border-b pb-4">
               <div>
-                <h2 className="text-lg font-black uppercase text-slate-900">NHẬT KÝ THEO DÕI ĐO ĐẠC ĐIỂM KIỂM SOÁT TỚI HẠN CCP</h2>
+                <h2 className="text-lg font-black uppercase text-slate-900">
+                  NHẬT KÝ THEO DÕI ĐO ĐẠC ĐIỂM KIỂM SOÁT TỚI HẠN CCP
+                </h2>
                 <p className="text-xs text-slate-500">Biểu mẫu BM-CCP-LOG-01 • Nhà máy WCERT</p>
               </div>
-              <Button size="sm" onClick={handlePrintCCPLogs} className="bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold">
+              <Button
+                size="sm"
+                onClick={handlePrintCCPLogs}
+                className="bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold"
+              >
                 <Printer className="w-3.5 h-3.5 mr-1" /> In Nhật Ký
               </Button>
             </div>
@@ -5123,20 +5621,37 @@ function HACCPModule() {
               <tbody className="divide-y divide-slate-200">
                 {logs.map((l) => (
                   <tr key={l.log_id}>
-                    <td className="p-2 font-bold border-r border-slate-300 text-rose-700">{l.ccp_code}</td>
-                    <td className="p-2 font-mono font-bold border-r border-slate-300 text-slate-900">{l.batch_number}</td>
-                    <td className="p-2 border-r border-slate-300 text-slate-600">{l.test_time || "Hôm nay"}</td>
-                    <td className="p-2 font-bold border-r border-slate-300 text-slate-900">{l.measured_value} {l.unit}</td>
-                    <td className="p-2 border-r border-slate-300">{l.critical_limit_text || "Tiêu chuẩn"}</td>
+                    <td className="p-2 font-bold border-r border-slate-300 text-rose-700">
+                      {l.ccp_code}
+                    </td>
+                    <td className="p-2 font-mono font-bold border-r border-slate-300 text-slate-900">
+                      {l.batch_number}
+                    </td>
+                    <td className="p-2 border-r border-slate-300 text-slate-600">
+                      {l.test_time || "Hôm nay"}
+                    </td>
+                    <td className="p-2 font-bold border-r border-slate-300 text-slate-900">
+                      {l.measured_value} {l.unit}
+                    </td>
+                    <td className="p-2 border-r border-slate-300">
+                      {l.critical_limit_text || "Tiêu chuẩn"}
+                    </td>
                     <td className="p-2 font-bold border-r border-slate-300">{l.status}</td>
-                    <td className="p-2 font-medium text-slate-800">{l.inspector_name || "QC Ca"}</td>
+                    <td className="p-2 font-medium text-slate-800">
+                      {l.inspector_name || "QC Ca"}
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
 
             <div className="flex justify-end pt-4">
-              <Button variant="outline" size="sm" onClick={() => setShowPrintLogModal(false)} className="text-xs border-slate-300 text-slate-700">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowPrintLogModal(false)}
+                className="text-xs border-slate-300 text-slate-700"
+              >
                 Đóng
               </Button>
             </div>
@@ -5192,17 +5707,10 @@ function HACCPModule() {
       />
 
       {/* Module Guide Modal */}
-      <ModuleGuideModal
-        module="haccp"
-        isOpen={showGuide}
-        onClose={() => setShowGuide(false)}
-      />
+      <ModuleGuideModal module="haccp" isOpen={showGuide} onClose={() => setShowGuide(false)} />
 
       {/* Workflow & Flowchart Guide Modal */}
-      <WorkflowGuideModal
-        isOpen={showWfGuide}
-        onClose={() => setShowWfGuide(false)}
-      />
+      <WorkflowGuideModal isOpen={showWfGuide} onClose={() => setShowWfGuide(false)} />
     </div>
   );
 }

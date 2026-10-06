@@ -42,9 +42,17 @@ export const Route = createFileRoute("/capa")({
   head: () => ({
     meta: [
       { title: "CAPA & Xử Lý Sự Không Phù Hợp – WCERT FSMS" },
-      { name: "description", content: "Hệ thống quản lý sự không phù hợp (NC), phân tích 5-Why, sơ đồ xương cá Ishikawa và thẩm tra hiệu lực CAPA." },
+      {
+        name: "description",
+        content:
+          "Hệ thống quản lý sự không phù hợp (NC), phân tích 5-Why, sơ đồ xương cá Ishikawa và thẩm tra hiệu lực CAPA.",
+      },
       { property: "og:title", content: "CAPA & Xử Lý Sự Không Phù Hợp – WCERT ISO 22000:2018" },
-      { property: "og:description", content: "Quy trình 5 bước CAPA chuẩn ISO 22000 với Trợ lý AI phân tích nguyên nhân gốc rễ và thẩm tra sau 30 ngày." },
+      {
+        property: "og:description",
+        content:
+          "Quy trình 5 bước CAPA chuẩn ISO 22000 với Trợ lý AI phân tích nguyên nhân gốc rễ và thẩm tra sau 30 ngày.",
+      },
     ],
   }),
   component: () => (
@@ -59,7 +67,14 @@ interface NonConformance {
   nc_id: string;
   nc_number: string;
   title: string;
-  source: "HACCP_CCP" | "PRP_GMP" | "IQC_INCOMING" | "INTERNAL_AUDIT" | "CUSTOMER_COMPLAINT" | "EQUIPMENT_FAIL" | string;
+  source:
+    | "HACCP_CCP"
+    | "PRP_GMP"
+    | "IQC_INCOMING"
+    | "INTERNAL_AUDIT"
+    | "CUSTOMER_COMPLAINT"
+    | "EQUIPMENT_FAIL"
+    | string;
   severity: "CRITICAL" | "MAJOR" | "MINOR" | "OFI" | string;
   detected_date?: string;
   detected_by_name?: string;
@@ -205,7 +220,9 @@ function CAPAManagementPage() {
       setCapas(capasRes.data);
     } catch (err: any) {
       console.error("Lỗi khi tải dữ liệu CAPA:", err);
-      toast.error("Không thể tải danh sách sự cố & CAPA: " + (err.response?.data?.detail || err.message));
+      toast.error(
+        "Không thể tải danh sách sự cố & CAPA: " + (err.response?.data?.detail || err.message),
+      );
     } finally {
       setLoading(false);
     }
@@ -293,10 +310,14 @@ function CAPAManagementPage() {
           <div class="sec-body">
             <div><b>1. Hành động khắc phục nguyên nhân (Corrective Action):</b></div>
             <div class="content-p">${capa.corrective_action}</div>
-            ${capa.preventive_action ? `
+            ${
+              capa.preventive_action
+                ? `
               <div><b>2. Biện pháp phòng ngừa tái diễn (Preventive Action):</b></div>
               <div class="content-p">${capa.preventive_action}</div>
-            ` : ""}
+            `
+                : ""
+            }
             <div class="grid-2" style="margin-top: 6px; font-weight: bold;">
               <div class="col">Hạn hoàn thành: ${capa.target_date}</div>
               <div class="col">Ngày thực tế hoàn tất: ${capa.completed_date || "Đang thực hiện"}</div>
@@ -313,8 +334,8 @@ function CAPAManagementPage() {
             </div>
             <div style="margin-top: 4px;">
               <b>Kết luận hiệu lực: </b>
-              <strong style="color: ${capa.verification_status === 'EFFECTIVE' ? '#047857' : '#d97706'};">
-                ${capa.verification_status === 'EFFECTIVE' ? '✓ ĐẠT HIỆU LỰC (EFFECTIVE) — ĐỒNG Ý ĐÓNG PHIẾU' : '⏳ ĐANG THEO DÕI CHU KỲ 30 NGÀY'}
+              <strong style="color: ${capa.verification_status === "EFFECTIVE" ? "#047857" : "#d97706"};">
+                ${capa.verification_status === "EFFECTIVE" ? "✓ ĐẠT HIỆU LỰC (EFFECTIVE) — ĐỒNG Ý ĐÓNG PHIẾU" : "⏳ ĐANG THEO DÕI CHU KỲ 30 NGÀY"}
               </strong>
             </div>
             <div class="content-p">${capa.verification_result || "Đoàn đánh giá nội bộ sẽ tái thẩm tra số liệu tại hiện trường sau 30 ngày vận hành ổn định."}</div>
@@ -356,7 +377,8 @@ function CAPAManagementPage() {
       !searchQuery ||
       n.nc_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
       n.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (n.affected_lot_number && n.affected_lot_number.toLowerCase().includes(searchQuery.toLowerCase()));
+      (n.affected_lot_number &&
+        n.affected_lot_number.toLowerCase().includes(searchQuery.toLowerCase()));
     const matchSource = sourceFilter === "ALL" || n.source === sourceFilter;
     const matchSeverity = severityFilter === "ALL" || n.severity === severityFilter;
     const matchStatus = statusFilter === "ALL" || n.status === statusFilter;
@@ -375,14 +397,56 @@ function CAPAManagementPage() {
           module: "CAPA",
           code: "WF-CAPA-5STEPS",
           title: "Quy Trình Xử Lý Sự Không Phù Hợp & Khắc Phục CAPA",
-          description: "Chu trình 5 bước xử lý triệt để sự không phù hợp: Nhận diện & Báo cáo -> Cách ly sản phẩm -> Phân tích 5-Why -> Triển khai khắc phục -> Thẩm tra hiệu lực.",
+          description:
+            "Chu trình 5 bước xử lý triệt để sự không phù hợp: Nhận diện & Báo cáo -> Cách ly sản phẩm -> Phân tích 5-Why -> Triển khai khắc phục -> Thẩm tra hiệu lực.",
           version: "1.0",
           nodes: [
-            { id: "c_1", type: "process", label: "1. Nhận diện & Lập Báo cáo NC", role: "Người phát hiện / QC", description: "Ghi nhận sự cố phát sinh tại hiện trường sản xuất hoặc kho.", is_ccp: false, step_number: 1 },
-            { id: "c_2", type: "approval", label: "2. Cô lập Lô hàng & Khắc phục tức thì", role: "Trưởng ca & Đội trưởng ATTP", description: "Dán nhãn biệt trữ cách ly lô hàng nghi ngờ, ngăn ngừa xuất xưởng.", is_ccp: false, step_number: 2 },
-            { id: "c_3", type: "process", label: "3. Phân tích Nguyên nhân Gốc rễ (5-Why)", role: "Tổ Công tác Điều tra CAPA", description: "Họp tìm nguyên nhân cốt lõi (Con người, Thiết bị, Phương pháp, Môi trường).", is_ccp: false, step_number: 3 },
-            { id: "c_4", type: "process", label: "4. Lập & Triển khai Biện pháp Khắc phục", role: "Bộ phận liên quan", description: "Thực hiện hành động sửa chữa và phòng ngừa tái diễn.", is_ccp: false, step_number: 4 },
-            { id: "c_5", type: "approval", label: "5. Thẩm tra Hiệu lực & Đóng phiếu CAPA", role: "Ban QLCL & ATTP (QA Lead)", description: "Đánh giá lại sau 30 ngày, xác nhận lỗi không tái diễn và đóng NC.", is_ccp: false, step_number: 5 },
+            {
+              id: "c_1",
+              type: "process",
+              label: "1. Nhận diện & Lập Báo cáo NC",
+              role: "Người phát hiện / QC",
+              description: "Ghi nhận sự cố phát sinh tại hiện trường sản xuất hoặc kho.",
+              is_ccp: false,
+              step_number: 1,
+            },
+            {
+              id: "c_2",
+              type: "approval",
+              label: "2. Cô lập Lô hàng & Khắc phục tức thì",
+              role: "Trưởng ca & Đội trưởng ATTP",
+              description: "Dán nhãn biệt trữ cách ly lô hàng nghi ngờ, ngăn ngừa xuất xưởng.",
+              is_ccp: false,
+              step_number: 2,
+            },
+            {
+              id: "c_3",
+              type: "process",
+              label: "3. Phân tích Nguyên nhân Gốc rễ (5-Why)",
+              role: "Tổ Công tác Điều tra CAPA",
+              description:
+                "Họp tìm nguyên nhân cốt lõi (Con người, Thiết bị, Phương pháp, Môi trường).",
+              is_ccp: false,
+              step_number: 3,
+            },
+            {
+              id: "c_4",
+              type: "process",
+              label: "4. Lập & Triển khai Biện pháp Khắc phục",
+              role: "Bộ phận liên quan",
+              description: "Thực hiện hành động sửa chữa và phòng ngừa tái diễn.",
+              is_ccp: false,
+              step_number: 4,
+            },
+            {
+              id: "c_5",
+              type: "approval",
+              label: "5. Thẩm tra Hiệu lực & Đóng phiếu CAPA",
+              role: "Ban QLCL & ATTP (QA Lead)",
+              description: "Đánh giá lại sau 30 ngày, xác nhận lỗi không tái diễn và đóng NC.",
+              is_ccp: false,
+              step_number: 5,
+            },
           ],
           edges: [
             { id: "ec1_2", source: "c_1", target: "c_2", label: "Báo cáo NC" },
@@ -491,7 +555,10 @@ function CAPAManagementPage() {
     const fd = new FormData(e.currentTarget);
     const payload = {
       capa_number: fd.get("capa_number") as string,
-      nc_id: (fd.get("nc_id") as string) || (selectedNCForCAPA?.nc_id as string) || (editingCAPA?.nc_id as string),
+      nc_id:
+        (fd.get("nc_id") as string) ||
+        (selectedNCForCAPA?.nc_id as string) ||
+        (editingCAPA?.nc_id as string),
       title: fd.get("title") as string,
       root_cause_method: fd.get("root_cause_method") as string,
       root_cause_summary: (fd.get("root_cause_summary") as string) || null,
@@ -535,7 +602,7 @@ function CAPAManagementPage() {
       toast.success(
         verificationForm.verification_status === "EFFECTIVE"
           ? "Đã thẩm tra đạt hiệu lực và đóng hồ sơ thành công!"
-          : "Đã ghi nhận không hiệu lực, tái mở yêu cầu khắc phục!"
+          : "Đã ghi nhận không hiệu lực, tái mở yêu cầu khắc phục!",
       );
       setShowVerifyModal(false);
       setVerifyingCAPA(null);
@@ -575,31 +642,66 @@ function CAPAManagementPage() {
   const getStatusBadge = (s: string) => {
     switch (s) {
       case "NEW":
-        return <span className="px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-800 border border-blue-300">Mới Phát Hiện</span>;
+        return (
+          <span className="px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-800 border border-blue-300">
+            Mới Phát Hiện
+          </span>
+        );
       case "ACTION_REQUIRED":
-        return <span className="px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-300">Cần Khắc Phục</span>;
+        return (
+          <span className="px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-300">
+            Cần Khắc Phục
+          </span>
+        );
       case "INVESTIGATING":
-        return <span className="px-3 py-1 rounded-full text-xs font-bold bg-purple-100 text-purple-800 border border-purple-300">Đang Điều Tra</span>;
+        return (
+          <span className="px-3 py-1 rounded-full text-xs font-bold bg-purple-100 text-purple-800 border border-purple-300">
+            Đang Điều Tra
+          </span>
+        );
       case "UNDER_REVIEW":
-        return <span className="px-3 py-1 rounded-full text-xs font-bold bg-indigo-100 text-indigo-800 border border-indigo-300">Đang Thẩm Định</span>;
+        return (
+          <span className="px-3 py-1 rounded-full text-xs font-bold bg-indigo-100 text-indigo-800 border border-indigo-300">
+            Đang Thẩm Định
+          </span>
+        );
       case "CLOSED":
-        return <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">Đã Đóng Hồ Sơ</span>;
+        return (
+          <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+            Đã Đóng Hồ Sơ
+          </span>
+        );
       case "REJECTED":
-        return <span className="px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-800 border border-slate-300">Từ Chối</span>;
+        return (
+          <span className="px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-800 border border-slate-300">
+            Từ Chối
+          </span>
+        );
       default:
-        return <span className="px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-800">{s}</span>;
+        return (
+          <span className="px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-800">
+            {s}
+          </span>
+        );
     }
   };
 
   const getSourceLabel = (src: string) => {
     switch (src) {
-      case "HACCP_CCP": return "Điểm tới hạn HACCP/CCP";
-      case "PRP_GMP": return "Chương trình Tiên quyết PRP/GMP";
-      case "IQC_INCOMING": return "Kiểm tra nguyên liệu IQC";
-      case "INTERNAL_AUDIT": return "Đánh giá nội bộ kỳ 1";
-      case "CUSTOMER_COMPLAINT": return "Khiếu nại khách hàng";
-      case "EQUIPMENT_FAIL": return "Sự cố thiết bị";
-      default: return src;
+      case "HACCP_CCP":
+        return "Điểm tới hạn HACCP/CCP";
+      case "PRP_GMP":
+        return "Chương trình Tiên quyết PRP/GMP";
+      case "IQC_INCOMING":
+        return "Kiểm tra nguyên liệu IQC";
+      case "INTERNAL_AUDIT":
+        return "Đánh giá nội bộ kỳ 1";
+      case "CUSTOMER_COMPLAINT":
+        return "Khiếu nại khách hàng";
+      case "EQUIPMENT_FAIL":
+        return "Sự cố thiết bị";
+      default:
+        return src;
     }
   };
 
@@ -617,7 +719,8 @@ function CAPAManagementPage() {
             </span>
           </div>
           <p className="text-slate-600 text-sm mt-1.5 font-normal">
-            Ghi nhận NC hiện trường, cô lập tức thì, truy vết nguyên nhân gốc rễ 5-Why/Fishbone và thẩm tra hiệu lực sau 30 ngày.
+            Ghi nhận NC hiện trường, cô lập tức thì, truy vết nguyên nhân gốc rễ 5-Why/Fishbone và
+            thẩm tra hiệu lực sau 30 ngày.
           </p>
         </div>
 
@@ -657,7 +760,9 @@ function CAPAManagementPage() {
       </div>
 
       <AIBadge>
-        <b>Trợ lý AI CAPA Studio:</b> Tự động truy vết nguyên nhân gốc rễ bằng phương pháp <b>5-Why</b> hoặc <b>Sơ đồ xương cá Ishikawa 5M+1E</b> · Đề xuất hành động khắc phục tức thì, ngăn ngừa tái diễn và thiết lập cơ chế thẩm tra sau 30 ngày.
+        <b>Trợ lý AI CAPA Studio:</b> Tự động truy vết nguyên nhân gốc rễ bằng phương pháp{" "}
+        <b>5-Why</b> hoặc <b>Sơ đồ xương cá Ishikawa 5M+1E</b> · Đề xuất hành động khắc phục tức
+        thì, ngăn ngừa tái diễn và thiết lập cơ chế thẩm tra sau 30 ngày.
       </AIBadge>
 
       {/* ==================== 4 KPI STATS CARDS ==================== */}
@@ -665,12 +770,18 @@ function CAPAManagementPage() {
         {/* KPI 1: Tổng NC */}
         <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
           <div>
-            <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Tổng Sự Cố Không Phù Hợp</p>
+            <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+              Tổng Sự Cố Không Phù Hợp
+            </p>
             <h3 className="text-3xl font-black text-slate-900 mt-1">{stats.total_ncs}</h3>
             <div className="flex items-center gap-2 mt-2 text-xs font-medium">
-              <span className="text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">{stats.open_ncs} Đang mở</span>
+              <span className="text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                {stats.open_ncs} Đang mở
+              </span>
               <span className="text-slate-300">•</span>
-              <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">{stats.closed_ncs} Đã đóng</span>
+              <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                {stats.closed_ncs} Đã đóng
+              </span>
             </div>
           </div>
           <div className="p-3.5 bg-blue-50 text-blue-600 rounded-2xl border border-blue-100">
@@ -681,7 +792,9 @@ function CAPAManagementPage() {
         {/* KPI 2: Sự cố Nghiêm trọng (Critical) */}
         <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
           <div>
-            <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Sự Cố Nghiêm Trọng (CCP)</p>
+            <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+              Sự Cố Nghiêm Trọng (CCP)
+            </p>
             <h3 className="text-3xl font-black text-rose-600 mt-1">{stats.critical_ncs}</h3>
             <div className="flex items-center gap-1.5 mt-2 text-xs text-rose-700 font-bold bg-rose-50 px-2 py-0.5 rounded border border-rose-200">
               <Flame className="h-3.5 w-3.5 text-rose-600" />
@@ -696,8 +809,12 @@ function CAPAManagementPage() {
         {/* KPI 3: Kế hoạch CAPA Đang Xử Lý */}
         <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
           <div>
-            <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Kế Hoạch CAPA Đang Xử Lý</p>
-            <h3 className="text-3xl font-black text-amber-600 mt-1">{stats.in_progress_capas + stats.pending_verify_capas}</h3>
+            <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+              Kế Hoạch CAPA Đang Xử Lý
+            </p>
+            <h3 className="text-3xl font-black text-amber-600 mt-1">
+              {stats.in_progress_capas + stats.pending_verify_capas}
+            </h3>
             <div className="flex items-center gap-2 mt-2 text-xs font-semibold text-purple-700 bg-purple-50 px-2 py-0.5 rounded border border-purple-200">
               <span>{stats.pending_verify_capas} Chờ thẩm tra 30 ngày</span>
             </div>
@@ -710,8 +827,12 @@ function CAPAManagementPage() {
         {/* KPI 4: Tỷ Lệ Hiệu Lực Sau 30 Ngày */}
         <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
           <div>
-            <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Tỷ Lệ Thẩm Tra Đạt Hiệu Lực</p>
-            <h3 className="text-3xl font-black text-emerald-600 mt-1">{stats.effectiveness_rate}%</h3>
+            <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+              Tỷ Lệ Thẩm Tra Đạt Hiệu Lực
+            </p>
+            <h3 className="text-3xl font-black text-emerald-600 mt-1">
+              {stats.effectiveness_rate}%
+            </h3>
             <div className="flex items-center gap-1.5 mt-2 text-xs text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
               <TrendingUp className="h-3.5 w-3.5" />
               <span>{stats.completed_capas} Kế hoạch hoàn tất đóng NC</span>
@@ -759,7 +880,9 @@ function CAPAManagementPage() {
         >
           <BrainCircuit className="h-4 w-4 text-purple-600" />
           <span>3. Trợ Lý AI Phân Tích Nguyên Nhân Gốc (5-Why & Fishbone)</span>
-          <span className="px-2 py-0.5 text-[10px] font-extrabold bg-purple-200 text-purple-800 rounded-full">AI</span>
+          <span className="px-2 py-0.5 text-[10px] font-extrabold bg-purple-200 text-purple-800 rounded-full">
+            AI
+          </span>
         </button>
 
         <button
@@ -771,7 +894,10 @@ function CAPAManagementPage() {
           }`}
         >
           <ShieldCheck className="h-4 w-4 text-emerald-600" />
-          <span>4. Thẩm Tra 30 Ngày & Đóng Hồ Sơ ({capas.filter((c) => c.status === "PENDING_VERIFICATION").length})</span>
+          <span>
+            4. Thẩm Tra 30 Ngày & Đóng Hồ Sơ (
+            {capas.filter((c) => c.status === "PENDING_VERIFICATION").length})
+          </span>
         </button>
       </div>
 
@@ -832,7 +958,9 @@ function CAPAManagementPage() {
 
           {/* NC Table */}
           {loading ? (
-            <div className="text-center py-16 text-slate-500 text-sm font-medium">Đang tải danh sách sự không phù hợp...</div>
+            <div className="text-center py-16 text-slate-500 text-sm font-medium">
+              Đang tải danh sách sự không phù hợp...
+            </div>
           ) : ncs.length === 0 ? (
             <EmptyState
               icon={AlertTriangle}
@@ -848,8 +976,12 @@ function CAPAManagementPage() {
           ) : filteredNCs.length === 0 ? (
             <div className="text-center py-16 bg-slate-50 rounded-2xl border border-dashed border-slate-300">
               <CheckCircle2 className="h-12 w-12 text-emerald-500 mx-auto mb-2.5 opacity-60" />
-              <p className="text-slate-800 font-bold text-base">Không tìm thấy sự không phù hợp nào</p>
-              <p className="text-slate-500 text-sm mt-1">Không có sự cố nào phù hợp với bộ lọc tìm kiếm hiện tại.</p>
+              <p className="text-slate-800 font-bold text-base">
+                Không tìm thấy sự không phù hợp nào
+              </p>
+              <p className="text-slate-500 text-sm mt-1">
+                Không có sự cố nào phù hợp với bộ lọc tìm kiếm hiện tại.
+              </p>
             </div>
           ) : (
             <div className="overflow-x-auto rounded-xl border border-slate-200 shadow-xs">
@@ -893,9 +1025,14 @@ function CAPAManagementPage() {
 
                       {/* Nguồn */}
                       <td className="py-4 px-4 align-top">
-                        <span className="font-bold text-slate-800 text-xs block">{getSourceLabel(nc.source)}</span>
+                        <span className="font-bold text-slate-800 text-xs block">
+                          {getSourceLabel(nc.source)}
+                        </span>
                         <div className="text-xs text-slate-500 mt-1">
-                          Bởi: <span className="font-semibold text-slate-700">{nc.reported_by_name}</span>
+                          Bởi:{" "}
+                          <span className="font-semibold text-slate-700">
+                            {nc.reported_by_name}
+                          </span>
                         </div>
                       </td>
 
@@ -919,7 +1056,9 @@ function CAPAManagementPage() {
                               {nc.affected_lot_number}
                             </span>
                             {nc.affected_quantity && (
-                              <div className="text-xs text-slate-600 font-semibold">{nc.affected_quantity}</div>
+                              <div className="text-xs text-slate-600 font-semibold">
+                                {nc.affected_quantity}
+                              </div>
                             )}
                           </div>
                         ) : (
@@ -989,8 +1128,12 @@ function CAPAManagementPage() {
       {activeTab === "capas" && (
         <div className="bg-white rounded-b-2xl border border-slate-200 border-t-0 p-6 space-y-5">
           <div className="flex items-center justify-between">
-            <h3 className="font-extrabold text-slate-900 text-base">Hồ Sơ Hành Động Khắc Phục & Phòng Ngừa (CAPA Records)</h3>
-            <span className="text-xs font-semibold text-slate-500">Tổng cộng {capas.length} kế hoạch CAPA</span>
+            <h3 className="font-extrabold text-slate-900 text-base">
+              Hồ Sơ Hành Động Khắc Phục & Phòng Ngừa (CAPA Records)
+            </h3>
+            <span className="text-xs font-semibold text-slate-500">
+              Tổng cộng {capas.length} kế hoạch CAPA
+            </span>
           </div>
 
           {capas.length === 0 ? (
@@ -1008,118 +1151,134 @@ function CAPAManagementPage() {
             />
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-            {capas.map((c) => (
-              <div
-                key={c.capa_id}
-                className="bg-white rounded-2xl border border-slate-200 hover:border-slate-300 shadow-sm p-6 space-y-4 transition-all flex flex-col justify-between"
-              >
-                <div className="space-y-3">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-mono text-xs font-bold text-blue-800 bg-blue-50 px-2.5 py-0.5 rounded border border-blue-200">
-                          {c.capa_number}
-                        </span>
-                        <span className="text-xs text-slate-500 font-medium">• NC: {c.nc_number || "NC-2026"}</span>
-                        {c.verification_status === "EFFECTIVE" && (
-                          <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-800 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
-                            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" /> Đạt Hiệu Lực
+              {capas.map((c) => (
+                <div
+                  key={c.capa_id}
+                  className="bg-white rounded-2xl border border-slate-200 hover:border-slate-300 shadow-sm p-6 space-y-4 transition-all flex flex-col justify-between"
+                >
+                  <div className="space-y-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-mono text-xs font-bold text-blue-800 bg-blue-50 px-2.5 py-0.5 rounded border border-blue-200">
+                            {c.capa_number}
                           </span>
-                        )}
+                          <span className="text-xs text-slate-500 font-medium">
+                            • NC: {c.nc_number || "NC-2026"}
+                          </span>
+                          {c.verification_status === "EFFECTIVE" && (
+                            <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-800 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" /> Đạt Hiệu Lực
+                            </span>
+                          )}
+                        </div>
+                        <h4 className="font-bold text-slate-900 text-base mt-2 leading-snug">
+                          {c.title}
+                        </h4>
                       </div>
-                      <h4 className="font-bold text-slate-900 text-base mt-2 leading-snug">{c.title}</h4>
-                    </div>
-                    <span className={`px-3 py-1 rounded-full text-xs font-bold shrink-0 ${
-                      c.status === "COMPLETED" ? "bg-emerald-100 text-emerald-800" :
-                      c.status === "PENDING_VERIFICATION" ? "bg-purple-100 text-purple-800" : "bg-amber-100 text-amber-800"
-                    }`}>
-                      {c.status === "COMPLETED" ? "Hoàn Thành" : c.status === "PENDING_VERIFICATION" ? "Chờ Thẩm Tra 30 Ngày" : "Đang Triển Khai"}
-                    </span>
-                  </div>
-
-                  {/* Root Cause Summary */}
-                  <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-1.5 text-xs">
-                    <div className="flex items-center justify-between text-slate-600 font-bold">
-                      <span className="flex items-center gap-1.5">
-                        <BrainCircuit className="h-4 w-4 text-purple-600" />
-                        Nguyên nhân cốt lõi ({c.root_cause_method === "5_WHYS" ? "5-Why" : "Ishikawa 5M"}):
+                      <span
+                        className={`px-3 py-1 rounded-full text-xs font-bold shrink-0 ${
+                          c.status === "COMPLETED"
+                            ? "bg-emerald-100 text-emerald-800"
+                            : c.status === "PENDING_VERIFICATION"
+                              ? "bg-purple-100 text-purple-800"
+                              : "bg-amber-100 text-amber-800"
+                        }`}
+                      >
+                        {c.status === "COMPLETED"
+                          ? "Hoàn Thành"
+                          : c.status === "PENDING_VERIFICATION"
+                            ? "Chờ Thẩm Tra 30 Ngày"
+                            : "Đang Triển Khai"}
                       </span>
                     </div>
-                    <p className="text-slate-900 font-medium leading-relaxed">{c.root_cause_summary || "Đang phân tích"}</p>
-                  </div>
 
-                  {/* Actions */}
-                  <div className="space-y-3 text-sm">
-                    <div>
-                      <span className="font-bold text-emerald-800 flex items-center gap-1.5 text-xs uppercase tracking-wide">
-                        <Check className="h-4 w-4 text-emerald-600" />
-                        Hành động khắc phục (Corrective Action):
-                      </span>
-                      <p className="text-slate-800 mt-1 pl-5 text-xs leading-relaxed font-medium bg-emerald-50/50 p-2.5 rounded-lg border border-emerald-100">
-                        {c.corrective_action}
+                    {/* Root Cause Summary */}
+                    <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-1.5 text-xs">
+                      <div className="flex items-center justify-between text-slate-600 font-bold">
+                        <span className="flex items-center gap-1.5">
+                          <BrainCircuit className="h-4 w-4 text-purple-600" />
+                          Nguyên nhân cốt lõi (
+                          {c.root_cause_method === "5_WHYS" ? "5-Why" : "Ishikawa 5M"}):
+                        </span>
+                      </div>
+                      <p className="text-slate-900 font-medium leading-relaxed">
+                        {c.root_cause_summary || "Đang phân tích"}
                       </p>
                     </div>
 
-                    {c.preventive_action && (
+                    {/* Actions */}
+                    <div className="space-y-3 text-sm">
                       <div>
-                        <span className="font-bold text-blue-800 flex items-center gap-1.5 text-xs uppercase tracking-wide">
-                          <ShieldCheck className="h-4 w-4 text-blue-600" />
-                          Biện pháp phòng ngừa (Preventive Action):
+                        <span className="font-bold text-emerald-800 flex items-center gap-1.5 text-xs uppercase tracking-wide">
+                          <Check className="h-4 w-4 text-emerald-600" />
+                          Hành động khắc phục (Corrective Action):
                         </span>
-                        <p className="text-slate-800 mt-1 pl-5 text-xs leading-relaxed font-medium bg-blue-50/50 p-2.5 rounded-lg border border-blue-100">
-                          {c.preventive_action}
+                        <p className="text-slate-800 mt-1 pl-5 text-xs leading-relaxed font-medium bg-emerald-50/50 p-2.5 rounded-lg border border-emerald-100">
+                          {c.corrective_action}
                         </p>
                       </div>
-                    )}
+
+                      {c.preventive_action && (
+                        <div>
+                          <span className="font-bold text-blue-800 flex items-center gap-1.5 text-xs uppercase tracking-wide">
+                            <ShieldCheck className="h-4 w-4 text-blue-600" />
+                            Biện pháp phòng ngừa (Preventive Action):
+                          </span>
+                          <p className="text-slate-800 mt-1 pl-5 text-xs leading-relaxed font-medium bg-blue-50/50 p-2.5 rounded-lg border border-blue-100">
+                            {c.preventive_action}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Footer Info */}
+                  <div className="pt-4 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-600">
+                    <div className="flex items-center gap-3 font-medium">
+                      <span className="flex items-center gap-1">
+                        <User className="h-3.5 w-3.5 text-slate-400" />
+                        <b>{c.assigned_to_name}</b> ({c.assigned_dept})
+                      </span>
+                      <span className="flex items-center gap-1 text-slate-700 font-bold">
+                        <Calendar className="h-3.5 w-3.5 text-slate-400" />
+                        Hạn: {c.target_date}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setPrintingCAPA(c);
+                          setShowPrintModal(true);
+                        }}
+                        className="h-8 text-xs px-3 text-slate-700 border-slate-300 hover:bg-slate-100 font-bold flex items-center gap-1.5"
+                      >
+                        <Printer className="h-3.5 w-3.5 text-slate-500" />
+                        <span>In BM-CAPA-01</span>
+                      </Button>
+
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setEditingCAPA(c);
+                          setShowCAPAModal(true);
+                        }}
+                        className="h-8 text-xs px-3 text-slate-700 hover:bg-slate-100 font-medium"
+                      >
+                        Sửa
+                      </Button>
+                    </div>
                   </div>
                 </div>
-
-                {/* Footer Info */}
-                <div className="pt-4 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-600">
-                  <div className="flex items-center gap-3 font-medium">
-                    <span className="flex items-center gap-1">
-                      <User className="h-3.5 w-3.5 text-slate-400" />
-                      <b>{c.assigned_to_name}</b> ({c.assigned_dept})
-                    </span>
-                    <span className="flex items-center gap-1 text-slate-700 font-bold">
-                      <Calendar className="h-3.5 w-3.5 text-slate-400" />
-                      Hạn: {c.target_date}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setPrintingCAPA(c);
-                        setShowPrintModal(true);
-                      }}
-                      className="h-8 text-xs px-3 text-slate-700 border-slate-300 hover:bg-slate-100 font-bold flex items-center gap-1.5"
-                    >
-                      <Printer className="h-3.5 w-3.5 text-slate-500" />
-                      <span>In BM-CAPA-01</span>
-                    </Button>
-
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setEditingCAPA(c);
-                        setShowCAPAModal(true);
-                      }}
-                      className="h-8 text-xs px-3 text-slate-700 hover:bg-slate-100 font-medium"
-                    >
-                      Sửa
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    )}
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ==================== TAB 3: AI 5-WHY & FISHBONE STUDIO ==================== */}
       {activeTab === "ai_studio" && (
@@ -1130,9 +1289,12 @@ function CAPAManagementPage() {
                 <BrainCircuit className="h-6 w-6" />
               </div>
               <div>
-                <h3 className="font-extrabold text-slate-900 text-base">Trợ Lý AI Phân Tích Nguyên Nhân Gốc Rễ (Root Cause Studio)</h3>
+                <h3 className="font-extrabold text-slate-900 text-base">
+                  Trợ Lý AI Phân Tích Nguyên Nhân Gốc Rễ (Root Cause Studio)
+                </h3>
                 <p className="text-slate-600 text-sm mt-0.5">
-                  Áp dụng các kỹ thuật chất lượng ISO 22000: 5-Whys liên hoàn & Sơ đồ xương cá Ishikawa 5M+1E để tìm điểm nghẽn hệ thống.
+                  Áp dụng các kỹ thuật chất lượng ISO 22000: 5-Whys liên hoàn & Sơ đồ xương cá
+                  Ishikawa 5M+1E để tìm điểm nghẽn hệ thống.
                 </p>
               </div>
             </div>
@@ -1140,7 +1302,9 @@ function CAPAManagementPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1">
               {/* Chọn NC có sẵn */}
               <div>
-                <label className="block text-xs font-bold text-slate-800 mb-1.5">1. Chọn Sự Cố Không Phù Hợp (NC):</label>
+                <label className="block text-xs font-bold text-slate-800 mb-1.5">
+                  1. Chọn Sự Cố Không Phù Hợp (NC):
+                </label>
                 <select
                   value={aiSelectedNCId}
                   onChange={(e) => {
@@ -1164,7 +1328,9 @@ function CAPAManagementPage() {
 
               {/* Hoặc nhập tiêu đề */}
               <div>
-                <label className="block text-xs font-bold text-slate-800 mb-1.5">Hoặc Nhập Tiêu Đề Sự Cố Tùy Chỉnh:</label>
+                <label className="block text-xs font-bold text-slate-800 mb-1.5">
+                  Hoặc Nhập Tiêu Đề Sự Cố Tùy Chỉnh:
+                </label>
                 <Input
                   placeholder="Ví dụ: Nhiệt độ nồi hấp thanh trùng bị tụt..."
                   value={aiCustomTitle}
@@ -1178,7 +1344,9 @@ function CAPAManagementPage() {
 
               {/* Chọn phương pháp */}
               <div>
-                <label className="block text-xs font-bold text-slate-800 mb-1.5">2. Phương Pháp Phân Tích:</label>
+                <label className="block text-xs font-bold text-slate-800 mb-1.5">
+                  2. Phương Pháp Phân Tích:
+                </label>
                 <div className="flex items-center gap-2">
                   <select
                     value={aiMethod}
@@ -1194,7 +1362,11 @@ function CAPAManagementPage() {
                     disabled={aiLoading}
                     className="bg-purple-600 hover:bg-purple-700 text-white text-sm h-10 px-5 shrink-0 font-bold shadow-md flex items-center gap-1.5"
                   >
-                    {aiLoading ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                    {aiLoading ? (
+                      <RefreshCw className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Sparkles className="h-4 w-4" />
+                    )}
                     <span>{aiLoading ? "Đang Phân Tích..." : "Chạy AI"}</span>
                   </Button>
                 </div>
@@ -1258,7 +1430,9 @@ function CAPAManagementPage() {
                     <Layers className="h-5 w-5 text-indigo-600" />
                     Sơ Đồ Xương Cá Ishikawa 5M+1E (Cause and Effect Diagram)
                   </h4>
-                  <p className="text-xs text-slate-500 mt-1 font-medium">Vấn đề: {aiFishboneResult.problem_statement}</p>
+                  <p className="text-xs text-slate-500 mt-1 font-medium">
+                    Vấn đề: {aiFishboneResult.problem_statement}
+                  </p>
                 </div>
                 <span className="text-xs text-indigo-800 font-bold bg-indigo-100 px-3 py-1 rounded-full border border-indigo-300">
                   6 Chi Nhánh Đa Chiều
@@ -1341,9 +1515,15 @@ function CAPAManagementPage() {
               </div>
 
               <div className="p-4 rounded-xl bg-indigo-50 border border-indigo-200 space-y-1.5">
-                <h5 className="font-bold text-indigo-900 text-xs uppercase tracking-wide">Nguyên nhân cốt lõi xác định & Đề xuất CAPA:</h5>
-                <p className="text-sm font-bold text-indigo-950">{aiFishboneResult.primary_root_cause}</p>
-                <p className="text-xs text-indigo-800 mt-1 font-medium">{aiFishboneResult.suggested_capa}</p>
+                <h5 className="font-bold text-indigo-900 text-xs uppercase tracking-wide">
+                  Nguyên nhân cốt lõi xác định & Đề xuất CAPA:
+                </h5>
+                <p className="text-sm font-bold text-indigo-950">
+                  {aiFishboneResult.primary_root_cause}
+                </p>
+                <p className="text-xs text-indigo-800 mt-1 font-medium">
+                  {aiFishboneResult.suggested_capa}
+                </p>
               </div>
             </div>
           )}
@@ -1397,7 +1577,9 @@ function CAPAManagementPage() {
               <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 text-xs flex items-center justify-between">
                 <div>
                   <span className="font-bold text-slate-800">Kế hoạch thẩm tra sau 30 ngày: </span>
-                  <span className="text-slate-600 font-medium">{aiSuggestResult.verification_method_30days}</span>
+                  <span className="text-slate-600 font-medium">
+                    {aiSuggestResult.verification_method_30days}
+                  </span>
                 </div>
               </div>
             </div>
@@ -1410,14 +1592,22 @@ function CAPAManagementPage() {
         <div className="bg-white rounded-b-2xl border border-slate-200 border-t-0 p-6 space-y-5">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="font-extrabold text-slate-900 text-base">Thẩm Tra Hiệu Lực Sau 15 - 30 Ngày & Đóng Hồ Sơ NC</h3>
+              <h3 className="font-extrabold text-slate-900 text-base">
+                Thẩm Tra Hiệu Lực Sau 15 - 30 Ngày & Đóng Hồ Sơ NC
+              </h3>
               <p className="text-slate-600 text-sm mt-0.5">
-                Xem xét và thẩm tra bằng chứng thực tế xác nhận sự cố không còn tái diễn trước khi chính thức đóng phiếu.
+                Xem xét và thẩm tra bằng chứng thực tế xác nhận sự cố không còn tái diễn trước khi
+                chính thức đóng phiếu.
               </p>
             </div>
           </div>
 
-          {capas.filter((c) => c.status === "PENDING_VERIFICATION" || c.verification_status === "PENDING_VERIFY" || c.status === "COMPLETED").length === 0 ? (
+          {capas.filter(
+            (c) =>
+              c.status === "PENDING_VERIFICATION" ||
+              c.verification_status === "PENDING_VERIFY" ||
+              c.status === "COMPLETED",
+          ).length === 0 ? (
             <EmptyState
               icon={ShieldCheck}
               title="Chưa có hồ sơ CAPA chờ thẩm tra"
@@ -1432,59 +1622,72 @@ function CAPAManagementPage() {
             />
           ) : (
             <div className="space-y-3.5">
-            {capas
-              .filter((c) => c.status === "PENDING_VERIFICATION" || c.verification_status === "PENDING_VERIFY" || c.status === "COMPLETED")
-              .map((c) => (
-                <div
-                  key={c.capa_id}
-                  className="bg-white rounded-2xl border border-slate-200 p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm hover:border-slate-300 transition-colors"
-                >
-                  <div className="space-y-2 text-xs max-w-2xl">
-                    <div className="flex items-center gap-2.5">
-                      <span className="font-mono font-bold text-blue-800 bg-blue-50 px-2.5 py-1 rounded border border-blue-200 text-xs">
-                        {c.capa_number}
-                      </span>
-                      <span className="font-bold text-slate-900 text-sm">{c.title}</span>
-                    </div>
-                    <p className="text-slate-800 text-xs font-medium leading-relaxed bg-slate-50 p-2.5 rounded-lg border border-slate-100">
-                      <b>Hành động khắc phục:</b> {c.corrective_action}
-                    </p>
-                    <div className="flex items-center gap-3 text-slate-500 text-xs font-medium">
-                      <span>Người phụ trách: <b className="text-slate-700">{c.assigned_to_name}</b></span>
-                      <span>•</span>
-                      <span>Ngày hoàn tất: <b className="text-slate-700">{c.completed_date || "Đang thực hiện"}</b></span>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-3 shrink-0">
-                    {c.verification_status === "EFFECTIVE" ? (
-                      <div className="text-right text-xs">
-                        <span className="inline-flex items-center gap-1.5 font-bold text-emerald-800 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-300">
-                          <CheckCircle2 className="h-4 w-4 text-emerald-600" /> Đã Thẩm Tra Đạt Hiệu Lực
+              {capas
+                .filter(
+                  (c) =>
+                    c.status === "PENDING_VERIFICATION" ||
+                    c.verification_status === "PENDING_VERIFY" ||
+                    c.status === "COMPLETED",
+                )
+                .map((c) => (
+                  <div
+                    key={c.capa_id}
+                    className="bg-white rounded-2xl border border-slate-200 p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm hover:border-slate-300 transition-colors"
+                  >
+                    <div className="space-y-2 text-xs max-w-2xl">
+                      <div className="flex items-center gap-2.5">
+                        <span className="font-mono font-bold text-blue-800 bg-blue-50 px-2.5 py-1 rounded border border-blue-200 text-xs">
+                          {c.capa_number}
                         </span>
-                        <div className="text-xs text-slate-500 mt-1 font-medium">Bởi: {c.verified_by_name} ({c.verification_date})</div>
+                        <span className="font-bold text-slate-900 text-sm">{c.title}</span>
                       </div>
-                    ) : (
-                      <Button
-                        size="sm"
-                        onClick={() => {
-                          setVerifyingCAPA(c);
-                          setVerificationForm({
-                            verified_by_name: "Trưởng Ban QLCL & ATTP",
-                            verification_result: `Đã thẩm tra sau 30 ngày kể từ khi hoàn tất khắc phục: Kiểm tra ngẫu nhiên các lô sản xuất và hồ sơ nhật ký đo đạc không phát sinh lỗi tương tự; 100% nhân sự tuân thủ quy chuẩn.`,
-                            verification_status: "EFFECTIVE",
-                          });
-                          setShowVerifyModal(true);
-                        }}
-                        className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs h-9 px-4 font-bold flex items-center gap-1.5 shadow-sm"
-                      >
-                        <ShieldCheck className="h-4 w-4" />
-                        <span>Thẩm Tra 30 Ngày & Đóng NC</span>
-                      </Button>
-                    )}
+                      <p className="text-slate-800 text-xs font-medium leading-relaxed bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+                        <b>Hành động khắc phục:</b> {c.corrective_action}
+                      </p>
+                      <div className="flex items-center gap-3 text-slate-500 text-xs font-medium">
+                        <span>
+                          Người phụ trách: <b className="text-slate-700">{c.assigned_to_name}</b>
+                        </span>
+                        <span>•</span>
+                        <span>
+                          Ngày hoàn tất:{" "}
+                          <b className="text-slate-700">{c.completed_date || "Đang thực hiện"}</b>
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3 shrink-0">
+                      {c.verification_status === "EFFECTIVE" ? (
+                        <div className="text-right text-xs">
+                          <span className="inline-flex items-center gap-1.5 font-bold text-emerald-800 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-300">
+                            <CheckCircle2 className="h-4 w-4 text-emerald-600" /> Đã Thẩm Tra Đạt
+                            Hiệu Lực
+                          </span>
+                          <div className="text-xs text-slate-500 mt-1 font-medium">
+                            Bởi: {c.verified_by_name} ({c.verification_date})
+                          </div>
+                        </div>
+                      ) : (
+                        <Button
+                          size="sm"
+                          onClick={() => {
+                            setVerifyingCAPA(c);
+                            setVerificationForm({
+                              verified_by_name: "Trưởng Ban QLCL & ATTP",
+                              verification_result: `Đã thẩm tra sau 30 ngày kể từ khi hoàn tất khắc phục: Kiểm tra ngẫu nhiên các lô sản xuất và hồ sơ nhật ký đo đạc không phát sinh lỗi tương tự; 100% nhân sự tuân thủ quy chuẩn.`,
+                              verification_status: "EFFECTIVE",
+                            });
+                            setShowVerifyModal(true);
+                          }}
+                          className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs h-9 px-4 font-bold flex items-center gap-1.5 shadow-sm"
+                        >
+                          <ShieldCheck className="h-4 w-4" />
+                          <span>Thẩm Tra 30 Ngày & Đóng NC</span>
+                        </Button>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
             </div>
           )}
         </div>
@@ -1497,9 +1700,14 @@ function CAPAManagementPage() {
             <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
               <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
                 <AlertTriangle className="h-4 w-4 text-amber-600" />
-                {editingNC ? "Chỉnh Sửa Sự Không Phù Hợp" : "Báo Cáo Sự Không Phù Hợp Mới (NC Report)"}
+                {editingNC
+                  ? "Chỉnh Sửa Sự Không Phù Hợp"
+                  : "Báo Cáo Sự Không Phù Hợp Mới (NC Report)"}
               </h3>
-              <button onClick={() => setShowNCModal(false)} className="text-slate-400 hover:text-slate-600">
+              <button
+                onClick={() => setShowNCModal(false)}
+                className="text-slate-400 hover:text-slate-600"
+              >
                 <X className="h-5 w-5" />
               </button>
             </div>
@@ -1510,18 +1718,24 @@ function CAPAManagementPage() {
                   <label className="block font-semibold text-slate-700 mb-1">Mã Phiếu NC *</label>
                   <Input
                     name="nc_number"
-                    defaultValue={editingNC?.nc_number || `NC-2026-${String(ncs.length + 1).padStart(3, "0")}`}
+                    defaultValue={
+                      editingNC?.nc_number || `NC-2026-${String(ncs.length + 1).padStart(3, "0")}`
+                    }
                     required
                     className="text-xs h-9 font-mono"
                   />
                 </div>
 
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Ngày Phát Sinh *</label>
+                  <label className="block font-semibold text-slate-700 mb-1">
+                    Ngày Phát Sinh *
+                  </label>
                   <Input
                     type="date"
                     name="occurred_date"
-                    defaultValue={editingNC?.occurred_date || new Date().toISOString().split("T")[0]}
+                    defaultValue={
+                      editingNC?.occurred_date || new Date().toISOString().split("T")[0]
+                    }
                     required
                     className="text-xs h-9"
                   />
@@ -1529,7 +1743,9 @@ function CAPAManagementPage() {
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">Tiêu Đề Sự Không Phù Hợp *</label>
+                <label className="block font-semibold text-slate-700 mb-1">
+                  Tiêu Đề Sự Không Phù Hợp *
+                </label>
                 <Input
                   name="title"
                   defaultValue={editingNC?.title || ""}
@@ -1557,7 +1773,9 @@ function CAPAManagementPage() {
                 </div>
 
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Mức Độ Nghiêm Trọng</label>
+                  <label className="block font-semibold text-slate-700 mb-1">
+                    Mức Độ Nghiêm Trọng
+                  </label>
                   <select
                     name="severity"
                     defaultValue={editingNC?.severity || "MAJOR"}
@@ -1570,7 +1788,9 @@ function CAPAManagementPage() {
                 </div>
 
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Vị Trí / Dây Chuyền</label>
+                  <label className="block font-semibold text-slate-700 mb-1">
+                    Vị Trí / Dây Chuyền
+                  </label>
                   <Input
                     name="occurred_location"
                     defaultValue={editingNC?.occurred_location || "Xưởng Chế Biến 1"}
@@ -1580,7 +1800,9 @@ function CAPAManagementPage() {
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">Mô Tả Chi Tiết Sự Không Phù Hợp *</label>
+                <label className="block font-semibold text-slate-700 mb-1">
+                  Mô Tả Chi Tiết Sự Không Phù Hợp *
+                </label>
                 <Textarea
                   name="description"
                   defaultValue={editingNC?.description || ""}
@@ -1606,7 +1828,9 @@ function CAPAManagementPage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Mã Số Lô Hàng Bị Ảnh Hưởng</label>
+                  <label className="block font-semibold text-slate-700 mb-1">
+                    Mã Số Lô Hàng Bị Ảnh Hưởng
+                  </label>
                   <Input
                     name="affected_lot_number"
                     defaultValue={editingNC?.affected_lot_number || ""}
@@ -1616,7 +1840,9 @@ function CAPAManagementPage() {
                 </div>
 
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Số Lượng / Khối Lượng Bị Ảnh Hưởng</label>
+                  <label className="block font-semibold text-slate-700 mb-1">
+                    Số Lượng / Khối Lượng Bị Ảnh Hưởng
+                  </label>
                   <Input
                     name="affected_quantity"
                     defaultValue={editingNC?.affected_quantity || ""}
@@ -1628,16 +1854,22 @@ function CAPAManagementPage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Người Báo Cáo / KCS</label>
+                  <label className="block font-semibold text-slate-700 mb-1">
+                    Người Báo Cáo / KCS
+                  </label>
                   <Input
                     name="reported_by_name"
-                    defaultValue={editingNC?.reported_by_name || "Nguyễn Văn An (Trưởng ca Sản xuất & QC)"}
+                    defaultValue={
+                      editingNC?.reported_by_name || "Nguyễn Văn An (Trưởng ca Sản xuất & QC)"
+                    }
                     className="text-xs h-9"
                   />
                 </div>
 
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Trạng Thái Xử Lý</label>
+                  <label className="block font-semibold text-slate-700 mb-1">
+                    Trạng Thái Xử Lý
+                  </label>
                   <select
                     name="status"
                     defaultValue={editingNC?.status || "NEW"}
@@ -1652,10 +1884,19 @@ function CAPAManagementPage() {
               </div>
 
               <div className="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-2 -mx-6 -mb-6">
-                <Button type="button" variant="outline" size="sm" onClick={() => setShowNCModal(false)}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowNCModal(false)}
+                >
                   Hủy / Đóng
                 </Button>
-                <Button type="submit" size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold">
+                <Button
+                  type="submit"
+                  size="sm"
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold"
+                >
                   {editingNC ? "Lưu Cập Nhật" : "Tạo Báo Cáo NC"}
                 </Button>
               </div>
@@ -1671,9 +1912,14 @@ function CAPAManagementPage() {
             <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
               <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
                 <FileText className="h-4 w-4 text-blue-600" />
-                {editingCAPA ? "Chỉnh Sửa Kế Hoạch CAPA" : "Khởi Tạo Kế Hoạch Khắc Phục & Phòng Ngừa (CAPA)"}
+                {editingCAPA
+                  ? "Chỉnh Sửa Kế Hoạch CAPA"
+                  : "Khởi Tạo Kế Hoạch Khắc Phục & Phòng Ngừa (CAPA)"}
               </h3>
-              <button onClick={() => setShowCAPAModal(false)} className="text-slate-400 hover:text-slate-600">
+              <button
+                onClick={() => setShowCAPAModal(false)}
+                className="text-slate-400 hover:text-slate-600"
+              >
                 <X className="h-5 w-5" />
               </button>
             </div>
@@ -1684,17 +1930,24 @@ function CAPAManagementPage() {
                   <label className="block font-semibold text-slate-700 mb-1">Mã Phiếu CAPA *</label>
                   <Input
                     name="capa_number"
-                    defaultValue={editingCAPA?.capa_number || `CAPA-2026-${String(capas.length + 1).padStart(3, "0")}`}
+                    defaultValue={
+                      editingCAPA?.capa_number ||
+                      `CAPA-2026-${String(capas.length + 1).padStart(3, "0")}`
+                    }
                     required
                     className="text-xs h-9 font-mono"
                   />
                 </div>
 
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Sự Cố NC Liên Kết *</label>
+                  <label className="block font-semibold text-slate-700 mb-1">
+                    Sự Cố NC Liên Kết *
+                  </label>
                   <select
                     name="nc_id"
-                    defaultValue={editingCAPA?.nc_id || selectedNCForCAPA?.nc_id || (ncs[0]?.nc_id ?? "")}
+                    defaultValue={
+                      editingCAPA?.nc_id || selectedNCForCAPA?.nc_id || (ncs[0]?.nc_id ?? "")
+                    }
                     className="w-full text-xs h-9 bg-white border border-slate-200 rounded-lg px-2.5 font-medium"
                   >
                     {ncs.map((n) => (
@@ -1707,10 +1960,14 @@ function CAPAManagementPage() {
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">Tiêu Đề Kế Hoạch CAPA *</label>
+                <label className="block font-semibold text-slate-700 mb-1">
+                  Tiêu Đề Kế Hoạch CAPA *
+                </label>
                 <Input
                   name="title"
-                  defaultValue={editingCAPA?.title || `Khắc phục sự cố ${selectedNCForCAPA?.title || ""}`}
+                  defaultValue={
+                    editingCAPA?.title || `Khắc phục sự cố ${selectedNCForCAPA?.title || ""}`
+                  }
                   required
                   className="text-xs h-9"
                 />
@@ -1718,7 +1975,9 @@ function CAPAManagementPage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Phương Pháp Phân Tích Root Cause</label>
+                  <label className="block font-semibold text-slate-700 mb-1">
+                    Phương Pháp Phân Tích Root Cause
+                  </label>
                   <select
                     name="root_cause_method"
                     defaultValue={editingCAPA?.root_cause_method || "5_WHYS"}
@@ -1731,11 +1990,16 @@ function CAPAManagementPage() {
                 </div>
 
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Hạn Chót Hoàn Thành *</label>
+                  <label className="block font-semibold text-slate-700 mb-1">
+                    Hạn Chót Hoàn Thành *
+                  </label>
                   <Input
                     type="date"
                     name="target_date"
-                    defaultValue={editingCAPA?.target_date || new Date(Date.now() + 14 * 86400000).toISOString().split("T")[0]}
+                    defaultValue={
+                      editingCAPA?.target_date ||
+                      new Date(Date.now() + 14 * 86400000).toISOString().split("T")[0]
+                    }
                     required
                     className="text-xs h-9"
                   />
@@ -1743,7 +2007,9 @@ function CAPAManagementPage() {
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">Tóm Tắt Nguyên Nhân Gốc Rễ Đã Xác Định</label>
+                <label className="block font-semibold text-slate-700 mb-1">
+                  Tóm Tắt Nguyên Nhân Gốc Rễ Đã Xác Định
+                </label>
                 <Textarea
                   name="root_cause_summary"
                   defaultValue={editingCAPA?.root_cause_summary || ""}
@@ -1782,16 +2048,23 @@ function CAPAManagementPage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Người Chịu Trách Nhiệm</label>
+                  <label className="block font-semibold text-slate-700 mb-1">
+                    Người Chịu Trách Nhiệm
+                  </label>
                   <Input
                     name="assigned_to_name"
-                    defaultValue={editingCAPA?.assigned_to_name || "Phạm Hùng Cường (Trưởng phòng Cơ Điện & Bảo trì)"}
+                    defaultValue={
+                      editingCAPA?.assigned_to_name ||
+                      "Phạm Hùng Cường (Trưởng phòng Cơ Điện & Bảo trì)"
+                    }
                     className="text-xs h-9"
                   />
                 </div>
 
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Phòng Ban Phụ Trách</label>
+                  <label className="block font-semibold text-slate-700 mb-1">
+                    Phòng Ban Phụ Trách
+                  </label>
                   <select
                     name="assigned_dept"
                     defaultValue={editingCAPA?.assigned_dept || departments[0] || "Phòng Thiết bị"}
@@ -1820,10 +2093,19 @@ function CAPAManagementPage() {
               </div>
 
               <div className="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-2 -mx-6 -mb-6">
-                <Button type="button" variant="outline" size="sm" onClick={() => setShowCAPAModal(false)}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowCAPAModal(false)}
+                >
                   Hủy / Đóng
                 </Button>
-                <Button type="submit" size="sm" className="bg-blue-600 hover:bg-blue-700 text-white font-bold">
+                <Button
+                  type="submit"
+                  size="sm"
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-bold"
+                >
                   {editingCAPA ? "Lưu Cập Nhật" : "Khởi Tạo CAPA"}
                 </Button>
               </div>
@@ -1841,7 +2123,10 @@ function CAPAManagementPage() {
                 <ShieldCheck className="h-4 w-4 text-emerald-700" />
                 Thẩm Tra Hiệu Lực CAPA Sau 30 Ngày
               </h3>
-              <button onClick={() => setShowVerifyModal(false)} className="text-slate-400 hover:text-slate-600">
+              <button
+                onClick={() => setShowVerifyModal(false)}
+                className="text-slate-400 hover:text-slate-600"
+              >
                 <X className="h-5 w-5" />
               </button>
             </div>
@@ -1851,36 +2136,60 @@ function CAPAManagementPage() {
                 <div className="font-bold text-slate-900 text-sm">
                   {verifyingCAPA.capa_number}: {verifyingCAPA.title}
                 </div>
-                <div className="text-slate-600 font-medium">Người thực hiện: {verifyingCAPA.assigned_to_name}</div>
+                <div className="text-slate-600 font-medium">
+                  Người thực hiện: {verifyingCAPA.assigned_to_name}
+                </div>
               </div>
 
               <div>
-                <label className="block font-bold text-slate-800 mb-1">Đánh Giá Viên / Người Thẩm Tra *</label>
+                <label className="block font-bold text-slate-800 mb-1">
+                  Đánh Giá Viên / Người Thẩm Tra *
+                </label>
                 <Input
                   value={verificationForm.verified_by_name}
-                  onChange={(e) => setVerificationForm({ ...verificationForm, verified_by_name: e.target.value })}
+                  onChange={(e) =>
+                    setVerificationForm({ ...verificationForm, verified_by_name: e.target.value })
+                  }
                   required
                   className="text-xs h-9 font-medium"
                 />
               </div>
 
               <div>
-                <label className="block font-bold text-slate-800 mb-1">Kết Quả Thẩm Tra Hiệu Lực *</label>
+                <label className="block font-bold text-slate-800 mb-1">
+                  Kết Quả Thẩm Tra Hiệu Lực *
+                </label>
                 <select
                   value={verificationForm.verification_status}
-                  onChange={(e) => setVerificationForm({ ...verificationForm, verification_status: e.target.value })}
+                  onChange={(e) =>
+                    setVerificationForm({
+                      ...verificationForm,
+                      verification_status: e.target.value,
+                    })
+                  }
                   className="w-full text-xs h-9 bg-white border border-slate-200 rounded-lg px-2.5 font-bold text-emerald-800"
                 >
-                  <option value="EFFECTIVE">✅ ĐẠT HIỆU LỰC (Sự cố không tái diễn - Đóng NC)</option>
-                  <option value="INEFFECTIVE">❌ KHÔNG HIỆU LỰC (Còn tái diễn - Yêu cầu phân tích lại)</option>
+                  <option value="EFFECTIVE">
+                    ✅ ĐẠT HIỆU LỰC (Sự cố không tái diễn - Đóng NC)
+                  </option>
+                  <option value="INEFFECTIVE">
+                    ❌ KHÔNG HIỆU LỰC (Còn tái diễn - Yêu cầu phân tích lại)
+                  </option>
                 </select>
               </div>
 
               <div>
-                <label className="block font-bold text-slate-800 mb-1">Nội Dung Bằng Chứng Thẩm Tra *</label>
+                <label className="block font-bold text-slate-800 mb-1">
+                  Nội Dung Bằng Chứng Thẩm Tra *
+                </label>
                 <Textarea
                   value={verificationForm.verification_result}
-                  onChange={(e) => setVerificationForm({ ...verificationForm, verification_result: e.target.value })}
+                  onChange={(e) =>
+                    setVerificationForm({
+                      ...verificationForm,
+                      verification_result: e.target.value,
+                    })
+                  }
                   rows={4}
                   required
                   placeholder="Ghi nhận số liệu kiểm tra ngẫu nhiên, kết quả test vi sinh, phỏng vấn nhân viên..."
@@ -1889,10 +2198,19 @@ function CAPAManagementPage() {
               </div>
 
               <div className="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-2 -mx-6 -mb-6">
-                <Button type="button" variant="outline" size="sm" onClick={() => setShowVerifyModal(false)}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowVerifyModal(false)}
+                >
                   Hủy
                 </Button>
-                <Button type="submit" size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold">
+                <Button
+                  type="submit"
+                  size="sm"
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold"
+                >
                   Xác Nhận Thẩm Tra & Đóng NC
                 </Button>
               </div>
@@ -1922,7 +2240,10 @@ function CAPAManagementPage() {
                   <Printer className="h-3.5 w-3.5" />
                   <span>In Biểu Mẫu</span>
                 </Button>
-                <button onClick={() => setShowPrintModal(false)} className="text-slate-400 hover:text-slate-600 p-1">
+                <button
+                  onClick={() => setShowPrintModal(false)}
+                  className="text-slate-400 hover:text-slate-600 p-1"
+                >
                   <X className="h-5 w-5" />
                 </button>
               </div>
@@ -1947,9 +2268,15 @@ function CAPAManagementPage() {
                       </div>
                     </div>
                     <div className="col-span-1 p-2 text-[10px] text-left space-y-0.5 pl-3">
-                      <div><b>Mã BM:</b> BM-CAPA-01</div>
-                      <div><b>Lần BH:</b> 02/2026</div>
-                      <div><b>Mã Phiếu:</b> {printingCAPA.capa_number}</div>
+                      <div>
+                        <b>Mã BM:</b> BM-CAPA-01
+                      </div>
+                      <div>
+                        <b>Lần BH:</b> 02/2026
+                      </div>
+                      <div>
+                        <b>Mã Phiếu:</b> {printingCAPA.capa_number}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1960,10 +2287,18 @@ function CAPAManagementPage() {
                     I. THÔNG TIN SỰ KHÔNG PHÙ HỢP (NON-CONFORMANCE DETAILS)
                   </h4>
                   <div className="grid grid-cols-2 gap-2 text-[11px]">
-                    <div><b>Tiêu đề sự cố:</b> {printingCAPA.title}</div>
-                    <div><b>Mã sự cố NC:</b> {printingCAPA.nc_number || "NC-2026"}</div>
-                    <div><b>Bộ phận chịu trách nhiệm:</b> {printingCAPA.assigned_dept}</div>
-                    <div><b>Người phụ trách:</b> {printingCAPA.assigned_to_name}</div>
+                    <div>
+                      <b>Tiêu đề sự cố:</b> {printingCAPA.title}
+                    </div>
+                    <div>
+                      <b>Mã sự cố NC:</b> {printingCAPA.nc_number || "NC-2026"}
+                    </div>
+                    <div>
+                      <b>Bộ phận chịu trách nhiệm:</b> {printingCAPA.assigned_dept}
+                    </div>
+                    <div>
+                      <b>Người phụ trách:</b> {printingCAPA.assigned_to_name}
+                    </div>
                   </div>
                 </div>
 
@@ -1973,11 +2308,17 @@ function CAPAManagementPage() {
                     II. PHÂN TÍCH NGUYÊN NHÂN GỐC RỄ (ROOT CAUSE ANALYSIS - 8.9.3)
                   </h4>
                   <div className="text-[11px] space-y-1.5">
-                    <div><b>Phương pháp áp dụng:</b> {printingCAPA.root_cause_method === "5_WHYS" ? "5-Why Analysis" : "Ishikawa Fishbone Diagram 5M"}</div>
+                    <div>
+                      <b>Phương pháp áp dụng:</b>{" "}
+                      {printingCAPA.root_cause_method === "5_WHYS"
+                        ? "5-Why Analysis"
+                        : "Ishikawa Fishbone Diagram 5M"}
+                    </div>
                     <div>
                       <b>Kết luận nguyên nhân cốt lõi:</b>
                       <p className="p-2 bg-slate-50 border border-slate-200 rounded mt-1 text-slate-800 leading-relaxed font-medium">
-                        {printingCAPA.root_cause_summary || "Đã phân tích và xác định điểm nghẽn quy trình."}
+                        {printingCAPA.root_cause_summary ||
+                          "Đã phân tích và xác định điểm nghẽn quy trình."}
                       </p>
                     </div>
                   </div>
@@ -1991,17 +2332,23 @@ function CAPAManagementPage() {
                   <div className="text-[11px] space-y-2">
                     <div>
                       <b>1. Hành động khắc phục nguyên nhân (Corrective Action):</b>
-                      <p className="p-2 bg-slate-50 border border-slate-200 rounded mt-1 leading-relaxed font-medium">{printingCAPA.corrective_action}</p>
+                      <p className="p-2 bg-slate-50 border border-slate-200 rounded mt-1 leading-relaxed font-medium">
+                        {printingCAPA.corrective_action}
+                      </p>
                     </div>
                     {printingCAPA.preventive_action && (
                       <div>
                         <b>2. Biện pháp phòng ngừa tái diễn (Preventive Action):</b>
-                        <p className="p-2 bg-slate-50 border border-slate-200 rounded mt-1 leading-relaxed font-medium">{printingCAPA.preventive_action}</p>
+                        <p className="p-2 bg-slate-50 border border-slate-200 rounded mt-1 leading-relaxed font-medium">
+                          {printingCAPA.preventive_action}
+                        </p>
                       </div>
                     )}
                     <div className="grid grid-cols-2 gap-2 pt-1 font-semibold">
                       <div>Hạn hoàn thành: {printingCAPA.target_date}</div>
-                      <div>Ngày thực tế hoàn tất: {printingCAPA.completed_date || "Đang thực hiện"}</div>
+                      <div>
+                        Ngày thực tế hoàn tất: {printingCAPA.completed_date || "Đang thực hiện"}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -2013,17 +2360,25 @@ function CAPAManagementPage() {
                   </h4>
                   <div className="text-[11px] space-y-1.5">
                     <div className="flex items-center justify-between">
-                      <div><b>Người thẩm tra:</b> {printingCAPA.verified_by_name || "Trưởng Ban QLCL & ATTP"}</div>
-                      <div><b>Ngày thẩm tra:</b> {printingCAPA.verification_date || "Sau 30 ngày"}</div>
+                      <div>
+                        <b>Người thẩm tra:</b>{" "}
+                        {printingCAPA.verified_by_name || "Trưởng Ban QLCL & ATTP"}
+                      </div>
+                      <div>
+                        <b>Ngày thẩm tra:</b> {printingCAPA.verification_date || "Sau 30 ngày"}
+                      </div>
                     </div>
                     <div>
                       <b>Kết luận hiệu lực: </b>
                       <span className="font-bold text-emerald-700">
-                        {printingCAPA.verification_status === "EFFECTIVE" ? "✅ ĐẠT HIỆU LỰC (EFFECTIVE)" : "⏳ Đang theo dõi chu kỳ 30 ngày"}
+                        {printingCAPA.verification_status === "EFFECTIVE"
+                          ? "✅ ĐẠT HIỆU LỰC (EFFECTIVE)"
+                          : "⏳ Đang theo dõi chu kỳ 30 ngày"}
                       </span>
                     </div>
                     <p className="p-2 bg-slate-50 border border-slate-200 rounded text-slate-800 leading-relaxed font-medium">
-                      {printingCAPA.verification_result || "Đoàn đánh giá nội bộ sẽ tái thẩm tra số liệu tại hiện trường sau 30 ngày vận hành ổn định."}
+                      {printingCAPA.verification_result ||
+                        "Đoàn đánh giá nội bộ sẽ tái thẩm tra số liệu tại hiện trường sau 30 ngày vận hành ổn định."}
                     </p>
                   </div>
                 </div>
@@ -2032,7 +2387,9 @@ function CAPAManagementPage() {
                 <div className="grid grid-cols-3 text-center pt-6 text-[11px]">
                   <div className="space-y-12">
                     <p className="font-bold uppercase">Người Lập Báo Cáo</p>
-                    <p className="font-semibold text-slate-700">{printingCAPA.assigned_to_name || "Trần Văn An"}</p>
+                    <p className="font-semibold text-slate-700">
+                      {printingCAPA.assigned_to_name || "Trần Văn An"}
+                    </p>
                   </div>
 
                   <div className="space-y-12">
@@ -2075,11 +2432,7 @@ function CAPAManagementPage() {
       )}
 
       {/* Module Guide Modal */}
-      <ModuleGuideModal
-        module="capa"
-        isOpen={showGuide}
-        onClose={() => setShowGuide(false)}
-      />
+      <ModuleGuideModal module="capa" isOpen={showGuide} onClose={() => setShowGuide(false)} />
     </div>
   );
 }

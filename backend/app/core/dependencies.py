@@ -6,6 +6,7 @@ from jose import jwt, JWTError
 from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.security import SECRET_KEY, ALGORITHM
+from app.core.authorization import has_any_role
 
 if TYPE_CHECKING:
     from app.modules.auth.models import User
@@ -70,20 +71,8 @@ def require_roles(*allowed_roles: str):
     - Kiểm tra xem người dùng có ít nhất một vai trò thuộc allowed_roles (hỗ trợ role_code và department).
     """
     def role_checker(current_user: User = Depends(get_current_user)) -> User:
-        user_roles = [str(r.role_code).lower().strip() for r in current_user.roles]
-        if current_user.department:
-            user_roles.append(str(current_user.department).lower().strip())
-        
-        # Superuser bypass: admin có toàn quyền
-        if "admin" in user_roles:
+        if has_any_role(current_user, allowed_roles):
             return current_user
-
-        # Kiểm tra vai trò của người dùng
-        allowed_lower = [r.lower().strip() for r in allowed_roles]
-        for ur in user_roles:
-            for al in allowed_lower:
-                if ur == al or al in ur or ur in al:
-                    return current_user
 
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

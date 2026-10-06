@@ -70,14 +70,14 @@ import { PeriodicReviewTab } from "@/components/documents/PeriodicReviewTab";
 import { RecordsRetentionTab } from "@/components/documents/RecordsRetentionTab";
 import { generateMasterDocumentListHtml } from "@/components/documents/dmsPrintHelpers";
 
-
 export const Route = createFileRoute("/documents")({
   head: () => ({
     meta: [
       { title: "Tài liệu & SOPs – WCERT ISO 22000" },
       {
         name: "description",
-        content: "Quản lý hệ thống tài liệu ISO 22000:2018 5 cấp: Chính sách, Sổ tay, SOP, Hướng dẫn công việc và Biểu mẫu.",
+        content:
+          "Quản lý hệ thống tài liệu ISO 22000:2018 5 cấp: Chính sách, Sổ tay, SOP, Hướng dẫn công việc và Biểu mẫu.",
       },
     ],
   }),
@@ -225,7 +225,6 @@ export interface RecordRetention {
 }
 
 import { useDepartments, DEFAULT_DEPARTMENTS } from "@/lib/departments";
-
 
 // Danh sách phòng ban chuẩn hóa từ CSDL
 export const DEPARTMENTS = DEFAULT_DEPARTMENTS;
@@ -531,7 +530,6 @@ function DocumentsPage() {
     else if (activeTab === "RETENTION_RECORDS") fetchRetentionRecords();
   }, [activeTab]);
 
-
   // Modal States
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingDoc, setEditingDoc] = useState<DocumentItem | null>(null);
@@ -549,7 +547,11 @@ function DocumentsPage() {
   // Workflow Builder State
   const [showSopWorkflowModal, setShowSopWorkflowModal] = useState(false);
   const [sopWorkflowTemplate, setSopWorkflowTemplate] = useState<WorkflowTemplateData | null>(null);
-  const [deletingDocItem, setDeletingDocItem] = useState<{ id: string; code: string; title: string } | null>(null);
+  const [deletingDocItem, setDeletingDocItem] = useState<{
+    id: string;
+    code: string;
+    title: string;
+  } | null>(null);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -604,9 +606,7 @@ function DocumentsPage() {
       const viewCode = params.get("view") || params.get("code");
       if (viewCode) {
         const targetDoc = documents.find(
-          (d) =>
-            d.doc_code.toUpperCase() === viewCode.toUpperCase() ||
-            d.document_id === viewCode
+          (d) => d.doc_code.toUpperCase() === viewCode.toUpperCase() || d.document_id === viewCode,
         );
         if (targetDoc) {
           handleOpenExportPDF(targetDoc);
@@ -694,7 +694,7 @@ function DocumentsPage() {
         });
         const updated = { ...res.data, id: res.data.document_id };
         setDocuments((prev) =>
-          prev.map((d) => (d.document_id === editingDoc.document_id ? updated : d))
+          prev.map((d) => (d.document_id === editingDoc.document_id ? updated : d)),
         );
       } else {
         // Tạo mới
@@ -740,9 +740,7 @@ function DocumentsPage() {
         effective_date: new Date().toISOString().split("T")[0],
       });
       const updated = { ...res.data, id: res.data.document_id };
-      setDocuments((prev) =>
-        prev.map((d) => (d.document_id === doc.document_id ? updated : d))
-      );
+      setDocuments((prev) => prev.map((d) => (d.document_id === doc.document_id ? updated : d)));
       toast.success(`Đã phê duyệt hiệu lực cho tài liệu [${doc.doc_code}]!`);
     } catch (err: any) {
       toast.error(err.response?.data?.detail || "Không thể phê duyệt tài liệu");
@@ -753,7 +751,9 @@ function DocumentsPage() {
   const handleOpenSopWorkflow = async () => {
     try {
       const res = await api.get("/builders/workflows");
-      const found = res.data.find((w: any) => w.code === "WF-SOP-APPROVAL" || w.module === "DOCUMENTS");
+      const found = res.data.find(
+        (w: any) => w.code === "WF-SOP-APPROVAL" || w.module === "DOCUMENTS",
+      );
       if (found) {
         setSopWorkflowTemplate(found);
       } else {
@@ -761,13 +761,47 @@ function DocumentsPage() {
           module: "DOCUMENTS",
           code: "WF-SOP-APPROVAL",
           title: "Quy Trình Soạn Thảo & Phê Duyệt Tài Liệu / SOP Đa Cấp",
-          description: "Quy trình 4 bước kiểm soát thông tin dạng văn bản: Soạn thảo -> Thẩm tra QA -> Ký duyệt Ban Giám Đốc -> Ban hành và phân phối.",
+          description:
+            "Quy trình 4 bước kiểm soát thông tin dạng văn bản: Soạn thảo -> Thẩm tra QA -> Ký duyệt Ban Giám Đốc -> Ban hành và phân phối.",
           version: "1.0",
           nodes: [
-            { id: "doc_1", type: "process", label: "1. Soạn thảo Dự thảo Tài liệu / SOP", role: "Trưởng Bộ Phận / Soạn thảo", description: "Viết nội dung quy trình, xác định phạm vi và biểu mẫu kèm theo.", is_ccp: false, step_number: 1 },
-            { id: "doc_2", type: "approval", label: "2. Thẩm tra Kỹ thuật & Tuân thủ ISO", role: "Ban QLCL & ATTP (QA Lead)", description: "Kiểm tra sự phù hợp với ISO 22000, HACCP và quy chuẩn pháp lý.", is_ccp: false, step_number: 2 },
-            { id: "doc_3", type: "approval", label: "3. Phê duyệt & Ký Ban hành", role: "Đại diện Lãnh đạo / Ban Giám Đốc", description: "Ký duyệt hiệu lực chính thức và xác định ngày bắt đầu áp dụng.", is_ccp: false, step_number: 3 },
-            { id: "doc_4", type: "process", label: "4. Phân phối có Kiểm soát & Đào tạo", role: "Thư ký ISO & Trưởng ca", description: "Cập nhật Danh mục tài liệu hiệu lực, thu hồi bản cũ và phổ biến cho nhân viên.", is_ccp: false, step_number: 4 },
+            {
+              id: "doc_1",
+              type: "process",
+              label: "1. Soạn thảo Dự thảo Tài liệu / SOP",
+              role: "Trưởng Bộ Phận / Soạn thảo",
+              description: "Viết nội dung quy trình, xác định phạm vi và biểu mẫu kèm theo.",
+              is_ccp: false,
+              step_number: 1,
+            },
+            {
+              id: "doc_2",
+              type: "approval",
+              label: "2. Thẩm tra Kỹ thuật & Tuân thủ ISO",
+              role: "Ban QLCL & ATTP (QA Lead)",
+              description: "Kiểm tra sự phù hợp với ISO 22000, HACCP và quy chuẩn pháp lý.",
+              is_ccp: false,
+              step_number: 2,
+            },
+            {
+              id: "doc_3",
+              type: "approval",
+              label: "3. Phê duyệt & Ký Ban hành",
+              role: "Đại diện Lãnh đạo / Ban Giám Đốc",
+              description: "Ký duyệt hiệu lực chính thức và xác định ngày bắt đầu áp dụng.",
+              is_ccp: false,
+              step_number: 3,
+            },
+            {
+              id: "doc_4",
+              type: "process",
+              label: "4. Phân phối có Kiểm soát & Đào tạo",
+              role: "Thư ký ISO & Trưởng ca",
+              description:
+                "Cập nhật Danh mục tài liệu hiệu lực, thu hồi bản cũ và phổ biến cho nhân viên.",
+              is_ccp: false,
+              step_number: 4,
+            },
           ],
           edges: [
             { id: "ed1_2", source: "doc_1", target: "doc_2", label: "Gửi thẩm tra" },
@@ -784,7 +818,7 @@ function DocumentsPage() {
   };
 
   // Áp dụng mẫu gợi ý AI vào form tạo tài liệu (Tự động tránh trùng mã để không bị lỗi 400)
-  const handleApplyAITemplate = (tpl: typeof AI_SOP_TEMPLATES[0]) => {
+  const handleApplyAITemplate = (tpl: (typeof AI_SOP_TEMPLATES)[0]) => {
     let candidateCode = tpl.code;
     const existingCodes = new Set(documents.map((d) => d.doc_code.toUpperCase()));
     if (existingCodes.has(candidateCode.toUpperCase())) {
@@ -1168,9 +1202,10 @@ KÝ DUYỆT VĂN BẢN:
         title: "Nhận diện & Tiêu đề",
         clause: "Mục 7.5.2a",
         passed: Boolean(doc.doc_code && doc.doc_title),
-        desc: doc.doc_code && doc.doc_title
-          ? `Mã [${doc.doc_code}] & tiêu đề rõ ràng`
-          : "Thiếu mã hiệu hoặc tiêu đề",
+        desc:
+          doc.doc_code && doc.doc_title
+            ? `Mã [${doc.doc_code}] & tiêu đề rõ ràng`
+            : "Thiếu mã hiệu hoặc tiêu đề",
       },
       {
         title: "Phòng ban phụ trách",
@@ -1188,11 +1223,12 @@ KÝ DUYỆT VĂN BẢN:
         title: "Xem xét & Phê duyệt",
         clause: "Mục 7.5.2c",
         passed: doc.status === "APPROVED",
-        desc: doc.status === "APPROVED"
-          ? `Đã phê duyệt (${doc.approver_name || "Ban ATTP"})`
-          : doc.status === "PENDING_APPROVAL"
-          ? "Đang chờ ký duyệt"
-          : "Bản thảo chưa duyệt",
+        desc:
+          doc.status === "APPROVED"
+            ? `Đã phê duyệt (${doc.approver_name || "Ban ATTP"})`
+            : doc.status === "PENDING_APPROVAL"
+              ? "Đang chờ ký duyệt"
+              : "Bản thảo chưa duyệt",
       },
       {
         title: "Ngày có hiệu lực",
@@ -1307,7 +1343,9 @@ KÝ DUYỆT VĂN BẢN:
             id: "CHANGE_REQUESTS",
             label: "Yêu cầu xem xét (BM01-KSTL)",
             icon: History,
-            badge: changeRequests.filter((c) => c.status !== "APPROVED" && c.status !== "REJECTED").length || undefined,
+            badge:
+              changeRequests.filter((c) => c.status !== "APPROVED" && c.status !== "REJECTED")
+                .length || undefined,
           },
           {
             id: "DISTRIBUTIONS",
@@ -1325,7 +1363,10 @@ KÝ DUYỆT VĂN BẢN:
             id: "PERIODIC_REVIEWS",
             label: "Soát xét định kỳ (BM05-KSTL)",
             icon: Clock,
-            badge: periodicReviews.filter((p) => p.review_status === "OVERDUE" || p.review_status === "DUE_SOON").length || undefined,
+            badge:
+              periodicReviews.filter(
+                (p) => p.review_status === "OVERDUE" || p.review_status === "DUE_SOON",
+              ).length || undefined,
           },
           {
             id: "RETENTION_RECORDS",
@@ -1374,355 +1415,382 @@ KÝ DUYỆT VĂN BẢN:
                 title: "Chính sách",
                 count: counts.policy,
 
-            code: "POLICY",
-            tone: "border-purple-200 bg-purple-500/5 text-purple-700 dark:text-purple-300",
-            badge: "bg-purple-500/10 text-purple-700",
-          },
-          {
-            level: "Cấp 2",
-            title: "Sổ tay FSMS",
-            count: counts.manual,
-            code: "MANUAL",
-            tone: "border-blue-200 bg-blue-500/5 text-blue-700 dark:text-blue-300",
-            badge: "bg-blue-500/10 text-blue-700",
-          },
-          {
-            level: "Cấp 3",
-            title: "Quy trình (SOP)",
-            count: counts.sop,
-            code: "SOP",
-            tone: "border-emerald-200 bg-emerald-500/5 text-emerald-700 dark:text-emerald-300",
-            badge: "bg-emerald-500/10 text-emerald-700",
-          },
-          {
-            level: "Cấp 4",
-            title: "Hướng dẫn (WI)",
-            count: counts.wi,
-            code: "WI",
-            tone: "border-amber-200 bg-amber-500/5 text-amber-700 dark:text-amber-300",
-            badge: "bg-amber-500/10 text-amber-700",
-          },
-          {
-            level: "Cấp 5",
-            title: "Biểu mẫu (FORM)",
-            count: counts.form,
-            code: "FORM",
-            tone: "border-sky-200 bg-sky-500/5 text-sky-700 dark:text-sky-300",
-            badge: "bg-sky-500/10 text-sky-700",
-          },
-          {
-            level: "Tổng hợp",
-            title: "Đã phê duyệt",
-            count: `${counts.approved}/${counts.total}`,
-            code: "APPROVED",
-            tone: "border-emerald-200 bg-emerald-500/10 text-emerald-800 dark:text-emerald-200",
-            badge: "bg-emerald-600 text-white font-bold",
-          },
-        ].map((item) => (
-          <div
-            key={item.title}
-            onClick={() => {
-              if (item.code === "APPROVED") {
-                setSelectedStatus(selectedStatus === "APPROVED" ? "ALL" : "APPROVED");
-              } else {
-                setSelectedType(selectedType === item.code ? "ALL" : item.code);
-              }
-            }}
-            className={`cursor-pointer rounded-xl border p-4 transition-all hover:shadow-sm ${item.tone} ${
-              selectedType === item.code || (item.code === "APPROVED" && selectedStatus === "APPROVED")
-                ? "ring-2 ring-primary ring-offset-1"
-                : ""
-            }`}
-          >
-            <div className="flex items-center justify-between">
-              <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${item.badge}`}>
-                {item.level}
-              </span>
-              <span className="text-xs text-muted-foreground">ISO 22000</span>
-            </div>
-            <div className="mt-2.5 text-2xl font-bold">{item.count}</div>
-            <div className="text-xs font-medium text-muted-foreground">{item.title}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* Bộ lọc & Tìm kiếm - Bố cục mượt mà 1 hàng responsive */}
-      <div className="space-y-3 rounded-2xl border bg-card p-3.5 shadow-sm">
-        {/* Hàng 1: Tabs phân loại cấp */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
-          {[
-            { id: "ALL", label: "Tất cả Cấp" },
-            { id: "POLICY", label: "Chính sách (Cấp 1)" },
-            { id: "MANUAL", label: "Sổ tay (Cấp 2)" },
-            { id: "SOP", label: "Quy trình SOP (Cấp 3)" },
-            { id: "WI", label: "Hướng dẫn WI (Cấp 4)" },
-            { id: "FORM", label: "Biểu mẫu (Cấp 5)" },
-            { id: "RECORD", label: "Hồ sơ" },
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setSelectedType(tab.id)}
-              className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium transition ${
-                selectedType === tab.id
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground"
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Hàng 2: Lọc Phòng ban, Trạng thái và Ô tìm kiếm */}
-        <div className="flex flex-wrap items-center justify-between gap-2.5 border-t pt-3">
-          <div className="flex flex-wrap items-center gap-2">
-            {/* Lọc theo Phòng ban */}
-            <div className="flex items-center gap-1 text-xs">
-              <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
-              <select
-                value={selectedDept}
-                onChange={(e) => setSelectedDept(e.target.value)}
-                className="h-8 rounded-lg border border-input bg-background px-2.5 text-xs font-medium shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                code: "POLICY",
+                tone: "border-purple-200 bg-purple-500/5 text-purple-700 dark:text-purple-300",
+                badge: "bg-purple-500/10 text-purple-700",
+              },
+              {
+                level: "Cấp 2",
+                title: "Sổ tay FSMS",
+                count: counts.manual,
+                code: "MANUAL",
+                tone: "border-blue-200 bg-blue-500/5 text-blue-700 dark:text-blue-300",
+                badge: "bg-blue-500/10 text-blue-700",
+              },
+              {
+                level: "Cấp 3",
+                title: "Quy trình (SOP)",
+                count: counts.sop,
+                code: "SOP",
+                tone: "border-emerald-200 bg-emerald-500/5 text-emerald-700 dark:text-emerald-300",
+                badge: "bg-emerald-500/10 text-emerald-700",
+              },
+              {
+                level: "Cấp 4",
+                title: "Hướng dẫn (WI)",
+                count: counts.wi,
+                code: "WI",
+                tone: "border-amber-200 bg-amber-500/5 text-amber-700 dark:text-amber-300",
+                badge: "bg-amber-500/10 text-amber-700",
+              },
+              {
+                level: "Cấp 5",
+                title: "Biểu mẫu (FORM)",
+                count: counts.form,
+                code: "FORM",
+                tone: "border-sky-200 bg-sky-500/5 text-sky-700 dark:text-sky-300",
+                badge: "bg-sky-500/10 text-sky-700",
+              },
+              {
+                level: "Tổng hợp",
+                title: "Đã phê duyệt",
+                count: `${counts.approved}/${counts.total}`,
+                code: "APPROVED",
+                tone: "border-emerald-200 bg-emerald-500/10 text-emerald-800 dark:text-emerald-200",
+                badge: "bg-emerald-600 text-white font-bold",
+              },
+            ].map((item) => (
+              <div
+                key={item.title}
+                onClick={() => {
+                  if (item.code === "APPROVED") {
+                    setSelectedStatus(selectedStatus === "APPROVED" ? "ALL" : "APPROVED");
+                  } else {
+                    setSelectedType(selectedType === item.code ? "ALL" : item.code);
+                  }
+                }}
+                className={`cursor-pointer rounded-xl border p-4 transition-all hover:shadow-sm ${item.tone} ${
+                  selectedType === item.code ||
+                  (item.code === "APPROVED" && selectedStatus === "APPROVED")
+                    ? "ring-2 ring-primary ring-offset-1"
+                    : ""
+                }`}
               >
-                <option value="ALL">Tất cả Phòng ban</option>
-                {departments.map((d) => (
-                  <option key={d} value={d}>
-                    {d}
-                  </option>
-                ))}
-              </select>
+                <div className="flex items-center justify-between">
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${item.badge}`}
+                  >
+                    {item.level}
+                  </span>
+                  <span className="text-xs text-muted-foreground">ISO 22000</span>
+                </div>
+                <div className="mt-2.5 text-2xl font-bold">{item.count}</div>
+                <div className="text-xs font-medium text-muted-foreground">{item.title}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Bộ lọc & Tìm kiếm - Bố cục mượt mà 1 hàng responsive */}
+          <div className="space-y-3 rounded-2xl border bg-card p-3.5 shadow-sm">
+            {/* Hàng 1: Tabs phân loại cấp */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
+              {[
+                { id: "ALL", label: "Tất cả Cấp" },
+                { id: "POLICY", label: "Chính sách (Cấp 1)" },
+                { id: "MANUAL", label: "Sổ tay (Cấp 2)" },
+                { id: "SOP", label: "Quy trình SOP (Cấp 3)" },
+                { id: "WI", label: "Hướng dẫn WI (Cấp 4)" },
+                { id: "FORM", label: "Biểu mẫu (Cấp 5)" },
+                { id: "RECORD", label: "Hồ sơ" },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setSelectedType(tab.id)}
+                  className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium transition ${
+                    selectedType === tab.id
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground"
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
             </div>
 
-            {/* Lọc trạng thái */}
-            <select
-              value={selectedStatus}
-              onChange={(e) => setSelectedStatus(e.target.value)}
-              className="h-8 rounded-lg border border-input bg-background px-2.5 text-xs font-medium shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
-            >
-              <option value="ALL">Mọi trạng thái</option>
-              <option value="APPROVED">Đã phê duyệt</option>
-              <option value="PENDING_APPROVAL">Chờ phê duyệt</option>
-              <option value="DRAFT">Bản thảo</option>
-              <option value="OBSOLETE">Hết hiệu lực</option>
-            </select>
+            {/* Hàng 2: Lọc Phòng ban, Trạng thái và Ô tìm kiếm */}
+            <div className="flex flex-wrap items-center justify-between gap-2.5 border-t pt-3">
+              <div className="flex flex-wrap items-center gap-2">
+                {/* Lọc theo Phòng ban */}
+                <div className="flex items-center gap-1 text-xs">
+                  <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
+                  <select
+                    value={selectedDept}
+                    onChange={(e) => setSelectedDept(e.target.value)}
+                    className="h-8 rounded-lg border border-input bg-background px-2.5 text-xs font-medium shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                  >
+                    <option value="ALL">Tất cả Phòng ban</option>
+                    {departments.map((d) => (
+                      <option key={d} value={d}>
+                        {d}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Lọc trạng thái */}
+                <select
+                  value={selectedStatus}
+                  onChange={(e) => setSelectedStatus(e.target.value)}
+                  className="h-8 rounded-lg border border-input bg-background px-2.5 text-xs font-medium shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                >
+                  <option value="ALL">Mọi trạng thái</option>
+                  <option value="APPROVED">Đã phê duyệt</option>
+                  <option value="PENDING_APPROVAL">Chờ phê duyệt</option>
+                  <option value="DRAFT">Bản thảo</option>
+                  <option value="OBSOLETE">Hết hiệu lực</option>
+                </select>
+              </div>
+
+              {/* Ô tìm kiếm */}
+              <form onSubmit={handleSearchSubmit} className="relative w-full sm:w-64">
+                <Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-muted-foreground" />
+                <Input
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Mã, tên tài liệu, phòng ban..."
+                  className="h-8 pl-8 text-xs"
+                />
+              </form>
+            </div>
           </div>
 
-          {/* Ô tìm kiếm */}
-          <form onSubmit={handleSearchSubmit} className="relative w-full sm:w-64">
-            <Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-muted-foreground" />
-            <Input
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Mã, tên tài liệu, phòng ban..."
-              className="h-8 pl-8 text-xs"
+          {/* Bảng Danh sách Tài liệu */}
+          {!loading && documents.length === 0 ? (
+            <EmptyState
+              icon={FileText}
+              title="Chưa có tài liệu hoặc quy trình (SOP) nào"
+              description="Khởi tạo hệ thống tài liệu 5 cấp: Chính sách, Sổ tay ATTP, Quy trình chuẩn (SOP), Hướng dẫn công việc và Biểu mẫu."
+              actionLabel="+ Tạo Tài Liệu Mới"
+              onAction={handleOpenCreate}
+              onGuide={() => setShowGuide(true)}
             />
-          </form>
-        </div>
-      </div>
-
-      {/* Bảng Danh sách Tài liệu */}
-      {!loading && documents.length === 0 ? (
-        <EmptyState
-          icon={FileText}
-          title="Chưa có tài liệu hoặc quy trình (SOP) nào"
-          description="Khởi tạo hệ thống tài liệu 5 cấp: Chính sách, Sổ tay ATTP, Quy trình chuẩn (SOP), Hướng dẫn công việc và Biểu mẫu."
-          actionLabel="+ Tạo Tài Liệu Mới"
-          onAction={handleOpenCreate}
-          onGuide={() => setShowGuide(true)}
-        />
-      ) : (
-        <div className="overflow-hidden rounded-2xl border bg-card shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead className="border-b bg-muted/40 font-semibold text-muted-foreground">
-              <tr>
-                <th className="w-12 px-4 py-3 text-center">STT</th>
-                <th className="w-32 px-4 py-3">Mã tài liệu</th>
-                <th className="px-4 py-3">Tên tài liệu</th>
-                <th className="w-28 px-4 py-3">Phân cấp</th>
-                <th className="w-36 px-4 py-3">Phòng ban</th>
-                <th className="w-20 px-4 py-3 text-center">Phiên bản</th>
-                <th className="w-32 px-4 py-3">Trạng thái</th>
-                <th className="w-28 px-4 py-3">Ngày hiệu lực</th>
-                <th className="w-36 px-4 py-3 text-right">Thao tác</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-              {loading ? (
-                <tr>
-                  <td colSpan={9} className="py-12 text-center text-muted-foreground">
-                    <div className="inline-flex items-center gap-2">
-                      <RefreshCw className="h-4 w-4 animate-spin text-primary" />
-                      <span>Đang tải dữ liệu tài liệu từ máy chủ...</span>
-                    </div>
-                  </td>
-                </tr>
-              ) : documents.length === 0 ? (
-                <tr>
-                  <td colSpan={9} className="py-12 text-center text-muted-foreground">
-                    <div className="flex flex-col items-center justify-center gap-2">
-                      <FileText className="h-8 w-8 text-muted-foreground/50" />
-                      <p className="font-medium">Không tìm thấy tài liệu phù hợp</p>
-                      <p className="text-[11px]">Hãy thử tìm kiếm với từ khóa khác hoặc tạo tài liệu mới.</p>
-                      <Button size="sm" variant="outline" onClick={handleOpenCreate} className="mt-2 gap-1.5 text-xs">
-                        <Plus className="h-3.5 w-3.5" /> Tạo tài liệu ngay
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-              ) : (
-                documents.map((doc, idx) => {
-                  const typeCfg = DOC_TYPES[doc.doc_type] || DOC_TYPES.RECORD;
-                  const statusCfg = STATUS_CONFIG[doc.status] || STATUS_CONFIG.DRAFT;
-                  const StatusIcon = statusCfg.icon;
-
-                  return (
-                    <tr key={doc.document_id} className="transition-colors hover:bg-muted/30">
-                      <td className="px-4 py-3 text-center font-medium text-muted-foreground">
-                        {idx + 1}
-                      </td>
-                      <td className="px-4 py-3 font-semibold text-primary">
-                        <div className="flex items-center gap-1.5">
-                          <button
-                            onClick={() => handleOpenExportPDF(doc)}
-                            className="font-mono font-bold text-primary hover:underline hover:text-primary/80 transition text-left"
-                            title="Xem văn bản & Xuất PDF"
-                          >
-                            {doc.doc_code}
-                          </button>
-                          <button
-                            onClick={() => {
-                              if (doc.file_url && doc.file_url.startsWith("http") && !doc.file_url.includes("google.com/document/create")) {
-                                window.open(doc.file_url, "_blank");
-                              } else {
-                                handleOpenExportPDF(doc);
-                              }
-                            }}
-                            title={doc.file_url ? "Mở tệp đính kèm / Xem văn bản" : "Xem văn bản chuẩn ISO"}
-                            className="text-muted-foreground hover:text-primary transition p-0.5 rounded"
-                          >
-                            <ExternalLink className="h-3 w-3" />
-                          </button>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <button
-                          onClick={() => handleOpenExportPDF(doc)}
-                          className="font-medium text-foreground hover:text-primary transition text-left block"
-                          title="Xem văn bản & Xuất PDF"
-                        >
-                          {doc.doc_title}
-                        </button>
-                        {doc.standard && (
-                          <div className="text-[10px] text-muted-foreground">
-                            Tiêu chuẩn: <span className="font-medium text-foreground/80">{doc.standard}</span>
-                          </div>
-                        )}
-                      </td>
-                      <td className="px-4 py-3">
-                        <span
-                          className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-semibold ${typeCfg.bg} ${typeCfg.color}`}
-                        >
-                          {typeCfg.label}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-muted-foreground font-medium">
-                        {doc.department || "Ban QLCL & ATTP"}
-                      </td>
-                      <td className="px-4 py-3 text-center font-semibold text-foreground">
-                        v{doc.current_version}
-                      </td>
-                      <td className="px-4 py-3">
-                        <span
-                          className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${statusCfg.bg} ${statusCfg.color}`}
-                        >
-                          <StatusIcon className="h-3 w-3" />
-                          {statusCfg.label}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-muted-foreground">
-                        {doc.effective_date ? (
-                          <span className="inline-flex items-center gap-1">
-                            <Calendar className="h-3 w-3 text-muted-foreground/70" />
-                            {doc.effective_date}
-                          </span>
-                        ) : (
-                          "—"
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <div className="inline-flex items-center justify-end gap-1">
-                          {/* Nút Xuất PDF / In văn bản */}
-                          <button
-                            onClick={() => handleOpenExportPDF(doc)}
-                            title="Xuất file PDF / Xem văn bản chuẩn ISO"
-                            className="rounded p-1.5 text-primary hover:bg-primary/10 transition"
-                          >
-                            <FileDown className="h-3.5 w-3.5" />
-                          </button>
-
-                          {/* Nút Xem chi tiết */}
-                          <button
-                            onClick={() => setViewingDoc(doc)}
-                            title="Xem chi tiết & Đánh giá tuân thủ"
-                            className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition"
-                          >
-                            <Eye className="h-3.5 w-3.5" />
-                          </button>
-
-                          {/* Nút Duyệt nhanh nếu chưa duyệt (Chỉ BGĐ hoặc Admin) */}
-                          {doc.status !== "APPROVED" && (isManagement || isAdmin) && (
-                            <button
-                              onClick={() => handleQuickApprove(doc)}
-                              title="Phê duyệt nhanh tài liệu (Ban Giám Đốc)"
-                              className="rounded p-1.5 text-emerald-600 hover:bg-emerald-500/10 dark:text-emerald-400 transition"
-                            >
-                              <Check className="h-3.5 w-3.5" />
-                            </button>
-                          )}
-
-                          {/* Nút Chỉnh sửa */}
-                          {canEdit && (
-                            <button
-                              onClick={() => handleOpenEdit(doc)}
-                              title="Chỉnh sửa tài liệu"
-                              className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition"
-                            >
-                              <Pencil className="h-3.5 w-3.5" />
-                            </button>
-                          )}
-
-                          {/* Nút Xóa */}
-                          {canEdit && (
-                            <button
-                              onClick={() => setDeletingDocItem({ id: doc.document_id, code: doc.doc_code, title: doc.doc_title })}
-                              title="Xóa tài liệu"
-                              className="rounded p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition"
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </button>
-                          )}
-                        </div>
-                      </td>
+          ) : (
+            <div className="overflow-hidden rounded-2xl border bg-card shadow-sm">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="border-b bg-muted/40 font-semibold text-muted-foreground">
+                    <tr>
+                      <th className="w-12 px-4 py-3 text-center">STT</th>
+                      <th className="w-32 px-4 py-3">Mã tài liệu</th>
+                      <th className="px-4 py-3">Tên tài liệu</th>
+                      <th className="w-28 px-4 py-3">Phân cấp</th>
+                      <th className="w-36 px-4 py-3">Phòng ban</th>
+                      <th className="w-20 px-4 py-3 text-center">Phiên bản</th>
+                      <th className="w-32 px-4 py-3">Trạng thái</th>
+                      <th className="w-28 px-4 py-3">Ngày hiệu lực</th>
+                      <th className="w-36 px-4 py-3 text-right">Thao tác</th>
                     </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
+                  </thead>
+                  <tbody className="divide-y">
+                    {loading ? (
+                      <tr>
+                        <td colSpan={9} className="py-12 text-center text-muted-foreground">
+                          <div className="inline-flex items-center gap-2">
+                            <RefreshCw className="h-4 w-4 animate-spin text-primary" />
+                            <span>Đang tải dữ liệu tài liệu từ máy chủ...</span>
+                          </div>
+                        </td>
+                      </tr>
+                    ) : documents.length === 0 ? (
+                      <tr>
+                        <td colSpan={9} className="py-12 text-center text-muted-foreground">
+                          <div className="flex flex-col items-center justify-center gap-2">
+                            <FileText className="h-8 w-8 text-muted-foreground/50" />
+                            <p className="font-medium">Không tìm thấy tài liệu phù hợp</p>
+                            <p className="text-[11px]">
+                              Hãy thử tìm kiếm với từ khóa khác hoặc tạo tài liệu mới.
+                            </p>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={handleOpenCreate}
+                              className="mt-2 gap-1.5 text-xs"
+                            >
+                              <Plus className="h-3.5 w-3.5" /> Tạo tài liệu ngay
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ) : (
+                      documents.map((doc, idx) => {
+                        const typeCfg = DOC_TYPES[doc.doc_type] || DOC_TYPES.RECORD;
+                        const statusCfg = STATUS_CONFIG[doc.status] || STATUS_CONFIG.DRAFT;
+                        const StatusIcon = statusCfg.icon;
 
-        {/* Footer bảng */}
-        <div className="flex items-center justify-between border-t px-4 py-3 text-xs text-muted-foreground">
-          <div>
-            Hiển thị <b>{documents.length}</b> tài liệu
-          </div>
-          <div className="text-[11px]">
-            Hệ thống quản lý thông tin dạng văn bản theo ISO 22000:2018
-          </div>
-        </div>
-      </div>
-      )}
+                        return (
+                          <tr key={doc.document_id} className="transition-colors hover:bg-muted/30">
+                            <td className="px-4 py-3 text-center font-medium text-muted-foreground">
+                              {idx + 1}
+                            </td>
+                            <td className="px-4 py-3 font-semibold text-primary">
+                              <div className="flex items-center gap-1.5">
+                                <button
+                                  onClick={() => handleOpenExportPDF(doc)}
+                                  className="font-mono font-bold text-primary hover:underline hover:text-primary/80 transition text-left"
+                                  title="Xem văn bản & Xuất PDF"
+                                >
+                                  {doc.doc_code}
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    if (
+                                      doc.file_url &&
+                                      doc.file_url.startsWith("http") &&
+                                      !doc.file_url.includes("google.com/document/create")
+                                    ) {
+                                      window.open(doc.file_url, "_blank");
+                                    } else {
+                                      handleOpenExportPDF(doc);
+                                    }
+                                  }}
+                                  title={
+                                    doc.file_url
+                                      ? "Mở tệp đính kèm / Xem văn bản"
+                                      : "Xem văn bản chuẩn ISO"
+                                  }
+                                  className="text-muted-foreground hover:text-primary transition p-0.5 rounded"
+                                >
+                                  <ExternalLink className="h-3 w-3" />
+                                </button>
+                              </div>
+                            </td>
+                            <td className="px-4 py-3">
+                              <button
+                                onClick={() => handleOpenExportPDF(doc)}
+                                className="font-medium text-foreground hover:text-primary transition text-left block"
+                                title="Xem văn bản & Xuất PDF"
+                              >
+                                {doc.doc_title}
+                              </button>
+                              {doc.standard && (
+                                <div className="text-[10px] text-muted-foreground">
+                                  Tiêu chuẩn:{" "}
+                                  <span className="font-medium text-foreground/80">
+                                    {doc.standard}
+                                  </span>
+                                </div>
+                              )}
+                            </td>
+                            <td className="px-4 py-3">
+                              <span
+                                className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-semibold ${typeCfg.bg} ${typeCfg.color}`}
+                              >
+                                {typeCfg.label}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-muted-foreground font-medium">
+                              {doc.department || "Ban QLCL & ATTP"}
+                            </td>
+                            <td className="px-4 py-3 text-center font-semibold text-foreground">
+                              v{doc.current_version}
+                            </td>
+                            <td className="px-4 py-3">
+                              <span
+                                className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${statusCfg.bg} ${statusCfg.color}`}
+                              >
+                                <StatusIcon className="h-3 w-3" />
+                                {statusCfg.label}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-muted-foreground">
+                              {doc.effective_date ? (
+                                <span className="inline-flex items-center gap-1">
+                                  <Calendar className="h-3 w-3 text-muted-foreground/70" />
+                                  {doc.effective_date}
+                                </span>
+                              ) : (
+                                "—"
+                              )}
+                            </td>
+                            <td className="px-4 py-3 text-right">
+                              <div className="inline-flex items-center justify-end gap-1">
+                                {/* Nút Xuất PDF / In văn bản */}
+                                <button
+                                  onClick={() => handleOpenExportPDF(doc)}
+                                  title="Xuất file PDF / Xem văn bản chuẩn ISO"
+                                  className="rounded p-1.5 text-primary hover:bg-primary/10 transition"
+                                >
+                                  <FileDown className="h-3.5 w-3.5" />
+                                </button>
+
+                                {/* Nút Xem chi tiết */}
+                                <button
+                                  onClick={() => setViewingDoc(doc)}
+                                  title="Xem chi tiết & Đánh giá tuân thủ"
+                                  className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition"
+                                >
+                                  <Eye className="h-3.5 w-3.5" />
+                                </button>
+
+                                {/* Nút Duyệt nhanh nếu chưa duyệt (Chỉ BGĐ hoặc Admin) */}
+                                {doc.status !== "APPROVED" && (isManagement || isAdmin) && (
+                                  <button
+                                    onClick={() => handleQuickApprove(doc)}
+                                    title="Phê duyệt nhanh tài liệu (Ban Giám Đốc)"
+                                    className="rounded p-1.5 text-emerald-600 hover:bg-emerald-500/10 dark:text-emerald-400 transition"
+                                  >
+                                    <Check className="h-3.5 w-3.5" />
+                                  </button>
+                                )}
+
+                                {/* Nút Chỉnh sửa */}
+                                {canEdit && (
+                                  <button
+                                    onClick={() => handleOpenEdit(doc)}
+                                    title="Chỉnh sửa tài liệu"
+                                    className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition"
+                                  >
+                                    <Pencil className="h-3.5 w-3.5" />
+                                  </button>
+                                )}
+
+                                {/* Nút Xóa */}
+                                {canEdit && (
+                                  <button
+                                    onClick={() =>
+                                      setDeletingDocItem({
+                                        id: doc.document_id,
+                                        code: doc.doc_code,
+                                        title: doc.doc_title,
+                                      })
+                                    }
+                                    title="Xóa tài liệu"
+                                    className="rounded p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition"
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Footer bảng */}
+              <div className="flex items-center justify-between border-t px-4 py-3 text-xs text-muted-foreground">
+                <div>
+                  Hiển thị <b>{documents.length}</b> tài liệu
+                </div>
+                <div className="text-[11px]">
+                  Hệ thống quản lý thông tin dạng văn bản theo ISO 22000:2018
+                </div>
+              </div>
+            </div>
+          )}
         </>
       )}
 
@@ -1788,7 +1856,6 @@ KÝ DUYỆT VĂN BẢN:
 
       {/* Modal Thêm / Chỉnh Sửa Tài Liệu */}
       <Dialog
-
         open={isCreateOpen}
         onOpenChange={(open) => {
           setIsCreateOpen(open);
@@ -1798,7 +1865,9 @@ KÝ DUYỆT VĂN BẢN:
         <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-base font-bold">
-              {editingDoc ? `Chỉnh sửa tài liệu: ${editingDoc.doc_code}` : "Tạo mới tài liệu ISO 22000"}
+              {editingDoc
+                ? `Chỉnh sửa tài liệu: ${editingDoc.doc_code}`
+                : "Tạo mới tài liệu ISO 22000"}
             </DialogTitle>
           </DialogHeader>
 
@@ -1835,7 +1904,8 @@ KÝ DUYỆT VĂN BẢN:
                         RECORD: "REC-FSMS",
                       };
                       const prefix = prefixMap[newType] || "DOC-FSMS";
-                      const countForType = documents.filter((d) => d.doc_type === newType).length + 1;
+                      const countForType =
+                        documents.filter((d) => d.doc_type === newType).length + 1;
                       setFormData({
                         ...formData,
                         doc_type: newType,
@@ -1957,7 +2027,7 @@ KÝ DUYỆT VĂN BẢN:
                           status: formData.status,
                           effective_date: formData.effective_date,
                         },
-                        formData.content
+                        formData.content,
                       );
                     }}
                     className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 hover:text-emerald-700 bg-emerald-500/10 hover:bg-emerald-500/20 px-2 py-0.5 rounded border border-emerald-300 dark:border-emerald-800 transition"
@@ -1973,7 +2043,8 @@ KÝ DUYỆT VĂN BẢN:
                   className="h-9 text-xs font-mono bg-muted/20"
                 />
                 <p className="text-[10.5px] text-muted-foreground">
-                  🔗 Link truy cập nhanh trực tiếp vào giao diện Form văn bản chuẩn ISO 22000 & In PDF.
+                  🔗 Link truy cập nhanh trực tiếp vào giao diện Form văn bản chuẩn ISO 22000 & In
+                  PDF.
                 </p>
               </div>
 
@@ -1981,9 +2052,12 @@ KÝ DUYỆT VĂN BẢN:
               <div className="space-y-1.5 sm:col-span-2">
                 <div className="flex items-center justify-between">
                   <Label className="text-xs font-semibold">
-                    Nội dung văn bản gốc (Toàn văn Quy trình / SOP) <span className="text-primary font-normal">• Nguồn dữ liệu xuất PDF</span>
+                    Nội dung văn bản gốc (Toàn văn Quy trình / SOP){" "}
+                    <span className="text-primary font-normal">• Nguồn dữ liệu xuất PDF</span>
                   </Label>
-                  <span className="text-[10.5px] text-muted-foreground">Lưu trữ trực tiếp trong CSDL</span>
+                  <span className="text-[10.5px] text-muted-foreground">
+                    Lưu trữ trực tiếp trong CSDL
+                  </span>
                 </div>
                 <textarea
                   rows={8}
@@ -1993,7 +2067,8 @@ KÝ DUYỆT VĂN BẢN:
                   className="w-full rounded-md border border-input bg-background p-3 font-mono text-xs leading-relaxed shadow-sm focus:outline-none focus:ring-1 focus:ring-ring resize-y"
                 />
                 <p className="text-[11px] text-muted-foreground">
-                  💡 Mọi thay đổi nội dung ở đây sẽ được đồng bộ ngay lập tức khi mở <b>Link Docs ở trên</b> hoặc xuất file PDF.
+                  💡 Mọi thay đổi nội dung ở đây sẽ được đồng bộ ngay lập tức khi mở{" "}
+                  <b>Link Docs ở trên</b> hoặc xuất file PDF.
                 </p>
               </div>
             </div>
@@ -2018,223 +2093,240 @@ KÝ DUYỆT VĂN BẢN:
       {/* Modal Xem Chi Tiết & Đánh Giá Tuân Thủ ISO 22000 (Mục 7.5) */}
       <Dialog open={!!viewingDoc} onOpenChange={() => setViewingDoc(null)}>
         <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto">
-          {viewingDoc && (() => {
-            const comp = evaluateCompliance(viewingDoc);
-            const typeInfo = DOC_TYPES[viewingDoc.doc_type] || DOC_TYPES.RECORD;
-            const statusInfo = STATUS_CONFIG[viewingDoc.status] || STATUS_CONFIG.DRAFT;
-            const StatusIcon = statusInfo.icon;
+          {viewingDoc &&
+            (() => {
+              const comp = evaluateCompliance(viewingDoc);
+              const typeInfo = DOC_TYPES[viewingDoc.doc_type] || DOC_TYPES.RECORD;
+              const statusInfo = STATUS_CONFIG[viewingDoc.status] || STATUS_CONFIG.DRAFT;
+              const StatusIcon = statusInfo.icon;
 
-            return (
-              <div className="space-y-3.5">
-                <DialogHeader>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span
-                        className={`rounded border px-2 py-0.5 text-xs font-semibold ${typeInfo.bg} ${typeInfo.color}`}
-                      >
-                        {typeInfo.label}
-                      </span>
-                      <DialogTitle className="text-base font-bold text-foreground">
-                        {viewingDoc.doc_code}
-                      </DialogTitle>
+              return (
+                <div className="space-y-3.5">
+                  <DialogHeader>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={`rounded border px-2 py-0.5 text-xs font-semibold ${typeInfo.bg} ${typeInfo.color}`}
+                        >
+                          {typeInfo.label}
+                        </span>
+                        <DialogTitle className="text-base font-bold text-foreground">
+                          {viewingDoc.doc_code}
+                        </DialogTitle>
+                      </div>
                     </div>
-                  </div>
-                </DialogHeader>
+                  </DialogHeader>
 
-                {/* Tiêu đề & Thông tin cơ bản */}
-                <div className="rounded-xl border bg-muted/20 p-3 space-y-1.5">
-                  <div className="text-[11px] font-medium text-muted-foreground">Tên tài liệu:</div>
-                  <div className="text-sm font-bold text-foreground leading-snug">
-                    {viewingDoc.doc_title}
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2 pt-0.5">
-                    <span className="inline-flex items-center gap-1 rounded bg-background px-2 py-0.5 text-[11px] font-medium border text-muted-foreground">
-                      <Building2 className="h-3 w-3 text-primary" />
-                      Phòng ban: <b className="text-foreground">{viewingDoc.department || "Ban QLCL & ATTP"}</b>
-                    </span>
-                    <span className="inline-flex items-center gap-1 rounded bg-background px-2 py-0.5 text-[11px] font-medium border text-muted-foreground">
-                      <Award className="h-3 w-3 text-primary" />
-                      Tiêu chuẩn: <b className="text-foreground">{viewingDoc.standard || "ISO 22000:2018"}</b>
-                    </span>
-                  </div>
-                </div>
-
-                {/* Bảng Metadata 4 ô */}
-                <div className="grid grid-cols-2 gap-2 text-xs">
-                  <div className="rounded-lg border bg-card p-2">
-                    <div className="text-[10.5px] text-muted-foreground">Phiên bản hiện tại</div>
-                    <div className="mt-0.5 font-bold text-foreground">v{viewingDoc.current_version}</div>
-                  </div>
-
-                  <div className="rounded-lg border bg-card p-2">
-                    <div className="text-[10.5px] text-muted-foreground">Trạng thái phê duyệt</div>
-                    <div className="mt-0.5 font-bold">
-                      <span
-                        className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] font-semibold ${statusInfo.bg} ${statusInfo.color}`}
-                      >
-                        <StatusIcon className="h-3 w-3" />
-                        {statusInfo.label}
+                  {/* Tiêu đề & Thông tin cơ bản */}
+                  <div className="rounded-xl border bg-muted/20 p-3 space-y-1.5">
+                    <div className="text-[11px] font-medium text-muted-foreground">
+                      Tên tài liệu:
+                    </div>
+                    <div className="text-sm font-bold text-foreground leading-snug">
+                      {viewingDoc.doc_title}
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2 pt-0.5">
+                      <span className="inline-flex items-center gap-1 rounded bg-background px-2 py-0.5 text-[11px] font-medium border text-muted-foreground">
+                        <Building2 className="h-3 w-3 text-primary" />
+                        Phòng ban:{" "}
+                        <b className="text-foreground">
+                          {viewingDoc.department || "Ban QLCL & ATTP"}
+                        </b>
+                      </span>
+                      <span className="inline-flex items-center gap-1 rounded bg-background px-2 py-0.5 text-[11px] font-medium border text-muted-foreground">
+                        <Award className="h-3 w-3 text-primary" />
+                        Tiêu chuẩn:{" "}
+                        <b className="text-foreground">{viewingDoc.standard || "ISO 22000:2018"}</b>
                       </span>
                     </div>
                   </div>
 
-                  <div className="rounded-lg border bg-card p-2">
-                    <div className="text-[10.5px] text-muted-foreground">Ngày có hiệu lực</div>
-                    <div className="mt-0.5 font-semibold text-foreground">
-                      {viewingDoc.effective_date || "Chưa thiết lập"}
+                  {/* Bảng Metadata 4 ô */}
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div className="rounded-lg border bg-card p-2">
+                      <div className="text-[10.5px] text-muted-foreground">Phiên bản hiện tại</div>
+                      <div className="mt-0.5 font-bold text-foreground">
+                        v{viewingDoc.current_version}
+                      </div>
+                    </div>
+
+                    <div className="rounded-lg border bg-card p-2">
+                      <div className="text-[10.5px] text-muted-foreground">
+                        Trạng thái phê duyệt
+                      </div>
+                      <div className="mt-0.5 font-bold">
+                        <span
+                          className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] font-semibold ${statusInfo.bg} ${statusInfo.color}`}
+                        >
+                          <StatusIcon className="h-3 w-3" />
+                          {statusInfo.label}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="rounded-lg border bg-card p-2">
+                      <div className="text-[10.5px] text-muted-foreground">Ngày có hiệu lực</div>
+                      <div className="mt-0.5 font-semibold text-foreground">
+                        {viewingDoc.effective_date || "Chưa thiết lập"}
+                      </div>
+                    </div>
+
+                    <div className="rounded-lg border bg-card p-2">
+                      <div className="text-[10.5px] text-muted-foreground">Người phê duyệt</div>
+                      <div className="mt-0.5 font-semibold text-foreground">
+                        {viewingDoc.approver_name || "Quản trị viên FSMS"}
+                      </div>
                     </div>
                   </div>
 
-                  <div className="rounded-lg border bg-card p-2">
-                    <div className="text-[10.5px] text-muted-foreground">Người phê duyệt</div>
-                    <div className="mt-0.5 font-semibold text-foreground">
-                      {viewingDoc.approver_name || "Quản trị viên FSMS"}
+                  {/* Tệp đính kèm & Văn bản điện tử */}
+                  <div className="rounded-xl border bg-primary/5 p-3 space-y-2">
+                    <div className="flex items-center justify-between text-xs font-semibold text-primary">
+                      <span className="flex items-center gap-1.5">
+                        <FolderOpen className="h-3.5 w-3.5" />
+                        Văn bản điện tử & Tệp đính kèm
+                      </span>
+                      <Button
+                        size="sm"
+                        onClick={() => {
+                          setViewingDoc(null);
+                          handleOpenExportPDF(viewingDoc);
+                        }}
+                        className="gap-1 h-7 text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
+                      >
+                        <FileDown className="h-3.5 w-3.5" />
+                        Xem Văn bản & Xuất PDF
+                      </Button>
+                    </div>
+
+                    {viewingDoc.file_url &&
+                    !viewingDoc.file_url.includes("google.com/document/create") ? (
+                      <div className="flex items-center justify-between gap-2 rounded-lg border bg-background p-2 shadow-sm">
+                        <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                          <LinkIcon className="h-3.5 w-3.5 shrink-0 text-primary" />
+                          <span
+                            className="truncate text-xs font-mono text-muted-foreground"
+                            title={viewingDoc.file_url}
+                          >
+                            {viewingDoc.file_url}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            onClick={() => {
+                              if (viewingDoc.file_url) {
+                                navigator.clipboard.writeText(viewingDoc.file_url);
+                                setIsCopiedUrl(true);
+                                setTimeout(() => setIsCopiedUrl(false), 2000);
+                              }
+                            }}
+                            title="Copy đường dẫn tệp"
+                            className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground transition"
+                          >
+                            {isCopiedUrl ? (
+                              <Check className="h-3.5 w-3.5 text-emerald-600" />
+                            ) : (
+                              <Copy className="h-3.5 w-3.5" />
+                            )}
+                          </button>
+                          <a
+                            href={viewingDoc.file_url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-1 rounded-md bg-primary px-2 py-1 text-xs font-medium text-primary-foreground hover:opacity-90 transition"
+                          >
+                            <span>Mở tệp ngoài</span>
+                            <ExternalLink className="h-3 w-3" />
+                          </a>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="rounded-lg border border-dashed p-2 text-center text-xs text-muted-foreground">
+                        Tài liệu đã được tích hợp toàn văn và sẵn sàng xuất bản in chuẩn ISO 22000.
+                      </div>
+                    )}
+                  </div>
+
+                  {/* ĐÁNH GIÁ TUÂN THỦ ISO 22000 (MỤC 7.5) - DỮ LIỆU ĐƯỢC ĐẶT TRÊN CÙNG 1 DÒNG */}
+                  <div className="rounded-xl border border-border/80 bg-card p-3 space-y-2">
+                    <div className="flex items-center justify-between border-b pb-1.5">
+                      <div className="flex items-center gap-1.5 text-xs font-bold text-foreground">
+                        <ShieldCheck className="h-4 w-4 text-emerald-600" />
+                        <span>Kiểm tra Tuân thủ ISO 22000:2018 (Mục 7.5)</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <span className="text-xs font-bold text-foreground">
+                          {comp.passedCount}/{comp.total} Đạt ({comp.percentage}%)
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Thanh Progress */}
+                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                      <div
+                        className={`h-full transition-all duration-500 ${
+                          comp.percentage === 100
+                            ? "bg-emerald-500"
+                            : comp.percentage >= 70
+                              ? "bg-amber-500"
+                              : "bg-rose-500"
+                        }`}
+                        style={{ width: `${comp.percentage}%` }}
+                      />
+                    </div>
+
+                    {/* Danh sách tiêu chí kiểm tra - MỖI TIÊU CHÍ TRÊN 1 DÒNG DUY NHẤT */}
+                    <div className="space-y-1 pt-1">
+                      {comp.checks.map((c, i) => (
+                        <div key={i} className="flex items-center gap-2 text-xs py-0.5">
+                          {c.passed ? (
+                            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                          ) : (
+                            <XCircle className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+                          )}
+                          <div className="flex-1 truncate text-[11.5px] leading-none">
+                            <span
+                              className={`font-semibold ${c.passed ? "text-foreground" : "text-amber-700 dark:text-amber-400"}`}
+                            >
+                              {c.title}:
+                            </span>{" "}
+                            <span className="text-muted-foreground">{c.desc}</span>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
-                </div>
 
-                {/* Tệp đính kèm & Văn bản điện tử */}
-                <div className="rounded-xl border bg-primary/5 p-3 space-y-2">
-                  <div className="flex items-center justify-between text-xs font-semibold text-primary">
-                    <span className="flex items-center gap-1.5">
-                      <FolderOpen className="h-3.5 w-3.5" />
-                      Văn bản điện tử & Tệp đính kèm
-                    </span>
+                  <DialogFooter className="gap-2 pt-1 flex-wrap sm:flex-nowrap">
+                    <Button size="sm" variant="outline" onClick={() => setViewingDoc(null)}>
+                      Đóng
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        const docToExport = viewingDoc;
+                        handleOpenExportPDF(docToExport);
+                      }}
+                      className="gap-1.5 border-primary/30 text-primary hover:bg-primary/10"
+                    >
+                      <Printer className="h-3.5 w-3.5" />
+                      Xem & Xuất PDF
+                    </Button>
                     <Button
                       size="sm"
                       onClick={() => {
+                        const docToEdit = viewingDoc;
                         setViewingDoc(null);
-                        handleOpenExportPDF(viewingDoc);
+                        handleOpenEdit(docToEdit);
                       }}
-                      className="gap-1 h-7 text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
                     >
-                      <FileDown className="h-3.5 w-3.5" />
-                      Xem Văn bản & Xuất PDF
+                      Chỉnh sửa tài liệu
                     </Button>
-                  </div>
-
-                  {viewingDoc.file_url && !viewingDoc.file_url.includes("google.com/document/create") ? (
-                    <div className="flex items-center justify-between gap-2 rounded-lg border bg-background p-2 shadow-sm">
-                      <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                        <LinkIcon className="h-3.5 w-3.5 shrink-0 text-primary" />
-                        <span className="truncate text-xs font-mono text-muted-foreground" title={viewingDoc.file_url}>
-                          {viewingDoc.file_url}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-1 shrink-0">
-                        <button
-                          onClick={() => {
-                            if (viewingDoc.file_url) {
-                              navigator.clipboard.writeText(viewingDoc.file_url);
-                              setIsCopiedUrl(true);
-                              setTimeout(() => setIsCopiedUrl(false), 2000);
-                            }
-                          }}
-                          title="Copy đường dẫn tệp"
-                          className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground transition"
-                        >
-                          {isCopiedUrl ? (
-                            <Check className="h-3.5 w-3.5 text-emerald-600" />
-                          ) : (
-                            <Copy className="h-3.5 w-3.5" />
-                          )}
-                        </button>
-                        <a
-                          href={viewingDoc.file_url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="inline-flex items-center gap-1 rounded-md bg-primary px-2 py-1 text-xs font-medium text-primary-foreground hover:opacity-90 transition"
-                        >
-                          <span>Mở tệp ngoài</span>
-                          <ExternalLink className="h-3 w-3" />
-                        </a>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="rounded-lg border border-dashed p-2 text-center text-xs text-muted-foreground">
-                      Tài liệu đã được tích hợp toàn văn và sẵn sàng xuất bản in chuẩn ISO 22000.
-                    </div>
-                  )}
+                  </DialogFooter>
                 </div>
-
-                {/* ĐÁNH GIÁ TUÂN THỦ ISO 22000 (MỤC 7.5) - DỮ LIỆU ĐƯỢC ĐẶT TRÊN CÙNG 1 DÒNG */}
-                <div className="rounded-xl border border-border/80 bg-card p-3 space-y-2">
-                  <div className="flex items-center justify-between border-b pb-1.5">
-                    <div className="flex items-center gap-1.5 text-xs font-bold text-foreground">
-                      <ShieldCheck className="h-4 w-4 text-emerald-600" />
-                      <span>Kiểm tra Tuân thủ ISO 22000:2018 (Mục 7.5)</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <span className="text-xs font-bold text-foreground">
-                        {comp.passedCount}/{comp.total} Đạt ({comp.percentage}%)
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Thanh Progress */}
-                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
-                    <div
-                      className={`h-full transition-all duration-500 ${
-                        comp.percentage === 100
-                          ? "bg-emerald-500"
-                          : comp.percentage >= 70
-                          ? "bg-amber-500"
-                          : "bg-rose-500"
-                      }`}
-                      style={{ width: `${comp.percentage}%` }}
-                    />
-                  </div>
-
-                  {/* Danh sách tiêu chí kiểm tra - MỖI TIÊU CHÍ TRÊN 1 DÒNG DUY NHẤT */}
-                  <div className="space-y-1 pt-1">
-                    {comp.checks.map((c, i) => (
-                      <div key={i} className="flex items-center gap-2 text-xs py-0.5">
-                        {c.passed ? (
-                          <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
-                        ) : (
-                          <XCircle className="h-3.5 w-3.5 text-amber-500 shrink-0" />
-                        )}
-                        <div className="flex-1 truncate text-[11.5px] leading-none">
-                          <span className={`font-semibold ${c.passed ? "text-foreground" : "text-amber-700 dark:text-amber-400"}`}>
-                            {c.title}:
-                          </span>{" "}
-                          <span className="text-muted-foreground">{c.desc}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <DialogFooter className="gap-2 pt-1 flex-wrap sm:flex-nowrap">
-                  <Button size="sm" variant="outline" onClick={() => setViewingDoc(null)}>
-                    Đóng
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => {
-                      const docToExport = viewingDoc;
-                      handleOpenExportPDF(docToExport);
-                    }}
-                    className="gap-1.5 border-primary/30 text-primary hover:bg-primary/10"
-                  >
-                    <Printer className="h-3.5 w-3.5" />
-                    Xem & Xuất PDF
-                  </Button>
-                  <Button
-                    size="sm"
-                    onClick={() => {
-                      const docToEdit = viewingDoc;
-                      setViewingDoc(null);
-                      handleOpenEdit(docToEdit);
-                    }}
-                  >
-                    Chỉnh sửa tài liệu
-                  </Button>
-                </DialogFooter>
-              </div>
-            );
-          })()}
+              );
+            })()}
         </DialogContent>
       </Dialog>
 
@@ -2255,7 +2347,9 @@ KÝ DUYỆT VĂN BẢN:
           <div className="space-y-4 pt-1 text-xs">
             {/* Lựa chọn mẫu nhanh */}
             <div>
-              <Label className="text-xs font-semibold">Chọn chủ đề mẫu theo tiêu chuẩn ISO 22000 / HACCP:</Label>
+              <Label className="text-xs font-semibold">
+                Chọn chủ đề mẫu theo tiêu chuẩn ISO 22000 / HACCP:
+              </Label>
               <div className="mt-1.5 grid grid-cols-2 gap-2 sm:grid-cols-4">
                 {AI_SOP_TEMPLATES.map((tpl) => (
                   <button
@@ -2307,7 +2401,9 @@ KÝ DUYỆT VĂN BẢN:
                 </button>
               </div>
 
-              <p className="text-[11px] italic text-muted-foreground">{selectedAITemplate.summary}</p>
+              <p className="text-[11px] italic text-muted-foreground">
+                {selectedAITemplate.summary}
+              </p>
 
               <div className="max-h-56 overflow-y-auto rounded-lg border bg-background p-3 font-mono text-[11px] leading-relaxed whitespace-pre-wrap">
                 {selectedAITemplate.content}
@@ -2335,7 +2431,7 @@ KÝ DUYỆT VĂN BẢN:
                     status: "DRAFT",
                     effective_date: new Date().toISOString().split("T")[0],
                   },
-                  selectedAITemplate.content
+                  selectedAITemplate.content,
                 );
               }}
               className="gap-1.5 border-primary/30 text-primary hover:bg-primary/10"
@@ -2371,7 +2467,11 @@ KÝ DUYỆT VĂN BẢN:
                       Xuất văn bản & In PDF Tiêu chuẩn ISO 22000
                     </h3>
                     <p className="text-xs text-muted-foreground">
-                      Mã tài liệu: <span className="font-mono font-semibold text-primary">{exportingDoc.doc_code}</span> — {DOC_TYPES[exportingDoc.doc_type]?.label || exportingDoc.doc_type}
+                      Mã tài liệu:{" "}
+                      <span className="font-mono font-semibold text-primary">
+                        {exportingDoc.doc_code}
+                      </span>{" "}
+                      — {DOC_TYPES[exportingDoc.doc_type]?.label || exportingDoc.doc_type}
                     </p>
                   </div>
                 </div>
@@ -2428,9 +2528,17 @@ KÝ DUYỆT VĂN BẢN:
                     <tbody>
                       <tr>
                         <td className="w-1/4 border border-slate-900 p-2.5 text-center align-middle bg-slate-50">
-                          <img src={logoImg} alt="WCERT FSMS Logo" className="h-9 w-auto mx-auto object-contain mb-1" />
-                          <div className="font-black text-emerald-700 text-xs tracking-wider">WCERT FSMS</div>
-                          <div className="text-[9px] text-slate-600 uppercase font-bold mt-0.5">ISO 22000:2018</div>
+                          <img
+                            src={logoImg}
+                            alt="WCERT FSMS Logo"
+                            className="h-9 w-auto mx-auto object-contain mb-1"
+                          />
+                          <div className="font-black text-emerald-700 text-xs tracking-wider">
+                            WCERT FSMS
+                          </div>
+                          <div className="text-[9px] text-slate-600 uppercase font-bold mt-0.5">
+                            ISO 22000:2018
+                          </div>
                         </td>
                         <td className="w-2/4 border border-slate-900 p-3 text-center align-middle">
                           <div className="text-[10px] font-bold uppercase text-slate-600">
@@ -2441,11 +2549,22 @@ KÝ DUYỆT VĂN BẢN:
                           </div>
                         </td>
                         <td className="w-1/4 border border-slate-900 p-2.5 text-[10.5px] space-y-0.5 bg-slate-50">
-                          <div><b>Mã hiệu:</b> <span className="font-mono">{exportingDoc.doc_code}</span></div>
-                          <div><b>Phân cấp:</b> {DOC_TYPES[exportingDoc.doc_type]?.label}</div>
-                          <div><b>Lần ban hành:</b> v{exportingDoc.current_version}</div>
-                          <div><b>Ngày hiệu lực:</b> {exportingDoc.effective_date || "2026-08-25"}</div>
-                          <div><b>Trang:</b> 1 / 1</div>
+                          <div>
+                            <b>Mã hiệu:</b>{" "}
+                            <span className="font-mono">{exportingDoc.doc_code}</span>
+                          </div>
+                          <div>
+                            <b>Phân cấp:</b> {DOC_TYPES[exportingDoc.doc_type]?.label}
+                          </div>
+                          <div>
+                            <b>Lần ban hành:</b> v{exportingDoc.current_version}
+                          </div>
+                          <div>
+                            <b>Ngày hiệu lực:</b> {exportingDoc.effective_date || "2026-08-25"}
+                          </div>
+                          <div>
+                            <b>Trang:</b> 1 / 1
+                          </div>
                         </td>
                       </tr>
                     </tbody>
@@ -2455,11 +2574,15 @@ KÝ DUYỆT VĂN BẢN:
                   <div className="grid grid-cols-2 gap-4 border-b border-slate-300 pb-3 mb-5 text-xs">
                     <div>
                       <span className="font-bold text-slate-700">Đơn vị chủ quản: </span>
-                      <span className="font-semibold text-slate-900">{exportingDoc.department || "Ban QLCL & ATTP"}</span>
+                      <span className="font-semibold text-slate-900">
+                        {exportingDoc.department || "Ban QLCL & ATTP"}
+                      </span>
                     </div>
                     <div className="text-right">
                       <span className="font-bold text-slate-700">Tiêu chuẩn áp dụng: </span>
-                      <span className="font-semibold text-slate-900">{exportingDoc.standard || "ISO 22000:2018"}</span>
+                      <span className="font-semibold text-slate-900">
+                        {exportingDoc.standard || "ISO 22000:2018"}
+                      </span>
                     </div>
                   </div>
 
@@ -2479,7 +2602,9 @@ KÝ DUYỆT VĂN BẢN:
                       <div className="space-y-12">
                         <div>
                           <div className="font-bold uppercase text-slate-900">NGƯỜI SOẠN THẢO</div>
-                          <div className="text-[10px] text-slate-500 italic">(Ký & ghi rõ họ tên)</div>
+                          <div className="text-[10px] text-slate-500 italic">
+                            (Ký & ghi rõ họ tên)
+                          </div>
                         </div>
                         <div className="font-semibold text-slate-800 pt-8 border-t border-dashed border-slate-400 mx-4">
                           Cán bộ ISO / QA
@@ -2489,7 +2614,9 @@ KÝ DUYỆT VĂN BẢN:
                       <div className="space-y-12">
                         <div>
                           <div className="font-bold uppercase text-slate-900">NGƯỜI THẨM TRA</div>
-                          <div className="text-[10px] text-slate-500 italic">(Trưởng Ban ATTP / Trưởng phòng)</div>
+                          <div className="text-[10px] text-slate-500 italic">
+                            (Trưởng Ban ATTP / Trưởng phòng)
+                          </div>
                         </div>
                         <div className="font-semibold text-slate-800 pt-8 border-t border-dashed border-slate-400 mx-4">
                           Trưởng ban QLCL & ATTP
@@ -2499,10 +2626,14 @@ KÝ DUYỆT VĂN BẢN:
                       <div className="space-y-12">
                         <div>
                           <div className="font-bold uppercase text-slate-900">NGƯỜI PHÊ DUYỆT</div>
-                          <div className="text-[10px] text-slate-500 italic">(Tổng Giám đốc / Đại diện LĐ)</div>
+                          <div className="text-[10px] text-slate-500 italic">
+                            (Tổng Giám đốc / Đại diện LĐ)
+                          </div>
                         </div>
                         <div className="font-semibold text-emerald-700 font-bold pt-8 border-t border-dashed border-slate-400 mx-4">
-                          {exportingDoc.status === "APPROVED" ? "ĐÃ PHÊ DUYỆT (BAN GIÁM ĐỐC)" : "BẢN THẢO (DRAFT)"}
+                          {exportingDoc.status === "APPROVED"
+                            ? "ĐÃ PHÊ DUYỆT (BAN GIÁM ĐỐC)"
+                            : "BẢN THẢO (DRAFT)"}
                         </div>
                       </div>
                     </div>
@@ -2524,7 +2655,11 @@ KÝ DUYỆT VĂN BẢN:
                 <Button size="sm" variant="outline" onClick={() => setExportingDoc(null)}>
                   Đóng cửa sổ
                 </Button>
-                <Button size="sm" onClick={handlePrintPDF} className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white">
+                <Button
+                  size="sm"
+                  onClick={handlePrintPDF}
+                  className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white"
+                >
                   <Printer className="h-3.5 w-3.5" />
                   In / Xuất file PDF ngay
                 </Button>
@@ -2601,11 +2736,7 @@ KÝ DUYỆT VĂN BẢN:
       />
 
       {/* Module Guide Modal */}
-      <ModuleGuideModal
-        module="documents"
-        isOpen={showGuide}
-        onClose={() => setShowGuide(false)}
-      />
+      <ModuleGuideModal module="documents" isOpen={showGuide} onClose={() => setShowGuide(false)} />
     </div>
   );
 }

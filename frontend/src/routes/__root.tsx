@@ -80,9 +80,17 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "WCERT – Hệ thống Quản lý ATTP ISO 22000:2018" },
-      { name: "description", content: "Nền tảng Quản lý An toàn Thực phẩm thông minh tích hợp Trợ lý AI theo tiêu chuẩn ISO 22000:2018." },
+      {
+        name: "description",
+        content:
+          "Nền tảng Quản lý An toàn Thực phẩm thông minh tích hợp Trợ lý AI theo tiêu chuẩn ISO 22000:2018.",
+      },
       { property: "og:title", content: "WCERT – Hệ thống Quản lý ATTP ISO 22000:2018" },
-      { property: "og:description", content: "Nền tảng Quản lý An toàn Thực phẩm thông minh tích hợp Trợ lý AI theo tiêu chuẩn ISO 22000:2018." },
+      {
+        property: "og:description",
+        content:
+          "Nền tảng Quản lý An toàn Thực phẩm thông minh tích hợp Trợ lý AI theo tiêu chuẩn ISO 22000:2018.",
+      },
       { property: "og:image", content: "/logo.png" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:title", content: "WCERT – ISO 22000:2018 FSMS" },

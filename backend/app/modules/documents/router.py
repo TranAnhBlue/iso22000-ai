@@ -11,6 +11,7 @@ from uuid import UUID
 from datetime import date, datetime, timezone, timedelta
 from app.core.database import get_db
 from app.core.dependencies import require_roles
+from app.core.authorization import has_any_role, role_codes
 from app.modules.documents.models import Document, DocumentApproval, DocumentChangeRequest, DocumentDistribution, ExternalDocument, RecordRetention
 from app.modules.auth.models import User
 from app.modules.documents.schemas import (
@@ -189,12 +190,10 @@ def create_document(
             detail=f"Mã tài liệu '{doc_in.doc_code}' đã tồn tại trong hệ thống."
         )
 
-    user_roles = [str(r.role_code).lower().strip() for r in current_user.roles]
-    if current_user.department:
-        user_roles.append(str(current_user.department).lower().strip())
-    is_approver = "admin" in user_roles or any(
-        r in {"qa", "fst_leader", "fs_team_leader", "management", "manager"}
-        for r in user_roles
+    is_approver = has_any_role(
+        current_user,
+        {"qa", "fst_leader", "fs_team_leader", "management", "manager"},
+        fuzzy_match=False,
     )
     target_status = (doc_in.status or "DRAFT").upper()
     approved_by_id = None
@@ -787,8 +786,9 @@ def acknowledge_distribution(
     if dist.acknowledged:
         raise HTTPException(status_code=400, detail="Bản ghi phân phối này đã được ký nhận trước đó.")
 
-    user_roles = [str(r.role_code).lower().strip() for r in current_user.roles]
-    is_admin_or_controller = any(r in ["admin", "doc_controller", "fst_leader"] for r in user_roles)
+    is_admin_or_controller = has_any_role(
+        current_user, {"admin", "doc_controller", "fst_leader"}, fuzzy_match=False
+    )
 
     user_dept = (current_user.department or "").strip().lower()
     target_dept = (dist.department_recipient or "").strip().lower()
@@ -1397,10 +1397,7 @@ def delete_retention_record(
             detail="Nghiêm cấm xóa hồ sơ đã tiêu hủy (DISPOSED). Toàn bộ dữ liệu và biên bản BM02-KSHS phải được lưu trữ vĩnh viễn làm bằng chứng pháp lý FSMS ISO 22000."
         )
 
-    user_roles = [str(r.role_code).lower().strip() for r in current_user.roles]
-    if current_user.department:
-        user_roles.append(str(current_user.department).lower().strip())
-    is_admin = "admin" in user_roles
+    is_admin = "admin" in role_codes(current_user, include_department=False)
 
     # Xóa cứng chỉ dành riêng cho Admin nếu bản ghi tạo nhầm chưa vào quy trình
     if hard_delete:
@@ -1474,10 +1471,11 @@ def update_document(
             )
         doc.doc_code = doc_in.doc_code
 
-    user_roles = [str(r.role_code).lower().strip() for r in current_user.roles]
-    if current_user.department:
-        user_roles.append(str(current_user.department).lower().strip())
-    is_approver = "admin" in user_roles or any(r in ["qa", "fst_leader", "fs_team_leader", "management", "manager"] for r in user_roles)
+    is_approver = has_any_role(
+        current_user,
+        {"qa", "fst_leader", "fs_team_leader", "management", "manager"},
+        fuzzy_match=False,
+    )
 
     prev_status = doc.status
     prev_version = doc.current_version

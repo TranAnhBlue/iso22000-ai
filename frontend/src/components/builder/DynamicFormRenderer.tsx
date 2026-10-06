@@ -170,8 +170,8 @@ export const DynamicFormRenderer: React.FC<DynamicFormRendererProps> = ({
                     complianceScore >= 90
                       ? "text-emerald-700"
                       : complianceScore >= 70
-                      ? "text-amber-700"
-                      : "text-rose-700"
+                        ? "text-amber-700"
+                        : "text-rose-700"
                   }`}
                 >
                   {complianceScore}%
@@ -182,8 +182,8 @@ export const DynamicFormRenderer: React.FC<DynamicFormRendererProps> = ({
                   complianceScore >= 90
                     ? "bg-emerald-100 text-emerald-700 border-emerald-300"
                     : complianceScore >= 70
-                    ? "bg-amber-100 text-amber-700 border-amber-300"
-                    : "bg-rose-100 text-rose-700 border-rose-300"
+                      ? "bg-amber-100 text-amber-700 border-amber-300"
+                      : "bg-rose-100 text-rose-700 border-rose-300"
                 }`}
               >
                 <ShieldCheck className="w-5 h-5" />
@@ -329,9 +329,7 @@ export const DynamicFormRenderer: React.FC<DynamicFormRendererProps> = ({
                       <Star className="w-5 h-5 fill-current" />
                     </button>
                   ))}
-                  <span className="text-xs font-bold text-slate-700 ml-2">
-                    {value || 0}/5 Sao
-                  </span>
+                  <span className="text-xs font-bold text-slate-700 ml-2">{value || 0}/5 Sao</span>
                 </div>
               )}
 
@@ -381,7 +379,9 @@ export const DynamicFormRenderer: React.FC<DynamicFormRendererProps> = ({
               {field.type === "PHOTO" && (
                 <div className="p-4 border-2 border-dashed border-slate-300 rounded-xl bg-slate-50 text-center space-y-2">
                   <Camera className="w-6 h-6 text-slate-400 mx-auto" />
-                  <div className="text-xs text-slate-700 font-semibold">Tải lên hình ảnh bằng chứng hiện trường</div>
+                  <div className="text-xs text-slate-700 font-semibold">
+                    Tải lên hình ảnh bằng chứng hiện trường
+                  </div>
                   <input
                     type="text"
                     disabled={disabled}

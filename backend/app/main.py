@@ -1,8 +1,13 @@
-from fastapi import FastAPI, Depends, Request
+import logging
+import os
+from contextlib import asynccontextmanager
+
+from fastapi import Depends, FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-from contextlib import asynccontextmanager
+
 from app.core.dependencies import get_current_user
+from app.core.migrations import run_migrations
 from app.modules import (
     auth,
     organization,
@@ -19,7 +24,6 @@ from app.modules import (
     emergency,
     builder,
 )
-from app.core.migrations import run_migrations
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -32,12 +36,6 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan,
 )
-
-from fastapi.responses import JSONResponse
-from fastapi.requests import Request
-
-import os
-import logging
 
 logger = logging.getLogger("uvicorn.error")
 
@@ -60,7 +58,6 @@ for o in custom_origins:
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins_list,
-    allow_origin_regex=r"^https://[a-zA-Z0-9_\-]+\.vercel\.app$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -71,7 +68,6 @@ app.add_middleware(
 async def global_exception_handler(request: Request, exc: Exception):
     logger.exception(f"[INTERNAL SERVER ERROR] {request.method} {request.url.path}: {exc}")
     
-    origin = request.headers.get("origin", "")
     # Trong môi trường production, không để lộ cấu trúc DB hoặc runtime exception
     is_prod = os.getenv("ENVIRONMENT", "production").lower() == "production"
     error_msg = "Đã xảy ra lỗi máy chủ nội bộ. Vui lòng thử lại sau." if is_prod else f"Lỗi máy chủ: {str(exc)}"
@@ -79,35 +75,38 @@ async def global_exception_handler(request: Request, exc: Exception):
     return JSONResponse(
         status_code=500,
         content={"detail": error_msg},
-        headers={
-            "Access-Control-Allow-Origin": origin if origin else "*",
-            "Access-Control-Allow-Credentials": "true",
-            "Access-Control-Allow-Methods": "*",
-            "Access-Control-Allow-Headers": "*",
-        },
     )
 
 # Router xác thực công khai (login, register, departments)
 app.include_router(auth.router, prefix="/api/v1")
 app.include_router(auth.router, prefix="", tags=["Authentication Direct Fallback"])
 
-# Áp dụng xác thực mặc định (JWT Bearer Token) cho toàn bộ 240 endpoint nghiệp vụ /api/v1
+# Áp dụng xác thực mặc định (JWT Bearer Token) cho toàn bộ endpoint nghiệp vụ /api/v1.
+# Khai báo tập trung giúp tránh vô tình bỏ sót dependency khi bổ sung module mới.
 default_auth = [Depends(get_current_user)]
-app.include_router(organization.router, prefix="/api/v1", dependencies=default_auth)
-app.include_router(documents.router, prefix="/api/v1", dependencies=default_auth)
-app.include_router(purchasing.router, prefix="/api/v1", dependencies=default_auth)
-app.include_router(haccp.router, prefix="/api/v1", dependencies=default_auth)
-app.include_router(change_management.router, prefix="/api/v1/change-management", tags=["Change Management"], dependencies=default_auth)
-app.include_router(change_management.router, prefix="/api/v1/changes", tags=["Change Management Alias"], dependencies=default_auth)
-app.include_router(equipment.router, prefix="/api/v1/equipment", tags=["Equipment & Maintenance"], dependencies=default_auth)
-app.include_router(inventory.router, prefix="/api/v1/inventory", tags=["Warehouse & Inventory FEFO"], dependencies=default_auth)
-app.include_router(traceability.router, prefix="/api/v1/traceability", tags=["Traceability & Mock Recall"], dependencies=default_auth)
-app.include_router(capa.router, prefix="/api/v1/capa", tags=["CAPA & Non-Conformance"], dependencies=default_auth)
-app.include_router(audits.router, prefix="/api/v1/audits", tags=["Internal Audit, Training & Health"], dependencies=default_auth)
-app.include_router(dashboard.router, prefix="/api/v1/dashboard", tags=["Executive Dashboard & Management Review"], dependencies=default_auth)
-app.include_router(emergency.router, prefix="/api/v1/emergency", tags=["Emergency Preparedness & Response"], dependencies=default_auth)
-app.include_router(builder.router, prefix="/api/v1/builders", tags=["Dynamic Form & Workflow Builders"], dependencies=default_auth)
-app.include_router(builder.router, prefix="/api/v1/builder", tags=["Dynamic Form & Workflow Builders Alias"], dependencies=default_auth)
+protected_router_specs = (
+    (organization.router, "/api/v1", None),
+    (documents.router, "/api/v1", None),
+    (purchasing.router, "/api/v1", None),
+    (haccp.router, "/api/v1", None),
+    (change_management.router, "/api/v1/change-management", ["Change Management"]),
+    (change_management.router, "/api/v1/changes", ["Change Management Alias"]),
+    (equipment.router, "/api/v1/equipment", ["Equipment & Maintenance"]),
+    (inventory.router, "/api/v1/inventory", ["Warehouse & Inventory FEFO"]),
+    (traceability.router, "/api/v1/traceability", ["Traceability & Mock Recall"]),
+    (capa.router, "/api/v1/capa", ["CAPA & Non-Conformance"]),
+    (audits.router, "/api/v1/audits", ["Internal Audit, Training & Health"]),
+    (dashboard.router, "/api/v1/dashboard", ["Executive Dashboard & Management Review"]),
+    (emergency.router, "/api/v1/emergency", ["Emergency Preparedness & Response"]),
+    (builder.router, "/api/v1/builders", ["Dynamic Form & Workflow Builders"]),
+    (builder.router, "/api/v1/builder", ["Dynamic Form & Workflow Builders Alias"]),
+)
+
+for router, prefix, tags in protected_router_specs:
+    include_options = {"prefix": prefix, "dependencies": default_auth}
+    if tags:
+        include_options["tags"] = tags
+    app.include_router(router, **include_options)
 
 @app.get("/")
 def root():

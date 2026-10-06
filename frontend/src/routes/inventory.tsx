@@ -55,7 +55,11 @@ export const Route = createFileRoute("/inventory")({
   head: () => ({
     meta: [
       { title: "Quản lý Kho FEFO & Lưu mẫu – WCERT FSMS" },
-      { name: "description", content: "Quản lý xuất nhập tồn theo nguyên tắc FEFO, vị trí bin kho lạnh, mẫu lưu nghiệm thức và mẻ sản xuất theo ISO 22000:2018." },
+      {
+        name: "description",
+        content:
+          "Quản lý xuất nhập tồn theo nguyên tắc FEFO, vị trí bin kho lạnh, mẫu lưu nghiệm thức và mẻ sản xuất theo ISO 22000:2018.",
+      },
       { property: "og:title", content: "Quản lý Kho FEFO & Lưu mẫu – WCERT FSMS" },
       { property: "og:description", content: "Hệ thống quản lý kho thông minh chuẩn ISO 22000." },
     ],
@@ -194,9 +198,11 @@ interface DisposalRecordItem {
 }
 
 export function InventoryPage() {
-  const [activeTab, setActiveTab] = useState<"stock" | "bins" | "samples" | "production" | "vehicles" | "disposal">("stock");
+  const [activeTab, setActiveTab] = useState<
+    "stock" | "bins" | "samples" | "production" | "vehicles" | "disposal"
+  >("stock");
   const [showGuide, setShowGuide] = useState(false);
-  
+
   // Data states
   const [stocks, setStocks] = useState<StockItem[]>([]);
   const [samples, setSamples] = useState<RetainedSampleItem[]>([]);
@@ -232,7 +238,9 @@ export function InventoryPage() {
   const [vehicleSearch, setVehicleSearch] = useState("");
   const [vehicleResultFilter, setVehicleResultFilter] = useState<"ALL" | "PASS" | "FAIL">("ALL");
   const [disposalSearch, setDisposalSearch] = useState("");
-  const [disposalStatusFilter, setDisposalStatusFilter] = useState<"ALL" | "DISPOSED" | "PENDING_APPROVAL" | "APPROVED">("ALL");
+  const [disposalStatusFilter, setDisposalStatusFilter] = useState<
+    "ALL" | "DISPOSED" | "PENDING_APPROVAL" | "APPROVED"
+  >("ALL");
 
   // Vehicle Inspection Modal State
   const [vehicleModalOpen, setVehicleModalOpen] = useState(false);
@@ -327,14 +335,29 @@ export function InventoryPage() {
     productName: "Bột lòng trắng trứng nhập khẩu",
   });
 
-  const [deletingStockItem, setDeletingStockItem] = useState<{ id: string; name: string; lot: string } | null>(null);
-  const [deletingSampleItem, setDeletingSampleItem] = useState<{ id: string; code: string } | null>(null);
+  const [deletingStockItem, setDeletingStockItem] = useState<{
+    id: string;
+    name: string;
+    lot: string;
+  } | null>(null);
+  const [deletingSampleItem, setDeletingSampleItem] = useState<{ id: string; code: string } | null>(
+    null,
+  );
 
   // Fetch all data
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [resStock, resSamples, resBatches, resDispatches, resKpi, resVehicles, resDisposals, resLogistics] = await Promise.allSettled([
+      const [
+        resStock,
+        resSamples,
+        resBatches,
+        resDispatches,
+        resKpi,
+        resVehicles,
+        resDisposals,
+        resLogistics,
+      ] = await Promise.allSettled([
         api.get("/inventory/stock"),
         api.get("/inventory/samples"),
         api.get("/inventory/batches"),
@@ -379,7 +402,6 @@ export function InventoryPage() {
   useEffect(() => {
     fetchData();
   }, []);
-
 
   // Stock Save Handler
   const handleSaveStock = async (e: React.FormEvent) => {
@@ -443,7 +465,9 @@ export function InventoryPage() {
     setEditingVehicle(v);
     setVehicleForm({
       inspection_code: v.inspection_code,
-      inspection_date: v.inspection_date ? v.inspection_date.slice(0, 16) : new Date().toISOString().slice(0, 16),
+      inspection_date: v.inspection_date
+        ? v.inspection_date.slice(0, 16)
+        : new Date().toISOString().slice(0, 16),
       vehicle_plate: v.vehicle_plate,
       driver_name: v.driver_name,
       driver_phone: v.driver_phone || "",
@@ -723,7 +747,10 @@ export function InventoryPage() {
           <div style="border: 1px solid #999; padding: 10px 14px; margin-top: 5px; background-color: #fafafa; font-size: 10.5pt; line-height: 1.6;">
             ${
               d.witness_council && d.witness_council.includes("1.")
-                ? d.witness_council.split("\n").map((line, idx) => `<div>${line}</div>`).join("")
+                ? d.witness_council
+                    .split("\n")
+                    .map((line, idx) => `<div>${line}</div>`)
+                    .join("")
                 : `<div>1. Ông/Bà: <strong>Nguyễn Văn Tài</strong> &nbsp;&nbsp;&nbsp;&nbsp; Phòng / Ban: <strong>Kho Vận</strong> &nbsp;&nbsp;&nbsp;&nbsp; Chức vụ: <strong>Thủ kho</strong></div>
                    <div>2. Ông/Bà: <strong>Lê Hoàng Nam</strong> &nbsp;&nbsp;&nbsp;&nbsp; Phòng / Ban: <strong>QLCL (QA/QC)</strong> &nbsp;&nbsp;&nbsp;&nbsp; Chức vụ: <strong>Chuyên viên HACCP</strong></div>
                    <div>3. Ông/Bà: <strong>Trần Quốc Huy</strong> &nbsp;&nbsp;&nbsp;&nbsp; Phòng / Ban: <strong>Phân xưởng Chế biến</strong> &nbsp;&nbsp;&nbsp;&nbsp; Chức vụ: <strong>Quản đốc Sản xuất</strong></div>`
@@ -837,7 +864,8 @@ export function InventoryPage() {
         v.vehicle_plate.toLowerCase().includes(vehicleSearch.toLowerCase()) ||
         v.driver_name.toLowerCase().includes(vehicleSearch.toLowerCase()) ||
         (v.transport_company || "").toLowerCase().includes(vehicleSearch.toLowerCase());
-      const matchResult = vehicleResultFilter === "ALL" || v.inspection_result === vehicleResultFilter;
+      const matchResult =
+        vehicleResultFilter === "ALL" || v.inspection_result === vehicleResultFilter;
       return matchSearch && matchResult;
     });
   }, [vehicleInspections, vehicleSearch, vehicleResultFilter]);
@@ -876,12 +904,21 @@ export function InventoryPage() {
             <BookOpen className="h-4 w-4" />
             Hướng Dẫn Nghiệp Vụ
           </Button>
-          <Button variant="outline" size="sm" onClick={fetchData} disabled={loading} className="gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={fetchData}
+            disabled={loading}
+            className="gap-2"
+          >
             <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
             Làm mới
           </Button>
           <Link to="/traceability">
-            <Button size="sm" className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm font-semibold">
+            <Button
+              size="sm"
+              className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm font-semibold"
+            >
               <QrCode className="h-4 w-4" />
               Truy xuất nguồn gốc 1 chạm
               <ArrowRight className="h-4 w-4" />
@@ -891,7 +928,8 @@ export function InventoryPage() {
       </div>
 
       <AIBadge>
-        <b>AI Kho vận & FEFO:</b> Tự động tính toán rủi ro hạn dùng theo từng giờ · Đề xuất ưu tiên thứ tự xuất kho (FEFO Priority) · Cảnh báo mẻ mẫu lưu hết hạn cần xử lý hủy.
+        <b>AI Kho vận & FEFO:</b> Tự động tính toán rủi ro hạn dùng theo từng giờ · Đề xuất ưu tiên
+        thứ tự xuất kho (FEFO Priority) · Cảnh báo mẻ mẫu lưu hết hạn cần xử lý hủy.
       </AIBadge>
 
       {/* KPI METRICS CARDS */}
@@ -903,8 +941,12 @@ export function InventoryPage() {
             <Boxes className="h-4 w-4 text-primary" />
           </div>
           <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-bold tracking-tight text-foreground">{kpi.total_stock_items}</span>
-            <span className="text-xs text-muted-foreground">mặt hàng ({kpi.total_stock_quantity.toLocaleString()} kg/gói)</span>
+            <span className="text-2xl font-bold tracking-tight text-foreground">
+              {kpi.total_stock_items}
+            </span>
+            <span className="text-xs text-muted-foreground">
+              mặt hàng ({kpi.total_stock_quantity.toLocaleString()} kg/gói)
+            </span>
           </div>
           <div className="mt-1 text-[11px] text-emerald-600 font-medium flex items-center gap-1">
             <CheckCircle2 className="h-3 w-3" /> Kiểm soát xuất nhập tồn liên tục
@@ -914,11 +956,15 @@ export function InventoryPage() {
         {/* Card 2 */}
         <div className="rounded-xl border bg-card p-4 shadow-sm">
           <div className="flex items-center justify-between text-muted-foreground">
-            <span className="text-xs font-medium uppercase tracking-wider">Cảnh Báo Cận Date (FEFO)</span>
+            <span className="text-xs font-medium uppercase tracking-wider">
+              Cảnh Báo Cận Date (FEFO)
+            </span>
             <Flame className="h-4 w-4 text-amber-500" />
           </div>
           <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-bold tracking-tight text-amber-600">{kpi.near_expiry_items}</span>
+            <span className="text-2xl font-bold tracking-tight text-amber-600">
+              {kpi.near_expiry_items}
+            </span>
             <span className="text-xs text-rose-600 font-medium">({kpi.expired_items} hết hạn)</span>
           </div>
           <div className="mt-1 text-[11px] text-amber-700 font-medium">
@@ -933,8 +979,12 @@ export function InventoryPage() {
             <FlaskConical className="h-4 w-4 text-blue-600" />
           </div>
           <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-bold tracking-tight text-blue-600">{kpi.active_retained_samples}</span>
-            <span className="text-xs text-muted-foreground">/ {kpi.total_retained_samples} mẫu</span>
+            <span className="text-2xl font-bold tracking-tight text-blue-600">
+              {kpi.active_retained_samples}
+            </span>
+            <span className="text-xs text-muted-foreground">
+              / {kpi.total_retained_samples} mẫu
+            </span>
           </div>
           <div className="mt-1 text-[11px] text-blue-600 font-medium">
             Nhiệt độ tủ đối chứng ≤ -18°C
@@ -948,8 +998,12 @@ export function InventoryPage() {
             <Truck className="h-4 w-4 text-emerald-600" />
           </div>
           <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-bold tracking-tight text-foreground">{kpi.total_production_batches}</span>
-            <span className="text-xs text-muted-foreground">mẻ ({kpi.total_order_dispatches} phiếu xuất)</span>
+            <span className="text-2xl font-bold tracking-tight text-foreground">
+              {kpi.total_production_batches}
+            </span>
+            <span className="text-xs text-muted-foreground">
+              mẻ ({kpi.total_order_dispatches} phiếu xuất)
+            </span>
           </div>
           <div className="mt-1 text-[11px] text-emerald-600 font-medium">
             Sẵn sàng truy xuất 1 chạm 100%
@@ -969,12 +1023,16 @@ export function InventoryPage() {
                 Hệ Thống Truy Xuất Nguồn Gốc 1 Chạm (One-Touch Traceability Engine)
               </h3>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Nhập mã Lô thành phẩm hoặc mã Lô nguyên liệu để vẽ sơ đồ chuỗi cung ứng 4 tầng & In Biên bản BM-TX-01 chuẩn ISO 22000.
+                Nhập mã Lô thành phẩm hoặc mã Lô nguyên liệu để vẽ sơ đồ chuỗi cung ứng 4 tầng & In
+                Biên bản BM-TX-01 chuẩn ISO 22000.
               </p>
             </div>
           </div>
           <Link to="/traceability" className="w-full sm:w-auto shrink-0">
-            <Button size="sm" className="w-full sm:w-auto gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold">
+            <Button
+              size="sm"
+              className="w-full sm:w-auto gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold"
+            >
               Mở Trình Truy Xuất
               <ArrowRight className="h-4 w-4" />
             </Button>
@@ -1178,15 +1236,17 @@ export function InventoryPage() {
                         <td className="py-3 px-4 font-medium">
                           <div className="font-semibold text-foreground">{item.item_name}</div>
                           <div className="flex items-center gap-2 mt-0.5">
-                            <span className="font-mono text-[11px] text-muted-foreground">{item.item_code}</span>
+                            <span className="font-mono text-[11px] text-muted-foreground">
+                              {item.item_code}
+                            </span>
                             <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-normal">
                               {item.category === "RAW_MATERIAL"
                                 ? "Nguyên liệu"
                                 : item.category === "ADDITIVE"
-                                ? "Phụ gia/Gia vị"
-                                : item.category === "PACKAGING"
-                                ? "Bao bì"
-                                : "Thành phẩm"}
+                                  ? "Phụ gia/Gia vị"
+                                  : item.category === "PACKAGING"
+                                    ? "Bao bì"
+                                    : "Thành phẩm"}
                             </span>
                           </div>
                         </td>
@@ -1222,7 +1282,9 @@ export function InventoryPage() {
 
                         <td className="py-3 px-4">
                           <div className="text-muted-foreground text-xs">NSX: {item.mfg_date}</div>
-                          <div className="font-semibold text-foreground text-xs">HSD: {item.exp_date}</div>
+                          <div className="font-semibold text-foreground text-xs">
+                            HSD: {item.exp_date}
+                          </div>
                         </td>
 
                         <td className="py-3 px-4">
@@ -1237,11 +1299,13 @@ export function InventoryPage() {
                             </span>
                           ) : item.fefo_status === "NEAR_EXPIRY" ? (
                             <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2.5 py-1 text-xs font-semibold text-amber-700">
-                              <Clock className="h-3.5 w-3.5" /> Cận date ({item.days_to_expiry} ngày)
+                              <Clock className="h-3.5 w-3.5" /> Cận date ({item.days_to_expiry}{" "}
+                              ngày)
                             </span>
                           ) : (
                             <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-semibold text-emerald-700">
-                              <CheckCircle2 className="h-3.5 w-3.5" /> An toàn ({item.days_to_expiry} ngày)
+                              <CheckCircle2 className="h-3.5 w-3.5" /> An toàn (
+                              {item.days_to_expiry} ngày)
                             </span>
                           )}
                         </td>
@@ -1299,7 +1363,13 @@ export function InventoryPage() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => setDeletingStockItem({ id: item.inventory_id, name: item.item_name, lot: item.lot_number })}
+                              onClick={() =>
+                                setDeletingStockItem({
+                                  id: item.inventory_id,
+                                  name: item.item_name,
+                                  lot: item.lot_number,
+                                })
+                              }
                               className="h-8 w-8 p-0 text-rose-600 hover:text-rose-700 hover:bg-rose-50"
                               title="Xóa tồn kho"
                             >
@@ -1328,7 +1398,8 @@ export function InventoryPage() {
               Bản Đồ Phân Vùng Kho & Ma Trận Ô Kệ (Warehouse Bin Layout)
             </h3>
             <p className="text-xs text-muted-foreground mt-1">
-              Phân vùng kho theo tiêu chuẩn PRP chống nhiễm chéo giữa nguyên liệu sống và thành phẩm.
+              Phân vùng kho theo tiêu chuẩn PRP chống nhiễm chéo giữa nguyên liệu sống và thành
+              phẩm.
             </p>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-5">
@@ -1346,13 +1417,19 @@ export function InventoryPage() {
                 <div className="grid grid-cols-2 gap-2 text-xs">
                   <div className="rounded-lg border bg-card p-3 shadow-xs">
                     <div className="font-bold text-primary">Kệ A1-01</div>
-                    <div className="text-[11px] text-muted-foreground mt-1">Chả cá Ba Sa Thượng Hạng</div>
-                    <div className="text-[10px] font-mono text-emerald-600 font-bold mt-1">300 gói (AVAILABLE)</div>
+                    <div className="text-[11px] text-muted-foreground mt-1">
+                      Chả cá Ba Sa Thượng Hạng
+                    </div>
+                    <div className="text-[10px] font-mono text-emerald-600 font-bold mt-1">
+                      300 gói (AVAILABLE)
+                    </div>
                   </div>
                   <div className="rounded-lg border bg-card p-3 shadow-xs">
                     <div className="font-bold text-primary">Kệ A1-02</div>
                     <div className="text-[11px] text-muted-foreground mt-1">Cá Tra Fillet tươi</div>
-                    <div className="text-[10px] font-mono text-emerald-600 font-bold mt-1">1,500 kg (IQC ĐẠT)</div>
+                    <div className="text-[10px] font-mono text-emerald-600 font-bold mt-1">
+                      1,500 kg (IQC ĐẠT)
+                    </div>
                   </div>
                   <div className="rounded-lg border border-dashed bg-muted/40 p-3 flex items-center justify-center text-muted-foreground text-center">
                     Kệ A2-01 (Trống)
@@ -1378,12 +1455,16 @@ export function InventoryPage() {
                   <div className="rounded-lg border bg-card p-3 shadow-xs">
                     <div className="font-bold text-primary">Kệ M-01</div>
                     <div className="text-[11px] text-muted-foreground mt-1">Rau thơm & Ớt tươi</div>
-                    <div className="text-[10px] font-mono text-emerald-600 font-bold mt-1">80 kg</div>
+                    <div className="text-[10px] font-mono text-emerald-600 font-bold mt-1">
+                      80 kg
+                    </div>
                   </div>
                   <div className="rounded-lg border bg-card p-3 shadow-xs">
                     <div className="font-bold text-primary">Kệ M-02</div>
                     <div className="text-[11px] text-muted-foreground mt-1">Men & Phụ gia ủ</div>
-                    <div className="text-[10px] font-mono text-emerald-600 font-bold mt-1">45 kg</div>
+                    <div className="text-[10px] font-mono text-emerald-600 font-bold mt-1">
+                      45 kg
+                    </div>
                   </div>
                   <div className="rounded-lg border border-dashed bg-muted/40 p-3 flex items-center justify-center text-muted-foreground text-center">
                     Kệ M-03 (Trống)
@@ -1408,18 +1489,30 @@ export function InventoryPage() {
                 <div className="grid grid-cols-2 gap-2 text-xs">
                   <div className="rounded-lg border border-amber-500/40 bg-amber-50/60 p-3 shadow-xs">
                     <div className="font-bold text-amber-900">Kệ B2-03 ⚠️</div>
-                    <div className="text-[11px] text-muted-foreground mt-1">Bột lòng trắng trứng</div>
-                    <div className="text-[10px] font-mono text-amber-700 font-bold mt-1">Còn 5 ngày (FEFO #1)</div>
+                    <div className="text-[11px] text-muted-foreground mt-1">
+                      Bột lòng trắng trứng
+                    </div>
+                    <div className="text-[10px] font-mono text-amber-700 font-bold mt-1">
+                      Còn 5 ngày (FEFO #1)
+                    </div>
                   </div>
                   <div className="rounded-lg border bg-card p-3 shadow-xs">
                     <div className="font-bold text-primary">Kệ B1-01</div>
-                    <div className="text-[11px] text-muted-foreground mt-1">Gia vị tổng hợp cao cấp</div>
-                    <div className="text-[10px] font-mono text-emerald-600 font-bold mt-1">200 kg (AVAILABLE)</div>
+                    <div className="text-[11px] text-muted-foreground mt-1">
+                      Gia vị tổng hợp cao cấp
+                    </div>
+                    <div className="text-[10px] font-mono text-emerald-600 font-bold mt-1">
+                      200 kg (AVAILABLE)
+                    </div>
                   </div>
                   <div className="rounded-lg border bg-card p-3 shadow-xs">
                     <div className="font-bold text-primary">Kệ BB-01</div>
-                    <div className="text-[11px] text-muted-foreground mt-1">Bao bì PE in sẵn 500g</div>
-                    <div className="text-[10px] font-mono text-emerald-600 font-bold mt-1">12,500 cái</div>
+                    <div className="text-[11px] text-muted-foreground mt-1">
+                      Bao bì PE in sẵn 500g
+                    </div>
+                    <div className="text-[10px] font-mono text-emerald-600 font-bold mt-1">
+                      12,500 cái
+                    </div>
                   </div>
                   <div className="rounded-lg border border-dashed bg-muted/40 p-3 flex items-center justify-center text-muted-foreground text-center">
                     Kệ BB-02 (Trống)
@@ -1439,15 +1532,22 @@ export function InventoryPage() {
           <div className="rounded-xl border bg-card p-4 sm:p-5">
             <h3 className="text-base font-bold text-foreground">Quản lý mẫu lưu đối chứng</h3>
             <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-              Quản lý mẫu lưu đối chứng theo từng ca/mẻ sản xuất. Hạn lưu tối thiểu: <b>HSD + 30 ngày</b>.
+              Quản lý mẫu lưu đối chứng theo từng ca/mẻ sản xuất. Hạn lưu tối thiểu:{" "}
+              <b>HSD + 30 ngày</b>.
             </p>
           </div>
 
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-muted/30 p-3 rounded-lg border">
             <div className="text-xs sm:text-sm text-muted-foreground">
-              Tổng số mẫu lưu: <span className="font-semibold text-foreground">{samples.length}</span> | 
-              Đạt chuẩn: <span className="font-semibold text-emerald-600">{samples.filter(s => s.test_result === "PASS").length}</span> | 
-              Đang chờ/Cảnh báo: <span className="font-semibold text-amber-600">{samples.filter(s => s.test_result !== "PASS").length}</span>
+              Tổng số mẫu lưu:{" "}
+              <span className="font-semibold text-foreground">{samples.length}</span> | Đạt chuẩn:{" "}
+              <span className="font-semibold text-emerald-600">
+                {samples.filter((s) => s.test_result === "PASS").length}
+              </span>{" "}
+              | Đang chờ/Cảnh báo:{" "}
+              <span className="font-semibold text-amber-600">
+                {samples.filter((s) => s.test_result !== "PASS").length}
+              </span>
             </div>
             <Button
               onClick={() => {
@@ -1505,26 +1605,38 @@ export function InventoryPage() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {samples.map((sample) => (
-                <div key={sample.sample_id} className="rounded-xl border bg-card p-4 shadow-sm space-y-3">
+                <div
+                  key={sample.sample_id}
+                  className="rounded-xl border bg-card p-4 shadow-sm space-y-3"
+                >
                   <div className="flex items-center justify-between">
-                    <span className="font-mono font-bold text-sm text-primary">{sample.sample_code}</span>
+                    <span className="font-mono font-bold text-sm text-primary">
+                      {sample.sample_code}
+                    </span>
                     <span
                       className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold ${
                         sample.test_result === "PASS"
                           ? "bg-emerald-500/10 text-emerald-700"
                           : sample.test_result === "FAIL"
-                          ? "bg-rose-500/10 text-rose-700"
-                          : "bg-amber-500/10 text-amber-700"
+                            ? "bg-rose-500/10 text-rose-700"
+                            : "bg-amber-500/10 text-amber-700"
                       }`}
                     >
-                      {sample.test_result === "PASS" ? "Vi sinh: ĐẠT" : sample.test_result === "FAIL" ? "KHÔNG ĐẠT" : "Đang kiểm nghiệm"}
+                      {sample.test_result === "PASS"
+                        ? "Vi sinh: ĐẠT"
+                        : sample.test_result === "FAIL"
+                          ? "KHÔNG ĐẠT"
+                          : "Đang kiểm nghiệm"}
                     </span>
                   </div>
 
                   <div>
                     <h4 className="font-bold text-sm text-foreground">{sample.product_name}</h4>
                     <div className="text-xs text-muted-foreground mt-0.5">
-                      Mẻ sản xuất: <span className="font-mono font-semibold text-foreground">{sample.batch_number}</span>
+                      Mẻ sản xuất:{" "}
+                      <span className="font-mono font-semibold text-foreground">
+                        {sample.batch_number}
+                      </span>
                     </div>
                   </div>
 
@@ -1535,7 +1647,9 @@ export function InventoryPage() {
                     </div>
                     <div>
                       <span className="text-muted-foreground">Nhiệt độ lưu:</span>
-                      <div className="font-semibold text-blue-600">{sample.storage_temperature_c}°C</div>
+                      <div className="font-semibold text-blue-600">
+                        {sample.storage_temperature_c}°C
+                      </div>
                     </div>
                     <div>
                       <span className="text-muted-foreground">Ngày lấy mẫu:</span>
@@ -1578,7 +1692,9 @@ export function InventoryPage() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => setDeletingSampleItem({ id: sample.sample_id, code: sample.sample_code })}
+                        onClick={() =>
+                          setDeletingSampleItem({ id: sample.sample_id, code: sample.sample_code })
+                        }
                         className="h-7 w-7 p-0 text-rose-600 hover:text-rose-700 hover:bg-rose-50"
                         title="Xóa mẫu lưu"
                       >
@@ -1633,12 +1749,16 @@ export function InventoryPage() {
                     {batches.map((batch) => (
                       <tr key={batch.batch_id} className="hover:bg-muted/30">
                         <td className="py-3 px-3">
-                          <div className="font-mono font-bold text-primary">{batch.batch_number}</div>
+                          <div className="font-mono font-bold text-primary">
+                            {batch.batch_number}
+                          </div>
                           <div className="font-medium text-foreground">{batch.product_name}</div>
                         </td>
                         <td className="py-3 px-3">
                           <div>{batch.shift}</div>
-                          <div className="text-xs text-muted-foreground">{batch.production_line}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {batch.production_line}
+                          </div>
                         </td>
                         <td className="py-3 px-3 font-semibold">
                           {batch.actual_quantity} {batch.unit}
@@ -1648,7 +1768,10 @@ export function InventoryPage() {
                             <div className="space-y-0.5">
                               {batch.material_usages.map((m, idx) => (
                                 <div key={idx} className="text-xs">
-                                  • {m.material_name} ({m.lot_number}): <b>{m.quantity_used} {m.unit}</b>
+                                  • {m.material_name} ({m.lot_number}):{" "}
+                                  <b>
+                                    {m.quantity_used} {m.unit}
+                                  </b>
                                 </div>
                               ))}
                             </div>
@@ -1658,7 +1781,9 @@ export function InventoryPage() {
                         </td>
                         <td className="py-3 px-3 text-xs text-muted-foreground">
                           <div>Bắt đầu: {new Date(batch.start_time).toLocaleString("vi-VN")}</div>
-                          <div className="text-foreground font-medium">QC: {batch.qc_inspector}</div>
+                          <div className="text-foreground font-medium">
+                            QC: {batch.qc_inspector}
+                          </div>
                         </td>
                         <td className="py-3 px-3">
                           <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-semibold text-emerald-700">
@@ -1712,7 +1837,9 @@ export function InventoryPage() {
                         </td>
                         <td className="py-3 px-3 font-medium text-foreground">
                           <div>{d.customer_name}</div>
-                          <div className="text-xs text-muted-foreground">{d.destination_address}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {d.destination_address}
+                          </div>
                         </td>
                         <td className="py-3 px-3">
                           <div className="font-mono font-semibold">{d.batch_number}</div>
@@ -1722,7 +1849,9 @@ export function InventoryPage() {
                         </td>
                         <td className="py-3 px-3">
                           <div className="text-xs font-semibold">{d.vehicle_number}</div>
-                          <div className="text-xs text-blue-600 font-medium">Nhiệt độ: {d.vehicle_temp_c}°C (ĐẠT)</div>
+                          <div className="text-xs text-blue-600 font-medium">
+                            Nhiệt độ: {d.vehicle_temp_c}°C (ĐẠT)
+                          </div>
                         </td>
                         <td className="py-3 px-3">
                           <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-semibold text-emerald-700">
@@ -1768,7 +1897,11 @@ export function InventoryPage() {
               </select>
             </div>
 
-            <Button onClick={openNewVehicle} size="sm" className="gap-2 shrink-0 bg-primary hover:bg-primary/90 font-semibold">
+            <Button
+              onClick={openNewVehicle}
+              size="sm"
+              className="gap-2 shrink-0 bg-primary hover:bg-primary/90 font-semibold"
+            >
               <Plus className="h-4 w-4" />
               Lập Phiếu Kiểm Xe (BM01-PTVC)
             </Button>
@@ -1793,132 +1926,153 @@ export function InventoryPage() {
                     Sổ Nhật Ký Kiểm Tra Phương Tiện Vận Chuyển Trước Bốc Hàng
                   </h3>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    Biểu mẫu BM01-PTVC — Đánh giá 5 tiêu chí: Đăng kiểm hợp lệ, thùng xe kín bền, sạch khô, không mùi lạ, không côn trùng hại.
+                    Biểu mẫu BM01-PTVC — Đánh giá 5 tiêu chí: Đăng kiểm hợp lệ, thùng xe kín bền,
+                    sạch khô, không mùi lạ, không côn trùng hại.
                   </p>
                 </div>
                 <div className="flex items-center gap-2 text-xs">
                   <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-1 font-semibold text-emerald-700">
-                    <CheckCircle2 className="h-3.5 w-3.5" /> Đạt: {vehicleInspections.filter(v => v.inspection_result === "PASS").length}
+                    <CheckCircle2 className="h-3.5 w-3.5" /> Đạt:{" "}
+                    {vehicleInspections.filter((v) => v.inspection_result === "PASS").length}
                   </span>
                   <span className="inline-flex items-center gap-1 rounded-full bg-rose-500/10 px-2.5 py-1 font-semibold text-rose-700">
-                    <AlertTriangle className="h-3.5 w-3.5" /> Từ chối: {vehicleInspections.filter(v => v.inspection_result === "FAIL").length}
+                    <AlertTriangle className="h-3.5 w-3.5" /> Từ chối:{" "}
+                    {vehicleInspections.filter((v) => v.inspection_result === "FAIL").length}
                   </span>
                 </div>
               </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs sm:text-sm text-left">
-                <thead className="bg-muted/40 text-muted-foreground uppercase text-[11px] font-bold border-b">
-                  <tr>
-                    <th className="py-2.5 px-3">Mã Phiếu & Ngày Giờ</th>
-                    <th className="py-2.5 px-3">Biển Số & Đơn Vị</th>
-                    <th className="py-2.5 px-3">Tài Xế</th>
-                    <th className="py-2.5 px-3 text-center">5 Tiêu Chuẩn Kỹ Thuật (BM01-PTVC)</th>
-                    <th className="py-2.5 px-3 text-center">Kết Quả</th>
-                    <th className="py-2.5 px-3">Người Kiểm Tra</th>
-                    <th className="py-2.5 px-3 text-right">Thao Tác</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y">
-                  {filteredVehicles.length === 0 ? (
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs sm:text-sm text-left">
+                  <thead className="bg-muted/40 text-muted-foreground uppercase text-[11px] font-bold border-b">
                     <tr>
-                      <td colSpan={7} className="py-8 text-center text-muted-foreground">
-                        Chưa có phiếu kiểm tra phương tiện vận chuyển nào phù hợp.
-                      </td>
+                      <th className="py-2.5 px-3">Mã Phiếu & Ngày Giờ</th>
+                      <th className="py-2.5 px-3">Biển Số & Đơn Vị</th>
+                      <th className="py-2.5 px-3">Tài Xế</th>
+                      <th className="py-2.5 px-3 text-center">5 Tiêu Chuẩn Kỹ Thuật (BM01-PTVC)</th>
+                      <th className="py-2.5 px-3 text-center">Kết Quả</th>
+                      <th className="py-2.5 px-3">Người Kiểm Tra</th>
+                      <th className="py-2.5 px-3 text-right">Thao Tác</th>
                     </tr>
-                  ) : (
-                    filteredVehicles.map((v) => (
-                      <tr key={v.id} className="hover:bg-muted/30 transition-colors">
-                        <td className="py-3 px-3">
-                          <div className="font-mono font-bold text-primary">{v.inspection_code}</div>
-                          <div className="text-[11px] text-muted-foreground">
-                            {new Date(v.inspection_date).toLocaleString("vi-VN")}
-                          </div>
-                        </td>
-                        <td className="py-3 px-3">
-                          <div className="font-bold text-foreground">{v.vehicle_plate}</div>
-                          <div className="text-[11px] text-muted-foreground">
-                            {v.transport_company || "Đội xe Công ty"}
-                          </div>
-                        </td>
-                        <td className="py-3 px-3">
-                          <div className="font-medium text-foreground">{v.driver_name}</div>
-                          <div className="text-[11px] text-muted-foreground">
-                            {v.driver_phone || "--"}
-                          </div>
-                        </td>
-                        <td className="py-3 px-3 text-center">
-                          <div className="inline-flex items-center gap-1.5 flex-wrap justify-center max-w-md">
-                            <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${v.valid_registration_check ? "bg-emerald-100 text-emerald-800" : "bg-rose-100 text-rose-800"}`}>
-                              {v.valid_registration_check ? "✓ Đăng kiểm còn hạn" : "✗ Hết đăng kiểm"}
-                            </span>
-                            <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${v.cargo_integrity_check ? "bg-emerald-100 text-emerald-800" : "bg-rose-100 text-rose-800"}`}>
-                              {v.cargo_integrity_check ? "✓ Thùng kín, bền" : "✗ Thủng/Rách"}
-                            </span>
-                            <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${v.clean_dry_check ? "bg-emerald-100 text-emerald-800" : "bg-rose-100 text-rose-800"}`}>
-                              {v.clean_dry_check ? "✓ Sạch sẽ, khô ráo" : "✗ Bẩn/Ẩm"}
-                            </span>
-                            <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${v.no_odor_check ? "bg-emerald-100 text-emerald-800" : "bg-rose-100 text-rose-800"}`}>
-                              {v.no_odor_check ? "✓ Không mùi lạ" : "✗ Có mùi lạ"}
-                            </span>
-                            <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${v.pest_free_check ? "bg-emerald-100 text-emerald-800" : "bg-rose-100 text-rose-800"}`}>
-                              {v.pest_free_check ? "✓ Không sâu hại/mốc" : "✗ Côn trùng/Mốc"}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="py-3 px-3 text-center">
-                          {v.inspection_result === "PASS" ? (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-bold text-emerald-700 border border-emerald-500/20">
-                              <CheckCircle2 className="h-3 w-3" /> ĐẠT (CHO PHÉP)
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-rose-500/10 px-2.5 py-0.5 text-xs font-bold text-rose-700 border border-rose-500/20">
-                              <AlertTriangle className="h-3 w-3" /> TỪ CHỐI
-                            </span>
-                          )}
-                        </td>
-                        <td className="py-3 px-3">
-                          <div className="font-medium text-foreground">{v.inspector_name}</div>
-                          {v.notes && <div className="text-[11px] text-muted-foreground line-clamp-1 italic">{v.notes}</div>}
-                        </td>
-                        <td className="py-3 px-3 text-right">
-                          <div className="flex items-center justify-end gap-1">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handlePrintVehicleInspection(v)}
-                              title="In Phiếu Kiểm Tra PTVC (BM01-PTVC)"
-                              className="h-8 w-8 p-0 text-slate-700 hover:text-primary hover:border-primary"
-                            >
-                              <Printer className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => openEditVehicle(v)}
-                              title="Chỉnh sửa phiếu"
-                              className="h-8 w-8 p-0"
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleDeleteVehicle(v.id)}
-                              title="Xóa phiếu"
-                              className="h-8 w-8 p-0 text-rose-600 hover:text-rose-700 hover:bg-rose-50"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
+                  </thead>
+                  <tbody className="divide-y">
+                    {filteredVehicles.length === 0 ? (
+                      <tr>
+                        <td colSpan={7} className="py-8 text-center text-muted-foreground">
+                          Chưa có phiếu kiểm tra phương tiện vận chuyển nào phù hợp.
                         </td>
                       </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
+                    ) : (
+                      filteredVehicles.map((v) => (
+                        <tr key={v.id} className="hover:bg-muted/30 transition-colors">
+                          <td className="py-3 px-3">
+                            <div className="font-mono font-bold text-primary">
+                              {v.inspection_code}
+                            </div>
+                            <div className="text-[11px] text-muted-foreground">
+                              {new Date(v.inspection_date).toLocaleString("vi-VN")}
+                            </div>
+                          </td>
+                          <td className="py-3 px-3">
+                            <div className="font-bold text-foreground">{v.vehicle_plate}</div>
+                            <div className="text-[11px] text-muted-foreground">
+                              {v.transport_company || "Đội xe Công ty"}
+                            </div>
+                          </td>
+                          <td className="py-3 px-3">
+                            <div className="font-medium text-foreground">{v.driver_name}</div>
+                            <div className="text-[11px] text-muted-foreground">
+                              {v.driver_phone || "--"}
+                            </div>
+                          </td>
+                          <td className="py-3 px-3 text-center">
+                            <div className="inline-flex items-center gap-1.5 flex-wrap justify-center max-w-md">
+                              <span
+                                className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${v.valid_registration_check ? "bg-emerald-100 text-emerald-800" : "bg-rose-100 text-rose-800"}`}
+                              >
+                                {v.valid_registration_check
+                                  ? "✓ Đăng kiểm còn hạn"
+                                  : "✗ Hết đăng kiểm"}
+                              </span>
+                              <span
+                                className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${v.cargo_integrity_check ? "bg-emerald-100 text-emerald-800" : "bg-rose-100 text-rose-800"}`}
+                              >
+                                {v.cargo_integrity_check ? "✓ Thùng kín, bền" : "✗ Thủng/Rách"}
+                              </span>
+                              <span
+                                className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${v.clean_dry_check ? "bg-emerald-100 text-emerald-800" : "bg-rose-100 text-rose-800"}`}
+                              >
+                                {v.clean_dry_check ? "✓ Sạch sẽ, khô ráo" : "✗ Bẩn/Ẩm"}
+                              </span>
+                              <span
+                                className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${v.no_odor_check ? "bg-emerald-100 text-emerald-800" : "bg-rose-100 text-rose-800"}`}
+                              >
+                                {v.no_odor_check ? "✓ Không mùi lạ" : "✗ Có mùi lạ"}
+                              </span>
+                              <span
+                                className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${v.pest_free_check ? "bg-emerald-100 text-emerald-800" : "bg-rose-100 text-rose-800"}`}
+                              >
+                                {v.pest_free_check ? "✓ Không sâu hại/mốc" : "✗ Côn trùng/Mốc"}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="py-3 px-3 text-center">
+                            {v.inspection_result === "PASS" ? (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-bold text-emerald-700 border border-emerald-500/20">
+                                <CheckCircle2 className="h-3 w-3" /> ĐẠT (CHO PHÉP)
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-rose-500/10 px-2.5 py-0.5 text-xs font-bold text-rose-700 border border-rose-500/20">
+                                <AlertTriangle className="h-3 w-3" /> TỪ CHỐI
+                              </span>
+                            )}
+                          </td>
+                          <td className="py-3 px-3">
+                            <div className="font-medium text-foreground">{v.inspector_name}</div>
+                            {v.notes && (
+                              <div className="text-[11px] text-muted-foreground line-clamp-1 italic">
+                                {v.notes}
+                              </div>
+                            )}
+                          </td>
+                          <td className="py-3 px-3 text-right">
+                            <div className="flex items-center justify-end gap-1">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handlePrintVehicleInspection(v)}
+                                title="In Phiếu Kiểm Tra PTVC (BM01-PTVC)"
+                                className="h-8 w-8 p-0 text-slate-700 hover:text-primary hover:border-primary"
+                              >
+                                <Printer className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => openEditVehicle(v)}
+                                title="Chỉnh sửa phiếu"
+                                className="h-8 w-8 p-0"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleDeleteVehicle(v.id)}
+                                title="Xóa phiếu"
+                                className="h-8 w-8 p-0 text-rose-600 hover:text-rose-700 hover:bg-rose-50"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
-          </div>
           )}
         </div>
       )}
@@ -1953,7 +2107,11 @@ export function InventoryPage() {
               </select>
             </div>
 
-            <Button onClick={openNewDisposal} size="sm" className="gap-2 shrink-0 bg-rose-600 hover:bg-rose-700 text-white font-semibold">
+            <Button
+              onClick={openNewDisposal}
+              size="sm"
+              className="gap-2 shrink-0 bg-rose-600 hover:bg-rose-700 text-white font-semibold"
+            >
               <Plus className="h-4 w-4" />
               Lập Biên Bản Hủy Hàng (BM02)
             </Button>
@@ -1978,12 +2136,17 @@ export function InventoryPage() {
                     Sổ Theo Dõi Tiêu Hủy Sản Phẩm / Thực Phẩm Không Phù Hợp
                   </h3>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    Biểu mẫu BM02-HỦY HÀNG — Hội đồng 3 bên chứng kiến, giám sát và ký biên bản (Đơn vị thực hiện hủy, P.QLCL, Phòng ban đề xuất).
+                    Biểu mẫu BM02-HỦY HÀNG — Hội đồng 3 bên chứng kiến, giám sát và ký biên bản (Đơn
+                    vị thực hiện hủy, P.QLCL, Phòng ban đề xuất).
                   </p>
                 </div>
                 <div className="flex items-center gap-2 text-xs">
                   <span className="inline-flex items-center gap-1 rounded-full bg-rose-500/10 px-2.5 py-1 font-semibold text-rose-700">
-                    <Flame className="h-3.5 w-3.5" /> Tổng khối lượng đã hủy: {disposalRecords.reduce((sum, r) => sum + (r.unit === 'kg' ? r.quantity : 0), 0).toLocaleString()} kg
+                    <Flame className="h-3.5 w-3.5" /> Tổng khối lượng đã hủy:{" "}
+                    {disposalRecords
+                      .reduce((sum, r) => sum + (r.unit === "kg" ? r.quantity : 0), 0)
+                      .toLocaleString()}{" "}
+                    kg
                   </span>
                 </div>
               </div>
@@ -2014,11 +2177,15 @@ export function InventoryPage() {
                         <tr key={d.id} className="hover:bg-muted/30 transition-colors">
                           <td className="py-3 px-3">
                             <div className="font-mono font-bold text-rose-600">{d.record_code}</div>
-                            <div className="text-[11px] text-muted-foreground">{d.disposal_date}</div>
+                            <div className="text-[11px] text-muted-foreground">
+                              {d.disposal_date}
+                            </div>
                           </td>
                           <td className="py-3 px-3">
                             <div className="font-bold text-foreground">{d.product_name}</div>
-                            <div className="text-[11px] font-mono text-muted-foreground">Lô: {d.batch_number}</div>
+                            <div className="text-[11px] font-mono text-muted-foreground">
+                              Lô: {d.batch_number}
+                            </div>
                           </td>
                           <td className="py-3 px-3 text-right">
                             <div className="font-mono font-bold text-foreground text-sm">
@@ -2026,11 +2193,17 @@ export function InventoryPage() {
                             </div>
                           </td>
                           <td className="py-3 px-3 max-w-xs">
-                            <div className="text-xs text-rose-700 font-medium line-clamp-2">{d.reason}</div>
+                            <div className="text-xs text-rose-700 font-medium line-clamp-2">
+                              {d.reason}
+                            </div>
                           </td>
                           <td className="py-3 px-3 max-w-xs">
-                            <div className="text-xs font-semibold text-foreground line-clamp-1">{d.disposal_method}</div>
-                            <div className="text-[11px] text-muted-foreground line-clamp-1">{d.disposal_location}</div>
+                            <div className="text-xs font-semibold text-foreground line-clamp-1">
+                              {d.disposal_method}
+                            </div>
+                            <div className="text-[11px] text-muted-foreground line-clamp-1">
+                              {d.disposal_location}
+                            </div>
                           </td>
                           <td className="py-3 px-3 text-center">
                             {d.status === "DISPOSED" ? (
@@ -2048,9 +2221,13 @@ export function InventoryPage() {
                             )}
                           </td>
                           <td className="py-3 px-3">
-                            <div className="font-medium text-foreground">{d.approved_by || "Chưa ký"}</div>
+                            <div className="font-medium text-foreground">
+                              {d.approved_by || "Chưa ký"}
+                            </div>
                             {d.witness_council && (
-                              <div className="text-[11px] text-muted-foreground line-clamp-1 italic">Hội đồng 3 bên</div>
+                              <div className="text-[11px] text-muted-foreground line-clamp-1 italic">
+                                Hội đồng 3 bên
+                              </div>
                             )}
                           </td>
                           <td className="py-3 px-3 text-right">
@@ -2106,7 +2283,8 @@ export function InventoryPage() {
               {selectedStock ? "Chỉnh Sửa Mục Tồn Kho" : "Nhập Kho Nguyên Liệu / Thành Phẩm Mới"}
             </DialogTitle>
             <DialogDescription className="text-xs text-muted-foreground">
-              Nhập đầy đủ thông tin định danh, số lượng và ngày hạn dùng để tính toán thứ tự ưu tiên xuất kho FEFO.
+              Nhập đầy đủ thông tin định danh, số lượng và ngày hạn dùng để tính toán thứ tự ưu tiên
+              xuất kho FEFO.
             </DialogDescription>
           </DialogHeader>
 
@@ -2131,7 +2309,9 @@ export function InventoryPage() {
                   <label className="text-xs font-semibold">Phân loại *</label>
                   <select
                     value={stockForm.category}
-                    onChange={(e) => setStockForm({ ...stockForm, category: e.target.value as any })}
+                    onChange={(e) =>
+                      setStockForm({ ...stockForm, category: e.target.value as any })
+                    }
                     className="w-full h-9 rounded-md border bg-background px-3 text-xs sm:text-sm"
                   >
                     <option value="RAW_MATERIAL">Nguyên liệu tươi sống</option>
@@ -2179,7 +2359,9 @@ export function InventoryPage() {
                     min="0.1"
                     required
                     value={stockForm.quantity}
-                    onChange={(e) => setStockForm({ ...stockForm, quantity: parseFloat(e.target.value) || 0 })}
+                    onChange={(e) =>
+                      setStockForm({ ...stockForm, quantity: parseFloat(e.target.value) || 0 })
+                    }
                     className="text-xs sm:text-sm font-semibold"
                   />
                 </div>
@@ -2202,7 +2384,12 @@ export function InventoryPage() {
                   <Input
                     type="number"
                     value={stockForm.min_stock_level}
-                    onChange={(e) => setStockForm({ ...stockForm, min_stock_level: parseFloat(e.target.value) || 0 })}
+                    onChange={(e) =>
+                      setStockForm({
+                        ...stockForm,
+                        min_stock_level: parseFloat(e.target.value) || 0,
+                      })
+                    }
                     className="text-xs sm:text-sm"
                   />
                 </div>
@@ -2254,7 +2441,9 @@ export function InventoryPage() {
                     type="number"
                     step="0.1"
                     value={stockForm.temperature_c}
-                    onChange={(e) => setStockForm({ ...stockForm, temperature_c: parseFloat(e.target.value) || 0 })}
+                    onChange={(e) =>
+                      setStockForm({ ...stockForm, temperature_c: parseFloat(e.target.value) || 0 })
+                    }
                     className="text-xs sm:text-sm"
                   />
                 </div>
@@ -2273,7 +2462,12 @@ export function InventoryPage() {
             </div>
 
             <DialogFooter className="flex-col-reverse sm:flex-row gap-2 pt-2 border-t">
-              <Button type="button" variant="outline" onClick={() => setStockModalOpen(false)} className="w-full sm:w-auto">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setStockModalOpen(false)}
+                className="w-full sm:w-auto"
+              >
                 Hủy bỏ
               </Button>
               <Button type="submit" className="w-full sm:w-auto font-semibold">
@@ -2295,7 +2489,8 @@ export function InventoryPage() {
               {selectedSample ? "Cập Nhật Mẫu Lưu Nghiệm Thức" : "Ghi Nhận Mẫu Lưu Mới"}
             </DialogTitle>
             <DialogDescription className="text-xs text-muted-foreground">
-              Mẫu lưu nghiệm thức đối chứng phục vụ điều tra sự cố và đối chiếu khiếu nại chất lượng.
+              Mẫu lưu nghiệm thức đối chứng phục vụ điều tra sự cố và đối chiếu khiếu nại chất
+              lượng.
             </DialogDescription>
           </DialogHeader>
 
@@ -2342,7 +2537,12 @@ export function InventoryPage() {
                     type="number"
                     required
                     value={sampleForm.sample_weight_g}
-                    onChange={(e) => setSampleForm({ ...sampleForm, sample_weight_g: parseFloat(e.target.value) || 0 })}
+                    onChange={(e) =>
+                      setSampleForm({
+                        ...sampleForm,
+                        sample_weight_g: parseFloat(e.target.value) || 0,
+                      })
+                    }
                     className="text-xs sm:text-sm"
                   />
                 </div>
@@ -2350,7 +2550,9 @@ export function InventoryPage() {
                   <label className="text-xs font-semibold">Vị trí tủ lưu *</label>
                   <select
                     value={sampleForm.storage_cabinet}
-                    onChange={(e) => setSampleForm({ ...sampleForm, storage_cabinet: e.target.value })}
+                    onChange={(e) =>
+                      setSampleForm({ ...sampleForm, storage_cabinet: e.target.value })
+                    }
                     className="w-full h-9 rounded-md border bg-background px-3 text-xs sm:text-sm"
                   >
                     <option value="Tủ đông mẫu T-01">Tủ đông mẫu T-01 (≤ -18°C)</option>
@@ -2372,7 +2574,9 @@ export function InventoryPage() {
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold">Hạn lưu bắt buộc (HSD + 30 ngày) *</label>
+                  <label className="text-xs font-semibold">
+                    Hạn lưu bắt buộc (HSD + 30 ngày) *
+                  </label>
                   <Input
                     type="date"
                     required
@@ -2397,7 +2601,9 @@ export function InventoryPage() {
                   <label className="text-xs font-semibold">Kết quả kiểm nghiệm vi sinh *</label>
                   <select
                     value={sampleForm.test_result}
-                    onChange={(e) => setSampleForm({ ...sampleForm, test_result: e.target.value as any })}
+                    onChange={(e) =>
+                      setSampleForm({ ...sampleForm, test_result: e.target.value as any })
+                    }
                     className="w-full h-9 rounded-md border bg-background px-3 text-xs sm:text-sm font-bold"
                   >
                     <option value="PASS">ĐẠT (PASS - Âm tính Salmonella, E.coli)</option>
@@ -2410,7 +2616,12 @@ export function InventoryPage() {
             </div>
 
             <DialogFooter className="flex-col-reverse sm:flex-row gap-2 pt-2 border-t">
-              <Button type="button" variant="outline" onClick={() => setSampleModalOpen(false)} className="w-full sm:w-auto">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setSampleModalOpen(false)}
+                className="w-full sm:w-auto"
+              >
                 Hủy bỏ
               </Button>
               <Button type="submit" className="w-full sm:w-auto font-semibold">
@@ -2429,10 +2640,13 @@ export function InventoryPage() {
           <DialogHeader>
             <DialogTitle className="text-lg sm:text-xl font-bold flex items-center gap-2">
               <Truck className="h-5 w-5 text-primary" />
-              {editingVehicle ? "Chỉnh Sửa Phiếu Kiểm Tra Xe" : "Lập Phiếu Kiểm Tra Phương Tiện Vận Chuyển (BM01-PTVC)"}
+              {editingVehicle
+                ? "Chỉnh Sửa Phiếu Kiểm Tra Xe"
+                : "Lập Phiếu Kiểm Tra Phương Tiện Vận Chuyển (BM01-PTVC)"}
             </DialogTitle>
             <DialogDescription className="text-xs text-muted-foreground">
-              Đánh giá 5 tiêu chí kỹ thuật chuẩn ISO 22000 / BM01-PTVC gốc (niên hạn/đăng kiểm, thùng kín bền, sạch khô, không mùi lạ, không sâu hại) trước khi bốc hàng.
+              Đánh giá 5 tiêu chí kỹ thuật chuẩn ISO 22000 / BM01-PTVC gốc (niên hạn/đăng kiểm,
+              thùng kín bền, sạch khô, không mùi lạ, không sâu hại) trước khi bốc hàng.
             </DialogDescription>
           </DialogHeader>
 
@@ -2448,7 +2662,9 @@ export function InventoryPage() {
                   <Input
                     required
                     value={vehicleForm.inspection_code}
-                    onChange={(e) => setVehicleForm({ ...vehicleForm, inspection_code: e.target.value })}
+                    onChange={(e) =>
+                      setVehicleForm({ ...vehicleForm, inspection_code: e.target.value })
+                    }
                     className="text-xs sm:text-sm font-mono font-bold"
                   />
                 </div>
@@ -2458,7 +2674,9 @@ export function InventoryPage() {
                     type="datetime-local"
                     required
                     value={vehicleForm.inspection_date}
-                    onChange={(e) => setVehicleForm({ ...vehicleForm, inspection_date: e.target.value })}
+                    onChange={(e) =>
+                      setVehicleForm({ ...vehicleForm, inspection_date: e.target.value })
+                    }
                     className="text-xs sm:text-sm"
                   />
                 </div>
@@ -2470,7 +2688,9 @@ export function InventoryPage() {
                   <Input
                     required
                     value={vehicleForm.vehicle_plate}
-                    onChange={(e) => setVehicleForm({ ...vehicleForm, vehicle_plate: e.target.value })}
+                    onChange={(e) =>
+                      setVehicleForm({ ...vehicleForm, vehicle_plate: e.target.value })
+                    }
                     placeholder="VD: 67C-184.29"
                     className="text-xs sm:text-sm font-bold font-mono"
                   />
@@ -2479,7 +2699,9 @@ export function InventoryPage() {
                   <label className="text-xs font-semibold">Đơn vị vận chuyển</label>
                   <Input
                     value={vehicleForm.transport_company}
-                    onChange={(e) => setVehicleForm({ ...vehicleForm, transport_company: e.target.value })}
+                    onChange={(e) =>
+                      setVehicleForm({ ...vehicleForm, transport_company: e.target.value })
+                    }
                     placeholder="VD: Đội xe Công ty / Vận tải Mekong"
                     className="text-xs sm:text-sm"
                   />
@@ -2492,7 +2714,9 @@ export function InventoryPage() {
                   <Input
                     required
                     value={vehicleForm.driver_name}
-                    onChange={(e) => setVehicleForm({ ...vehicleForm, driver_name: e.target.value })}
+                    onChange={(e) =>
+                      setVehicleForm({ ...vehicleForm, driver_name: e.target.value })
+                    }
                     placeholder="VD: Nguyễn Văn Tài"
                     className="text-xs sm:text-sm"
                   />
@@ -2501,7 +2725,9 @@ export function InventoryPage() {
                   <label className="text-xs font-semibold">Số điện thoại tài xế</label>
                   <Input
                     value={vehicleForm.driver_phone}
-                    onChange={(e) => setVehicleForm({ ...vehicleForm, driver_phone: e.target.value })}
+                    onChange={(e) =>
+                      setVehicleForm({ ...vehicleForm, driver_phone: e.target.value })
+                    }
                     placeholder="VD: 0918 234 567"
                     className="text-xs sm:text-sm font-mono"
                   />
@@ -2513,9 +2739,12 @@ export function InventoryPage() {
             <div className="rounded-lg border bg-muted/20 p-3.5 space-y-3">
               <div className="flex items-center justify-between">
                 <h4 className="text-xs font-bold uppercase tracking-wider text-primary flex items-center gap-1.5">
-                  <CheckSquare className="h-3.5 w-3.5" /> 2. Đánh Giá 5 Tiêu Chuẩn Kỹ Thuật (Đạt / Không đạt)
+                  <CheckSquare className="h-3.5 w-3.5" /> 2. Đánh Giá 5 Tiêu Chuẩn Kỹ Thuật (Đạt /
+                  Không đạt)
                 </h4>
-                <span className="text-[11px] text-muted-foreground italic">Căn cứ biểu mẫu BM01-PTVC</span>
+                <span className="text-[11px] text-muted-foreground italic">
+                  Căn cứ biểu mẫu BM01-PTVC
+                </span>
               </div>
 
               <div className="space-y-2">
@@ -2526,15 +2755,24 @@ export function InventoryPage() {
                     onChange={(e) => {
                       const val = e.target.checked;
                       const next = { ...vehicleForm, valid_registration_check: val };
-                      const pass = val && next.cargo_integrity_check && next.clean_dry_check && next.no_odor_check && next.pest_free_check;
+                      const pass =
+                        val &&
+                        next.cargo_integrity_check &&
+                        next.clean_dry_check &&
+                        next.no_odor_check &&
+                        next.pest_free_check;
                       next.inspection_result = pass ? "PASS" : "FAIL";
                       setVehicleForm(next);
                     }}
                     className="h-4 w-4 rounded border-gray-300 text-primary"
                   />
                   <div>
-                    <div className="text-xs font-semibold">1. Niên hạn sử dụng & Đăng kiểm xe hợp lệ</div>
-                    <div className="text-[11px] text-muted-foreground">Xe còn niên hạn sử dụng, được cơ quan đăng kiểm cho phép lưu hành</div>
+                    <div className="text-xs font-semibold">
+                      1. Niên hạn sử dụng & Đăng kiểm xe hợp lệ
+                    </div>
+                    <div className="text-[11px] text-muted-foreground">
+                      Xe còn niên hạn sử dụng, được cơ quan đăng kiểm cho phép lưu hành
+                    </div>
                   </div>
                 </label>
 
@@ -2545,7 +2783,12 @@ export function InventoryPage() {
                     onChange={(e) => {
                       const val = e.target.checked;
                       const next = { ...vehicleForm, cargo_integrity_check: val };
-                      const pass = next.valid_registration_check && val && next.clean_dry_check && next.no_odor_check && next.pest_free_check;
+                      const pass =
+                        next.valid_registration_check &&
+                        val &&
+                        next.clean_dry_check &&
+                        next.no_odor_check &&
+                        next.pest_free_check;
                       next.inspection_result = pass ? "PASS" : "FAIL";
                       setVehicleForm(next);
                     }}
@@ -2553,7 +2796,9 @@ export function InventoryPage() {
                   />
                   <div>
                     <div className="text-xs font-semibold">2. Kết cấu thùng chứa hàng bền, kín</div>
-                    <div className="text-[11px] text-muted-foreground">Kết cấu thùng chứa bền, kín, không thủng rách, không có vật sắc nhọn</div>
+                    <div className="text-[11px] text-muted-foreground">
+                      Kết cấu thùng chứa bền, kín, không thủng rách, không có vật sắc nhọn
+                    </div>
                   </div>
                 </label>
 
@@ -2564,15 +2809,24 @@ export function InventoryPage() {
                     onChange={(e) => {
                       const val = e.target.checked;
                       const next = { ...vehicleForm, clean_dry_check: val };
-                      const pass = next.valid_registration_check && next.cargo_integrity_check && val && next.no_odor_check && next.pest_free_check;
+                      const pass =
+                        next.valid_registration_check &&
+                        next.cargo_integrity_check &&
+                        val &&
+                        next.no_odor_check &&
+                        next.pest_free_check;
                       next.inspection_result = pass ? "PASS" : "FAIL";
                       setVehicleForm(next);
                     }}
                     className="h-4 w-4 rounded border-gray-300 text-primary"
                   />
                   <div>
-                    <div className="text-xs font-semibold">3. Tình trạng vệ sinh sạch sẽ, khô ráo</div>
-                    <div className="text-[11px] text-muted-foreground">Thùng xe sạch sẽ, khô ráo, không han gỉ, phù hợp chủng loại hàng</div>
+                    <div className="text-xs font-semibold">
+                      3. Tình trạng vệ sinh sạch sẽ, khô ráo
+                    </div>
+                    <div className="text-[11px] text-muted-foreground">
+                      Thùng xe sạch sẽ, khô ráo, không han gỉ, phù hợp chủng loại hàng
+                    </div>
                   </div>
                 </label>
 
@@ -2583,7 +2837,12 @@ export function InventoryPage() {
                     onChange={(e) => {
                       const val = e.target.checked;
                       const next = { ...vehicleForm, no_odor_check: val };
-                      const pass = next.valid_registration_check && next.cargo_integrity_check && next.clean_dry_check && val && next.pest_free_check;
+                      const pass =
+                        next.valid_registration_check &&
+                        next.cargo_integrity_check &&
+                        next.clean_dry_check &&
+                        val &&
+                        next.pest_free_check;
                       next.inspection_result = pass ? "PASS" : "FAIL";
                       setVehicleForm(next);
                     }}
@@ -2591,7 +2850,9 @@ export function InventoryPage() {
                   />
                   <div>
                     <div className="text-xs font-semibold">4. Kiểm soát mùi lạ</div>
-                    <div className="text-[11px] text-muted-foreground">Không mùi lạ (hóa chất, xăng dầu, phân bón, thuốc bảo vệ thực vật...)</div>
+                    <div className="text-[11px] text-muted-foreground">
+                      Không mùi lạ (hóa chất, xăng dầu, phân bón, thuốc bảo vệ thực vật...)
+                    </div>
                   </div>
                 </label>
 
@@ -2602,7 +2863,12 @@ export function InventoryPage() {
                     onChange={(e) => {
                       const val = e.target.checked;
                       const next = { ...vehicleForm, pest_free_check: val };
-                      const pass = next.valid_registration_check && next.cargo_integrity_check && next.clean_dry_check && next.no_odor_check && val;
+                      const pass =
+                        next.valid_registration_check &&
+                        next.cargo_integrity_check &&
+                        next.clean_dry_check &&
+                        next.no_odor_check &&
+                        val;
                       next.inspection_result = pass ? "PASS" : "FAIL";
                       setVehicleForm(next);
                     }}
@@ -2610,7 +2876,9 @@ export function InventoryPage() {
                   />
                   <div>
                     <div className="text-xs font-semibold">5. Kiểm soát côn trùng & nấm mốc</div>
-                    <div className="text-[11px] text-muted-foreground">Không có dấu hiệu ẩm mốc, không có côn trùng, mối mọt, chuột bọ gây hại</div>
+                    <div className="text-[11px] text-muted-foreground">
+                      Không có dấu hiệu ẩm mốc, không có côn trùng, mối mọt, chuột bọ gây hại
+                    </div>
                   </div>
                 </label>
               </div>
@@ -2620,7 +2888,9 @@ export function InventoryPage() {
                   <label className="text-xs font-semibold">Kết luận thẩm định *</label>
                   <select
                     value={vehicleForm.inspection_result}
-                    onChange={(e) => setVehicleForm({ ...vehicleForm, inspection_result: e.target.value as any })}
+                    onChange={(e) =>
+                      setVehicleForm({ ...vehicleForm, inspection_result: e.target.value as any })
+                    }
                     className="w-full h-9 rounded-md border bg-background px-3 text-xs sm:text-sm font-bold"
                   >
                     <option value="PASS">ĐẠT (PASS - Đủ điều kiện xếp hàng)</option>
@@ -2632,7 +2902,9 @@ export function InventoryPage() {
                   <Input
                     required
                     value={vehicleForm.inspector_name}
-                    onChange={(e) => setVehicleForm({ ...vehicleForm, inspector_name: e.target.value })}
+                    onChange={(e) =>
+                      setVehicleForm({ ...vehicleForm, inspector_name: e.target.value })
+                    }
                     className="text-xs sm:text-sm"
                   />
                 </div>
@@ -2651,7 +2923,12 @@ export function InventoryPage() {
             </div>
 
             <DialogFooter className="flex-col-reverse sm:flex-row gap-2 pt-2 border-t">
-              <Button type="button" variant="outline" onClick={() => setVehicleModalOpen(false)} className="w-full sm:w-auto">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setVehicleModalOpen(false)}
+                className="w-full sm:w-auto"
+              >
                 Hủy bỏ
               </Button>
               <Button type="submit" className="w-full sm:w-auto font-semibold">
@@ -2670,10 +2947,13 @@ export function InventoryPage() {
           <DialogHeader>
             <DialogTitle className="text-lg sm:text-xl font-bold flex items-center gap-2 text-rose-600">
               <Trash2 className="h-5 w-5 text-rose-600" />
-              {editingDisposal ? "Chỉnh Sửa Biên Bản Hủy Hàng" : "Lập Biên Bản Hủy Hàng Không Phù Hợp (BM02)"}
+              {editingDisposal
+                ? "Chỉnh Sửa Biên Bản Hủy Hàng"
+                : "Lập Biên Bản Hủy Hàng Không Phù Hợp (BM02)"}
             </DialogTitle>
             <DialogDescription className="text-xs text-muted-foreground">
-              Tiêu hủy sản phẩm không phù hợp với Hội đồng 3 bên (Đơn vị thực hiện hủy, P.QLCL, Phòng ban đề xuất).
+              Tiêu hủy sản phẩm không phù hợp với Hội đồng 3 bên (Đơn vị thực hiện hủy, P.QLCL,
+              Phòng ban đề xuất).
             </DialogDescription>
           </DialogHeader>
 
@@ -2690,7 +2970,9 @@ export function InventoryPage() {
                   <Input
                     required
                     value={disposalForm.record_code}
-                    onChange={(e) => setDisposalForm({ ...disposalForm, record_code: e.target.value })}
+                    onChange={(e) =>
+                      setDisposalForm({ ...disposalForm, record_code: e.target.value })
+                    }
                     className="text-xs sm:text-sm font-mono font-bold"
                   />
                 </div>
@@ -2700,7 +2982,9 @@ export function InventoryPage() {
                     type="date"
                     required
                     value={disposalForm.disposal_date}
-                    onChange={(e) => setDisposalForm({ ...disposalForm, disposal_date: e.target.value })}
+                    onChange={(e) =>
+                      setDisposalForm({ ...disposalForm, disposal_date: e.target.value })
+                    }
                     className="text-xs sm:text-sm"
                   />
                 </div>
@@ -2712,7 +2996,9 @@ export function InventoryPage() {
                   <Input
                     required
                     value={disposalForm.batch_number}
-                    onChange={(e) => setDisposalForm({ ...disposalForm, batch_number: e.target.value })}
+                    onChange={(e) =>
+                      setDisposalForm({ ...disposalForm, batch_number: e.target.value })
+                    }
                     placeholder="VD: NL-2026-CA01 hoặc LOT-202608-B01"
                     className="text-xs sm:text-sm font-mono"
                   />
@@ -2722,7 +3008,9 @@ export function InventoryPage() {
                   <Input
                     required
                     value={disposalForm.product_name}
-                    onChange={(e) => setDisposalForm({ ...disposalForm, product_name: e.target.value })}
+                    onChange={(e) =>
+                      setDisposalForm({ ...disposalForm, product_name: e.target.value })
+                    }
                     placeholder="VD: Cá Tra Fillet vụn dập..."
                     className="text-xs sm:text-sm font-semibold"
                   />
@@ -2762,11 +3050,14 @@ export function InventoryPage() {
             {/* NHÓM 2: LÝ DO, PHƯƠNG PHÁP & HỘI ĐỒNG */}
             <div className="rounded-lg border bg-muted/20 p-3.5 space-y-3">
               <h4 className="text-xs font-bold uppercase tracking-wider text-primary flex items-center gap-1.5">
-                <AlertTriangle className="h-3.5 w-3.5 text-rose-600" /> 2. Lý Do & Phương Pháp Tiêu Hủy
+                <AlertTriangle className="h-3.5 w-3.5 text-rose-600" /> 2. Lý Do & Phương Pháp Tiêu
+                Hủy
               </h4>
 
               <div className="space-y-1">
-                <label className="text-xs font-semibold">Lý do tiêu hủy (Mô tả sự không phù hợp) *</label>
+                <label className="text-xs font-semibold">
+                  Lý do tiêu hủy (Mô tả sự không phù hợp) *
+                </label>
                 <Textarea
                   rows={2}
                   required
@@ -2783,7 +3074,9 @@ export function InventoryPage() {
                   <Input
                     required
                     value={disposalForm.disposal_method}
-                    onChange={(e) => setDisposalForm({ ...disposalForm, disposal_method: e.target.value })}
+                    onChange={(e) =>
+                      setDisposalForm({ ...disposalForm, disposal_method: e.target.value })
+                    }
                     placeholder="VD: Thiêu đốt nhiệt và chôn lấp hợp vệ sinh"
                     className="text-xs sm:text-sm"
                   />
@@ -2793,7 +3086,9 @@ export function InventoryPage() {
                   <Input
                     required
                     value={disposalForm.disposal_location}
-                    onChange={(e) => setDisposalForm({ ...disposalForm, disposal_location: e.target.value })}
+                    onChange={(e) =>
+                      setDisposalForm({ ...disposalForm, disposal_location: e.target.value })
+                    }
                     placeholder="VD: Khu xử lý chất thải Nhà máy"
                     className="text-xs sm:text-sm"
                   />
@@ -2801,12 +3096,16 @@ export function InventoryPage() {
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs font-semibold">Hội đồng 3 bên chứng kiến & giám sát *</label>
+                <label className="text-xs font-semibold">
+                  Hội đồng 3 bên chứng kiến & giám sát *
+                </label>
                 <Textarea
                   rows={3}
                   required
                   value={disposalForm.witness_council}
-                  onChange={(e) => setDisposalForm({ ...disposalForm, witness_council: e.target.value })}
+                  onChange={(e) =>
+                    setDisposalForm({ ...disposalForm, witness_council: e.target.value })
+                  }
                   placeholder="1. Đại diện Đơn vị thực hiện hủy: Ông/Bà ... - Chức vụ: ...&#10;2. Đại diện Phòng Quản lý Chất lượng (P.QLCL): Ông/Bà ... - Chức vụ: ...&#10;3. Đại diện Phòng ban đề xuất hủy: Ông/Bà ... - Chức vụ: ..."
                   className="text-xs sm:text-sm font-mono"
                 />
@@ -2817,7 +3116,9 @@ export function InventoryPage() {
                   <label className="text-xs font-semibold">Trạng thái hồ sơ *</label>
                   <select
                     value={disposalForm.status}
-                    onChange={(e) => setDisposalForm({ ...disposalForm, status: e.target.value as any })}
+                    onChange={(e) =>
+                      setDisposalForm({ ...disposalForm, status: e.target.value as any })
+                    }
                     className="w-full h-9 rounded-md border bg-background px-3 text-xs sm:text-sm font-bold"
                   >
                     <option value="DISPOSED">ĐÃ TIÊU HỦY (Hoàn tất biên bản)</option>
@@ -2830,7 +3131,9 @@ export function InventoryPage() {
                   <Input
                     required
                     value={disposalForm.approved_by}
-                    onChange={(e) => setDisposalForm({ ...disposalForm, approved_by: e.target.value })}
+                    onChange={(e) =>
+                      setDisposalForm({ ...disposalForm, approved_by: e.target.value })
+                    }
                     placeholder="VD: Giám Đốc Nhà Máy"
                     className="text-xs sm:text-sm font-semibold"
                   />
@@ -2850,10 +3153,18 @@ export function InventoryPage() {
             </div>
 
             <DialogFooter className="flex-col-reverse sm:flex-row gap-2 pt-2 border-t">
-              <Button type="button" variant="outline" onClick={() => setDisposalModalOpen(false)} className="w-full sm:w-auto">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setDisposalModalOpen(false)}
+                className="w-full sm:w-auto"
+              >
                 Hủy bỏ
               </Button>
-              <Button type="submit" className="w-full sm:w-auto font-semibold bg-rose-600 hover:bg-rose-700 text-white">
+              <Button
+                type="submit"
+                className="w-full sm:w-auto font-semibold bg-rose-600 hover:bg-rose-700 text-white"
+              >
                 Lưu Biên Bản Hủy Hàng
               </Button>
             </DialogFooter>
@@ -2919,11 +3230,7 @@ export function InventoryPage() {
         variant="destructive"
       />
 
-      <ModuleGuideModal
-        module="inventory"
-        isOpen={showGuide}
-        onClose={() => setShowGuide(false)}
-      />
+      <ModuleGuideModal module="inventory" isOpen={showGuide} onClose={() => setShowGuide(false)} />
     </div>
   );
 }

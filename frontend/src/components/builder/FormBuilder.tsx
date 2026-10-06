@@ -38,13 +38,43 @@ interface FormBuilderProps {
 
 const FIELD_TYPES = [
   { type: "TEXT", label: "Văn bản (Text)", icon: FileText, desc: "Nhập nội dung ngắn hoặc mô tả" },
-  { type: "NUMBER", label: "Số đo / Thông số (Number)", icon: Hash, desc: "Đo nhiệt độ, áp suất, thời gian" },
-  { type: "SELECT", label: "Danh sách lựa chọn (Select)", icon: ListFilter, desc: "Chọn 1 mục trong danh sách" },
-  { type: "YESNO", label: "Đạt / Không đạt (Yes/No)", icon: CheckSquare, desc: "Kiểm tra tiêu chí tuân thủ" },
-  { type: "RATING", label: "Đánh giá sao (1-5 Sao)", icon: Star, desc: "Chấm điểm chất lượng, độ sạch" },
-  { type: "DATE", label: "Ngày tháng (Date)", icon: Calendar, desc: "Ngày kiểm tra, ngày sản xuất" },
+  {
+    type: "NUMBER",
+    label: "Số đo / Thông số (Number)",
+    icon: Hash,
+    desc: "Đo nhiệt độ, áp suất, thời gian",
+  },
+  {
+    type: "SELECT",
+    label: "Danh sách lựa chọn (Select)",
+    icon: ListFilter,
+    desc: "Chọn 1 mục trong danh sách",
+  },
+  {
+    type: "YESNO",
+    label: "Đạt / Không đạt (Yes/No)",
+    icon: CheckSquare,
+    desc: "Kiểm tra tiêu chí tuân thủ",
+  },
+  {
+    type: "RATING",
+    label: "Đánh giá sao (1-5 Sao)",
+    icon: Star,
+    desc: "Chấm điểm chất lượng, độ sạch",
+  },
+  {
+    type: "DATE",
+    label: "Ngày tháng (Date)",
+    icon: Calendar,
+    desc: "Ngày kiểm tra, ngày sản xuất",
+  },
   { type: "TIME", label: "Thời gian (Time)", icon: Clock, desc: "Giờ giám sát theo ca" },
-  { type: "SIGNATURE", label: "Chữ ký xác nhận", icon: PenTool, desc: "Ký duyệt của QC/KCS/Trưởng ca" },
+  {
+    type: "SIGNATURE",
+    label: "Chữ ký xác nhận",
+    icon: PenTool,
+    desc: "Ký duyệt của QC/KCS/Trưởng ca",
+  },
   { type: "PHOTO", label: "Ảnh chụp hiện trường", icon: Camera, desc: "Chụp ảnh bằng chứng sự cố" },
 ];
 
@@ -59,11 +89,7 @@ const MODULE_OPTIONS = [
   { value: "GENERAL", label: "Biểu Mẫu Chung Khác" },
 ];
 
-export const FormBuilder: React.FC<FormBuilderProps> = ({
-  initialData,
-  onSave,
-  onCancel,
-}) => {
+export const FormBuilder: React.FC<FormBuilderProps> = ({ initialData, onSave, onCancel }) => {
   const [template, setTemplate] = useState<FormTemplateData>(
     initialData || {
       module: "PRP",
@@ -101,12 +127,12 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
         },
       ],
       status: "ACTIVE",
-    }
+    },
   );
 
   const [activeTab, setActiveTab] = useState<"DESIGN" | "PREVIEW">("DESIGN");
   const [selectedFieldId, setSelectedFieldId] = useState<string | null>(
-    template.fields[0]?.id || null
+    template.fields[0]?.id || null,
   );
   const [saving, setSaving] = useState(false);
 
@@ -207,7 +233,8 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
               </span>
             </h2>
             <p className="text-xs text-slate-500">
-              Tạo biểu mẫu giám sát đo đạc, checklist vệ sinh, nghiệm thu IQC và phiếu đánh giá động.
+              Tạo biểu mẫu giám sát đo đạc, checklist vệ sinh, nghiệm thu IQC và phiếu đánh giá
+              động.
             </p>
           </div>
         </div>
@@ -267,7 +294,10 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
             <div className="flex items-center justify-between bg-blue-50 border border-blue-200 p-3 rounded-xl text-xs text-blue-800">
               <div className="flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-blue-600 shrink-0" />
-                <span>Chế độ xem trước tương tác thực tế - Người dùng có thể nhập liệu trực tiếp để kiểm tra tính năng.</span>
+                <span>
+                  Chế độ xem trước tương tác thực tế - Người dùng có thể nhập liệu trực tiếp để kiểm
+                  tra tính năng.
+                </span>
               </div>
               <Button
                 size="sm"
@@ -409,7 +439,9 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
               <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
                 Danh Sách Trường Dữ Liệu ({template.fields.length})
               </h3>
-              <span className="text-[11px] text-slate-500 font-medium">Bấm chọn để cấu hình chi tiết</span>
+              <span className="text-[11px] text-slate-500 font-medium">
+                Bấm chọn để cấu hình chi tiết
+              </span>
             </div>
 
             {template.fields.length === 0 ? (
@@ -434,9 +466,13 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
                       }`}
                     >
                       <div className="text-xs font-bold text-slate-400 pt-0.5">{idx + 1}.</div>
-                      <div className={`p-2 rounded-lg border shrink-0 ${
-                        isSelected ? "bg-emerald-600 text-white border-emerald-600" : "bg-slate-100 text-slate-600 border-slate-200"
-                      }`}>
+                      <div
+                        className={`p-2 rounded-lg border shrink-0 ${
+                          isSelected
+                            ? "bg-emerald-600 text-white border-emerald-600"
+                            : "bg-slate-100 text-slate-600 border-slate-200"
+                        }`}
+                      >
                         <Icon className="w-4 h-4" />
                       </div>
 
@@ -452,7 +488,9 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
                           )}
                         </div>
                         <div className="flex items-center gap-2 mt-1 text-[11px] text-slate-500">
-                          <span className="font-mono text-slate-600 bg-slate-100 px-1 rounded">{f.name}</span>
+                          <span className="font-mono text-slate-600 bg-slate-100 px-1 rounded">
+                            {f.name}
+                          </span>
                           <span>•</span>
                           <span className="text-emerald-700 font-bold">{f.type}</span>
                           {f.unit && <span className="text-slate-600 font-mono">[{f.unit}]</span>}
@@ -460,7 +498,10 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
                       </div>
 
                       {/* Reorder & Delete controls */}
-                      <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+                      <div
+                        className="flex items-center gap-1 shrink-0"
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         <button
                           disabled={idx === 0}
                           onClick={() => handleMoveField(idx, "UP")}
@@ -509,7 +550,9 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
             {selectedField ? (
               <div className="space-y-3.5 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
                 <div>
-                  <label className="text-xs font-bold text-slate-800">Tiêu đề hiển thị (Label) *</label>
+                  <label className="text-xs font-bold text-slate-800">
+                    Tiêu đề hiển thị (Label) *
+                  </label>
                   <input
                     type="text"
                     value={selectedField.label}
@@ -519,7 +562,9 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
                 </div>
 
                 <div>
-                  <label className="text-xs font-semibold text-slate-700">Tên biến dữ liệu (Key / Variable Name)</label>
+                  <label className="text-xs font-semibold text-slate-700">
+                    Tên biến dữ liệu (Key / Variable Name)
+                  </label>
                   <input
                     type="text"
                     value={selectedField.name}
@@ -529,11 +574,15 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
                 </div>
 
                 <div>
-                  <label className="text-xs font-semibold text-slate-700">Gợi ý nhập liệu (Placeholder)</label>
+                  <label className="text-xs font-semibold text-slate-700">
+                    Gợi ý nhập liệu (Placeholder)
+                  </label>
                   <input
                     type="text"
                     value={selectedField.placeholder || ""}
-                    onChange={(e) => handleUpdateField(selectedField.id, { placeholder: e.target.value })}
+                    onChange={(e) =>
+                      handleUpdateField(selectedField.id, { placeholder: e.target.value })
+                    }
                     placeholder="VD: Nhập kết quả đo..."
                     className="w-full mt-1 bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-xs text-slate-800 focus:border-emerald-600 focus:outline-none"
                   />
@@ -542,12 +591,16 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
                 <div className="flex items-center justify-between pt-1 pb-1">
                   <div>
                     <div className="text-xs font-bold text-slate-800">Trường bắt buộc</div>
-                    <div className="text-[10px] text-slate-500">Không cho phép để trống khi nộp</div>
+                    <div className="text-[10px] text-slate-500">
+                      Không cho phép để trống khi nộp
+                    </div>
                   </div>
                   <input
                     type="checkbox"
                     checked={selectedField.required}
-                    onChange={(e) => handleUpdateField(selectedField.id, { required: e.target.checked })}
+                    onChange={(e) =>
+                      handleUpdateField(selectedField.id, { required: e.target.checked })
+                    }
                     className="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
                   />
                 </div>
@@ -558,7 +611,9 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
                     <div className="text-xs font-bold text-emerald-700">Giới hạn thông số đo</div>
                     <div className="grid grid-cols-3 gap-2">
                       <div>
-                        <label className="text-[11px] font-semibold text-slate-600">Tối thiểu</label>
+                        <label className="text-[11px] font-semibold text-slate-600">
+                          Tối thiểu
+                        </label>
                         <input
                           type="number"
                           value={selectedField.min_val ?? ""}
@@ -588,7 +643,9 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
                         <input
                           type="text"
                           value={selectedField.unit || ""}
-                          onChange={(e) => handleUpdateField(selectedField.id, { unit: e.target.value })}
+                          onChange={(e) =>
+                            handleUpdateField(selectedField.id, { unit: e.target.value })
+                          }
                           placeholder="°C, ppm, phút"
                           className="w-full mt-1 bg-white border border-slate-300 rounded-lg px-2 py-1 text-xs text-slate-800"
                         />
@@ -617,11 +674,15 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
                 )}
 
                 <div>
-                  <label className="text-xs font-semibold text-slate-700">Hướng dẫn / Chú thích nghiệp vụ</label>
+                  <label className="text-xs font-semibold text-slate-700">
+                    Hướng dẫn / Chú thích nghiệp vụ
+                  </label>
                   <input
                     type="text"
                     value={selectedField.help_text || ""}
-                    onChange={(e) => handleUpdateField(selectedField.id, { help_text: e.target.value })}
+                    onChange={(e) =>
+                      handleUpdateField(selectedField.id, { help_text: e.target.value })
+                    }
                     placeholder="VD: Kiểm tra theo tiêu chuẩn ISO 22000 Điều khoản 8.2"
                     className="w-full mt-1 bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-xs text-slate-800 focus:border-emerald-600 focus:outline-none"
                   />

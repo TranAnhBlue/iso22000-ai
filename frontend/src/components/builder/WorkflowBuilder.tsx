@@ -142,12 +142,12 @@ export const WorkflowBuilder: React.FC<WorkflowBuilderProps> = ({
         { id: "e3_4", source: "node_3", target: "node_4", label: "Kiểm soát CCP Đạt" },
       ],
       status: "ACTIVE",
-    }
+    },
   );
 
   const [activeTab, setActiveTab] = useState<"VISUAL" | "EDIT_LIST">("VISUAL");
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(
-    template.nodes[0]?.id || null
+    template.nodes[0]?.id || null,
   );
   const [saving, setSaving] = useState(false);
 
@@ -206,7 +206,7 @@ export const WorkflowBuilder: React.FC<WorkflowBuilderProps> = ({
       const remainingNodes = prev.nodes
         .filter((n) => n.id !== id)
         .map((n, idx) => {
-          const cleanLabel = n.label.replace(/^\d+[\.\:\-]\s*/, "");
+          const cleanLabel = n.label.replace(/^\d+[.:-]\s*/, "");
           return {
             ...n,
             step_number: idx + 1,
@@ -230,7 +230,9 @@ export const WorkflowBuilder: React.FC<WorkflowBuilderProps> = ({
       }
       return { ...prev, nodes: remainingNodes, edges: newEdges };
     });
-    toast.info("Đã xóa công đoạn. Các công đoạn sau tự động đôn lên thành công đoạn trước (1, 2, 3...)");
+    toast.info(
+      "Đã xóa công đoạn. Các công đoạn sau tự động đôn lên thành công đoạn trước (1, 2, 3...)",
+    );
   };
 
   const handleMoveNode = (index: number, direction: "UP" | "DOWN") => {
@@ -245,7 +247,7 @@ export const WorkflowBuilder: React.FC<WorkflowBuilderProps> = ({
 
       // Cập nhật lại step_number và label theo thứ tự mới
       const renumberedNodes = newNodes.map((n, idx) => {
-        const cleanLabel = n.label.replace(/^\d+[\.\:\-]\s*/, "");
+        const cleanLabel = n.label.replace(/^\d+[.:-]\s*/, "");
         return {
           ...n,
           step_number: idx + 1,
@@ -289,9 +291,13 @@ export const WorkflowBuilder: React.FC<WorkflowBuilderProps> = ({
     }
 
     const nodeIds = new Set(template.nodes.map((n) => n.id));
-    const invalidEdge = template.edges.find((e) => !nodeIds.has(e.source) || !nodeIds.has(e.target));
+    const invalidEdge = template.edges.find(
+      (e) => !nodeIds.has(e.source) || !nodeIds.has(e.target),
+    );
     if (invalidEdge) {
-      toast.error("Có đường liên kết trỏ đến bước không tồn tại. Vui lòng kiểm tra lại liên kết đồ thị!");
+      toast.error(
+        "Có đường liên kết trỏ đến bước không tồn tại. Vui lòng kiểm tra lại liên kết đồ thị!",
+      );
       return;
     }
 
@@ -321,7 +327,8 @@ export const WorkflowBuilder: React.FC<WorkflowBuilderProps> = ({
               </span>
             </h2>
             <p className="text-xs text-slate-500">
-              Trực quan hóa sơ đồ lưu đồ công đoạn HACCP, các điểm CCP/oPRP và luồng phê duyệt đa cấp.
+              Trực quan hóa sơ đồ lưu đồ công đoạn HACCP, các điểm CCP/oPRP và luồng phê duyệt đa
+              cấp.
             </p>
           </div>
         </div>
@@ -423,7 +430,9 @@ export const WorkflowBuilder: React.FC<WorkflowBuilderProps> = ({
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-slate-700">Tên Quy Trình / Lưu Đồ *</label>
+              <label className="text-xs font-semibold text-slate-700">
+                Tên Quy Trình / Lưu Đồ *
+              </label>
               <input
                 type="text"
                 value={template.title}
@@ -482,9 +491,7 @@ export const WorkflowBuilder: React.FC<WorkflowBuilderProps> = ({
                   onClick={() => handleAddNode(nt.type)}
                   className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg bg-slate-50 hover:bg-blue-50 hover:border-blue-300 border border-slate-200 text-left transition-all group"
                 >
-                  <div className={`p-1 rounded text-xs font-bold shrink-0 ${nt.badgeColor}`}>
-                    +
-                  </div>
+                  <div className={`p-1 rounded text-xs font-bold shrink-0 ${nt.badgeColor}`}>+</div>
                   <div className="flex-1 min-w-0">
                     <div className="text-xs font-bold text-slate-800 group-hover:text-blue-800 truncate">
                       {nt.label}
@@ -514,7 +521,8 @@ export const WorkflowBuilder: React.FC<WorkflowBuilderProps> = ({
                 <div className="flex items-center gap-2">
                   <Sparkles className="w-4 h-4 text-blue-600 shrink-0" />
                   <span>
-                    <b>Mẹo thiết kế:</b> Nhấp vào công đoạn bất kỳ để cấu hình thông số và điểm CCP ở cột bên phải. Dùng nút "Hướng Dẫn Quy Trình" để xem chuẩn mực lưu đồ.
+                    <b>Mẹo thiết kế:</b> Nhấp vào công đoạn bất kỳ để cấu hình thông số và điểm CCP
+                    ở cột bên phải. Dùng nút "Hướng Dẫn Quy Trình" để xem chuẩn mực lưu đồ.
                   </span>
                 </div>
                 <button
@@ -534,7 +542,8 @@ export const WorkflowBuilder: React.FC<WorkflowBuilderProps> = ({
                 <div className="space-y-3 max-w-xl mx-auto">
                   {template.nodes.map((node, idx) => {
                     const isSelected = node.id === selectedNodeId;
-                    const nodeTypeInfo = NODE_TYPES.find((t) => t.type === node.type) || NODE_TYPES[0];
+                    const nodeTypeInfo =
+                      NODE_TYPES.find((t) => t.type === node.type) || NODE_TYPES[0];
 
                     return (
                       <React.Fragment key={node.id}>
@@ -545,8 +554,8 @@ export const WorkflowBuilder: React.FC<WorkflowBuilderProps> = ({
                             isSelected
                               ? "bg-white border-blue-500 shadow-md ring-2 ring-blue-400"
                               : node.is_ccp
-                              ? "bg-rose-50/70 border-rose-300 hover:border-rose-400"
-                              : "bg-white border-slate-200 hover:border-slate-300"
+                                ? "bg-rose-50/70 border-rose-300 hover:border-rose-400"
+                                : "bg-white border-slate-200 hover:border-slate-300"
                           }`}
                         >
                           <div className="flex items-start justify-between gap-3">
@@ -561,12 +570,12 @@ export const WorkflowBuilder: React.FC<WorkflowBuilderProps> = ({
                                 {idx + 1}
                               </div>
                               <div>
-                                <div className="text-sm font-bold text-slate-900">
-                                  {node.label}
-                                </div>
+                                <div className="text-sm font-bold text-slate-900">{node.label}</div>
                                 <div className="text-xs text-slate-500 flex items-center gap-1.5 mt-0.5">
                                   <span>Phụ trách:</span>
-                                  <span className="font-semibold text-slate-700">{node.role || "Tổ SX / QC"}</span>
+                                  <span className="font-semibold text-slate-700">
+                                    {node.role || "Tổ SX / QC"}
+                                  </span>
                                 </div>
                               </div>
                             </div>
@@ -622,7 +631,9 @@ export const WorkflowBuilder: React.FC<WorkflowBuilderProps> = ({
                 <span className="text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full bg-white text-slate-700 border border-slate-300 shadow-sm">
                   Danh Sách Chi Tiết Các Bước Công Đoạn ({template.nodes.length} bước)
                 </span>
-                <span className="text-xs text-slate-500 font-medium">Chỉnh sửa trực tiếp hoặc sắp xếp thứ tự</span>
+                <span className="text-xs text-slate-500 font-medium">
+                  Chỉnh sửa trực tiếp hoặc sắp xếp thứ tự
+                </span>
               </div>
 
               {template.nodes.length === 0 ? (
@@ -649,7 +660,10 @@ export const WorkflowBuilder: React.FC<WorkflowBuilderProps> = ({
                           <span className="text-xs font-bold text-slate-900">{node.label}</span>
                         </div>
 
-                        <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                        <div
+                          className="flex items-center gap-1"
+                          onClick={(e) => e.stopPropagation()}
+                        >
                           <button
                             disabled={idx === 0}
                             onClick={() => handleMoveNode(idx, "UP")}
@@ -678,7 +692,9 @@ export const WorkflowBuilder: React.FC<WorkflowBuilderProps> = ({
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
                         <div>
-                          <label className="text-[11px] font-semibold text-slate-500">Tên bước</label>
+                          <label className="text-[11px] font-semibold text-slate-500">
+                            Tên bước
+                          </label>
                           <input
                             type="text"
                             value={node.label}
@@ -687,7 +703,9 @@ export const WorkflowBuilder: React.FC<WorkflowBuilderProps> = ({
                           />
                         </div>
                         <div>
-                          <label className="text-[11px] font-semibold text-slate-500">Phòng ban phụ trách</label>
+                          <label className="text-[11px] font-semibold text-slate-500">
+                            Phòng ban phụ trách
+                          </label>
                           <select
                             value={node.role || ""}
                             onChange={(e) => handleUpdateNode(node.id, { role: e.target.value })}
@@ -711,10 +729,14 @@ export const WorkflowBuilder: React.FC<WorkflowBuilderProps> = ({
                           <input
                             type="checkbox"
                             checked={!!node.is_ccp}
-                            onChange={(e) => handleUpdateNode(node.id, { is_ccp: e.target.checked })}
+                            onChange={(e) =>
+                              handleUpdateNode(node.id, { is_ccp: e.target.checked })
+                            }
                             className="w-4 h-4 rounded text-rose-600 focus:ring-rose-500 border-slate-300"
                           />
-                          <span className={node.is_ccp ? "font-bold text-rose-700" : "text-slate-600"}>
+                          <span
+                            className={node.is_ccp ? "font-bold text-rose-700" : "text-slate-600"}
+                          >
                             Điểm Kiểm Soát Tới Hạn (CCP)
                           </span>
                         </label>
@@ -783,7 +805,9 @@ export const WorkflowBuilder: React.FC<WorkflowBuilderProps> = ({
                     <Flame className="w-3.5 h-3.5 text-rose-600" />
                     Điểm Kiểm Soát Tới Hạn (CCP)
                   </div>
-                  <div className="text-[10px] text-rose-600">Yêu cầu thiết lập giới hạn tới hạn</div>
+                  <div className="text-[10px] text-rose-600">
+                    Yêu cầu thiết lập giới hạn tới hạn
+                  </div>
                 </div>
                 <input
                   type="checkbox"
@@ -799,11 +823,15 @@ export const WorkflowBuilder: React.FC<WorkflowBuilderProps> = ({
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-slate-700">Yêu cầu kỹ thuật / Giám sát</label>
+                <label className="text-xs font-semibold text-slate-700">
+                  Yêu cầu kỹ thuật / Giám sát
+                </label>
                 <textarea
                   rows={3}
                   value={selectedNode.description || ""}
-                  onChange={(e) => handleUpdateNode(selectedNode.id, { description: e.target.value })}
+                  onChange={(e) =>
+                    handleUpdateNode(selectedNode.id, { description: e.target.value })
+                  }
                   placeholder="Nhập thông số giám sát, tiêu chuẩn nhiệt độ, thời gian..."
                   className="w-full mt-1 bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-xs text-slate-800 focus:border-blue-600 focus:outline-none leading-relaxed"
                 />
@@ -811,7 +839,9 @@ export const WorkflowBuilder: React.FC<WorkflowBuilderProps> = ({
 
               {/* Edge Label for outgoing connection */}
               <div>
-                <label className="text-xs font-semibold text-slate-700">Nhãn chuyển tiếp (Edge Label)</label>
+                <label className="text-xs font-semibold text-slate-700">
+                  Nhãn chuyển tiếp (Edge Label)
+                </label>
                 <input
                   type="text"
                   value={
@@ -823,7 +853,7 @@ export const WorkflowBuilder: React.FC<WorkflowBuilderProps> = ({
                     setTemplate((prev) => ({
                       ...prev,
                       edges: prev.edges.map((edge) =>
-                        edge.source === selectedNode.id ? { ...edge, label: newLabel } : edge
+                        edge.source === selectedNode.id ? { ...edge, label: newLabel } : edge,
                       ),
                     }));
                   }}

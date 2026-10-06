@@ -536,9 +536,7 @@ export function ModuleGuideModal({
                       {step.title}
                     </h5>
                   </div>
-                  <p className="text-xs text-muted-foreground leading-relaxed pl-8">
-                    {step.desc}
-                  </p>
+                  <p className="text-xs text-muted-foreground leading-relaxed pl-8">{step.desc}</p>
                 </div>
               ))}
             </div>
@@ -554,10 +552,7 @@ export function ModuleGuideModal({
               </h4>
               <ul className="space-y-2">
                 {guide.forms.map((form, idx) => (
-                  <li
-                    key={idx}
-                    className="text-xs text-muted-foreground flex items-start gap-2"
-                  >
+                  <li key={idx} className="text-xs text-muted-foreground flex items-start gap-2">
                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" />
                     <span>{form}</span>
                   </li>
@@ -573,10 +568,7 @@ export function ModuleGuideModal({
               </h4>
               <ul className="space-y-2">
                 {guide.auditTips.map((tip, idx) => (
-                  <li
-                    key={idx}
-                    className="text-xs text-muted-foreground flex items-start gap-2"
-                  >
+                  <li key={idx} className="text-xs text-muted-foreground flex items-start gap-2">
                     <ArrowRight className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
                     <span>{tip}</span>
                   </li>

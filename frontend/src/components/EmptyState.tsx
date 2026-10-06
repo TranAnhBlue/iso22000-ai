@@ -41,9 +41,7 @@ export function EmptyState({
         </div>
       </div>
 
-      <h3 className="text-lg font-semibold tracking-tight text-foreground sm:text-xl">
-        {title}
-      </h3>
+      <h3 className="text-lg font-semibold tracking-tight text-foreground sm:text-xl">{title}</h3>
 
       {description && (
         <p className="mt-1.5 max-w-md text-sm text-muted-foreground leading-relaxed">

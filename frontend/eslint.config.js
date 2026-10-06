@@ -34,6 +34,9 @@ export default tseslint.config(
       ],
       "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],
       "@typescript-eslint/no-unused-vars": "off",
+      // Legacy API payloads are progressively being moved into module-specific types.
+      // Keep them visible without blocking a production build during that migration.
+      "@typescript-eslint/no-explicit-any": "warn",
     },
   },
   eslintPluginPrettier,

@@ -19,7 +19,8 @@ export function useDepartments(): { departments: string[]; loading: boolean } {
   useEffect(() => {
     let isMounted = true;
     setLoading(true);
-    api.get("/auth/departments")
+    api
+      .get("/auth/departments")
       .then((res) => {
         if (!isMounted) return;
         if (Array.isArray(res.data) && res.data.length > 0) {
@@ -47,4 +48,3 @@ export function useDepartments(): { departments: string[]; loading: boolean } {
 
   return { departments, loading };
 }
-

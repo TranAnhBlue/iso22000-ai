@@ -42,7 +42,11 @@ export const Route = createFileRoute("/organization")({
   head: () => ({
     meta: [
       { title: "Bối cảnh, Tổ chức & Trao đổi thông tin – WCERT FSMS" },
-      { name: "description", content: "Quản lý bối cảnh tổ chức, Đội ATTP, các bên quan tâm, rủi ro FSMS và sổ nhật ký trao đổi thông tin ATTP." },
+      {
+        name: "description",
+        content:
+          "Quản lý bối cảnh tổ chức, Đội ATTP, các bên quan tâm, rủi ro FSMS và sổ nhật ký trao đổi thông tin ATTP.",
+      },
     ],
   }),
   component: () => (
@@ -139,17 +143,31 @@ interface ContextRiskItem {
 
 function getContextRiskBadge(score: number) {
   if (score >= 12) {
-    return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-800 border border-rose-300">Rất cao ({score})</span>;
+    return (
+      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-800 border border-rose-300">
+        Rất cao ({score})
+      </span>
+    );
   }
   if (score >= 6) {
-    return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-300">Trung bình ({score})</span>;
+    return (
+      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-300">
+        Trung bình ({score})
+      </span>
+    );
   }
-  return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-300">Thấp ({score})</span>;
+  return (
+    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-300">
+      Thấp ({score})
+    </span>
+  );
 }
 
 function Org() {
   const { canEdit } = useModuleAccess();
-  const [activeTab, setActiveTab] = useState<"users" | "depts" | "parties" | "risks" | "communications" | "food_safety_team">("users");
+  const [activeTab, setActiveTab] = useState<
+    "users" | "depts" | "parties" | "risks" | "communications" | "food_safety_team"
+  >("users");
   const [depts, setDepts] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   const [parties, setParties] = useState<InterestedPartyItem[]>([]);
@@ -169,12 +187,18 @@ function Org() {
   // Search & Filter
   const [searchQuery, setSearchQuery] = useState("");
   const [partyTypeFilter, setPartyTypeFilter] = useState<"ALL" | "INTERNAL" | "EXTERNAL">("ALL");
-  const [riskCategoryFilter, setRiskCategoryFilter] = useState<"ALL" | "INTERNAL" | "EXTERNAL">("ALL");
+  const [riskCategoryFilter, setRiskCategoryFilter] = useState<"ALL" | "INTERNAL" | "EXTERNAL">(
+    "ALL",
+  );
 
   // Communications Filter & Modals
   const [commSearch, setCommSearch] = useState("");
-  const [commDirectionFilter, setCommDirectionFilter] = useState<"ALL" | "INTERNAL" | "EXTERNAL">("ALL");
-  const [commStatusFilter, setCommStatusFilter] = useState<"ALL" | "OPEN" | "IN_PROGRESS" | "CLOSED">("ALL");
+  const [commDirectionFilter, setCommDirectionFilter] = useState<"ALL" | "INTERNAL" | "EXTERNAL">(
+    "ALL",
+  );
+  const [commStatusFilter, setCommStatusFilter] = useState<
+    "ALL" | "OPEN" | "IN_PROGRESS" | "CLOSED"
+  >("ALL");
   const [commModalOpen, setCommModalOpen] = useState(false);
   const [editingComm, setEditingComm] = useState<CommunicationLogItem | null>(null);
   const [commForm, setCommForm] = useState<any>({
@@ -200,7 +224,9 @@ function Org() {
   // Food Safety Team Filter & Modals
   const [showGuide, setShowGuide] = useState(false);
   const [fstSearch, setFstSearch] = useState("");
-  const [fstRoleFilter, setFstRoleFilter] = useState<"ALL" | "Đội trưởng" | "Đội phó" | "Thư ký" | "Đội viên">("ALL");
+  const [fstRoleFilter, setFstRoleFilter] = useState<
+    "ALL" | "Đội trưởng" | "Đội phó" | "Thư ký" | "Đội viên"
+  >("ALL");
   const [fstModalOpen, setFstModalOpen] = useState(false);
   const [editingFst, setEditingFst] = useState<FoodSafetyTeamMemberItem | null>(null);
   const [fstForm, setFstForm] = useState<any>({
@@ -258,15 +284,17 @@ function Org() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [deptRes, userRes, partiesRes, risksRes, statsRes, commRes, fstRes] = await Promise.all([
-        api.get("/organization/departments"),
-        api.get("/organization/users"),
-        api.get("/organization/interested-parties"),
-        api.get("/organization/context-risks"),
-        api.get("/organization/context-stats"),
-        api.get("/organization/communications"),
-        api.get("/organization/food-safety-team"),
-      ]);
+      const [deptRes, userRes, partiesRes, risksRes, statsRes, commRes, fstRes] = await Promise.all(
+        [
+          api.get("/organization/departments"),
+          api.get("/organization/users"),
+          api.get("/organization/interested-parties"),
+          api.get("/organization/context-risks"),
+          api.get("/organization/context-stats"),
+          api.get("/organization/communications"),
+          api.get("/organization/food-safety-team"),
+        ],
+      );
       setDepts(deptRes.data);
       setUsers(userRes.data);
       setParties(partiesRes.data);
@@ -349,7 +377,11 @@ function Org() {
       render: (v: string) => (
         <Pill
           value={v}
-          tone={v === "Hoạt động" ? "bg-emerald-500/10 text-emerald-700" : "bg-rose-500/10 text-rose-700"}
+          tone={
+            v === "Hoạt động"
+              ? "bg-emerald-500/10 text-emerald-700"
+              : "bg-rose-500/10 text-rose-700"
+          }
         />
       ),
     },
@@ -538,7 +570,9 @@ function Org() {
     try {
       const payload = {
         ...riskForm,
-        interested_party_id: riskForm.interested_party_id ? Number(riskForm.interested_party_id) : null,
+        interested_party_id: riskForm.interested_party_id
+          ? Number(riskForm.interested_party_id)
+          : null,
         likelihood: Number(riskForm.likelihood),
         severity: Number(riskForm.severity),
         residual_likelihood: Number(riskForm.residual_likelihood),
@@ -700,10 +734,10 @@ function Org() {
           fstForm.role === "Đội trưởng"
             ? "TEAM_LEADER"
             : fstForm.role === "Đội phó"
-            ? "VICE_LEADER"
-            : fstForm.role === "Thư ký"
-            ? "SECRETARY"
-            : "MEMBER",
+              ? "VICE_LEADER"
+              : fstForm.role === "Thư ký"
+                ? "SECRETARY"
+                : "MEMBER",
         role: fstForm.role,
         department: fstForm.department,
         current_position: fstForm.job_title,
@@ -810,7 +844,7 @@ function Org() {
                 <td>${m.job_title} - ${m.department}</td>
                 <td>${m.responsibilities || "--"}</td>
               </tr>
-            `
+            `,
               )
               .join("")}
           </tbody>
@@ -911,7 +945,7 @@ function Org() {
                   ${c.status === "CLOSED" ? "<span style='color: #047857;'>Đã đóng</span>" : c.status === "IN_PROGRESS" ? "<span style='color: #d97706;'>Đang xử lý</span>" : "<span style='color: #2563eb;'>Mở</span>"}
                 </td>
               </tr>
-            `
+            `,
               )
               .join("")}
           </tbody>
@@ -991,7 +1025,7 @@ function Org() {
                 <td style="padding: 6px;">${p.monitoring_method || "--"} (${p.review_frequency})</td>
                 <td style="text-align: center; padding: 6px;">${p.responsible_role}</td>
               </tr>
-            `
+            `,
               )
               .join("")}
           </tbody>
@@ -1085,7 +1119,7 @@ function Org() {
                 </td>
                 <td style="text-align: center; padding: 5px;">${r.target_date || "--"}</td>
               </tr>
-            `
+            `,
               )
               .join("")}
           </tbody>
@@ -1128,17 +1162,32 @@ function Org() {
               <BookOpen className="h-4 w-4" />
               Hướng Dẫn Nghiệp Vụ
             </Button>
-            <Button variant="outline" size="sm" onClick={fetchData} disabled={loading} className="gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={fetchData}
+              disabled={loading}
+              className="gap-2"
+            >
               <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
               Làm mới
             </Button>
             {activeTab === "food_safety_team" && (
               <>
-                <Button variant="outline" size="sm" onClick={handlePrintFSTDecision} className="gap-1.5 text-slate-700">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handlePrintFSTDecision}
+                  className="gap-1.5 text-slate-700"
+                >
                   <Printer className="h-4 w-4" /> In Quyết định Đội ATTP (BM-FST-01)
                 </Button>
                 {canEdit && (
-                  <Button size="sm" onClick={openNewFst} className="gap-1.5 bg-emerald-600 hover:bg-emerald-700">
+                  <Button
+                    size="sm"
+                    onClick={openNewFst}
+                    className="gap-1.5 bg-emerald-600 hover:bg-emerald-700"
+                  >
                     <Plus className="h-4 w-4" /> Thêm thành viên Đội ATTP
                   </Button>
                 )}
@@ -1146,11 +1195,20 @@ function Org() {
             )}
             {activeTab === "communications" && (
               <>
-                <Button variant="outline" size="sm" onClick={handlePrintCommunications} className="gap-1.5 text-slate-700">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handlePrintCommunications}
+                  className="gap-1.5 text-slate-700"
+                >
                   <Printer className="h-4 w-4" /> In Sổ nhật ký (BM-COMM-01)
                 </Button>
                 {canEdit && (
-                  <Button size="sm" onClick={openNewComm} className="gap-1.5 bg-emerald-600 hover:bg-emerald-700">
+                  <Button
+                    size="sm"
+                    onClick={openNewComm}
+                    className="gap-1.5 bg-emerald-600 hover:bg-emerald-700"
+                  >
                     <Plus className="h-4 w-4" /> Thêm trao đổi thông tin
                   </Button>
                 )}
@@ -1158,11 +1216,20 @@ function Org() {
             )}
             {activeTab === "parties" && (
               <>
-                <Button variant="outline" size="sm" onClick={handlePrintParties} className="gap-1.5 text-slate-700">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handlePrintParties}
+                  className="gap-1.5 text-slate-700"
+                >
                   <Printer className="h-4 w-4" /> In Phụ lục 1 (BM-01)
                 </Button>
                 {canEdit && (
-                  <Button size="sm" onClick={openNewParty} className="gap-1.5 bg-emerald-600 hover:bg-emerald-700">
+                  <Button
+                    size="sm"
+                    onClick={openNewParty}
+                    className="gap-1.5 bg-emerald-600 hover:bg-emerald-700"
+                  >
                     <Plus className="h-4 w-4" /> Thêm bên quan tâm
                   </Button>
                 )}
@@ -1170,11 +1237,20 @@ function Org() {
             )}
             {activeTab === "risks" && (
               <>
-                <Button variant="outline" size="sm" onClick={handlePrintRisks} className="gap-1.5 text-slate-700">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handlePrintRisks}
+                  className="gap-1.5 text-slate-700"
+                >
                   <Printer className="h-4 w-4" /> In Ma trận rủi ro (BM-02)
                 </Button>
                 {canEdit && (
-                  <Button size="sm" onClick={openNewRisk} className="gap-1.5 bg-emerald-600 hover:bg-emerald-700">
+                  <Button
+                    size="sm"
+                    onClick={openNewRisk}
+                    className="gap-1.5 bg-emerald-600 hover:bg-emerald-700"
+                  >
                     <Plus className="h-4 w-4" /> Ghi nhận rủi ro bối cảnh
                   </Button>
                 )}
@@ -1302,7 +1378,8 @@ function Org() {
           <div className="flex flex-col items-center justify-between gap-4 rounded-xl border bg-card p-3 sm:flex-row">
             <div className="text-xs text-muted-foreground">
               Hiển thị <b>{(currentPage - 1) * pageSize + 1}</b> -{" "}
-              <b>{Math.min(currentPage * pageSize, users.length)}</b> trên <b>{users.length}</b> tài khoản
+              <b>{Math.min(currentPage * pageSize, users.length)}</b> trên <b>{users.length}</b> tài
+              khoản
             </div>
 
             <div className="flex items-center gap-2">
@@ -1369,21 +1446,33 @@ function Org() {
                   <span className="inline-flex items-center gap-1 rounded-md bg-emerald-600 px-2 py-0.5 text-xs font-bold text-white uppercase">
                     QĐ 02/QĐ-ATTP-2026
                   </span>
-                  <span className="text-xs text-slate-500 font-medium">Ban hành: 15/01/2026 · Hiệu lực thi hành</span>
+                  <span className="text-xs text-slate-500 font-medium">
+                    Ban hành: 15/01/2026 · Hiệu lực thi hành
+                  </span>
                 </div>
                 <h3 className="text-base font-bold text-slate-900 mt-1">
                   Đội An Toàn Thực Phẩm FSMS (Food Safety Team)
                 </h3>
                 <p className="text-xs text-slate-600 mt-0.5">
-                  Căn cứ Quyết định số 02 của Ban Giám Đốc. Đội gồm 3 nhóm vai trò chính thức: <b>Đội trưởng</b>, <b>Thư ký</b>, và <b>Đội viên</b>.
+                  Căn cứ Quyết định số 02 của Ban Giám Đốc. Đội gồm 3 nhóm vai trò chính thức:{" "}
+                  <b>Đội trưởng</b>, <b>Thư ký</b>, và <b>Đội viên</b>.
                 </p>
               </div>
               <div className="flex items-center gap-2 shrink-0">
-                <Button variant="outline" size="sm" onClick={handlePrintFSTDecision} className="gap-1.5 text-slate-700 bg-white">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handlePrintFSTDecision}
+                  className="gap-1.5 text-slate-700 bg-white"
+                >
                   <Printer className="h-4 w-4" /> In Quyết định (BM-FST-01)
                 </Button>
                 {canEdit && (
-                  <Button size="sm" onClick={openNewFst} className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white">
+                  <Button
+                    size="sm"
+                    onClick={openNewFst}
+                    className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white"
+                  >
                     <Plus className="h-4 w-4" /> Thêm thành viên
                   </Button>
                 )}
@@ -1450,7 +1539,8 @@ function Org() {
                         !fstSearch ||
                         m.full_name.toLowerCase().includes(fstSearch.toLowerCase()) ||
                         m.department.toLowerCase().includes(fstSearch.toLowerCase()) ||
-                        (m.responsibilities && m.responsibilities.toLowerCase().includes(fstSearch.toLowerCase()));
+                        (m.responsibilities &&
+                          m.responsibilities.toLowerCase().includes(fstSearch.toLowerCase()));
                       const matchRole = fstRoleFilter === "ALL" || m.role === fstRoleFilter;
                       return matchSearch && matchRole;
                     })
@@ -1464,10 +1554,10 @@ function Org() {
                               m.role === "Đội trưởng"
                                 ? "bg-rose-100 text-rose-800 border-rose-200"
                                 : m.role === "Đội phó"
-                                ? "bg-amber-100 text-amber-800 border-amber-200"
-                                : m.role === "Thư ký"
-                                ? "bg-purple-100 text-purple-800 border-purple-200"
-                                : "bg-blue-100 text-blue-800 border-blue-200"
+                                  ? "bg-amber-100 text-amber-800 border-amber-200"
+                                  : m.role === "Thư ký"
+                                    ? "bg-purple-100 text-purple-800 border-purple-200"
+                                    : "bg-blue-100 text-blue-800 border-blue-200"
                             }`}
                           >
                             {m.role}
@@ -1477,8 +1567,12 @@ function Org() {
                           <div className="font-medium text-slate-800">{m.job_title}</div>
                           <div className="text-xs text-slate-500">{m.department}</div>
                         </td>
-                        <td className="py-3 px-4 text-xs text-slate-600">{m.qualification || "--"}</td>
-                        <td className="py-3 px-4 text-xs text-slate-700 max-w-xs">{m.responsibilities || "--"}</td>
+                        <td className="py-3 px-4 text-xs text-slate-600">
+                          {m.qualification || "--"}
+                        </td>
+                        <td className="py-3 px-4 text-xs text-slate-700 max-w-xs">
+                          {m.responsibilities || "--"}
+                        </td>
                         <td className="py-3 px-4 text-xs text-slate-500">
                           {m.phone && <div>📞 {m.phone}</div>}
                           {m.email && <div>✉️ {m.email}</div>}
@@ -1498,10 +1592,20 @@ function Org() {
                         <td className="py-3 px-4 text-right">
                           {canEdit && (
                             <div className="flex items-center justify-end gap-1">
-                              <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-600" onClick={() => openEditFst(m)}>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-slate-600"
+                                onClick={() => openEditFst(m)}
+                              >
                                 <Edit2 className="h-3.5 w-3.5" />
                               </Button>
-                              <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-600" onClick={() => handleDeleteFst(m.id)}>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-rose-600"
+                                onClick={() => handleDeleteFst(m.id)}
+                              >
                                 <Trash2 className="h-3.5 w-3.5" />
                               </Button>
                             </div>
@@ -1583,18 +1687,22 @@ function Org() {
                 <tbody className="divide-y divide-slate-100">
                   {parties
                     .filter((p) => {
-                      const matchesType = partyTypeFilter === "ALL" || p.party_type === partyTypeFilter;
+                      const matchesType =
+                        partyTypeFilter === "ALL" || p.party_type === partyTypeFilter;
                       const q = searchQuery.toLowerCase();
                       const matchesQ =
                         !searchQuery ||
                         p.party_name.toLowerCase().includes(q) ||
                         p.needs_and_expectations.toLowerCase().includes(q) ||
-                        (p.statutory_requirements && p.statutory_requirements.toLowerCase().includes(q));
+                        (p.statutory_requirements &&
+                          p.statutory_requirements.toLowerCase().includes(q));
                       return matchesType && matchesQ;
                     })
                     .map((p) => (
                       <tr key={p.id} className="hover:bg-slate-50/70">
-                        <td className="py-3 px-4 font-bold text-slate-900 max-w-xs">{p.party_name}</td>
+                        <td className="py-3 px-4 font-bold text-slate-900 max-w-xs">
+                          {p.party_name}
+                        </td>
                         <td className="py-3 px-4">
                           <span
                             className={`inline-block px-2 py-0.5 rounded text-[11px] font-bold uppercase ${
@@ -1606,22 +1714,38 @@ function Org() {
                             {p.party_type === "INTERNAL" ? "Nội bộ" : "Bên ngoài"}
                           </span>
                         </td>
-                        <td className="py-3 px-4 text-xs text-slate-700 max-w-sm">{p.needs_and_expectations}</td>
+                        <td className="py-3 px-4 text-xs text-slate-700 max-w-sm">
+                          {p.needs_and_expectations}
+                        </td>
                         <td className="py-3 px-4 text-xs text-slate-600 font-mono max-w-xs">
                           {p.statutory_requirements || "--"}
                         </td>
                         <td className="py-3 px-4 text-xs text-slate-600">
                           <div>{p.monitoring_method || "--"}</div>
-                          <span className="text-[11px] font-semibold text-emerald-700">({p.review_frequency})</span>
+                          <span className="text-[11px] font-semibold text-emerald-700">
+                            ({p.review_frequency})
+                          </span>
                         </td>
-                        <td className="py-3 px-4 text-xs font-semibold text-slate-700">{p.responsible_role}</td>
+                        <td className="py-3 px-4 text-xs font-semibold text-slate-700">
+                          {p.responsible_role}
+                        </td>
                         <td className="py-3 px-4 text-right">
                           {canEdit && (
                             <div className="flex items-center justify-end gap-1">
-                              <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-600" onClick={() => openEditParty(p)}>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-slate-600"
+                                onClick={() => openEditParty(p)}
+                              >
                                 <Edit2 className="h-3.5 w-3.5" />
                               </Button>
-                              <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-600" onClick={() => handleDeleteParty(p.id)}>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-rose-600"
+                                onClick={() => handleDeleteParty(p.id)}
+                              >
                                 <Trash2 className="h-3.5 w-3.5" />
                               </Button>
                             </div>
@@ -1705,7 +1829,8 @@ function Org() {
                 <tbody className="divide-y divide-slate-100">
                   {risks
                     .filter((r) => {
-                      const matchesCat = riskCategoryFilter === "ALL" || r.issue_category === riskCategoryFilter;
+                      const matchesCat =
+                        riskCategoryFilter === "ALL" || r.issue_category === riskCategoryFilter;
                       const q = searchQuery.toLowerCase();
                       const matchesQ =
                         !searchQuery ||
@@ -1730,27 +1855,37 @@ function Org() {
                           </span>
                         </td>
                         <td className="py-3 px-3 max-w-xs">
-                          <div className="font-semibold text-slate-900 text-xs">{r.issue_description}</div>
-                          <div className="text-xs text-rose-700 mt-0.5">Rủi ro: {r.risk_description}</div>
+                          <div className="font-semibold text-slate-900 text-xs">
+                            {r.issue_description}
+                          </div>
+                          <div className="text-xs text-rose-700 mt-0.5">
+                            Rủi ro: {r.risk_description}
+                          </div>
                         </td>
-                        <td className="py-3 px-3 text-xs text-emerald-800 max-w-xs">{r.opportunity_description || "--"}</td>
+                        <td className="py-3 px-3 text-xs text-emerald-800 max-w-xs">
+                          {r.opportunity_description || "--"}
+                        </td>
                         <td className="py-3 px-3 text-center">
                           <div className="text-xs font-semibold">
                             {r.likelihood} × {r.severity}
                           </div>
                           <div className="mt-0.5">{getContextRiskBadge(r.risk_score)}</div>
                         </td>
-                        <td className="py-3 px-3 text-xs font-bold text-slate-700">{r.treatment_strategy}</td>
+                        <td className="py-3 px-3 text-xs font-bold text-slate-700">
+                          {r.treatment_strategy}
+                        </td>
                         <td className="py-3 px-3 text-xs text-slate-700 max-w-sm">
                           <div>{r.action_plan}</div>
                           <div className="text-[11px] text-slate-500 mt-0.5">
-                            Hạn: <strong>{r.target_date || "--"}</strong> · Phụ trách: <strong>{r.responsible_role}</strong>
+                            Hạn: <strong>{r.target_date || "--"}</strong> · Phụ trách:{" "}
+                            <strong>{r.responsible_role}</strong>
                           </div>
                         </td>
                         <td className="py-3 px-3 text-center text-xs">
                           {r.residual_risk_score ? (
                             <span className="font-bold text-emerald-700">
-                              {r.residual_likelihood}×{r.residual_severity} = {r.residual_risk_score}
+                              {r.residual_likelihood}×{r.residual_severity} ={" "}
+                              {r.residual_risk_score}
                             </span>
                           ) : (
                             "--"
@@ -1759,10 +1894,20 @@ function Org() {
                         <td className="py-3 px-3 text-right">
                           {canEdit && (
                             <div className="flex items-center justify-end gap-1">
-                              <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-600" onClick={() => openEditRisk(r)}>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-slate-600"
+                                onClick={() => openEditRisk(r)}
+                              >
                                 <Edit2 className="h-3.5 w-3.5" />
                               </Button>
-                              <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-600" onClick={() => handleDeleteRisk(r.id)}>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-rose-600"
+                                onClick={() => handleDeleteRisk(r.id)}
+                              >
                                 <Trash2 className="h-3.5 w-3.5" />
                               </Button>
                             </div>
@@ -1813,7 +1958,13 @@ function Org() {
                     onClick={() => setCommStatusFilter(s)}
                     className={commStatusFilter === s ? "bg-emerald-600 text-white" : ""}
                   >
-                    {s === "ALL" ? "Mọi trạng thái" : s === "OPEN" ? "Mở" : s === "IN_PROGRESS" ? "Đang xử lý" : "Đã đóng"}
+                    {s === "ALL"
+                      ? "Mọi trạng thái"
+                      : s === "OPEN"
+                        ? "Mở"
+                        : s === "IN_PROGRESS"
+                          ? "Đang xử lý"
+                          : "Đã đóng"}
                   </Button>
                 ))}
               </div>
@@ -1856,15 +2007,19 @@ function Org() {
                         c.party_name.toLowerCase().includes(q) ||
                         c.content.toLowerCase().includes(q) ||
                         (c.contact_person && c.contact_person.toLowerCase().includes(q));
-                      const matchDir = commDirectionFilter === "ALL" || c.direction === commDirectionFilter;
-                      const matchStatus = commStatusFilter === "ALL" || c.status === commStatusFilter;
+                      const matchDir =
+                        commDirectionFilter === "ALL" || c.direction === commDirectionFilter;
+                      const matchStatus =
+                        commStatusFilter === "ALL" || c.status === commStatusFilter;
                       return matchQ && matchDir && matchStatus;
                     })
                     .map((c, idx) => (
                       <tr key={c.id} className="hover:bg-slate-50/80 transition">
                         <td className="py-3 px-4 text-center text-xs text-slate-500">{idx + 1}</td>
                         <td className="py-3 px-4">
-                          <div className="font-mono font-bold text-slate-900 text-xs">{c.comm_code}</div>
+                          <div className="font-mono font-bold text-slate-900 text-xs">
+                            {c.comm_code}
+                          </div>
                           <div className="text-xs text-slate-500">{c.comm_date}</div>
                         </td>
                         <td className="py-3 px-4 text-center">
@@ -1877,7 +2032,9 @@ function Org() {
                           >
                             {c.direction === "INTERNAL" ? "Nội bộ" : "Bên ngoài"}
                           </span>
-                          <div className="text-[10px] text-slate-500 mt-0.5 uppercase font-medium">{c.party_type}</div>
+                          <div className="text-[10px] text-slate-500 mt-0.5 uppercase font-medium">
+                            {c.party_type}
+                          </div>
                         </td>
                         <td className="py-3 px-4">
                           <div className="font-semibold text-slate-900">{c.party_name}</div>
@@ -1889,7 +2046,9 @@ function Org() {
                         </td>
                         <td className="py-3 px-4 max-w-xs">
                           <div className="font-medium text-slate-900 text-xs">{c.subject}</div>
-                          <div className="text-xs text-slate-600 line-clamp-2 mt-0.5">{c.content}</div>
+                          <div className="text-xs text-slate-600 line-clamp-2 mt-0.5">
+                            {c.content}
+                          </div>
                         </td>
                         <td className="py-3 px-4 text-center text-xs font-medium text-slate-700">
                           <span className="inline-block bg-slate-100 px-2 py-0.5 rounded border border-slate-200 text-[11px]">
@@ -1917,20 +2076,34 @@ function Org() {
                               c.status === "CLOSED"
                                 ? "bg-emerald-100 text-emerald-800 border border-emerald-200"
                                 : c.status === "IN_PROGRESS"
-                                ? "bg-amber-100 text-amber-800 border border-amber-200"
-                                : "bg-blue-100 text-blue-800 border border-blue-200"
+                                  ? "bg-amber-100 text-amber-800 border border-amber-200"
+                                  : "bg-blue-100 text-blue-800 border border-blue-200"
                             }`}
                           >
-                            {c.status === "CLOSED" ? "Đã đóng" : c.status === "IN_PROGRESS" ? "Đang xử lý" : "Mở"}
+                            {c.status === "CLOSED"
+                              ? "Đã đóng"
+                              : c.status === "IN_PROGRESS"
+                                ? "Đang xử lý"
+                                : "Mở"}
                           </span>
                         </td>
                         <td className="py-3 px-4 text-right">
                           {canEdit && (
                             <div className="flex items-center justify-end gap-1">
-                              <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-600" onClick={() => openEditComm(c)}>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-slate-600"
+                                onClick={() => openEditComm(c)}
+                              >
                                 <Edit2 className="h-3.5 w-3.5" />
                               </Button>
-                              <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-600" onClick={() => handleDeleteComm(c.id)}>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-rose-600"
+                                onClick={() => handleDeleteComm(c.id)}
+                              >
                                 <Trash2 className="h-3.5 w-3.5" />
                               </Button>
                             </div>
@@ -1953,7 +2126,10 @@ function Org() {
               <h3 className="font-bold text-lg text-slate-900">
                 {editingParty ? "Cập nhật bên quan tâm" : "Thêm bên quan tâm mới"}
               </h3>
-              <button onClick={() => setPartyModalOpen(false)} className="text-slate-400 hover:text-slate-600">
+              <button
+                onClick={() => setPartyModalOpen(false)}
+                className="text-slate-400 hover:text-slate-600"
+              >
                 <X className="h-5 w-5" />
               </button>
             </div>
@@ -1961,7 +2137,9 @@ function Org() {
             <form onSubmit={handleSaveParty} className="space-y-3.5 text-sm">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Phân loại bối cảnh *</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Phân loại bối cảnh *
+                  </label>
                   <select
                     className="w-full border rounded-md p-2 bg-white text-sm"
                     value={partyForm.party_type}
@@ -1972,11 +2150,15 @@ function Org() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Tần suất rà soát</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Tần suất rà soát
+                  </label>
                   <select
                     className="w-full border rounded-md p-2 bg-white text-sm"
                     value={partyForm.review_frequency}
-                    onChange={(e) => setPartyForm({ ...partyForm, review_frequency: e.target.value })}
+                    onChange={(e) =>
+                      setPartyForm({ ...partyForm, review_frequency: e.target.value })
+                    }
                   >
                     <option value="Hàng quý">Hàng quý</option>
                     <option value="6 tháng/lần">6 tháng/lần</option>
@@ -1986,7 +2168,9 @@ function Org() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Tên bên quan tâm *</label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Tên bên quan tâm *
+                </label>
                 <Input
                   required
                   placeholder="Ví dụ: Cơ quan quản lý ATTP, Chuỗi bán lẻ..."
@@ -1996,41 +2180,57 @@ function Org() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Nhu cầu và mong đợi về ATTP *</label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Nhu cầu và mong đợi về ATTP *
+                </label>
                 <textarea
                   required
                   rows={3}
                   className="w-full border rounded-md p-2 text-xs"
                   placeholder="Yêu cầu chất lượng, hồ sơ chứng nhận, thời gian giao hàng..."
                   value={partyForm.needs_and_expectations}
-                  onChange={(e) => setPartyForm({ ...partyForm, needs_and_expectations: e.target.value })}
+                  onChange={(e) =>
+                    setPartyForm({ ...partyForm, needs_and_expectations: e.target.value })
+                  }
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Yêu cầu luật định & quy chuẩn liên quan</label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Yêu cầu luật định & quy chuẩn liên quan
+                </label>
                 <Input
                   placeholder="Luật ATTP 55/2010, Nghị định 15/2018, QCVN..."
                   value={partyForm.statutory_requirements}
-                  onChange={(e) => setPartyForm({ ...partyForm, statutory_requirements: e.target.value })}
+                  onChange={(e) =>
+                    setPartyForm({ ...partyForm, statutory_requirements: e.target.value })
+                  }
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Phương pháp theo dõi</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Phương pháp theo dõi
+                  </label>
                   <Input
                     placeholder="Kiểm tra định kỳ, khảo sát..."
                     value={partyForm.monitoring_method}
-                    onChange={(e) => setPartyForm({ ...partyForm, monitoring_method: e.target.value })}
+                    onChange={(e) =>
+                      setPartyForm({ ...partyForm, monitoring_method: e.target.value })
+                    }
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Bộ phận phụ trách</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Bộ phận phụ trách
+                  </label>
                   <Input
                     placeholder="Ban QLCL & ATTP"
                     value={partyForm.responsible_role}
-                    onChange={(e) => setPartyForm({ ...partyForm, responsible_role: e.target.value })}
+                    onChange={(e) =>
+                      setPartyForm({ ...partyForm, responsible_role: e.target.value })
+                    }
                   />
                 </div>
               </div>
@@ -2056,7 +2256,10 @@ function Org() {
               <h3 className="font-bold text-lg text-slate-900">
                 {editingRisk ? "Cập nhật rủi ro bối cảnh" : "Ghi nhận rủi ro & cơ hội bối cảnh mới"}
               </h3>
-              <button onClick={() => setRiskModalOpen(false)} className="text-slate-400 hover:text-slate-600">
+              <button
+                onClick={() => setRiskModalOpen(false)}
+                className="text-slate-400 hover:text-slate-600"
+              >
                 <X className="h-5 w-5" />
               </button>
             </div>
@@ -2064,7 +2267,9 @@ function Org() {
             <form onSubmit={handleSaveRisk} className="space-y-3.5 text-sm">
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Mã rủi ro *</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Mã rủi ro *
+                  </label>
                   <Input
                     required
                     placeholder="CR-01"
@@ -2073,7 +2278,9 @@ function Org() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Bối cảnh phát sinh</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Bối cảnh phát sinh
+                  </label>
                   <select
                     className="w-full border rounded-md p-2 bg-white text-sm"
                     value={riskForm.issue_category}
@@ -2084,11 +2291,15 @@ function Org() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Chiến lược xử lý</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Chiến lược xử lý
+                  </label>
                   <select
                     className="w-full border rounded-md p-2 bg-white text-sm"
                     value={riskForm.treatment_strategy}
-                    onChange={(e) => setRiskForm({ ...riskForm, treatment_strategy: e.target.value })}
+                    onChange={(e) =>
+                      setRiskForm({ ...riskForm, treatment_strategy: e.target.value })
+                    }
                   >
                     <option value="MITIGATE">Giảm thiểu (Mitigate)</option>
                     <option value="ACCEPT">Chấp nhận (Accept)</option>
@@ -2099,7 +2310,9 @@ function Org() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Vấn đề bối cảnh (Issue) *</label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Vấn đề bối cảnh (Issue) *
+                </label>
                 <Input
                   required
                   placeholder="Ví dụ: Hạn mặn ảnh hưởng nguồn cung nông sản tươi..."
@@ -2110,7 +2323,9 @@ function Org() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Nguy cơ/Rủi ro ATTP *</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Nguy cơ/Rủi ro ATTP *
+                  </label>
                   <textarea
                     required
                     rows={2}
@@ -2121,27 +2336,37 @@ function Org() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Cơ hội cải tiến (Opportunity)</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Cơ hội cải tiến (Opportunity)
+                  </label>
                   <textarea
                     rows={2}
                     className="w-full border rounded-md p-2 text-xs"
                     placeholder="Xây dựng vùng trồng bao tiêu công nghệ cao..."
                     value={riskForm.opportunity_description}
-                    onChange={(e) => setRiskForm({ ...riskForm, opportunity_description: e.target.value })}
+                    onChange={(e) =>
+                      setRiskForm({ ...riskForm, opportunity_description: e.target.value })
+                    }
                   />
                 </div>
               </div>
 
               {/* Ma trận L x S */}
               <div className="p-3 bg-slate-50 border rounded-lg">
-                <div className="text-xs font-bold text-slate-700 mb-2">Đánh giá ma trận rủi ro ban đầu (L × S):</div>
+                <div className="text-xs font-bold text-slate-700 mb-2">
+                  Đánh giá ma trận rủi ro ban đầu (L × S):
+                </div>
                 <div className="grid grid-cols-3 gap-3 items-center">
                   <div>
-                    <label className="block text-[11px] text-slate-600 mb-1">Khả năng (L: 1-5)</label>
+                    <label className="block text-[11px] text-slate-600 mb-1">
+                      Khả năng (L: 1-5)
+                    </label>
                     <select
                       className="w-full border rounded p-1.5 bg-white text-xs"
                       value={riskForm.likelihood}
-                      onChange={(e) => setRiskForm({ ...riskForm, likelihood: Number(e.target.value) })}
+                      onChange={(e) =>
+                        setRiskForm({ ...riskForm, likelihood: Number(e.target.value) })
+                      }
                     >
                       <option value={1}>1 - Hiếm khi</option>
                       <option value={2}>2 - Ít khi</option>
@@ -2151,11 +2376,15 @@ function Org() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-[11px] text-slate-600 mb-1">Mức độ nghiêm trọng (S: 1-5)</label>
+                    <label className="block text-[11px] text-slate-600 mb-1">
+                      Mức độ nghiêm trọng (S: 1-5)
+                    </label>
                     <select
                       className="w-full border rounded p-1.5 bg-white text-xs"
                       value={riskForm.severity}
-                      onChange={(e) => setRiskForm({ ...riskForm, severity: Number(e.target.value) })}
+                      onChange={(e) =>
+                        setRiskForm({ ...riskForm, severity: Number(e.target.value) })
+                      }
                     >
                       <option value={1}>1 - Rất nhỏ</option>
                       <option value={2}>2 - Nhỏ</option>
@@ -2165,14 +2394,20 @@ function Org() {
                     </select>
                   </div>
                   <div className="text-center">
-                    <div className="text-[11px] text-slate-500 font-medium">Điểm rủi ro (R = L × S):</div>
-                    <div className="mt-1">{getContextRiskBadge(riskForm.likelihood * riskForm.severity)}</div>
+                    <div className="text-[11px] text-slate-500 font-medium">
+                      Điểm rủi ro (R = L × S):
+                    </div>
+                    <div className="mt-1">
+                      {getContextRiskBadge(riskForm.likelihood * riskForm.severity)}
+                    </div>
                   </div>
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Kế hoạch hành động ứng phó & kiểm soát *</label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Kế hoạch hành động ứng phó & kiểm soát *
+                </label>
                 <textarea
                   required
                   rows={3}
@@ -2185,14 +2420,18 @@ function Org() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Người / Bộ phận phụ trách</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Người / Bộ phận phụ trách
+                  </label>
                   <Input
                     value={riskForm.responsible_role}
                     onChange={(e) => setRiskForm({ ...riskForm, responsible_role: e.target.value })}
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Thời hạn hoàn thành</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Thời hạn hoàn thành
+                  </label>
                   <Input
                     type="date"
                     value={riskForm.target_date}
@@ -2203,11 +2442,15 @@ function Org() {
 
               <div className="grid grid-cols-3 gap-3 p-3 bg-emerald-50/50 border border-emerald-100 rounded-lg">
                 <div>
-                  <label className="block text-[11px] text-emerald-800 mb-1 font-semibold">Khả năng sau xử lý</label>
+                  <label className="block text-[11px] text-emerald-800 mb-1 font-semibold">
+                    Khả năng sau xử lý
+                  </label>
                   <select
                     className="w-full border rounded p-1.5 bg-white text-xs"
                     value={riskForm.residual_likelihood}
-                    onChange={(e) => setRiskForm({ ...riskForm, residual_likelihood: Number(e.target.value) })}
+                    onChange={(e) =>
+                      setRiskForm({ ...riskForm, residual_likelihood: Number(e.target.value) })
+                    }
                   >
                     <option value={1}>1 - Hiếm khi</option>
                     <option value={2}>2 - Ít khi</option>
@@ -2215,11 +2458,15 @@ function Org() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-[11px] text-emerald-800 mb-1 font-semibold">Mức độ sau xử lý</label>
+                  <label className="block text-[11px] text-emerald-800 mb-1 font-semibold">
+                    Mức độ sau xử lý
+                  </label>
                   <select
                     className="w-full border rounded p-1.5 bg-white text-xs"
                     value={riskForm.residual_severity}
-                    onChange={(e) => setRiskForm({ ...riskForm, residual_severity: Number(e.target.value) })}
+                    onChange={(e) =>
+                      setRiskForm({ ...riskForm, residual_severity: Number(e.target.value) })
+                    }
                   >
                     <option value={1}>1 - Rất nhỏ</option>
                     <option value={2}>2 - Nhỏ</option>
@@ -2253,9 +2500,14 @@ function Org() {
           <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b pb-3">
               <h3 className="font-bold text-lg text-slate-900">
-                {editingComm ? "Cập nhật trao đổi thông tin ATTP" : "Ghi nhận trao đổi thông tin ATTP mới"}
+                {editingComm
+                  ? "Cập nhật trao đổi thông tin ATTP"
+                  : "Ghi nhận trao đổi thông tin ATTP mới"}
               </h3>
-              <button onClick={() => setCommModalOpen(false)} className="text-slate-400 hover:text-slate-600">
+              <button
+                onClick={() => setCommModalOpen(false)}
+                className="text-slate-400 hover:text-slate-600"
+              >
                 <X className="h-5 w-5" />
               </button>
             </div>
@@ -2263,7 +2515,9 @@ function Org() {
             <form onSubmit={handleSaveComm} className="space-y-3.5 text-sm">
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Mã theo dõi *</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Mã theo dõi *
+                  </label>
                   <Input
                     required
                     value={commForm.comm_code}
@@ -2271,7 +2525,9 @@ function Org() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Hướng thông tin *</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Hướng thông tin *
+                  </label>
                   <select
                     className="w-full border rounded-md p-2 bg-white text-sm"
                     value={commForm.direction}
@@ -2282,7 +2538,9 @@ function Org() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Phân loại đối tượng *</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Phân loại đối tượng *
+                  </label>
                   <select
                     className="w-full border rounded-md p-2 bg-white text-sm"
                     value={commForm.party_type}
@@ -2300,7 +2558,9 @@ function Org() {
 
               <div className="grid grid-cols-3 gap-3">
                 <div className="col-span-2">
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Tên cơ quan / Đối tác / Cá nhân *</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Tên cơ quan / Đối tác / Cá nhân *
+                  </label>
                   <Input
                     required
                     placeholder="Chi cục ATVSTP, Khách hàng..."
@@ -2309,7 +2569,9 @@ function Org() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Người / Thông tin liên hệ</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Người / Thông tin liên hệ
+                  </label>
                   <Input
                     placeholder="SĐT, Email, Người đại diện..."
                     value={commForm.contact_person}
@@ -2319,7 +2581,9 @@ function Org() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Chủ đề trao đổi *</label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Chủ đề trao đổi *
+                </label>
                 <Input
                   required
                   placeholder="Kế hoạch thanh tra, phản hồi chất lượng, cảnh báo thu hồi..."
@@ -2329,7 +2593,9 @@ function Org() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Nội dung chi tiết *</label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Nội dung chi tiết *
+                </label>
                 <textarea
                   required
                   rows={3}
@@ -2342,7 +2608,9 @@ function Org() {
 
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Hình thức tiếp nhận/gửi *</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Hình thức tiếp nhận/gửi *
+                  </label>
                   <select
                     className="w-full border rounded-md p-2 bg-white text-sm"
                     value={commForm.method}
@@ -2358,7 +2626,9 @@ function Org() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Ngày phát sinh *</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Ngày phát sinh *
+                  </label>
                   <Input
                     type="date"
                     required
@@ -2367,30 +2637,42 @@ function Org() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Người/Bộ phận phụ trách *</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Người/Bộ phận phụ trách *
+                  </label>
                   <Input
                     required
                     value={commForm.responsible_person}
-                    onChange={(e) => setCommForm({ ...commForm, responsible_person: e.target.value })}
+                    onChange={(e) =>
+                      setCommForm({ ...commForm, responsible_person: e.target.value })
+                    }
                   />
                 </div>
               </div>
 
               <div className="p-3 bg-slate-50 border rounded-lg space-y-3">
-                <div className="font-semibold text-xs text-slate-700">Phản hồi & Hành động xử lý:</div>
+                <div className="font-semibold text-xs text-slate-700">
+                  Phản hồi & Hành động xử lý:
+                </div>
                 <div className="grid grid-cols-3 gap-3">
                   <div className="col-span-2">
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">Nội dung phản hồi / Giải quyết</label>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      Nội dung phản hồi / Giải quyết
+                    </label>
                     <textarea
                       rows={2}
                       className="w-full border rounded-md p-2 text-xs bg-white"
                       placeholder="Nội dung đã phản hồi hoặc xử lý cho đối tác..."
                       value={commForm.response_content}
-                      onChange={(e) => setCommForm({ ...commForm, response_content: e.target.value })}
+                      onChange={(e) =>
+                        setCommForm({ ...commForm, response_content: e.target.value })
+                      }
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">Ngày phản hồi</label>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      Ngày phản hồi
+                    </label>
                     <Input
                       type="date"
                       value={commForm.response_date}
@@ -2402,7 +2684,9 @@ function Org() {
                         <input
                           type="checkbox"
                           checked={commForm.action_required}
-                          onChange={(e) => setCommForm({ ...commForm, action_required: e.target.checked })}
+                          onChange={(e) =>
+                            setCommForm({ ...commForm, action_required: e.target.checked })
+                          }
                           className="rounded border-slate-300 text-rose-600 h-4 w-4"
                         />
                         Cần hành động khắc phục/CAPA
@@ -2413,7 +2697,9 @@ function Org() {
 
                 {commForm.action_required && (
                   <div>
-                    <label className="block text-xs font-semibold text-rose-800 mb-1">Chi tiết hành động yêu cầu:</label>
+                    <label className="block text-xs font-semibold text-rose-800 mb-1">
+                      Chi tiết hành động yêu cầu:
+                    </label>
                     <Input
                       placeholder="Mô tả hành động cần thực hiện, liên kết CAPA..."
                       value={commForm.action_details}
@@ -2426,7 +2712,9 @@ function Org() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Trạng thái hồ sơ *</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Trạng thái hồ sơ *
+                  </label>
                   <select
                     className="w-full border rounded-md p-2 bg-white text-sm"
                     value={commForm.status}
@@ -2438,7 +2726,9 @@ function Org() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Ghi chú thêm</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Ghi chú thêm
+                  </label>
                   <Input
                     placeholder="Ghi chú hồ sơ lưu trữ..."
                     value={commForm.notes}
@@ -2471,14 +2761,19 @@ function Org() {
                 </h3>
                 <p className="text-xs text-slate-500">Căn cứ Quyết định 02/QĐ-ATTP-2026</p>
               </div>
-              <button onClick={() => setFstModalOpen(false)} className="text-slate-400 hover:text-slate-600">
+              <button
+                onClick={() => setFstModalOpen(false)}
+                className="text-slate-400 hover:text-slate-600"
+              >
                 <X className="h-5 w-5" />
               </button>
             </div>
 
             <form onSubmit={handleSaveFst} className="space-y-3.5 text-sm">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Họ và tên *</label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Họ và tên *
+                </label>
                 <Input
                   required
                   placeholder="Ví dụ: Trần Minh Hoàng"
@@ -2489,7 +2784,9 @@ function Org() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Vai trò trong Đội (QĐ 02) *</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Vai trò trong Đội (QĐ 02) *
+                  </label>
                   <select
                     className="w-full border rounded-md p-2 bg-white text-sm font-semibold"
                     value={fstForm.role}
@@ -2502,7 +2799,9 @@ function Org() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Trạng thái bổ nhiệm *</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Trạng thái bổ nhiệm *
+                  </label>
                   <select
                     className="w-full border rounded-md p-2 bg-white text-sm"
                     value={fstForm.status}
@@ -2516,7 +2815,9 @@ function Org() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Phòng ban công tác *</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Phòng ban công tác *
+                  </label>
                   <Input
                     required
                     placeholder="Phòng QLCL, Phòng Sản xuất..."
@@ -2525,7 +2826,9 @@ function Org() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Chức vụ chuyên môn *</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Chức vụ chuyên môn *
+                  </label>
                   <Input
                     required
                     placeholder="Trưởng phòng, Kỹ sư, Giám sát..."
@@ -2537,14 +2840,18 @@ function Org() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Số quyết định</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Số quyết định
+                  </label>
                   <Input
                     value={fstForm.decision_number}
                     onChange={(e) => setFstForm({ ...fstForm, decision_number: e.target.value })}
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Ngày quyết định</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Ngày quyết định
+                  </label>
                   <Input
                     type="date"
                     value={fstForm.decision_date}
@@ -2554,7 +2861,9 @@ function Org() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Trình độ chuyên môn & Đào tạo ATTP</label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Trình độ chuyên môn & Đào tạo ATTP
+                </label>
                 <Input
                   placeholder="Kỹ sư CNSH, Chứng chỉ HACCP/ISO 22000 Lead Auditor..."
                   value={fstForm.qualification}
@@ -2563,7 +2872,9 @@ function Org() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Nhiệm vụ phân công trong Đội ATTP</label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Nhiệm vụ phân công trong Đội ATTP
+                </label>
                 <textarea
                   rows={3}
                   className="w-full border rounded-md p-2 text-xs"
@@ -2575,7 +2886,9 @@ function Org() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Số điện thoại</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Số điện thoại
+                  </label>
                   <Input
                     placeholder="0908 xxx xxx"
                     value={fstForm.phone}
@@ -2619,7 +2932,9 @@ function Kpi({ icon, v, l, sub }: { icon: React.ReactNode; v: string; l: string;
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-xs">
       <div className="flex items-center justify-between">
-        <div className="grid h-9 w-9 place-items-center rounded-lg bg-emerald-50 text-emerald-600">{icon}</div>
+        <div className="grid h-9 w-9 place-items-center rounded-lg bg-emerald-50 text-emerald-600">
+          {icon}
+        </div>
         <div className="text-2xl font-bold text-slate-800">{v}</div>
       </div>
       <div className="mt-2 text-xs font-semibold uppercase tracking-wider text-slate-600">{l}</div>

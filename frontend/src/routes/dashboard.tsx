@@ -183,7 +183,9 @@ interface ManagementReview {
 
 function ExecutiveDashboard() {
   const { departments } = useDepartments();
-  const [activeTab, setActiveTab] = useState<"overview" | "objectives" | "reviews" | "ai_studio">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "objectives" | "reviews" | "ai_studio">(
+    "overview",
+  );
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<ExecutiveOverviewStats | null>(null);
   const [alerts, setAlerts] = useState<ExecutiveAlertItem[]>([]);
@@ -203,7 +205,9 @@ function ExecutiveDashboard() {
   const [reportResult, setReportResult] = useState<any>(null);
   const [chatLoading, setChatLoading] = useState(false);
   const [chatQuestion, setChatQuestion] = useState("");
-  const [chatHistory, setChatHistory] = useState<Array<{ role: "user" | "ai"; text: string; citations?: any[] }>>([]);
+  const [chatHistory, setChatHistory] = useState<
+    Array<{ role: "user" | "ai"; text: string; citations?: any[] }>
+  >([]);
 
   // Biểu mẫu tạo mới mục tiêu chất lượng
   const [newObjCode, setNewObjCode] = useState("");
@@ -296,7 +300,9 @@ function ExecutiveDashboard() {
           customer_feedback: "Không ghi nhận khiếu nại về an toàn thực phẩm.",
           ccp_prp_status: "100% điểm kiểm soát tới hạn CCP trong ngưỡng an toàn.",
         },
-        meeting_minutes: newRevMinutes || "Cuộc họp diễn ra nghiêm túc, hệ thống FSMS duy trì tính phù hợp và hiệu lực cao.",
+        meeting_minutes:
+          newRevMinutes ||
+          "Cuộc họp diễn ra nghiêm túc, hệ thống FSMS duy trì tính phù hợp và hiệu lực cao.",
         decisions_and_actions: [
           {
             action_id: "ACT-01",
@@ -528,7 +534,7 @@ function ExecutiveDashboard() {
           <td>${d.assigned_to}</td>
           <td style="text-align: center;">${d.deadline}</td>
           <td style="text-align: center;">${d.resources_allocated || "Ngân sách phê duyệt"}</td>
-        </tr>`
+        </tr>`,
               )
               .join("")
           : `<tr><td colspan="5" style="text-align: center; color: #666;">Chưa có danh mục nghị quyết bổ sung.</td></tr>`
@@ -575,10 +581,19 @@ function ExecutiveDashboard() {
           >
             <BookOpen className="h-3.5 w-3.5" /> Hướng Dẫn Nghiệp Vụ
           </Button>
-          <Button variant="outline" size="sm" onClick={() => setShowWorkflowModal(true)} className="gap-1.5 text-xs w-full sm:w-auto">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowWorkflowModal(true)}
+            className="gap-1.5 text-xs w-full sm:w-auto"
+          >
             <Workflow className="h-3.5 w-3.5 text-primary" /> Lưu Đồ Quy Trình Xem Xét
           </Button>
-          <Button size="sm" onClick={() => setShowAddObjectiveModal(true)} className="gap-1.5 text-xs w-full sm:w-auto">
+          <Button
+            size="sm"
+            onClick={() => setShowAddObjectiveModal(true)}
+            className="gap-1.5 text-xs w-full sm:w-auto"
+          >
             <Target className="h-3.5 w-3.5" /> Lập Mục Tiêu Mới
           </Button>
           {selectedReview && (
@@ -599,23 +614,29 @@ function ExecutiveDashboard() {
         {/* Card 1: FSMS Health Score */}
         <div className="rounded-2xl border bg-card/90 p-4 shadow-sm backdrop-blur transition hover:shadow-md">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] sm:text-xs font-semibold text-muted-foreground uppercase tracking-wider">Chỉ Số Tuân Thủ FSMS</span>
-            <span className={`rounded-full px-2 py-0.5 text-[10px] sm:text-[11px] font-bold ${
-              stats?.health_level === "EXCELLENT"
-                ? "bg-emerald-500/10 text-emerald-600"
-                : stats?.health_level === "GOOD"
-                ? "bg-primary/10 text-primary"
-                : stats?.health_level === "PENDING_DATA" || (stats?.overall_health_score ?? 0) === 0
-                ? "bg-muted text-muted-foreground"
-                : "bg-amber-500/10 text-amber-600"
-            }`}>
+            <span className="text-[11px] sm:text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              Chỉ Số Tuân Thủ FSMS
+            </span>
+            <span
+              className={`rounded-full px-2 py-0.5 text-[10px] sm:text-[11px] font-bold ${
+                stats?.health_level === "EXCELLENT"
+                  ? "bg-emerald-500/10 text-emerald-600"
+                  : stats?.health_level === "GOOD"
+                    ? "bg-primary/10 text-primary"
+                    : stats?.health_level === "PENDING_DATA" ||
+                        (stats?.overall_health_score ?? 0) === 0
+                      ? "bg-muted text-muted-foreground"
+                      : "bg-amber-500/10 text-amber-600"
+              }`}
+            >
               {stats?.health_level === "EXCELLENT"
                 ? "XUẤT SẮC"
                 : stats?.health_level === "GOOD"
-                ? "TỐT"
-                : stats?.health_level === "PENDING_DATA" || (stats?.overall_health_score ?? 0) === 0
-                ? "CHƯA ĐÁNH GIÁ"
-                : "CẦN LƯU Ý"}
+                  ? "TỐT"
+                  : stats?.health_level === "PENDING_DATA" ||
+                      (stats?.overall_health_score ?? 0) === 0
+                    ? "CHƯA ĐÁNH GIÁ"
+                    : "CẦN LƯU Ý"}
             </span>
           </div>
           <div className="mt-3 flex items-baseline gap-2">
@@ -627,12 +648,12 @@ function ExecutiveDashboard() {
                 <TrendingUp className="h-3 w-3 mr-0.5" /> Đang vận hành
               </span>
             ) : (
-              <span className="text-xs text-muted-foreground font-medium">
-                Chưa có dữ liệu
-              </span>
+              <span className="text-xs text-muted-foreground font-medium">Chưa có dữ liệu</span>
             )}
           </div>
-          <div className="mt-1.5 text-[11px] sm:text-xs text-muted-foreground">Tích hợp dữ liệu 8 phân hệ</div>
+          <div className="mt-1.5 text-[11px] sm:text-xs text-muted-foreground">
+            Tích hợp dữ liệu 8 phân hệ
+          </div>
           <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
             <div
               className="h-full bg-gradient-to-r from-emerald-500 to-teal-400"
@@ -644,7 +665,9 @@ function ExecutiveDashboard() {
         {/* Card 2: HACCP & CCP Control */}
         <div className="rounded-2xl border bg-card/90 p-4 shadow-sm backdrop-blur transition hover:shadow-md">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] sm:text-xs font-semibold text-muted-foreground uppercase tracking-wider">Kiểm Soát Điểm CCP</span>
+            <span className="text-[11px] sm:text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              Kiểm Soát Điểm CCP
+            </span>
             <div className="grid h-7 w-7 place-items-center rounded-lg bg-primary/10 text-primary">
               <ShieldCheck className="h-4 w-4" />
             </div>
@@ -656,17 +679,23 @@ function ExecutiveDashboard() {
             <span className="text-xs text-muted-foreground">An toàn</span>
           </div>
           <div className="mt-1.5 text-[11px] sm:text-xs text-muted-foreground">
-            {stats?.haccp_ccp.total_ccps ?? 0} điểm CCP · {stats?.haccp_ccp.critical_deviations ?? 0} sai lệch
+            {stats?.haccp_ccp.total_ccps ?? 0} điểm CCP ·{" "}
+            {stats?.haccp_ccp.critical_deviations ?? 0} sai lệch
           </div>
           <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
-            <div className="h-full bg-primary" style={{ width: `${stats?.haccp_ccp.in_control_rate ?? 0}%` }} />
+            <div
+              className="h-full bg-primary"
+              style={{ width: `${stats?.haccp_ccp.in_control_rate ?? 0}%` }}
+            />
           </div>
         </div>
 
         {/* Card 3: CAPA & NC Effectiveness */}
         <div className="rounded-2xl border bg-card/90 p-4 shadow-sm backdrop-blur transition hover:shadow-md">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] sm:text-xs font-semibold text-muted-foreground uppercase tracking-wider">Hiệu Lực Khắc Phục CAPA</span>
+            <span className="text-[11px] sm:text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              Hiệu Lực Khắc Phục CAPA
+            </span>
             <div className="grid h-7 w-7 place-items-center rounded-lg bg-amber-500/10 text-amber-600">
               <Award className="h-4 w-4" />
             </div>
@@ -681,14 +710,19 @@ function ExecutiveDashboard() {
             {stats?.capa_nc.total_capas ?? 0} phiếu khắc phục
           </div>
           <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
-            <div className="h-full bg-amber-500" style={{ width: `${stats?.capa_nc.effectiveness_rate ?? 0}%` }} />
+            <div
+              className="h-full bg-amber-500"
+              style={{ width: `${stats?.capa_nc.effectiveness_rate ?? 0}%` }}
+            />
           </div>
         </div>
 
         {/* Card 4: PRP Hygiene Compliance */}
         <div className="rounded-2xl border bg-card/90 p-4 shadow-sm backdrop-blur transition hover:shadow-md">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] sm:text-xs font-semibold text-muted-foreground uppercase tracking-wider">Vệ Sinh Nhà Xưởng PRP</span>
+            <span className="text-[11px] sm:text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              Vệ Sinh Nhà Xưởng PRP
+            </span>
             <div className="grid h-7 w-7 place-items-center rounded-lg bg-emerald-500/10 text-emerald-600">
               <ClipboardCheck className="h-4 w-4" />
             </div>
@@ -703,14 +737,19 @@ function ExecutiveDashboard() {
             {stats?.prp_hygiene.total_prps ?? 0} chương trình giám sát
           </div>
           <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
-            <div className="h-full bg-emerald-500" style={{ width: `${stats?.prp_hygiene.compliance_rate ?? 0}%` }} />
+            <div
+              className="h-full bg-emerald-500"
+              style={{ width: `${stats?.prp_hygiene.compliance_rate ?? 0}%` }}
+            />
           </div>
         </div>
 
         {/* Card 5: Training & Health Compliance */}
         <div className="rounded-2xl border bg-card/90 p-4 shadow-sm backdrop-blur transition hover:shadow-md">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] sm:text-xs font-semibold text-muted-foreground uppercase tracking-wider">Năng Lực Nhân Sự</span>
+            <span className="text-[11px] sm:text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              Năng Lực Nhân Sự
+            </span>
             <div className="grid h-7 w-7 place-items-center rounded-lg bg-sky-500/10 text-sky-600">
               <Users className="h-4 w-4" />
             </div>
@@ -725,7 +764,10 @@ function ExecutiveDashboard() {
             {stats?.audit_training_health.total_learners ?? 0} nhân sự đã đánh giá
           </div>
           <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
-            <div className="h-full bg-sky-500" style={{ width: `${stats?.audit_training_health.training_pass_rate ?? 0}%` }} />
+            <div
+              className="h-full bg-sky-500"
+              style={{ width: `${stats?.audit_training_health.training_pass_rate ?? 0}%` }}
+            />
           </div>
         </div>
       </div>
@@ -751,7 +793,9 @@ function ExecutiveDashboard() {
           }`}
         >
           <Target className="h-4 w-4" /> Mục Tiêu Chất Lượng & ATTP
-          <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] sm:text-xs">{objectives.length}</span>
+          <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] sm:text-xs">
+            {objectives.length}
+          </span>
         </button>
         <button
           onClick={() => setActiveTab("reviews")}
@@ -762,7 +806,9 @@ function ExecutiveDashboard() {
           }`}
         >
           <Calendar className="h-4 w-4" /> Xem Xét Của Lãnh Đạo
-          <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] sm:text-xs">{reviews.length}</span>
+          <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] sm:text-xs">
+            {reviews.length}
+          </span>
         </button>
         <button
           onClick={() => setActiveTab("ai_studio")}
@@ -784,10 +830,17 @@ function ExecutiveDashboard() {
             <div className="rounded-2xl border bg-card p-4 sm:p-5 lg:col-span-2 shadow-sm">
               <div className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                 <div>
-                  <h3 className="font-bold text-foreground text-sm sm:text-base">Ma Trận Tuân Thủ 7 Trụ Cột ISO 22000:2018</h3>
-                  <p className="text-xs text-muted-foreground">Độ bao phủ và tuân thủ theo các nhóm điều khoản tiêu chuẩn quốc tế</p>
+                  <h3 className="font-bold text-foreground text-sm sm:text-base">
+                    Ma Trận Tuân Thủ 7 Trụ Cột ISO 22000:2018
+                  </h3>
+                  <p className="text-xs text-muted-foreground">
+                    Độ bao phủ và tuân thủ theo các nhóm điều khoản tiêu chuẩn quốc tế
+                  </p>
                 </div>
-                <Badge variant="outline" className="text-xs bg-primary/5 text-primary border-primary/30 w-fit">
+                <Badge
+                  variant="outline"
+                  className="text-xs bg-primary/5 text-primary border-primary/30 w-fit"
+                >
                   Đánh Giá Toàn Diện
                 </Badge>
               </div>
@@ -795,16 +848,79 @@ function ExecutiveDashboard() {
               {/* Sơ đồ đa giác Radar */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 items-center">
                 <div className="relative flex items-center justify-center p-2">
-                  <svg viewBox="0 0 240 240" className="w-full max-w-[220px] sm:max-w-[240px] h-auto overflow-visible">
-                    <polygon points="120,20 206,70 206,170 120,220 34,170 34,70" fill="none" stroke="currentColor" strokeOpacity="0.1" strokeWidth="1" />
-                    <polygon points="120,45 185,83 185,158 120,195 55,158 55,83" fill="none" stroke="currentColor" strokeOpacity="0.15" strokeWidth="1" />
-                    <polygon points="120,70 163,95 163,145 120,170 77,145 77,95" fill="none" stroke="currentColor" strokeOpacity="0.2" strokeWidth="1" />
-                    <line x1="120" y1="120" x2="120" y2="20" stroke="currentColor" strokeOpacity="0.15" />
-                    <line x1="120" y1="120" x2="206" y2="70" stroke="currentColor" strokeOpacity="0.15" />
-                    <line x1="120" y1="120" x2="206" y2="170" stroke="currentColor" strokeOpacity="0.15" />
-                    <line x1="120" y1="120" x2="120" y2="220" stroke="currentColor" strokeOpacity="0.15" />
-                    <line x1="120" y1="120" x2="34" y2="170" stroke="currentColor" strokeOpacity="0.15" />
-                    <line x1="120" y1="120" x2="34" y2="70" stroke="currentColor" strokeOpacity="0.15" />
+                  <svg
+                    viewBox="0 0 240 240"
+                    className="w-full max-w-[220px] sm:max-w-[240px] h-auto overflow-visible"
+                  >
+                    <polygon
+                      points="120,20 206,70 206,170 120,220 34,170 34,70"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeOpacity="0.1"
+                      strokeWidth="1"
+                    />
+                    <polygon
+                      points="120,45 185,83 185,158 120,195 55,158 55,83"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeOpacity="0.15"
+                      strokeWidth="1"
+                    />
+                    <polygon
+                      points="120,70 163,95 163,145 120,170 77,145 77,95"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeOpacity="0.2"
+                      strokeWidth="1"
+                    />
+                    <line
+                      x1="120"
+                      y1="120"
+                      x2="120"
+                      y2="20"
+                      stroke="currentColor"
+                      strokeOpacity="0.15"
+                    />
+                    <line
+                      x1="120"
+                      y1="120"
+                      x2="206"
+                      y2="70"
+                      stroke="currentColor"
+                      strokeOpacity="0.15"
+                    />
+                    <line
+                      x1="120"
+                      y1="120"
+                      x2="206"
+                      y2="170"
+                      stroke="currentColor"
+                      strokeOpacity="0.15"
+                    />
+                    <line
+                      x1="120"
+                      y1="120"
+                      x2="120"
+                      y2="220"
+                      stroke="currentColor"
+                      strokeOpacity="0.15"
+                    />
+                    <line
+                      x1="120"
+                      y1="120"
+                      x2="34"
+                      y2="170"
+                      stroke="currentColor"
+                      strokeOpacity="0.15"
+                    />
+                    <line
+                      x1="120"
+                      y1="120"
+                      x2="34"
+                      y2="70"
+                      stroke="currentColor"
+                      strokeOpacity="0.15"
+                    />
 
                     <polygon
                       points="120,26 206,70 198,165 120,203 72,148 68,90"
@@ -824,32 +940,58 @@ function ExecutiveDashboard() {
                 {/* Chi tiết từng trụ cột */}
                 <div className="space-y-2 text-xs">
                   <div className="flex items-center justify-between border-b pb-1">
-                    <span className="font-medium text-muted-foreground">1. Bối cảnh & Lãnh đạo</span>
-                    <span className="font-bold text-emerald-600">{stats?.radar_pillars.context_leadership ?? 0}%</span>
+                    <span className="font-medium text-muted-foreground">
+                      1. Bối cảnh & Lãnh đạo
+                    </span>
+                    <span className="font-bold text-emerald-600">
+                      {stats?.radar_pillars.context_leadership ?? 0}%
+                    </span>
                   </div>
                   <div className="flex items-center justify-between border-b pb-1">
-                    <span className="font-medium text-muted-foreground">2. Kế hoạch & Điểm CCP</span>
-                    <span className="font-bold text-emerald-600">{stats?.radar_pillars.planning_haccp ?? 0}%</span>
+                    <span className="font-medium text-muted-foreground">
+                      2. Kế hoạch & Điểm CCP
+                    </span>
+                    <span className="font-bold text-emerald-600">
+                      {stats?.radar_pillars.planning_haccp ?? 0}%
+                    </span>
                   </div>
                   <div className="flex items-center justify-between border-b pb-1">
-                    <span className="font-medium text-muted-foreground">3. Nguồn lực & Đào tạo</span>
-                    <span className="font-bold text-emerald-600">{stats?.radar_pillars.support_training ?? 0}%</span>
+                    <span className="font-medium text-muted-foreground">
+                      3. Nguồn lực & Đào tạo
+                    </span>
+                    <span className="font-bold text-emerald-600">
+                      {stats?.radar_pillars.support_training ?? 0}%
+                    </span>
                   </div>
                   <div className="flex items-center justify-between border-b pb-1">
-                    <span className="font-medium text-muted-foreground">4. Vận hành & Vệ sinh PRP</span>
-                    <span className="font-bold text-emerald-600">{stats?.radar_pillars.operation_prp ?? 0}%</span>
+                    <span className="font-medium text-muted-foreground">
+                      4. Vận hành & Vệ sinh PRP
+                    </span>
+                    <span className="font-bold text-emerald-600">
+                      {stats?.radar_pillars.operation_prp ?? 0}%
+                    </span>
                   </div>
                   <div className="flex items-center justify-between border-b pb-1">
                     <span className="font-medium text-muted-foreground">5. Đánh giá hiệu năng</span>
-                    <span className="font-bold text-amber-600">{stats?.radar_pillars.performance_audit ?? 0}%</span>
+                    <span className="font-bold text-amber-600">
+                      {stats?.radar_pillars.performance_audit ?? 0}%
+                    </span>
                   </div>
                   <div className="flex items-center justify-between border-b pb-1">
-                    <span className="font-medium text-muted-foreground">6. Cải tiến & Khắc phục CAPA</span>
-                    <span className="font-bold text-amber-600">{stats?.radar_pillars.improvement_capa ?? 0}%</span>
+                    <span className="font-medium text-muted-foreground">
+                      6. Cải tiến & Khắc phục CAPA
+                    </span>
+                    <span className="font-bold text-amber-600">
+                      {stats?.radar_pillars.improvement_capa ?? 0}%
+                    </span>
                   </div>
                   <div className="flex items-center justify-between pb-1">
-                    <span className="font-medium text-muted-foreground">7. Chuỗi cung ứng & Kho hàng</span>
-                    <span className="font-bold text-emerald-600">{stats?.radar_pillars.supply_traceability ?? 0}%</span>
+                    <span className="font-medium text-muted-foreground">
+                      7. Chuỗi cung ứng & Kho hàng
+                    </span>
+                    <span className="font-bold text-emerald-600">
+                      {stats?.radar_pillars.supply_traceability ?? 0}%
+                    </span>
                   </div>
                 </div>
               </div>
@@ -860,13 +1002,16 @@ function ExecutiveDashboard() {
               <div>
                 <div className="mb-3 flex items-center justify-between">
                   <h3 className="font-bold text-foreground flex items-center gap-2 text-sm sm:text-base">
-                    <AlertCircle className="h-4 w-4 text-destructive" /> Cảnh Báo Khẩn Cấp (Thời Gian Thực)
+                    <AlertCircle className="h-4 w-4 text-destructive" /> Cảnh Báo Khẩn Cấp (Thời
+                    Gian Thực)
                   </h3>
                   <Badge variant="destructive" className="text-xs">
                     {alerts.length} Sự Cố
                   </Badge>
                 </div>
-                <p className="text-xs text-muted-foreground mb-3">Các điểm nghẽn và sự cố cần Ban Giám Đốc và Trưởng ban QA chỉ đạo ngay</p>
+                <p className="text-xs text-muted-foreground mb-3">
+                  Các điểm nghẽn và sự cố cần Ban Giám Đốc và Trưởng ban QA chỉ đạo ngay
+                </p>
 
                 <div className="space-y-2.5 overflow-y-auto max-h-[260px] pr-1">
                   {alerts.map((al) => (
@@ -882,7 +1027,9 @@ function ExecutiveDashboard() {
                         <span>{al.title}</span>
                         <span className="text-[10px] opacity-75">{al.timestamp}</span>
                       </div>
-                      <p className="mt-1 text-[11px] opacity-90 leading-relaxed">{al.description}</p>
+                      <p className="mt-1 text-[11px] opacity-90 leading-relaxed">
+                        {al.description}
+                      </p>
                     </div>
                   ))}
                   {alerts.length === 0 && (
@@ -915,7 +1062,10 @@ function ExecutiveDashboard() {
                   <span>1. Tài liệu & Quy trình</span>
                   <FileText className="h-3.5 w-3.5 text-primary" />
                 </div>
-                <div className="mt-2 text-lg font-bold">{stats?.documents.approved_documents ?? 0} / {stats?.documents.total_documents ?? 0}</div>
+                <div className="mt-2 text-lg font-bold">
+                  {stats?.documents.approved_documents ?? 0} /{" "}
+                  {stats?.documents.total_documents ?? 0}
+                </div>
                 <div className="text-[11px] text-muted-foreground">Tài liệu đã ban hành</div>
               </div>
 
@@ -924,8 +1074,12 @@ function ExecutiveDashboard() {
                   <span>2. Mua hàng & Tiếp nhận</span>
                   <Truck className="h-3.5 w-3.5 text-sky-600" />
                 </div>
-                <div className="mt-2 text-lg font-bold">{stats?.purchasing_iqc.lot_pass_rate ?? 0}%</div>
-                <div className="text-[11px] text-muted-foreground">{stats?.purchasing_iqc.total_suppliers ?? 0} Nhà cung cấp</div>
+                <div className="mt-2 text-lg font-bold">
+                  {stats?.purchasing_iqc.lot_pass_rate ?? 0}%
+                </div>
+                <div className="text-[11px] text-muted-foreground">
+                  {stats?.purchasing_iqc.total_suppliers ?? 0} Nhà cung cấp
+                </div>
               </div>
 
               <div className="rounded-xl border bg-card p-3 shadow-sm">
@@ -933,8 +1087,12 @@ function ExecutiveDashboard() {
                   <span>3. Kế hoạch HACCP & Điểm CCP</span>
                   <Flame className="h-3.5 w-3.5 text-rose-600" />
                 </div>
-                <div className="mt-2 text-lg font-bold">{stats?.haccp_ccp.in_control_rate ?? 0}%</div>
-                <div className="text-[11px] text-muted-foreground">{stats?.haccp_ccp.total_ccps ?? 0} Điểm CCP an toàn</div>
+                <div className="mt-2 text-lg font-bold">
+                  {stats?.haccp_ccp.in_control_rate ?? 0}%
+                </div>
+                <div className="text-[11px] text-muted-foreground">
+                  {stats?.haccp_ccp.total_ccps ?? 0} Điểm CCP an toàn
+                </div>
               </div>
 
               <div className="rounded-xl border bg-card p-3 shadow-sm">
@@ -942,8 +1100,12 @@ function ExecutiveDashboard() {
                   <span>4. Chương trình PRP</span>
                   <ClipboardCheck className="h-3.5 w-3.5 text-emerald-600" />
                 </div>
-                <div className="mt-2 text-lg font-bold">{stats?.prp_hygiene.compliance_rate ?? 0}%</div>
-                <div className="text-[11px] text-muted-foreground">{stats?.prp_hygiene.total_prps ?? 0} Quy trình GMP/SSOP</div>
+                <div className="mt-2 text-lg font-bold">
+                  {stats?.prp_hygiene.compliance_rate ?? 0}%
+                </div>
+                <div className="text-[11px] text-muted-foreground">
+                  {stats?.prp_hygiene.total_prps ?? 0} Quy trình GMP/SSOP
+                </div>
               </div>
 
               <div className="rounded-xl border bg-card p-3 shadow-sm">
@@ -951,8 +1113,12 @@ function ExecutiveDashboard() {
                   <span>5. Thiết bị & Đo lường</span>
                   <Sliders className="h-3.5 w-3.5 text-indigo-600" />
                 </div>
-                <div className="mt-2 text-lg font-bold">{stats?.equipment_calibration.calibration_pass_rate ?? 0}%</div>
-                <div className="text-[11px] text-muted-foreground">{stats?.equipment_calibration.total_equipment ?? 0} Thiết bị kiểm định</div>
+                <div className="mt-2 text-lg font-bold">
+                  {stats?.equipment_calibration.calibration_pass_rate ?? 0}%
+                </div>
+                <div className="text-[11px] text-muted-foreground">
+                  {stats?.equipment_calibration.total_equipment ?? 0} Thiết bị kiểm định
+                </div>
               </div>
 
               <div className="rounded-xl border bg-card p-3 shadow-sm">
@@ -960,7 +1126,9 @@ function ExecutiveDashboard() {
                   <span>6. Kho hàng & Truy xuất</span>
                   <Search className="h-3.5 w-3.5 text-amber-600" />
                 </div>
-                <div className="mt-2 text-lg font-bold">{stats?.inventory_traceability.total_batches ?? 0} Lô SX</div>
+                <div className="mt-2 text-lg font-bold">
+                  {stats?.inventory_traceability.total_batches ?? 0} Lô SX
+                </div>
                 <div className="text-[11px] text-muted-foreground">Xuất nhập tồn theo hạn dùng</div>
               </div>
 
@@ -969,8 +1137,12 @@ function ExecutiveDashboard() {
                   <span>7. Sự cố & Khắc phục CAPA</span>
                   <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
                 </div>
-                <div className="mt-2 text-lg font-bold">{stats?.capa_nc.effectiveness_rate ?? 0}%</div>
-                <div className="text-[11px] text-muted-foreground">{stats?.capa_nc.total_capas ?? 0} Phiếu khắc phục</div>
+                <div className="mt-2 text-lg font-bold">
+                  {stats?.capa_nc.effectiveness_rate ?? 0}%
+                </div>
+                <div className="text-[11px] text-muted-foreground">
+                  {stats?.capa_nc.total_capas ?? 0} Phiếu khắc phục
+                </div>
               </div>
 
               <div className="rounded-xl border bg-card p-3 shadow-sm">
@@ -978,8 +1150,12 @@ function ExecutiveDashboard() {
                   <span>8. Đánh giá nội bộ & Đào tạo</span>
                   <Users className="h-3.5 w-3.5 text-teal-600" />
                 </div>
-                <div className="mt-2 text-lg font-bold">{stats?.audit_training_health.training_pass_rate ?? 0}%</div>
-                <div className="text-[11px] text-muted-foreground">{stats?.audit_training_health.total_audits ?? 0} Đợt đánh giá</div>
+                <div className="mt-2 text-lg font-bold">
+                  {stats?.audit_training_health.training_pass_rate ?? 0}%
+                </div>
+                <div className="text-[11px] text-muted-foreground">
+                  {stats?.audit_training_health.total_audits ?? 0} Đợt đánh giá
+                </div>
               </div>
             </div>
           </div>
@@ -991,10 +1167,18 @@ function ExecutiveDashboard() {
         <div className="space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-muted/40 p-4 rounded-xl border">
             <div>
-              <h3 className="font-bold text-foreground text-sm">Mục Tiêu An Toàn Thực Phẩm & Chất Lượng Năm 2026</h3>
-              <p className="text-xs text-muted-foreground">Theo dõi và đo lường định lượng các chỉ tiêu chất lượng</p>
+              <h3 className="font-bold text-foreground text-sm">
+                Mục Tiêu An Toàn Thực Phẩm & Chất Lượng Năm 2026
+              </h3>
+              <p className="text-xs text-muted-foreground">
+                Theo dõi và đo lường định lượng các chỉ tiêu chất lượng
+              </p>
             </div>
-            <Button size="sm" onClick={() => setShowAddObjectiveModal(true)} className="gap-1.5 text-xs w-full sm:w-auto">
+            <Button
+              size="sm"
+              onClick={() => setShowAddObjectiveModal(true)}
+              className="gap-1.5 text-xs w-full sm:w-auto"
+            >
               <Plus className="h-3.5 w-3.5" /> Thêm Mục Tiêu Mới
             </Button>
           </div>
@@ -1026,7 +1210,10 @@ function ExecutiveDashboard() {
                 </thead>
                 <tbody className="divide-y divide-border">
                   {objectives.map((obj) => {
-                    const progressPct = obj.target_value > 0 ? Math.min(100, Math.round((obj.actual_value / obj.target_value) * 100)) : 100;
+                    const progressPct =
+                      obj.target_value > 0
+                        ? Math.min(100, Math.round((obj.actual_value / obj.target_value) * 100))
+                        : 100;
                     return (
                       <tr key={obj.objective_id} className="hover:bg-muted/20 transition">
                         <td className="py-3 px-4 font-bold text-primary">{obj.objective_code}</td>
@@ -1038,17 +1225,29 @@ function ExecutiveDashboard() {
                             </div>
                           )}
                         </td>
-                        <td className="py-3 px-4 text-muted-foreground font-mono">{obj.clause_reference}</td>
+                        <td className="py-3 px-4 text-muted-foreground font-mono">
+                          {obj.clause_reference}
+                        </td>
                         <td className="py-3 px-4">{obj.department}</td>
-                        <td className="py-3 px-4 text-center font-bold">{obj.target_value} {obj.unit}</td>
-                        <td className="py-3 px-4 text-center font-bold text-emerald-600">{obj.actual_value} {obj.unit}</td>
+                        <td className="py-3 px-4 text-center font-bold">
+                          {obj.target_value} {obj.unit}
+                        </td>
+                        <td className="py-3 px-4 text-center font-bold text-emerald-600">
+                          {obj.actual_value} {obj.unit}
+                        </td>
                         <td className="py-3 px-4 text-center">
                           <div className="w-20 mx-auto">
-                            <div className="text-[10px] text-muted-foreground font-semibold mb-1">{progressPct}%</div>
+                            <div className="text-[10px] text-muted-foreground font-semibold mb-1">
+                              {progressPct}%
+                            </div>
                             <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
                               <div
                                 className={`h-full ${
-                                  progressPct >= 100 ? "bg-emerald-500" : progressPct >= 75 ? "bg-primary" : "bg-amber-500"
+                                  progressPct >= 100
+                                    ? "bg-emerald-500"
+                                    : progressPct >= 75
+                                      ? "bg-primary"
+                                      : "bg-amber-500"
                                 }`}
                                 style={{ width: `${progressPct}%` }}
                               />
@@ -1061,14 +1260,20 @@ function ExecutiveDashboard() {
                               obj.status === "ACHIEVED"
                                 ? "bg-emerald-500/10 text-emerald-600"
                                 : obj.status === "ON_TRACK"
-                                ? "bg-primary/10 text-primary"
-                                : "bg-amber-500/10 text-amber-600"
+                                  ? "bg-primary/10 text-primary"
+                                  : "bg-amber-500/10 text-amber-600"
                             }`}
                           >
-                            {obj.status === "ACHIEVED" ? "ĐẠT MỤC TIÊU" : obj.status === "ON_TRACK" ? "ĐANG THỰC HIỆN" : "CẦN CHÚ Ý"}
+                            {obj.status === "ACHIEVED"
+                              ? "ĐẠT MỤC TIÊU"
+                              : obj.status === "ON_TRACK"
+                                ? "ĐANG THỰC HIỆN"
+                                : "CẦN CHÚ Ý"}
                           </span>
                         </td>
-                        <td className="py-3 px-4 text-muted-foreground">{obj.responsible_person}</td>
+                        <td className="py-3 px-4 text-muted-foreground">
+                          {obj.responsible_person}
+                        </td>
                       </tr>
                     );
                   })}
@@ -1080,8 +1285,8 @@ function ExecutiveDashboard() {
       )}
 
       {/* ==================== TAB 3: XEM XÉT CỦA LÃNH ĐẠO ==================== */}
-      {activeTab === "reviews" && (
-        reviews.length === 0 ? (
+      {activeTab === "reviews" &&
+        (reviews.length === 0 ? (
           <EmptyState
             icon={Calendar}
             title="Chưa có biên bản xem xét của lãnh đạo"
@@ -1096,7 +1301,12 @@ function ExecutiveDashboard() {
             <div className="rounded-2xl border bg-card p-4 shadow-sm space-y-3">
               <div className="flex items-center justify-between">
                 <h3 className="font-bold text-foreground text-sm">Các Kỳ Họp Xem Xét</h3>
-                <Button size="sm" variant="outline" onClick={() => setShowAddReviewModal(true)} className="gap-1 text-xs">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setShowAddReviewModal(true)}
+                  className="gap-1 text-xs"
+                >
                   <Plus className="h-3 w-3" /> Lập Biên Bản
                 </Button>
               </div>
@@ -1114,12 +1324,17 @@ function ExecutiveDashboard() {
                   >
                     <div className="flex items-center justify-between font-bold">
                       <span className="text-primary">{rev.review_code}</span>
-                      <Badge variant="outline" className="text-[10px] bg-emerald-500/10 text-emerald-600">
+                      <Badge
+                        variant="outline"
+                        className="text-[10px] bg-emerald-500/10 text-emerald-600"
+                      >
                         {rev.status === "APPROVED" ? "ĐÃ PHÊ DUYỆT" : rev.status}
                       </Badge>
                     </div>
                     <div className="mt-1 font-semibold text-foreground">{rev.title}</div>
-                    <div className="mt-1 text-[11px] text-muted-foreground">Ngày họp: {rev.meeting_date}</div>
+                    <div className="mt-1 text-[11px] text-muted-foreground">
+                      Ngày họp: {rev.meeting_date}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -1132,10 +1347,14 @@ function ExecutiveDashboard() {
                   <div>
                     <div className="flex items-center gap-2">
                       <Badge className="bg-primary">{selectedReview.review_code}</Badge>
-                      <h3 className="font-bold text-foreground text-sm sm:text-base">{selectedReview.title}</h3>
+                      <h3 className="font-bold text-foreground text-sm sm:text-base">
+                        {selectedReview.title}
+                      </h3>
                     </div>
                     <div className="mt-1 text-xs text-muted-foreground">
-                      Chủ trì: <b>{selectedReview.chairperson_name}</b> · Thư ký: <b>{selectedReview.secretary_name}</b> · Ngày: <b>{selectedReview.meeting_date}</b>
+                      Chủ trì: <b>{selectedReview.chairperson_name}</b> · Thư ký:{" "}
+                      <b>{selectedReview.secretary_name}</b> · Ngày:{" "}
+                      <b>{selectedReview.meeting_date}</b>
                     </div>
                   </div>
                   <Button
@@ -1154,35 +1373,63 @@ function ExecutiveDashboard() {
                   </h4>
                   <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 text-xs">
                     <div className="rounded-lg border p-2.5 bg-muted/20">
-                      <div className="font-semibold text-foreground">1. Đánh giá nội bộ & Pháp lý:</div>
-                      <div className="text-muted-foreground mt-0.5">{selectedReview.scope_and_inputs?.audit_results || selectedReview.scope_and_inputs?.audit_summary}</div>
+                      <div className="font-semibold text-foreground">
+                        1. Đánh giá nội bộ & Pháp lý:
+                      </div>
+                      <div className="text-muted-foreground mt-0.5">
+                        {selectedReview.scope_and_inputs?.audit_results ||
+                          selectedReview.scope_and_inputs?.audit_summary}
+                      </div>
                     </div>
                     <div className="rounded-lg border p-2.5 bg-muted/20">
                       <div className="font-semibold text-foreground">2. Phản hồi khách hàng:</div>
-                      <div className="text-muted-foreground mt-0.5">{selectedReview.scope_and_inputs?.customer_feedback}</div>
+                      <div className="text-muted-foreground mt-0.5">
+                        {selectedReview.scope_and_inputs?.customer_feedback}
+                      </div>
                     </div>
                     <div className="rounded-lg border p-2.5 bg-muted/20">
-                      <div className="font-semibold text-foreground">3. Hiệu năng điểm CCP & Vệ sinh PRP:</div>
-                      <div className="text-muted-foreground mt-0.5">{selectedReview.scope_and_inputs?.ccp_prp_status || selectedReview.scope_and_inputs?.ccp_prp_performance}</div>
+                      <div className="font-semibold text-foreground">
+                        3. Hiệu năng điểm CCP & Vệ sinh PRP:
+                      </div>
+                      <div className="text-muted-foreground mt-0.5">
+                        {selectedReview.scope_and_inputs?.ccp_prp_status ||
+                          selectedReview.scope_and_inputs?.ccp_prp_performance}
+                      </div>
                     </div>
                     <div className="rounded-lg border p-2.5 bg-muted/20">
-                      <div className="font-semibold text-foreground">4. Hiệu lực hành động khắc phục:</div>
-                      <div className="text-muted-foreground mt-0.5">{selectedReview.scope_and_inputs?.capa_effectiveness}</div>
+                      <div className="font-semibold text-foreground">
+                        4. Hiệu lực hành động khắc phục:
+                      </div>
+                      <div className="text-muted-foreground mt-0.5">
+                        {selectedReview.scope_and_inputs?.capa_effectiveness}
+                      </div>
                     </div>
                     <div className="rounded-lg border p-2.5 bg-muted/20">
-                      <div className="font-semibold text-foreground">5. Nhà cung cấp & Tiếp nhận nguyên liệu:</div>
-                      <div className="text-muted-foreground mt-0.5">{selectedReview.scope_and_inputs?.supplier_performance || selectedReview.scope_and_inputs?.supplier_status}</div>
+                      <div className="font-semibold text-foreground">
+                        5. Nhà cung cấp & Tiếp nhận nguyên liệu:
+                      </div>
+                      <div className="text-muted-foreground mt-0.5">
+                        {selectedReview.scope_and_inputs?.supplier_performance ||
+                          selectedReview.scope_and_inputs?.supplier_status}
+                      </div>
                     </div>
                     <div className="rounded-lg border p-2.5 bg-muted/20">
-                      <div className="font-semibold text-foreground">6. Nguồn lực & Thay đổi bối cảnh:</div>
-                      <div className="text-muted-foreground mt-0.5">{selectedReview.scope_and_inputs?.resource_needs || selectedReview.scope_and_inputs?.resource_adequacy}</div>
+                      <div className="font-semibold text-foreground">
+                        6. Nguồn lực & Thay đổi bối cảnh:
+                      </div>
+                      <div className="text-muted-foreground mt-0.5">
+                        {selectedReview.scope_and_inputs?.resource_needs ||
+                          selectedReview.scope_and_inputs?.resource_adequacy}
+                      </div>
                     </div>
                   </div>
                 </div>
 
                 {/* Nội dung biên bản */}
                 <div>
-                  <h4 className="text-xs font-bold uppercase text-primary tracking-wider mb-2">Nội Dung Biên Bản Cuộc Họp</h4>
+                  <h4 className="text-xs font-bold uppercase text-primary tracking-wider mb-2">
+                    Nội Dung Biên Bản Cuộc Họp
+                  </h4>
                   <div className="rounded-xl border p-3 text-xs leading-relaxed text-foreground bg-muted/10 whitespace-pre-line">
                     {selectedReview.meeting_minutes}
                   </div>
@@ -1199,33 +1446,33 @@ function ExecutiveDashboard() {
                         <tr>
                           <th className="py-2.5 px-3">Quyết định / Kế hoạch cải tiến</th>
                           <th className="py-2.5 px-3">Phụ trách</th>
-                        <th className="py-2.5 px-3">Hạn chót</th>
-                        <th className="py-2.5 px-3">Nguồn lực</th>
-                        <th className="py-2.5 px-3 text-center">Trạng thái</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-border">
-                      {selectedReview.decisions_and_actions?.map((dec, i) => (
-                        <tr key={i}>
-                          <td className="py-2.5 px-3 font-medium">{dec.decision_text}</td>
-                          <td className="py-2.5 px-3">{dec.assigned_to}</td>
-                          <td className="py-2.5 px-3 font-mono">{dec.deadline}</td>
-                          <td className="py-2.5 px-3">{dec.resources_allocated}</td>
-                          <td className="py-2.5 px-3 text-center">
-                            <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-600">
-                              {dec.status === "COMPLETED" ? "ĐÃ HOÀN THÀNH" : "ĐANG THỰC HIỆN"}
-                            </span>
-                          </td>
+                          <th className="py-2.5 px-3">Hạn chót</th>
+                          <th className="py-2.5 px-3">Nguồn lực</th>
+                          <th className="py-2.5 px-3 text-center">Trạng thái</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody className="divide-y divide-border">
+                        {selectedReview.decisions_and_actions?.map((dec, i) => (
+                          <tr key={i}>
+                            <td className="py-2.5 px-3 font-medium">{dec.decision_text}</td>
+                            <td className="py-2.5 px-3">{dec.assigned_to}</td>
+                            <td className="py-2.5 px-3 font-mono">{dec.deadline}</td>
+                            <td className="py-2.5 px-3">{dec.resources_allocated}</td>
+                            <td className="py-2.5 px-3 text-center">
+                              <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-600">
+                                {dec.status === "COMPLETED" ? "ĐÃ HOÀN THÀNH" : "ĐANG THỰC HIỆN"}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
-        </div>
-      ))}
+            )}
+          </div>
+        ))}
 
       {/* ==================== TAB 4: TRỢ LÝ TRÍ TUỆ NHÂN TẠO ATTP ==================== */}
       {activeTab === "ai_studio" && (
@@ -1238,12 +1485,25 @@ function ExecutiveDashboard() {
                   <ShieldCheck className="h-4 w-4" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-foreground text-sm">Dự Báo Độ Sẵn Sàng Tái Đánh Giá Chứng Nhận</h3>
-                  <p className="text-xs text-muted-foreground">Tổng hợp dữ liệu đối chiếu chuẩn ISO 22000:2018</p>
+                  <h3 className="font-bold text-foreground text-sm">
+                    Dự Báo Độ Sẵn Sàng Tái Đánh Giá Chứng Nhận
+                  </h3>
+                  <p className="text-xs text-muted-foreground">
+                    Tổng hợp dữ liệu đối chiếu chuẩn ISO 22000:2018
+                  </p>
                 </div>
               </div>
-              <Button size="sm" onClick={runAuditForecast} disabled={forecastLoading} className="gap-1.5 text-xs w-full sm:w-auto">
-                {forecastLoading ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+              <Button
+                size="sm"
+                onClick={runAuditForecast}
+                disabled={forecastLoading}
+                className="gap-1.5 text-xs w-full sm:w-auto"
+              >
+                {forecastLoading ? (
+                  <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Sparkles className="h-3.5 w-3.5" />
+                )}
                 Chạy Dự Báo
               </Button>
             </div>
@@ -1252,16 +1512,23 @@ function ExecutiveDashboard() {
               <div className="space-y-3 rounded-xl border bg-primary/5 p-4 text-xs">
                 <div className="flex items-center justify-between">
                   <span className="font-semibold text-foreground">Điểm Sẵn Sàng:</span>
-                  <span className="text-xl font-extrabold text-primary">{forecastResult.readiness_percentage}%</span>
+                  <span className="text-xl font-extrabold text-primary">
+                    {forecastResult.readiness_percentage}%
+                  </span>
                 </div>
-                <p className="text-muted-foreground leading-relaxed">{forecastResult.overall_assessment}</p>
+                <p className="text-muted-foreground leading-relaxed">
+                  {forecastResult.overall_assessment}
+                </p>
 
                 <div className="mt-3">
                   <span className="font-bold text-destructive">Điểm Cần Khắc Phục Ngay:</span>
                   <ul className="mt-1 space-y-1 pl-4 list-disc text-muted-foreground">
                     {forecastResult.top_critical_risks?.map((r: any, idx: number) => (
                       <li key={idx}>
-                        <b>{r.clause} - {r.risk_title}:</b> {r.remediation}
+                        <b>
+                          {r.clause} - {r.risk_title}:
+                        </b>{" "}
+                        {r.remediation}
                       </li>
                     ))}
                   </ul>
@@ -1269,7 +1536,8 @@ function ExecutiveDashboard() {
               </div>
             ) : (
               <div className="rounded-xl border border-dashed p-6 text-center text-xs text-muted-foreground">
-                Nhấn "Chạy Dự Báo" để phân tích độ sẵn sàng cho đợt tái đánh giá chứng nhận ISO 22000:2018.
+                Nhấn "Chạy Dự Báo" để phân tích độ sẵn sàng cho đợt tái đánh giá chứng nhận ISO
+                22000:2018.
               </div>
             )}
           </div>
@@ -1282,12 +1550,26 @@ function ExecutiveDashboard() {
                   <FileText className="h-4 w-4" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-foreground text-sm">Tự Động Sinh Báo Cáo Xem Xét Lãnh Đạo</h3>
-                  <p className="text-xs text-muted-foreground">Tổng hợp văn bản chuẩn hóa theo Điều khoản 9.3</p>
+                  <h3 className="font-bold text-foreground text-sm">
+                    Tự Động Sinh Báo Cáo Xem Xét Lãnh Đạo
+                  </h3>
+                  <p className="text-xs text-muted-foreground">
+                    Tổng hợp văn bản chuẩn hóa theo Điều khoản 9.3
+                  </p>
                 </div>
               </div>
-              <Button size="sm" variant="outline" onClick={runGenerateReport} disabled={reportLoading} className="gap-1.5 text-xs w-full sm:w-auto">
-                {reportLoading ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5 text-emerald-600" />}
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={runGenerateReport}
+                disabled={reportLoading}
+                className="gap-1.5 text-xs w-full sm:w-auto"
+              >
+                {reportLoading ? (
+                  <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Sparkles className="h-3.5 w-3.5 text-emerald-600" />
+                )}
                 Sinh Báo Cáo
               </Button>
             </div>
@@ -1295,7 +1577,9 @@ function ExecutiveDashboard() {
             {reportResult ? (
               <div className="space-y-3 rounded-xl border bg-emerald-500/5 p-4 text-xs">
                 <div className="font-bold text-foreground">{reportResult.report_title}</div>
-                <p className="text-muted-foreground leading-relaxed">{reportResult.executive_summary}</p>
+                <p className="text-muted-foreground leading-relaxed">
+                  {reportResult.executive_summary}
+                </p>
                 <div className="font-semibold text-emerald-700 dark:text-emerald-300">
                   Đề xuất nguồn lực: {reportResult.resource_allocation_advice}
                 </div>
@@ -1311,19 +1595,31 @@ function ExecutiveDashboard() {
                       chairperson_name: "Tổng Giám Đốc Trần Văn Hùng",
                       secretary_name: "Trưởng Ban ISO Nguyễn Văn An",
                       participants: [
-                        { name: "Trần Văn Hùng", role: "Tổng Giám Đốc", dept: "Ban Giám Đốc", attendance: "CÓ MẶT" },
-                        { name: "Nguyễn Văn An", role: "Trưởng Ban ISO", dept: "Phòng QA", attendance: "CÓ MẶT" },
+                        {
+                          name: "Trần Văn Hùng",
+                          role: "Tổng Giám Đốc",
+                          dept: "Ban Giám Đốc",
+                          attendance: "CÓ MẶT",
+                        },
+                        {
+                          name: "Nguyễn Văn An",
+                          role: "Trưởng Ban ISO",
+                          dept: "Phòng QA",
+                          attendance: "CÓ MẶT",
+                        },
                       ],
                       scope_and_inputs: reportResult.inputs_review_synthesis,
                       meeting_minutes: reportResult.full_markdown_report,
-                      decisions_and_actions: reportResult.outputs_decisions_recommendations?.map((d: any, i: number) => ({
-                        action_id: `ACT-AI-${i}`,
-                        decision_text: d.decision,
-                        assigned_to: d.responsible,
-                        deadline: "2026-12-31",
-                        resources_allocated: "Phê duyệt nguồn lực",
-                        status: "IN_PROGRESS",
-                      })),
+                      decisions_and_actions: reportResult.outputs_decisions_recommendations?.map(
+                        (d: any, i: number) => ({
+                          action_id: `ACT-AI-${i}`,
+                          decision_text: d.decision,
+                          assigned_to: d.responsible,
+                          deadline: "2026-12-31",
+                          resources_allocated: "Phê duyệt nguồn lực",
+                          status: "IN_PROGRESS",
+                        }),
+                      ),
                       status: "APPROVED",
                     };
                     triggerPrintManagementReview(sampleReview);
@@ -1346,8 +1642,12 @@ function ExecutiveDashboard() {
                 <Bot className="h-4 w-4" />
               </div>
               <div>
-                <h3 className="font-bold text-foreground text-sm">Cố Vấn AI Phân Tích Hồ Sơ Dữ Liệu ATTP Cho Ban Lãnh Đạo</h3>
-                <p className="text-xs text-muted-foreground">Truy vấn và đối chiếu chéo thông tin giữa các bộ phận chuyên môn</p>
+                <h3 className="font-bold text-foreground text-sm">
+                  Cố Vấn AI Phân Tích Hồ Sơ Dữ Liệu ATTP Cho Ban Lãnh Đạo
+                </h3>
+                <p className="text-xs text-muted-foreground">
+                  Truy vấn và đối chiếu chéo thông tin giữa các bộ phận chuyên môn
+                </p>
               </div>
             </div>
 
@@ -1355,11 +1655,16 @@ function ExecutiveDashboard() {
             <div className="rounded-xl border bg-muted/20 p-3 sm:p-4 space-y-3 max-h-[280px] overflow-y-auto">
               {chatHistory.length === 0 ? (
                 <div className="text-center py-6 text-xs text-muted-foreground">
-                  Đặt câu hỏi cho Cố vấn AI, ví dụ: <i>"Phân tích tình hình kiểm soát các điểm CCP trong kỳ vừa qua?"</i> hoặc <i>"Có nhà cung cấp nào rủi ro cao cần kiểm tra lại không?"</i>
+                  Đặt câu hỏi cho Cố vấn AI, ví dụ:{" "}
+                  <i>"Phân tích tình hình kiểm soát các điểm CCP trong kỳ vừa qua?"</i> hoặc{" "}
+                  <i>"Có nhà cung cấp nào rủi ro cao cần kiểm tra lại không?"</i>
                 </div>
               ) : (
                 chatHistory.map((msg, i) => (
-                  <div key={i} className={`flex flex-col ${msg.role === "user" ? "items-end" : "items-start"}`}>
+                  <div
+                    key={i}
+                    className={`flex flex-col ${msg.role === "user" ? "items-end" : "items-start"}`}
+                  >
                     <div
                       className={`max-w-[90%] sm:max-w-[80%] rounded-xl p-3 text-xs leading-relaxed ${
                         msg.role === "user"
@@ -1370,7 +1675,8 @@ function ExecutiveDashboard() {
                       {msg.text}
                       {msg.citations && msg.citations.length > 0 && (
                         <div className="mt-2 pt-2 border-t border-border/50 text-[10px] opacity-80">
-                          <b>Căn cứ hồ sơ:</b> {msg.citations.map((c: any) => `${c.module} (${c.standard})`).join(", ")}
+                          <b>Căn cứ hồ sơ:</b>{" "}
+                          {msg.citations.map((c: any) => `${c.module} (${c.standard})`).join(", ")}
                         </div>
                       )}
                     </div>
@@ -1387,8 +1693,17 @@ function ExecutiveDashboard() {
                 onChange={(e) => setChatQuestion(e.target.value)}
                 className="text-xs"
               />
-              <Button type="submit" size="sm" disabled={chatLoading} className="gap-1 text-xs shrink-0">
-                {chatLoading ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
+              <Button
+                type="submit"
+                size="sm"
+                disabled={chatLoading}
+                className="gap-1 text-xs shrink-0"
+              >
+                {chatLoading ? (
+                  <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Send className="h-3.5 w-3.5" />
+                )}
                 Gửi
               </Button>
             </form>
@@ -1404,23 +1719,43 @@ function ExecutiveDashboard() {
               <h3 className="font-bold text-foreground text-sm flex items-center gap-2">
                 <Target className="h-4 w-4 text-primary" /> Lập Mục Tiêu Chất Lượng & ATTP Mới
               </h3>
-              <button onClick={() => setShowAddObjectiveModal(false)} className="text-muted-foreground hover:text-foreground">
+              <button
+                onClick={() => setShowAddObjectiveModal(false)}
+                className="text-muted-foreground hover:text-foreground"
+              >
                 <X className="h-4 w-4" />
               </button>
             </div>
             <form onSubmit={handleCreateObjective} className="space-y-3 text-xs">
               <div>
                 <label className="font-semibold">Mã Mục Tiêu *</label>
-                <Input required placeholder="OBJ-2026-06" value={newObjCode} onChange={(e) => setNewObjCode(e.target.value)} className="mt-1 text-xs" />
+                <Input
+                  required
+                  placeholder="OBJ-2026-06"
+                  value={newObjCode}
+                  onChange={(e) => setNewObjCode(e.target.value)}
+                  className="mt-1 text-xs"
+                />
               </div>
               <div>
                 <label className="font-semibold">Tên Chỉ Tiêu Chất Lượng / ATTP *</label>
-                <Input required placeholder="Tỷ lệ tuân thủ GMP phân xưởng >= 98%" value={newObjMetric} onChange={(e) => setNewObjMetric(e.target.value)} className="mt-1 text-xs" />
+                <Input
+                  required
+                  placeholder="Tỷ lệ tuân thủ GMP phân xưởng >= 98%"
+                  value={newObjMetric}
+                  onChange={(e) => setNewObjMetric(e.target.value)}
+                  className="mt-1 text-xs"
+                />
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <div>
                   <label className="font-semibold">Căn Cứ Tiêu Chuẩn</label>
-                  <Input placeholder="Mục tiêu ATTP / Kiểm soát vận hành" value={newObjClause} onChange={(e) => setNewObjClause(e.target.value)} className="mt-1 text-xs" />
+                  <Input
+                    placeholder="Mục tiêu ATTP / Kiểm soát vận hành"
+                    value={newObjClause}
+                    onChange={(e) => setNewObjClause(e.target.value)}
+                    className="mt-1 text-xs"
+                  />
                 </div>
                 <div>
                   <label className="font-semibold">Phòng Ban Chủ Trì</label>
@@ -1440,28 +1775,62 @@ function ExecutiveDashboard() {
               <div className="grid grid-cols-3 gap-2">
                 <div>
                   <label className="font-semibold">Kế Hoạch</label>
-                  <Input type="number" step="0.1" value={newObjTarget} onChange={(e) => setNewObjTarget(Number(e.target.value))} className="mt-1 text-xs" />
+                  <Input
+                    type="number"
+                    step="0.1"
+                    value={newObjTarget}
+                    onChange={(e) => setNewObjTarget(Number(e.target.value))}
+                    className="mt-1 text-xs"
+                  />
                 </div>
                 <div>
                   <label className="font-semibold">Thực Tế</label>
-                  <Input type="number" step="0.1" value={newObjActual} onChange={(e) => setNewObjActual(Number(e.target.value))} className="mt-1 text-xs" />
+                  <Input
+                    type="number"
+                    step="0.1"
+                    value={newObjActual}
+                    onChange={(e) => setNewObjActual(Number(e.target.value))}
+                    className="mt-1 text-xs"
+                  />
                 </div>
                 <div>
                   <label className="font-semibold">Đơn Vị</label>
-                  <Input value={newObjUnit} onChange={(e) => setNewObjUnit(e.target.value)} className="mt-1 text-xs" />
+                  <Input
+                    value={newObjUnit}
+                    onChange={(e) => setNewObjUnit(e.target.value)}
+                    className="mt-1 text-xs"
+                  />
                 </div>
               </div>
               <div>
                 <label className="font-semibold">Kế Hoạch / Biện Pháp Thực Hiện</label>
-                <Input placeholder="Biện pháp cụ thể để đạt chỉ tiêu..." value={newObjAction} onChange={(e) => setNewObjAction(e.target.value)} className="mt-1 text-xs" />
+                <Input
+                  placeholder="Biện pháp cụ thể để đạt chỉ tiêu..."
+                  value={newObjAction}
+                  onChange={(e) => setNewObjAction(e.target.value)}
+                  className="mt-1 text-xs"
+                />
               </div>
               <div>
                 <label className="font-semibold">Người Chịu Trách Nhiệm</label>
-                <Input value={newObjPerson} onChange={(e) => setNewObjPerson(e.target.value)} className="mt-1 text-xs" />
+                <Input
+                  value={newObjPerson}
+                  onChange={(e) => setNewObjPerson(e.target.value)}
+                  className="mt-1 text-xs"
+                />
               </div>
               <div className="flex justify-end gap-2 pt-3 border-t">
-                <Button type="button" variant="outline" size="sm" onClick={() => setShowAddObjectiveModal(false)}>Hủy</Button>
-                <Button type="submit" size="sm">Lưu Mục Tiêu</Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowAddObjectiveModal(false)}
+                >
+                  Hủy
+                </Button>
+                <Button type="submit" size="sm">
+                  Lưu Mục Tiêu
+                </Button>
               </div>
             </form>
           </div>
@@ -1476,7 +1845,10 @@ function ExecutiveDashboard() {
               <h3 className="font-bold text-foreground text-sm flex items-center gap-2">
                 <Calendar className="h-4 w-4 text-primary" /> Lập Biên Bản Họp Xem Xét Của Lãnh Đạo
               </h3>
-              <button onClick={() => setShowAddReviewModal(false)} className="text-muted-foreground hover:text-foreground">
+              <button
+                onClick={() => setShowAddReviewModal(false)}
+                className="text-muted-foreground hover:text-foreground"
+              >
                 <X className="h-4 w-4" />
               </button>
             </div>
@@ -1484,25 +1856,50 @@ function ExecutiveDashboard() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <div>
                   <label className="font-semibold">Mã Kỳ Họp *</label>
-                  <Input required placeholder="MR-2026-Q2" value={newRevCode} onChange={(e) => setNewRevCode(e.target.value)} className="mt-1 text-xs" />
+                  <Input
+                    required
+                    placeholder="MR-2026-Q2"
+                    value={newRevCode}
+                    onChange={(e) => setNewRevCode(e.target.value)}
+                    className="mt-1 text-xs"
+                  />
                 </div>
                 <div>
                   <label className="font-semibold">Ngày Họp *</label>
-                  <Input type="date" value={newRevDate} onChange={(e) => setNewRevDate(e.target.value)} className="mt-1 text-xs" />
+                  <Input
+                    type="date"
+                    value={newRevDate}
+                    onChange={(e) => setNewRevDate(e.target.value)}
+                    className="mt-1 text-xs"
+                  />
                 </div>
               </div>
               <div>
                 <label className="font-semibold">Tiêu Đề Cuộc Họp *</label>
-                <Input required placeholder="Họp Xem Xét Của Lãnh Đạo Quý 2/2026 Hệ Thống FSMS" value={newRevTitle} onChange={(e) => setNewRevTitle(e.target.value)} className="mt-1 text-xs" />
+                <Input
+                  required
+                  placeholder="Họp Xem Xét Của Lãnh Đạo Quý 2/2026 Hệ Thống FSMS"
+                  value={newRevTitle}
+                  onChange={(e) => setNewRevTitle(e.target.value)}
+                  className="mt-1 text-xs"
+                />
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <div>
                   <label className="font-semibold">Chủ Trì (Tổng Giám Đốc)</label>
-                  <Input value={newRevChair} onChange={(e) => setNewRevChair(e.target.value)} className="mt-1 text-xs" />
+                  <Input
+                    value={newRevChair}
+                    onChange={(e) => setNewRevChair(e.target.value)}
+                    className="mt-1 text-xs"
+                  />
                 </div>
                 <div>
                   <label className="font-semibold">Thư Ký (Trưởng Ban ISO)</label>
-                  <Input value={newRevSec} onChange={(e) => setNewRevSec(e.target.value)} className="mt-1 text-xs" />
+                  <Input
+                    value={newRevSec}
+                    onChange={(e) => setNewRevSec(e.target.value)}
+                    className="mt-1 text-xs"
+                  />
                 </div>
               </div>
               <div>
@@ -1516,8 +1913,17 @@ function ExecutiveDashboard() {
                 />
               </div>
               <div className="flex justify-end gap-2 pt-3 border-t">
-                <Button type="button" variant="outline" size="sm" onClick={() => setShowAddReviewModal(false)}>Hủy</Button>
-                <Button type="submit" size="sm">Tạo Biên Bản</Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowAddReviewModal(false)}
+                >
+                  Hủy
+                </Button>
+                <Button type="submit" size="sm">
+                  Tạo Biên Bản
+                </Button>
               </div>
             </form>
           </div>
@@ -1531,9 +1937,14 @@ function ExecutiveDashboard() {
             <div className="flex items-center justify-between border-b pb-3">
               <div className="flex items-center gap-2">
                 <Workflow className="h-5 w-5 text-primary shrink-0" />
-                <h3 className="font-bold text-foreground text-sm">Lưu Đồ Quy Trình Xem Xét Của Lãnh Đạo</h3>
+                <h3 className="font-bold text-foreground text-sm">
+                  Lưu Đồ Quy Trình Xem Xét Của Lãnh Đạo
+                </h3>
               </div>
-              <button onClick={() => setShowWorkflowModal(false)} className="text-muted-foreground hover:text-foreground">
+              <button
+                onClick={() => setShowWorkflowModal(false)}
+                className="text-muted-foreground hover:text-foreground"
+              >
                 <X className="h-4 w-4" />
               </button>
             </div>
@@ -1542,49 +1953,67 @@ function ExecutiveDashboard() {
               <div className="rounded-xl border p-3 bg-muted/20 space-y-1">
                 <div className="flex items-center justify-between font-bold text-primary">
                   <span>BƯỚC 1: THU THẬP 6 ĐẦU VÀO</span>
-                  <Badge variant="outline" className="text-[10px]">Đầu Vào</Badge>
+                  <Badge variant="outline" className="text-[10px]">
+                    Đầu Vào
+                  </Badge>
                 </div>
-                <p className="text-muted-foreground leading-relaxed">Trưởng ban ISO tổng hợp kết quả ĐGNB, CAPA, điểm CCP/PRP, ý kiến khách hàng và nhà cung ứng.</p>
+                <p className="text-muted-foreground leading-relaxed">
+                  Trưởng ban ISO tổng hợp kết quả ĐGNB, CAPA, điểm CCP/PRP, ý kiến khách hàng và nhà
+                  cung ứng.
+                </p>
               </div>
 
               <div className="rounded-xl border p-3 bg-muted/20 space-y-1">
                 <div className="flex items-center justify-between font-bold text-primary">
                   <span>BƯỚC 2: HỌP BAN LÃNH ĐẠO</span>
-                  <Badge variant="outline" className="text-[10px]">Định Kỳ</Badge>
+                  <Badge variant="outline" className="text-[10px]">
+                    Định Kỳ
+                  </Badge>
                 </div>
-                <p className="text-muted-foreground leading-relaxed">Tổng Giám Đốc chủ trì, xem xét tính phù hợp, thỏa đáng và hiệu lực của hệ thống FSMS.</p>
+                <p className="text-muted-foreground leading-relaxed">
+                  Tổng Giám Đốc chủ trì, xem xét tính phù hợp, thỏa đáng và hiệu lực của hệ thống
+                  FSMS.
+                </p>
               </div>
 
               <div className="rounded-xl border p-3 bg-muted/20 space-y-1">
                 <div className="flex items-center justify-between font-bold text-primary">
                   <span>BƯỚC 3: RA NGHỊ QUYẾT ĐẦU RA</span>
-                  <Badge variant="outline" className="text-[10px]">Đầu Ra</Badge>
+                  <Badge variant="outline" className="text-[10px]">
+                    Đầu Ra
+                  </Badge>
                 </div>
-                <p className="text-muted-foreground leading-relaxed">Phê duyệt quyết định cải tiến hệ thống, phân bổ ngân sách và nguồn lực thiết bị kiểm nghiệm.</p>
+                <p className="text-muted-foreground leading-relaxed">
+                  Phê duyệt quyết định cải tiến hệ thống, phân bổ ngân sách và nguồn lực thiết bị
+                  kiểm nghiệm.
+                </p>
               </div>
 
               <div className="rounded-xl border p-3 bg-muted/20 space-y-1">
                 <div className="flex items-center justify-between font-bold text-primary">
                   <span>BƯỚC 4: GIÁM SÁT THỰC HIỆN</span>
-                  <Badge variant="outline" className="text-[10px]">Định Kỳ</Badge>
+                  <Badge variant="outline" className="text-[10px]">
+                    Định Kỳ
+                  </Badge>
                 </div>
-                <p className="text-muted-foreground leading-relaxed">Giám sát tiến độ hoàn thành các nghị quyết và báo cáo kết quả trong kỳ họp kế tiếp.</p>
+                <p className="text-muted-foreground leading-relaxed">
+                  Giám sát tiến độ hoàn thành các nghị quyết và báo cáo kết quả trong kỳ họp kế
+                  tiếp.
+                </p>
               </div>
             </div>
 
             <div className="flex justify-end pt-3 border-t">
-              <Button size="sm" onClick={() => setShowWorkflowModal(false)}>Đóng</Button>
+              <Button size="sm" onClick={() => setShowWorkflowModal(false)}>
+                Đóng
+              </Button>
             </div>
           </div>
         </div>
       )}
 
       {/* Cửa sổ hướng dẫn nghiệp vụ chuẩn mực */}
-      <ModuleGuideModal
-        module="dashboard"
-        isOpen={showGuide}
-        onClose={() => setShowGuide(false)}
-      />
+      <ModuleGuideModal module="dashboard" isOpen={showGuide} onClose={() => setShowGuide(false)} />
     </div>
   );
 }

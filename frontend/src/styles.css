@@ -97,7 +97,13 @@
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
-    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    font-family:
+      ui-sans-serif,
+      system-ui,
+      -apple-system,
+      "Segoe UI",
+      Roboto,
+      sans-serif;
   }
 }
 
@@ -106,7 +112,8 @@
     size: A4 portrait;
     margin: 10mm 12mm;
   }
-  html, body {
+  html,
+  body {
     background: #ffffff !important;
     color: #000000 !important;
     -webkit-print-color-adjust: exact !important;
@@ -114,7 +121,14 @@
     height: auto !important;
     overflow: visible !important;
   }
-  header, nav, aside, footer, button, .print\:hidden, [role="tooltip"], [data-sonner-toaster] {
+  header,
+  nav,
+  aside,
+  footer,
+  button,
+  .print\:hidden,
+  [role="tooltip"],
+  [data-sonner-toaster] {
     display: none !important;
   }
   /* Remove dark modal overlay & unclip scrollable dialogs when printing */
@@ -147,9 +161,13 @@
     max-height: none !important;
     overflow: visible !important;
   }
-  table, tr, td, th, .sig-box, .print-card {
+  table,
+  tr,
+  td,
+  th,
+  .sig-box,
+  .print-card {
     page-break-inside: avoid;
     break-inside: avoid;
   }
 }
-
