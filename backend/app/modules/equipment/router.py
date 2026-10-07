@@ -5,12 +5,12 @@ from typing import List, Optional
 from uuid import UUID
 from datetime import date, datetime, timedelta, timezone
 import os
-import shutil
 import re
 
 from app.core.database import get_db
 from app.core.demo_data import demo_seed_enabled
 from app.core.dependencies import require_roles
+from app.core.supabase_storage import upload_private_file
 from app.modules.equipment.models import Equipment, EquipmentMaintenanceLog, EquipmentCalibrationLog
 from app.modules.auth.models import User
 from app.modules.equipment.schemas import (
@@ -1220,16 +1220,16 @@ def upload_calibration_certificate(
     if ext not in allowed_exts:
         raise HTTPException(status_code=400, detail=f"Định dạng tệp không được hỗ trợ ({ext}). Cho phép: {', '.join(allowed_exts)}")
 
-    upload_dir = os.path.join(os.getcwd(), "uploads", "documents")
-    os.makedirs(upload_dir, exist_ok=True)
-
     safe_name = f"CAL-CERT-{cal_log.calibration_code}-{datetime.now().strftime('%Y%m%d%H%M%S')}{ext}"
-    safe_path = os.path.join(upload_dir, safe_name)
+    object_path = f"equipment/calibration-certificates/{cal_log.calibration_id}/{safe_name}"
+    content = file.file.read(20 * 1024 * 1024 + 1)
+    if len(content) > 20 * 1024 * 1024:
+        raise HTTPException(status_code=413, detail="Dung lượng tệp vượt giới hạn 20 MB.")
+    if not content:
+        raise HTTPException(status_code=400, detail="Tệp tải lên đang trống.")
+    upload_private_file(object_path, content, file.content_type or "application/octet-stream")
 
-    with open(safe_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
-
-    file_url = f"/api/v1/documents/files/{safe_name}"
+    file_url = f"/documents/files/{object_path}"
     cal_log.certificate_file_url = file_url
     db.commit()
     db.refresh(cal_log)

@@ -1,16 +1,15 @@
 import os
-import shutil
 import re
-from pathlib import Path
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
-from fastapi.responses import FileResponse
+from fastapi.responses import Response
 from sqlalchemy.orm import Session
 from sqlalchemy import desc, or_
 from typing import List, Optional, Dict, Any
 from uuid import UUID
 from datetime import date, datetime, timezone, timedelta
 from app.core.database import get_db
-from app.core.dependencies import require_roles
+from app.core.dependencies import get_current_user, require_roles
+from app.core.supabase_storage import download_private_file, upload_private_file
 from app.core.authorization import has_any_role, role_codes
 from app.modules.documents.models import Document, DocumentApproval, DocumentChangeRequest, DocumentDistribution, ExternalDocument, RecordRetention
 from app.modules.auth.models import User
@@ -446,11 +445,8 @@ def get_iso_clauses_matrix(
     }
 
 
-# ==================== QUẢN LÝ TỆP ĐÍNH KÈM VẬT LÝ (FILE UPLOAD / DOWNLOAD) ====================
-# Keep uploads anchored to the backend package rather than the process working
-# directory. This lets seed scripts and Uvicorn resolve the same physical files.
-DOCUMENTS_UPLOAD_DIR = Path(__file__).resolve().parents[3] / "uploads" / "documents"
-DOCUMENTS_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+# ==================== QUẢN LÝ TỆP ĐÍNH KÈM PRIVATE SUPABASE STORAGE ====================
+MAX_UPLOAD_BYTES = 20 * 1024 * 1024
 
 
 @router.post("/{document_id}/upload-file")
@@ -461,7 +457,7 @@ def upload_document_physical_file(
     current_user: User = Depends(require_roles("admin", "qa", "fst_leader", "fs_team_leader", "doc_controller")),
 ):
     """
-    Tải lên tệp đính kèm vật lý (PDF, Word, Excel...) lưu trữ trên máy chủ và cập nhật vào hồ sơ tài liệu.
+    Tải tệp lên private Supabase Storage và cập nhật liên kết hồ sơ tài liệu.
     """
     doc = db.query(Document).filter(Document.document_id == document_id).first()
     if not doc:
@@ -469,7 +465,7 @@ def upload_document_physical_file(
 
     # Kiểm tra extension
     ext = os.path.splitext(file.filename or "")[1].lower()
-    allowed_exts = [".pdf", ".docx", ".doc", ".xlsx", ".xls", ".png", ".jpg", ".jpeg"]
+    allowed_exts = [".pdf", ".docx", ".xlsx", ".png", ".jpg", ".jpeg"]
     if ext not in allowed_exts:
         raise HTTPException(
             status_code=400,
@@ -480,13 +476,18 @@ def upload_document_physical_file(
     timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
     clean_name = re.sub(r"[^\w\.-]", "_", file.filename or "attachment")
     safe_filename = f"{doc.doc_code}_{timestamp}_{clean_name}"
-    file_path = DOCUMENTS_UPLOAD_DIR / safe_filename
+    object_path = f"documents/{doc.document_id}/{safe_filename}"
+    content = file.file.read(MAX_UPLOAD_BYTES + 1)
+    if len(content) > MAX_UPLOAD_BYTES:
+        raise HTTPException(status_code=413, detail="Dung lượng tệp vượt giới hạn 20 MB.")
+    if not content:
+        raise HTTPException(status_code=400, detail="Tệp tải lên đang trống.")
+    upload_private_file(object_path, content, file.content_type or "application/octet-stream")
 
-    with open(file_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
-
-    file_size = file_path.stat().st_size
-    file_url = f"/api/v1/documents/files/{safe_filename}"
+    file_size = len(content)
+    # Relative to the configured Axios API base URL; the frontend fetches this
+    # with its JWT and opens an in-memory blob rather than exposing a public URL.
+    file_url = f"/documents/files/{object_path}"
     doc.file_url = file_url
     doc.updated_at = datetime.now(timezone.utc)
 
@@ -514,14 +515,21 @@ def upload_document_physical_file(
     }
 
 
-@router.get("/files/{filename}")
-def download_document_file(filename: str):
-    """Tải / Xem tệp tin đính kèm an toàn từ thư mục upload"""
-    clean_name = os.path.basename(filename)
-    file_path = DOCUMENTS_UPLOAD_DIR / clean_name
-    if not file_path.exists() or not file_path.is_file():
-        raise HTTPException(status_code=404, detail="Không tìm thấy tệp tin trên máy chủ")
-    return FileResponse(file_path, filename=clean_name)
+@router.get("/files/{object_path:path}")
+def download_document_file(
+    object_path: str,
+    current_user: User = Depends(get_current_user),
+):
+    """Tải private object sau khi xác thực JWT của hệ thống."""
+    if not object_path.startswith(("documents/", "equipment/")):
+        raise HTTPException(status_code=404, detail="Không tìm thấy tệp tin.")
+    content, content_type = download_private_file(object_path)
+    filename = object_path.rsplit("/", 1)[-1]
+    return Response(
+        content=content,
+        media_type=content_type,
+        headers={"Content-Disposition": f'inline; filename="{filename}"'},
+    )
 
 
 # ==================== BM01-KSTL: PHIẾU YÊU CẦU XEM XÉT TÀI LIỆU ====================

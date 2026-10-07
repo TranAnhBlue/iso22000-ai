@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from app.core.database import get_db
-from app.core.security import get_password_hash
+from app.core.security import get_password_hash, validate_password_strength
 from app.core.dependencies import get_current_user, require_roles
 from app.modules.auth.models import User, Role, Department
 from app.modules.organization.models import InterestedParty, ContextRisk, CommunicationLog, FoodSafetyTeamMember
@@ -65,6 +65,10 @@ def create_user(
     existing = db.query(User).filter(User.username == payload.username).first()
     if existing:
         raise HTTPException(status_code=400, detail="Tên đăng nhập đã tồn tại")
+
+    password_error = validate_password_strength(payload.password)
+    if password_error:
+        raise HTTPException(status_code=400, detail=password_error)
 
     role = db.query(Role).filter(
         (Role.role_code == payload.role_code.lower()) | 

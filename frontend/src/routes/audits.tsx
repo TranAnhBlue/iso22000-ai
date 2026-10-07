@@ -4156,7 +4156,7 @@ function AuditManagementPage() {
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {editingEval
+              {editingEvaluation
                 ? "Chỉnh Sửa Bản Đánh Giá Sau Đào Tạo (BM04)"
                 : "Lập Đánh Giá Chất Lượng Sau Đào Tạo (BM04-QTĐT)"}
             </DialogTitle>
@@ -4354,7 +4354,7 @@ function AuditManagementPage() {
                 type="submit"
                 className="bg-purple-600 hover:bg-purple-700 text-white font-bold"
               >
-                {editingEval ? "Cập Nhật Đánh Giá" : "Lưu Đánh Giá BM04"}
+                {editingEvaluation ? "Cập Nhật Đánh Giá" : "Lưu Đánh Giá BM04"}
               </Button>
             </DialogFooter>
           </form>

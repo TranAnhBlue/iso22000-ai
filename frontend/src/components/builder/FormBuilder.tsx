@@ -126,7 +126,7 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({ initialData, onSave, o
           default_value: 18.5,
         },
       ],
-      status: "ACTIVE",
+      status: "DRAFT",
     },
   );
 

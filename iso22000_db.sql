@@ -1353,6 +1353,7 @@ CREATE TABLE IF NOT EXISTS workflow_instances (
 	reference_id VARCHAR(100),
 	reference_type VARCHAR(50),
 	current_node_id VARCHAR(50) NOT NULL,
+	workflow_snapshot JSONB,
 	history JSONB NOT NULL,
 	status VARCHAR(30) NOT NULL,
 	started_by UUID,

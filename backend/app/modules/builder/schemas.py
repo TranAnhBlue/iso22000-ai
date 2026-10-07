@@ -25,7 +25,16 @@ class DynamicFormTemplateBase(BaseModel):
     description: Optional[str] = None
     version: str = Field(default="1.0", max_length=20)
     fields: List[FormFieldDefinition] = Field(default_factory=list)
-    status: str = Field(default="ACTIVE", max_length=30)
+    # A new controlled document must be reviewed before it can be used.
+    status: str = Field(default="DRAFT", max_length=30)
+
+    @field_validator("status")
+    @classmethod
+    def validate_status(cls, value: str) -> str:
+        normalized = value.strip().upper()
+        if normalized not in {"DRAFT", "ACTIVE", "ARCHIVED", "INACTIVE"}:
+            raise ValueError("Trạng thái biểu mẫu chỉ có thể là DRAFT, ACTIVE, ARCHIVED hoặc INACTIVE.")
+        return normalized
 
 class DynamicFormTemplateCreate(DynamicFormTemplateBase):
     pass
@@ -38,6 +47,16 @@ class DynamicFormTemplateUpdate(BaseModel):
     version: Optional[str] = None
     fields: Optional[List[FormFieldDefinition]] = None
     status: Optional[str] = None
+
+    @field_validator("status")
+    @classmethod
+    def validate_status(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return value
+        normalized = value.strip().upper()
+        if normalized not in {"DRAFT", "ACTIVE", "ARCHIVED", "INACTIVE"}:
+            raise ValueError("Trạng thái biểu mẫu chỉ có thể là DRAFT, ACTIVE, ARCHIVED hoặc INACTIVE.")
+        return normalized
 
 class DynamicFormTemplateResponse(DynamicFormTemplateBase):
     template_id: UUID
@@ -257,7 +276,7 @@ class DynamicWorkflowTemplateBase(BaseModel):
     version: str = Field(default="1.0", max_length=20)
     nodes: List[WorkflowNode] = Field(default_factory=list)
     edges: List[WorkflowEdge] = Field(default_factory=list)
-    status: str = Field(default="ACTIVE", max_length=30)
+    status: str = Field(default="DRAFT", max_length=30)
 
     model_config = ConfigDict(extra="ignore")
 
@@ -340,5 +359,6 @@ class WorkflowInstanceResponse(BaseModel):
     updated_at: Optional[datetime] = None
     workflow_title: Optional[str] = None
     workflow_code: Optional[str] = None
+    workflow_snapshot: Optional[Dict[str, Any]] = None
 
     model_config = ConfigDict(from_attributes=True)

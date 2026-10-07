@@ -79,8 +79,8 @@ const MODULE_OPTIONS = [
   { value: "HACCP_FLOW", label: "Lưu Đồ Quy Trình Công Đoạn" },
   { value: "DOC_APPROVAL", label: "Quy Trình Phê Duyệt Tài Liệu SOP" },
   { value: "CAPA_FLOW", label: "Quy Trình Xử Lý Sự Cố CAPA" },
-  { value: "SUPPLIER_AUDIT", label: "Quy Trình Đánh Giá Nhà Cung Cấp" },
-  { value: "EQUIPMENT_MAINT", label: "Quy Trình Bảo Trì & Hiệu Chuẩn Máy" },
+  { value: "SUPPLIER_APPROVAL", label: "Quy Trình Đánh Giá Nhà Cung Cấp" },
+  { value: "EQUIPMENT", label: "Quy Trình Bảo Trì & Hiệu Chuẩn Máy" },
   { value: "INTERNAL_AUDIT", label: "Quy Trình Đánh Giá Nội Bộ ISO" },
 ];
 
@@ -141,7 +141,7 @@ export const WorkflowBuilder: React.FC<WorkflowBuilderProps> = ({
         { id: "e2_3", source: "node_2", target: "node_3", label: "Chuyển tiếp" },
         { id: "e3_4", source: "node_3", target: "node_4", label: "Kiểm soát CCP Đạt" },
       ],
-      status: "ACTIVE",
+      status: "DRAFT",
     },
   );
 

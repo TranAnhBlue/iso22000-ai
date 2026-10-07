@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import select, desc
 from app.core.database import get_db
 from app.core.dependencies import get_current_user, require_roles
-from app.core.security import verify_password, get_password_hash
+from app.core.security import verify_password, get_password_hash, validate_password_strength
 from app.modules.auth.models import User, AuditLog
 from app.modules.auth.schemas import (
     UserRegisterRequest,
@@ -98,8 +98,9 @@ def change_password(
         )
         raise HTTPException(status_code=400, detail="Mật khẩu cũ không chính xác.")
 
-    if len(payload.new_password.strip()) < 6:
-        raise HTTPException(status_code=400, detail="Mật khẩu mới phải có ít nhất 6 ký tự.")
+    password_error = validate_password_strength(payload.new_password.strip())
+    if password_error:
+        raise HTTPException(status_code=400, detail=password_error)
 
     current_user.password_hash = get_password_hash(payload.new_password.strip())
     db.commit()
@@ -120,30 +121,32 @@ def change_password(
 def reset_password(
     payload: ResetPasswordRequest,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_current_user),
+    current_user: User = Depends(require_roles("admin")),
 ):
     """
-    Khôi phục mật khẩu tài khoản (Admin hoặc khôi phục an toàn):
-    - Đặt lại mật khẩu về giá trị chỉ định hoặc mặc định (123456)
+    Quản trị viên đặt lại mật khẩu tài khoản theo chính sách mật khẩu mạnh.
+    - Không tạo mật khẩu mặc định hoặc tự reset tài khoản khác
     - Tự động ghi nhận Sổ lưu vết Audit Log
     """
     target = db.scalar(select(User).where(User.username == payload.username.strip()))
     if not target:
         raise HTTPException(status_code=404, detail=f"Không tìm thấy tài khoản '{payload.username}'")
 
-    new_pwd = payload.new_password or "123456"
-    target.password_hash = get_password_hash(new_pwd.strip())
+    password_error = validate_password_strength(payload.new_password.strip())
+    if password_error:
+        raise HTTPException(status_code=400, detail=password_error)
+
+    target.password_hash = get_password_hash(payload.new_password.strip())
     db.commit()
     db.refresh(target)
 
-    reset_by = current_user.username if current_user else "SELF_SERVICE"
     service.create_audit_log(
         db,
         username=target.username,
         action="RESET_PASSWORD",
         entity_type="AUTH",
         user_id=target.user_id,
-        details={"reset_by": reset_by}
+        details={"reset_by": current_user.username}
     )
     return {"message": f"Đã khôi phục mật khẩu thành công cho tài khoản '{target.username}'."}
 

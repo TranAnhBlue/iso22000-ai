@@ -20,7 +20,7 @@ class UserOut(BaseModel):
 class UserCreate(BaseModel):
     name: str = Field(..., min_length=2)
     username: str = Field(..., min_length=3)
-    password: str = Field(..., min_length=6, description="Mật khẩu bắt buộc tối thiểu 6 ký tự")
+    password: str = Field(..., min_length=10, description="Mật khẩu mạnh tối thiểu 10 ký tự")
     dept: str
     role_code: str
     email: Optional[str] = None
@@ -237,4 +237,3 @@ class FoodSafetyTeamMemberResponse(FoodSafetyTeamMemberBase):
     member_id: uuid.UUID
     id: Optional[uuid.UUID] = None
     created_at: Optional[datetime] = None
-

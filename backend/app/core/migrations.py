@@ -764,6 +764,8 @@ MIGRATION_STATEMENTS = [
     ADD COLUMN IF NOT EXISTS approved_at TIMESTAMPTZ,
     ADD COLUMN IF NOT EXISTS change_history JSONB DEFAULT '[]'::jsonb;
     """,
+    # Preserve the released workflow definition for every execution record.
+    "ALTER TABLE workflow_instances ADD COLUMN IF NOT EXISTS workflow_snapshot JSONB;",
     # Audit Logs
     """
     CREATE TABLE IF NOT EXISTS audit_logs (

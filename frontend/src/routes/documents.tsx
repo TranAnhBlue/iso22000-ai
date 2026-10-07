@@ -88,6 +88,30 @@ export const Route = createFileRoute("/documents")({
   ),
 });
 
+async function openDocumentAttachment(fileUrl: string) {
+  // Private Storage objects are fetched through Axios so the application's JWT
+  // is sent. External links retain their normal browser behavior.
+  if (!fileUrl.startsWith("/documents/files/")) {
+    window.open(fileUrl, "_blank", "noopener,noreferrer");
+    return;
+  }
+
+  try {
+    const response = await api.get(fileUrl, { responseType: "blob" });
+    const objectUrl = URL.createObjectURL(response.data);
+    const tab = window.open(objectUrl, "_blank", "noopener,noreferrer");
+    if (!tab) {
+      const link = window.document.createElement("a");
+      link.href = objectUrl;
+      link.download = "document";
+      link.click();
+    }
+    window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
+  } catch {
+    toast.error("Không thể tải tệp đính kèm. Vui lòng kiểm tra quyền truy cập.");
+  }
+}
+
 // Định nghĩa Cấu trúc Dữ liệu Tài liệu Nội bộ
 export interface DocumentItem {
   id?: string; // mapped from document_id
@@ -1645,10 +1669,9 @@ KÝ DUYỆT VĂN BẢN:
                                   onClick={() => {
                                     if (
                                       doc.file_url &&
-                                      doc.file_url.startsWith("http") &&
                                       !doc.file_url.includes("google.com/document/create")
                                     ) {
-                                      window.open(doc.file_url, "_blank");
+                                      void openDocumentAttachment(doc.file_url);
                                     } else {
                                       handleOpenExportPDF(doc);
                                     }
@@ -2229,15 +2252,14 @@ KÝ DUYỆT VĂN BẢN:
                               <Copy className="h-3.5 w-3.5" />
                             )}
                           </button>
-                          <a
-                            href={viewingDoc.file_url}
-                            target="_blank"
-                            rel="noreferrer"
+                          <button
+                            type="button"
+                            onClick={() => void openDocumentAttachment(viewingDoc.file_url!)}
                             className="inline-flex items-center gap-1 rounded-md bg-primary px-2 py-1 text-xs font-medium text-primary-foreground hover:opacity-90 transition"
                           >
                             <span>Mở tệp ngoài</span>
                             <ExternalLink className="h-3 w-3" />
-                          </a>
+                          </button>
                         </div>
                       </div>
                     ) : (

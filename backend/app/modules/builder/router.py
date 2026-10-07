@@ -1,4 +1,5 @@
 import uuid
+from copy import deepcopy
 from typing import List, Optional, Any, Dict
 from uuid import UUID
 from datetime import datetime, timezone
@@ -88,6 +89,7 @@ def format_wf_out(w: Any) -> DynamicWorkflowTemplateResponse:
 
 def format_instance_out(inst: Any) -> WorkflowInstanceResponse:
     wf = getattr(inst, "workflow", None)
+    snapshot = getattr(inst, "workflow_snapshot", None) or {}
     return WorkflowInstanceResponse(
         instance_id=inst.instance_id,
         workflow_id=inst.workflow_id,
@@ -99,8 +101,9 @@ def format_instance_out(inst: Any) -> WorkflowInstanceResponse:
         started_by=inst.started_by,
         created_at=inst.created_at,
         updated_at=inst.updated_at,
-        workflow_title=str(wf.title) if wf else None,
-        workflow_code=str(wf.code) if wf else None,
+        workflow_title=str(snapshot.get("title")) if snapshot.get("title") else (str(wf.title) if wf else None),
+        workflow_code=str(snapshot.get("code")) if snapshot.get("code") else (str(wf.code) if wf else None),
+        workflow_snapshot=snapshot or None,
     )
 
 
@@ -109,6 +112,7 @@ def format_instance_out(inst: Any) -> WorkflowInstanceResponse:
 def get_form_templates(
     module: Optional[str] = Query(None, description="Filter by module: HACCP, PRP, IQC, etc."),
     db: Session = Depends(get_db),
+    _current_user: User = Depends(get_current_user),
 ):
     query = select(DynamicFormTemplate).order_by(desc(DynamicFormTemplate.created_at))
     if module and module != "ALL":
@@ -117,7 +121,11 @@ def get_form_templates(
     return [format_form_out(t) for t in results]
 
 @router.get("/forms/{template_id}", response_model=DynamicFormTemplateResponse)
-def get_form_template_by_id(template_id: UUID, db: Session = Depends(get_db)):
+def get_form_template_by_id(
+    template_id: UUID,
+    db: Session = Depends(get_db),
+    _current_user: User = Depends(get_current_user),
+):
     t = db.get(DynamicFormTemplate, template_id)
     if not t:
         raise HTTPException(status_code=404, detail="Không tìm thấy mẫu biểu mẫu")
@@ -133,9 +141,12 @@ def create_form_template(payload: DynamicFormTemplateCreate, db: Session = Depen
         existing.description = payload.description.strip() if payload.description else None
         existing.version = payload.version.strip()
         existing.fields = [f.model_dump() for f in payload.fields]
-        existing.status = payload.status
-        if payload.status == "DRAFT":
-            existing.is_approved = False
+        # Re-submitting a controlled template is a material revision: it must
+        # go through approval again, regardless of the status supplied by UI.
+        existing.status = "DRAFT"
+        existing.is_approved = False
+        existing.approved_by_name = None
+        existing.approved_at = None
         db.commit()
         db.refresh(existing)
         return format_form_out(existing)
@@ -147,8 +158,8 @@ def create_form_template(payload: DynamicFormTemplateCreate, db: Session = Depen
         description=payload.description.strip() if payload.description else None,
         version=payload.version.strip(),
         fields=[f.model_dump() for f in payload.fields],
-        status=payload.status,
-        is_approved=(payload.status != "DRAFT"),
+        status="DRAFT",
+        is_approved=False,
         created_by=_user.user_id,
     )
     db.add(new_t)
@@ -162,6 +173,8 @@ def update_form_template(template_id: UUID, payload: DynamicFormTemplateUpdate, 
     if not t:
         raise HTTPException(status_code=404, detail="Không tìm thấy biểu mẫu cần cập nhật")
 
+    version_before = t.version
+    material_change = any(value is not None for value in (payload.code, payload.module, payload.title, payload.description, payload.version, payload.fields))
     if payload.code and payload.code.strip() != t.code:
         dup = db.scalar(select(DynamicFormTemplate).where(and_(DynamicFormTemplate.code == payload.code.strip(), DynamicFormTemplate.template_id != template_id)))
         if dup:
@@ -179,13 +192,21 @@ def update_form_template(template_id: UUID, payload: DynamicFormTemplateUpdate, 
     if payload.fields is not None:
         t.fields = [f.model_dump() for f in payload.fields]
     if payload.status is not None:
+        if payload.status == "ACTIVE" and not t.is_approved:
+            raise HTTPException(status_code=400, detail="Không thể kích hoạt biểu mẫu chưa được phê duyệt. Hãy dùng thao tác Phê duyệt.")
         t.status = payload.status
+
+    if material_change:
+        t.status = "DRAFT"
+        t.is_approved = False
+        t.approved_by_name = None
+        t.approved_at = None
 
     # Ghi nhận audit trail lịch sử thay đổi phiên bản / trường biểu mẫu
     hist = list(t.change_history or [])
     hist.append({
         "action": "UPDATE_TEMPLATE",
-        "version_before": t.version,
+        "version_before": version_before,
         "version_after": payload.version or t.version,
         "modified_at": datetime.now().isoformat(),
         "modified_by": _user.full_name,
@@ -207,16 +228,18 @@ def approve_form_template(
     t = db.get(DynamicFormTemplate, template_id)
     if not t:
         raise HTTPException(status_code=404, detail="Không tìm thấy biểu mẫu")
+    if t.created_by and t.created_by == current_user.user_id:
+        raise HTTPException(status_code=403, detail="Người soạn biểu mẫu không được tự phê duyệt. Hãy chuyển cho người có thẩm quyền khác.")
     t.is_approved = True
     t.status = "ACTIVE"
     t.approved_by_name = current_user.full_name
-    t.approved_at = datetime.now()
+    t.approved_at = datetime.now(timezone.utc)
     hist = list(t.change_history or [])
     hist.append({
         "action": "APPROVE_TEMPLATE",
         "version": t.version,
         "approved_by": current_user.full_name,
-        "approved_at": datetime.now().isoformat(),
+        "approved_at": datetime.now(timezone.utc).isoformat(),
     })
     t.change_history = hist
     db.commit()
@@ -228,6 +251,16 @@ def delete_form_template(template_id: UUID, db: Session = Depends(get_db), _user
     t = db.get(DynamicFormTemplate, template_id)
     if not t:
         raise HTTPException(status_code=404, detail="Không tìm thấy biểu mẫu cần xóa")
+    submission_count = db.scalar(
+        select(func.count(DynamicFormSubmission.submission_id)).where(
+            DynamicFormSubmission.template_id == template_id
+        )
+    ) or 0
+    if submission_count:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Không thể xóa biểu mẫu đã có bản ghi nộp. Hãy chuyển mẫu sang ARCHIVED để bảo toàn hồ sơ ISO.",
+        )
     db.delete(t)
     db.commit()
     return {"message": "Đã xóa biểu mẫu thành công", "template_id": template_id}
@@ -238,6 +271,7 @@ def get_form_submissions(
     template_id: Optional[UUID] = Query(None),
     reference_id: Optional[str] = Query(None),
     db: Session = Depends(get_db),
+    _current_user: User = Depends(get_current_user),
 ):
     query = select(DynamicFormSubmission).order_by(desc(DynamicFormSubmission.created_at))
     if template_id:
@@ -284,32 +318,42 @@ def submit_form_data(payload: DynamicFormSubmissionCreate, db: Session = Depends
         t = db.scalar(select(DynamicFormTemplate).where(DynamicFormTemplate.code == str(target_tid).strip()))
 
     if not t:
-        # Tự tạo mẫu nếu chưa có
-        t = DynamicFormTemplate(
-            module="GENERAL",
-            code=str(target_tid),
-            title=f"Biểu Mẫu {target_tid}",
-            fields=[],
-            status="ACTIVE",
-            is_approved=True,
+        raise HTTPException(status_code=404, detail="Không tìm thấy biểu mẫu. Không thể nộp dữ liệu vào mẫu chưa được tạo và phê duyệt.")
+    if t.status.upper() != "ACTIVE" or not getattr(t, "is_approved", False):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Biểu mẫu '{t.title}' chưa ở trạng thái ACTIVE và được phê duyệt."
         )
-        db.add(t)
-        db.commit()
-        db.refresh(t)
-    else:
-        # Chặn nhập liệu nếu mẫu chưa được phê duyệt hoặc đang là DRAFT
-        if t.status == "DRAFT" or not getattr(t, "is_approved", True):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Biểu mẫu '{t.title}' đang ở trạng thái DRAFT hoặc chưa được phê duyệt. Vui lòng phê duyệt trước khi nhập liệu."
-            )
+
+    # Validate on the server as well as in the browser; client-side validation
+    # can be bypassed and ISO records must preserve required control limits.
+    validation_errors: list[str] = []
+    for field in t.fields or []:
+        field_name = str(field.get("name") or field.get("id") or "").strip()
+        if not field_name:
+            continue
+        value = payload.form_data.get(field_name)
+        if field.get("required") and (value is None or value == "" or value == []):
+            validation_errors.append(f"'{field.get('label') or field_name}' là trường bắt buộc")
+            continue
+        if value is not None and field.get("type") == "NUMBER":
+            try:
+                numeric_value = float(value)
+                if field.get("min_val") is not None and numeric_value < float(field["min_val"]):
+                    validation_errors.append(f"'{field.get('label') or field_name}' nhỏ hơn giới hạn tối thiểu")
+                if field.get("max_val") is not None and numeric_value > float(field["max_val"]):
+                    validation_errors.append(f"'{field.get('label') or field_name}' vượt giới hạn tối đa")
+            except (TypeError, ValueError):
+                validation_errors.append(f"'{field.get('label') or field_name}' phải là số hợp lệ")
+    if validation_errors:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="; ".join(validation_errors))
 
     new_sub = DynamicFormSubmission(
         template_id=t.template_id,
         reference_id=payload.reference_id,
         reference_type=payload.reference_type,
         submitted_by=current_user.user_id,
-        submitted_by_name=payload.submitted_by_name or current_user.full_name or "Nhân viên",
+        submitted_by_name=current_user.full_name or current_user.username,
         form_data=payload.form_data,
         score=payload.score,
         status=payload.status,
@@ -338,6 +382,7 @@ def submit_form_data(payload: DynamicFormSubmissionCreate, db: Session = Depends
 def get_workflow_templates(
     module: Optional[str] = Query(None, description="Filter by module: HACCP_FLOW, DOC_APPROVAL, etc."),
     db: Session = Depends(get_db),
+    _current_user: User = Depends(get_current_user),
 ):
     query = select(DynamicWorkflowTemplate).order_by(desc(DynamicWorkflowTemplate.created_at))
     if module and module != "ALL":
@@ -346,7 +391,11 @@ def get_workflow_templates(
     return [format_wf_out(w) for w in results]
 
 @router.get("/workflows/{workflow_id}", response_model=DynamicWorkflowTemplateResponse)
-def get_workflow_template_by_id(workflow_id: UUID, db: Session = Depends(get_db)):
+def get_workflow_template_by_id(
+    workflow_id: UUID,
+    db: Session = Depends(get_db),
+    _current_user: User = Depends(get_current_user),
+):
     w = db.get(DynamicWorkflowTemplate, workflow_id)
     if not w:
         raise HTTPException(status_code=404, detail="Không tìm thấy quy trình workflow")
@@ -375,9 +424,10 @@ def create_workflow_template(payload: DynamicWorkflowTemplateCreate, db: Session
         existing.version = payload.version.strip()
         existing.nodes = [n.model_dump() for n in payload.nodes]
         existing.edges = [e.model_dump() for e in payload.edges]
-        existing.status = payload.status
-        if payload.status == "DRAFT":
-            existing.is_approved = False
+        existing.status = "DRAFT"
+        existing.is_approved = False
+        existing.approved_by_name = None
+        existing.approved_at = None
         db.commit()
         db.refresh(existing)
         return format_wf_out(existing)
@@ -390,8 +440,8 @@ def create_workflow_template(payload: DynamicWorkflowTemplateCreate, db: Session
         version=payload.version.strip(),
         nodes=[n.model_dump() for n in payload.nodes],
         edges=[e.model_dump() for e in payload.edges],
-        status=payload.status,
-        is_approved=(payload.status != "DRAFT"),
+        status="DRAFT",
+        is_approved=False,
         created_by=_user.user_id,
     )
     db.add(new_w)
@@ -405,6 +455,8 @@ def update_workflow_template(workflow_id: UUID, payload: DynamicWorkflowTemplate
     if not w:
         raise HTTPException(status_code=404, detail="Không tìm thấy quy trình workflow cần cập nhật")
 
+    version_before = w.version
+    material_change = any(value is not None for value in (payload.code, payload.module, payload.title, payload.description, payload.version, payload.nodes, payload.edges))
     if payload.code and payload.code.strip() != w.code:
         dup = db.scalar(select(DynamicWorkflowTemplate).where(and_(DynamicWorkflowTemplate.code == payload.code.strip(), DynamicWorkflowTemplate.workflow_id != workflow_id)))
         if dup:
@@ -450,13 +502,21 @@ def update_workflow_template(workflow_id: UUID, payload: DynamicWorkflowTemplate
     if payload.edges is not None:
         w.edges = [e.model_dump() for e in payload.edges]
     if payload.status is not None:
+        if payload.status == "ACTIVE" and not w.is_approved:
+            raise HTTPException(status_code=400, detail="Không thể kích hoạt quy trình chưa được phê duyệt. Hãy dùng thao tác Phê duyệt.")
         w.status = payload.status
+
+    if material_change:
+        w.status = "DRAFT"
+        w.is_approved = False
+        w.approved_by_name = None
+        w.approved_at = None
 
     # Ghi nhận audit trail thay đổi luồng quy trình
     wf_hist = list(w.change_history or [])
     wf_hist.append({
         "action": "UPDATE_WORKFLOW",
-        "version_before": w.version,
+        "version_before": version_before,
         "version_after": payload.version or w.version,
         "modified_at": datetime.now().isoformat(),
         "modified_by": _user.full_name,
@@ -479,16 +539,18 @@ def approve_workflow_template(
     w = db.get(DynamicWorkflowTemplate, workflow_id)
     if not w:
         raise HTTPException(status_code=404, detail="Không tìm thấy quy trình workflow")
+    if w.created_by and w.created_by == current_user.user_id:
+        raise HTTPException(status_code=403, detail="Người soạn quy trình không được tự phê duyệt. Hãy chuyển cho người có thẩm quyền khác.")
     w.is_approved = True
     w.status = "ACTIVE"
     w.approved_by_name = current_user.full_name
-    w.approved_at = datetime.now()
+    w.approved_at = datetime.now(timezone.utc)
     wf_hist = list(w.change_history or [])
     wf_hist.append({
         "action": "APPROVE_WORKFLOW",
         "version": w.version,
         "approved_by": current_user.full_name,
-        "approved_at": datetime.now().isoformat(),
+        "approved_at": datetime.now(timezone.utc).isoformat(),
     })
     w.change_history = wf_hist
     db.commit()
@@ -500,6 +562,14 @@ def delete_workflow_template(workflow_id: UUID, db: Session = Depends(get_db), _
     w = db.get(DynamicWorkflowTemplate, workflow_id)
     if not w:
         raise HTTPException(status_code=404, detail="Không tìm thấy quy trình cần xóa")
+    instance_count = db.scalar(
+        select(func.count(WorkflowInstance.instance_id)).where(WorkflowInstance.workflow_id == workflow_id)
+    ) or 0
+    if instance_count:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Không thể xóa workflow đã có phiên thực thi. Hãy chuyển workflow sang ARCHIVED để bảo toàn lịch sử.",
+        )
     db.delete(w)
     db.commit()
     return {"message": "Đã xóa quy trình thành công", "workflow_id": workflow_id}
@@ -514,9 +584,19 @@ def start_workflow_instance(
     current_user: User = Depends(get_current_user),
 ):
     """Khởi tạo một phiên thực thi quy trình từ Workflow Template."""
+    if payload.workflow_id != workflow_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="workflow_id trong dữ liệu gửi lên không khớp với workflow trên đường dẫn.",
+        )
     wf = db.get(DynamicWorkflowTemplate, workflow_id)
     if not wf:
         raise HTTPException(status_code=404, detail="Không tìm thấy quy trình workflow")
+    if wf.status.upper() != "ACTIVE" or not wf.is_approved:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Workflow phải ở trạng thái ACTIVE và được phê duyệt trước khi khởi tạo phiên thực thi.",
+        )
 
     nodes = wf.nodes or []
     if not nodes:
@@ -539,12 +619,23 @@ def start_workflow_instance(
         "action_at": datetime.now(timezone.utc).isoformat(),
         "comments": "Khởi tạo luồng quy trình thực thi",
     }
+    workflow_snapshot = {
+        "workflow_id": str(wf.workflow_id),
+        "module": wf.module,
+        "code": wf.code,
+        "title": wf.title,
+        "version": wf.version,
+        "nodes": deepcopy(nodes),
+        "edges": deepcopy(wf.edges or []),
+        "approved_at": wf.approved_at.isoformat() if wf.approved_at else None,
+    }
 
     inst = WorkflowInstance(
         workflow_id=workflow_id,
         reference_id=payload.reference_id,
         reference_type=payload.reference_type,
         current_node_id=curr_node_id,
+        workflow_snapshot=workflow_snapshot,
         status="IN_PROGRESS",
         started_by=current_user.user_id,
         history=[history_entry],
@@ -555,7 +646,11 @@ def start_workflow_instance(
     return format_instance_out(inst)
 
 @router.get("/workflows/{workflow_id}/instances", response_model=List[WorkflowInstanceResponse])
-def get_workflow_instances(workflow_id: UUID, db: Session = Depends(get_db)):
+def get_workflow_instances(
+    workflow_id: UUID,
+    db: Session = Depends(get_db),
+    _current_user: User = Depends(get_current_user),
+):
     """Lấy danh sách các phiên thực thi của một Workflow Template."""
     instances = db.query(WorkflowInstance).filter(WorkflowInstance.workflow_id == workflow_id).order_by(desc(WorkflowInstance.created_at)).all()
     return [format_instance_out(i) for i in instances]
@@ -565,6 +660,7 @@ def list_all_instances(
     status_filter: Optional[str] = Query(None, alias="status"),
     reference_id: Optional[str] = Query(None),
     db: Session = Depends(get_db),
+    _current_user: User = Depends(get_current_user),
 ):
     """Tra cứu tất cả các phiên thực thi quy trình đang chạy trên toàn hệ thống."""
     query = db.query(WorkflowInstance)
@@ -576,7 +672,11 @@ def list_all_instances(
     return [format_instance_out(i) for i in instances]
 
 @router.get("/instances/{instance_id}", response_model=WorkflowInstanceResponse)
-def get_single_instance(instance_id: UUID, db: Session = Depends(get_db)):
+def get_single_instance(
+    instance_id: UUID,
+    db: Session = Depends(get_db),
+    _current_user: User = Depends(get_current_user),
+):
     """Lấy chi tiết một phiên thực thi quy trình bao gồm toàn bộ nhật ký phê duyệt."""
     inst = db.get(WorkflowInstance, instance_id)
     if not inst:
@@ -702,8 +802,14 @@ def advance_workflow_instance(
         raise HTTPException(status_code=400, detail=f"Phiên thực thi đã kết thúc với trạng thái: {inst.status}")
 
     wf = inst.workflow
-    nodes = list(wf.nodes or []) if wf and isinstance(wf.nodes, list) else []
-    edges = list(wf.edges or []) if wf and isinstance(wf.edges, list) else []
+    snapshot = inst.workflow_snapshot if isinstance(inst.workflow_snapshot, dict) else {}
+    # Older records created before this migration safely fall back to the template.
+    nodes = list(snapshot.get("nodes") or []) if snapshot else []
+    edges = list(snapshot.get("edges") or []) if snapshot else []
+    if not nodes:
+        nodes = list(wf.nodes or []) if wf and isinstance(wf.nodes, list) else []
+    if not edges:
+        edges = list(wf.edges or []) if wf and isinstance(wf.edges, list) else []
 
     current_node = next((n for n in nodes if str(n.get("id")) == str(inst.current_node_id)), None)
     curr_label = current_node.get("label", inst.current_node_id) if current_node else str(inst.current_node_id)

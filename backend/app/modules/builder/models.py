@@ -95,6 +95,10 @@ class WorkflowInstance(Base):
     reference_id: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)  # Associated doc_code, nc_id, batch_number
     reference_type: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     current_node_id: Mapped[str] = mapped_column(String(50), nullable=False)
+
+    # Immutable copy of the approved definition used when this instance began.
+    # A later template revision must never rewrite an in-progress ISO record.
+    workflow_snapshot: Mapped[Optional[Any]] = mapped_column(JSONB, nullable=True)
     
     # Execution history: [{node_id, action, action_by, action_at, comments}]
     history: Mapped[Any] = mapped_column(JSONB, default=list, nullable=False)

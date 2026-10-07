@@ -22,6 +22,10 @@ export interface FormTemplateData {
   version: string;
   fields: FormField[];
   status: string;
+  is_approved?: boolean;
+  approved_by_name?: string | null;
+  approved_at?: string | null;
+  submission_count?: number;
 }
 
 export interface WorkflowNodeData {
@@ -52,4 +56,8 @@ export interface WorkflowTemplateData {
   nodes: WorkflowNodeData[];
   edges: WorkflowEdgeData[];
   status: string;
+  is_approved?: boolean;
+  approved_by_name?: string | null;
+  approved_at?: string | null;
+  instance_count?: number;
 }

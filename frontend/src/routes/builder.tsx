@@ -44,7 +44,7 @@ export const Route = createFileRoute("/builder")({
 
 function BuilderManagementPage() {
   const { canEdit, isAdmin } = useModuleAccess();
-  const [activeTab, setActiveTab] = useState<"FORMS" | "WORKFLOWS" | "SUBMISSIONS">("FORMS");
+  const [activeTab, setActiveTab] = useState<"FORMS" | "WORKFLOWS" | "SUBMISSIONS" | "INSTANCES">("FORMS");
   const [loading, setLoading] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
   const [showWfGuide, setShowWfGuide] = useState(false);
@@ -67,6 +67,7 @@ function BuilderManagementPage() {
   // Submissions state
   const [submissions, setSubmissions] = useState<any[]>([]);
   const [viewingSubmission, setViewingSubmission] = useState<any | null>(null);
+  const [instances, setInstances] = useState<any[]>([]);
 
   // Deleting confirmation states
   const [deletingFormItem, setDeletingFormItem] = useState<{ id: string; title: string } | null>(
@@ -116,10 +117,20 @@ function BuilderManagementPage() {
     }
   };
 
+  const fetchInstances = async () => {
+    try {
+      const res = await api.get("/builders/instances");
+      setInstances(res.data);
+    } catch (err: any) {
+      toast.error(err.response?.data?.detail || "Không thể tải phiên thực thi quy trình.");
+    }
+  };
+
   useEffect(() => {
     fetchForms();
     fetchWorkflows();
     fetchSubmissions();
+    fetchInstances();
   }, []);
 
   // Save Form Template
@@ -137,6 +148,17 @@ function BuilderManagementPage() {
       await fetchForms();
     } catch (err: any) {
       throw new Error(err.response?.data?.detail || err.message);
+    }
+  };
+
+  const handleApproveForm = async (form: FormTemplateData) => {
+    if (!form.template_id) return;
+    try {
+      await api.post(`/builders/forms/${form.template_id}/approve`);
+      toast.success(`Đã phê duyệt biểu mẫu "${form.title}".`);
+      await fetchForms();
+    } catch (err: any) {
+      toast.error(err.response?.data?.detail || "Không thể phê duyệt biểu mẫu.");
     }
   };
 
@@ -166,6 +188,47 @@ function BuilderManagementPage() {
       await fetchWorkflows();
     } catch (err: any) {
       throw new Error(err.response?.data?.detail || err.message);
+    }
+  };
+
+  const handleApproveWorkflow = async (workflow: WorkflowTemplateData) => {
+    if (!workflow.workflow_id) return;
+    try {
+      await api.post(`/builders/workflows/${workflow.workflow_id}/approve`);
+      toast.success(`Đã phê duyệt quy trình "${workflow.title}".`);
+      await fetchWorkflows();
+    } catch (err: any) {
+      toast.error(err.response?.data?.detail || "Không thể phê duyệt quy trình.");
+    }
+  };
+
+  const handleStartWorkflow = async (workflow: WorkflowTemplateData) => {
+    if (!workflow.workflow_id) return;
+    try {
+      await api.post(`/builders/workflows/${workflow.workflow_id}/instances`, {
+        workflow_id: workflow.workflow_id,
+        reference_type: workflow.module,
+      });
+      toast.success(`Đã khởi tạo phiên thực thi "${workflow.title}".`);
+      await fetchInstances();
+      setActiveTab("INSTANCES");
+    } catch (err: any) {
+      toast.error(err.response?.data?.detail || "Không thể khởi tạo quy trình.");
+    }
+  };
+
+  const handleInstanceAction = async (instanceId: string, action: "ADVANCE" | "APPROVE" | "REJECT") => {
+    const comments = window.prompt(
+      action === "REJECT" ? "Nêu lý do từ chối:" : "Ghi chú xử lý (không bắt buộc):",
+      "",
+    );
+    if (comments === null) return;
+    try {
+      await api.post(`/builders/instances/${instanceId}/action`, { action, comments });
+      toast.success(action === "REJECT" ? "Đã từ chối phiên quy trình." : "Đã cập nhật bước quy trình.");
+      await fetchInstances();
+    } catch (err: any) {
+      toast.error(err.response?.data?.detail || "Bạn không có quyền hoặc phiên không thể chuyển bước.");
     }
   };
 
@@ -254,6 +317,21 @@ function BuilderManagementPage() {
             Biểu Mẫu Tùy Chỉnh
             <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold">
               {forms.length}
+            </span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab("INSTANCES")}
+            className={`pb-3 px-4 text-sm font-bold flex items-center gap-2 border-b-2 transition-all ${
+              activeTab === "INSTANCES"
+                ? "border-violet-600 text-violet-700"
+                : "border-transparent text-slate-500 hover:text-slate-900"
+            }`}
+          >
+            <Clock className="w-4 h-4" />
+            Phiên Thực Thi
+            <span className="text-xs px-2 py-0.5 rounded-full bg-violet-100 text-violet-800 font-bold">
+              {instances.filter((item) => item.status === "IN_PROGRESS").length}
             </span>
           </button>
 
@@ -380,17 +458,35 @@ function BuilderManagementPage() {
                         <span>{f.fields?.length || 0} trường dữ liệu</span>
                         <span className="font-mono text-[11px]">v{f.version || "1.0"}</span>
                       </div>
+                      <div className="mt-2 text-[11px] font-semibold">
+                        {f.is_approved && f.status === "ACTIVE" ? (
+                          <span className="text-emerald-700">● Đã phê duyệt, đang hiệu lực</span>
+                        ) : (
+                          <span className="text-amber-700">● Bản nháp, chờ phê duyệt</span>
+                        )}
+                      </div>
                     </div>
 
                     <div className="mt-5 pt-3 border-t border-slate-100 flex items-center gap-2">
                       <Button
                         size="sm"
+                        disabled={!f.is_approved || f.status !== "ACTIVE"}
                         onClick={() => setTestingForm(f)}
                         className="flex-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 text-xs font-bold flex items-center justify-center gap-1.5 shadow-none"
                       >
                         <Play className="w-3.5 h-3.5 text-emerald-700" />
-                        Điền Thử Phiếu
+                        {f.is_approved && f.status === "ACTIVE" ? "Điền Thử Phiếu" : "Chờ Phê Duyệt"}
                       </Button>
+
+                      {canEdit && f.template_id && !f.is_approved && (
+                        <button
+                          onClick={() => handleApproveForm(f)}
+                          className="p-2 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors"
+                          title="Phê duyệt biểu mẫu"
+                        >
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
 
                       {canEdit && (
                         <button
@@ -569,6 +665,13 @@ function BuilderManagementPage() {
                           <div>•</div>
                           <div>Ver {w.version}</div>
                         </div>
+                        <div className="mt-2 text-[11px] font-semibold">
+                          {w.is_approved && w.status === "ACTIVE" ? (
+                            <span className="text-emerald-700">● Đã phê duyệt, đang hiệu lực</span>
+                          ) : (
+                            <span className="text-amber-700">● Bản nháp, chờ phê duyệt</span>
+                          )}
+                        </div>
                       </div>
 
                       <div className="flex items-center gap-2 mt-5 pt-3 border-t border-slate-100">
@@ -583,6 +686,26 @@ function BuilderManagementPage() {
                           <Eye className="w-3.5 h-3.5 text-blue-700" />
                           {canEdit ? "Xem & Sửa Sơ Đồ" : "Xem Sơ Đồ Quy Trình"}
                         </Button>
+
+                        {w.workflow_id && w.is_approved && w.status === "ACTIVE" && (
+                          <button
+                            onClick={() => handleStartWorkflow(w)}
+                            className="p-2 rounded-lg bg-violet-50 text-violet-700 hover:bg-violet-100 transition-colors"
+                            title="Khởi tạo phiên thực thi"
+                          >
+                            <Play className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+
+                        {canEdit && w.workflow_id && !w.is_approved && (
+                          <button
+                            onClick={() => handleApproveWorkflow(w)}
+                            className="p-2 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors"
+                            title="Phê duyệt quy trình"
+                          >
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
 
                         {canEdit && w.workflow_id && (
                           <button
@@ -694,6 +817,73 @@ function BuilderManagementPage() {
                     </tbody>
                   </table>
                 </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === "INSTANCES" && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+              <div>
+                <div className="text-sm font-bold text-slate-900">Phiên thực thi quy trình</div>
+                <div className="text-xs text-slate-500 mt-1">Các thao tác được backend kiểm tra theo vai trò của bước hiện tại.</div>
+              </div>
+              <Button variant="outline" size="sm" onClick={fetchInstances} className="text-xs">
+                <RotateCcw className="w-3.5 h-3.5 mr-1" /> Làm mới
+              </Button>
+            </div>
+            {instances.length === 0 ? (
+              <EmptyState icon={Workflow} title="Chưa có phiên thực thi" description="Chọn một quy trình đã phê duyệt và bấm nút phát để khởi tạo." onAction={() => setActiveTab("WORKFLOWS")} actionLabel="Xem quy trình" />
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {instances.map((instance) => {
+                  const workflow = workflows.find((item) => item.workflow_id === instance.workflow_id);
+                  const snapshotNodes = Array.isArray(instance.workflow_snapshot?.nodes)
+                    ? instance.workflow_snapshot.nodes
+                    : workflow?.nodes || [];
+                  const currentNode = snapshotNodes.find((node: any) => node.id === instance.current_node_id);
+                  const isClosed = ["COMPLETED", "REJECTED", "CANCELLED"].includes(instance.status);
+                  const isApproval = currentNode?.type === "approval";
+                  return (
+                    <div key={instance.instance_id} className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <div className="font-bold text-slate-900">{instance.workflow_title || workflow?.title || "Quy trình"}</div>
+                          <div className="text-[11px] font-mono text-violet-700 mt-1">{instance.workflow_code || workflow?.code}</div>
+                        </div>
+                        <span className={`px-2 py-1 rounded-full text-[10px] font-bold ${isClosed ? "bg-slate-100 text-slate-700" : "bg-violet-100 text-violet-800"}`}>{instance.status}</span>
+                      </div>
+                      <div className="mt-4 p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs">
+                        <div className="text-slate-500">Bước hiện tại</div>
+                        <div className="font-bold text-slate-900 mt-1">{currentNode?.label || instance.current_node_id}</div>
+                        {currentNode?.role && <div className="text-slate-500 mt-1">Phụ trách: {currentNode.role}</div>}
+                      </div>
+                      <div className="mt-3 text-[11px] text-slate-500">Khởi tạo: {instance.created_at ? new Date(instance.created_at).toLocaleString("vi-VN") : "-"}</div>
+                      {!isClosed && (
+                        <div className="mt-4 flex gap-2">
+                          <Button size="sm" onClick={() => handleInstanceAction(instance.instance_id, isApproval ? "APPROVE" : "ADVANCE")} className="flex-1 bg-violet-600 hover:bg-violet-700 text-xs">
+                            <CheckCircle2 className="w-3.5 h-3.5 mr-1" /> {isApproval ? "Phê duyệt" : "Chuyển bước"}
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={() => handleInstanceAction(instance.instance_id, "REJECT")} className="border-rose-300 text-rose-700 hover:bg-rose-50 text-xs">
+                            Từ chối
+                          </Button>
+                        </div>
+                      )}
+                      {instance.history?.length > 0 && (
+                        <div className="mt-4 pt-3 border-t border-slate-100 space-y-2">
+                          <div className="text-[11px] font-bold uppercase tracking-wide text-slate-500">Nhật ký xử lý</div>
+                          {instance.history.slice(-3).reverse().map((entry: any, index: number) => (
+                            <div key={`${entry.action_at}-${index}`} className="text-[11px] text-slate-600">
+                              <span className="font-bold text-violet-700">{entry.action}</span> · {entry.action_by || "Hệ thống"}
+                              {entry.comments ? ` — ${entry.comments}` : ""}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>

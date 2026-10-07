@@ -35,6 +35,25 @@ else:
 ALGORITHM = os.getenv("ALGORITHM", "HS256")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 480))
 
+
+def validate_password_strength(password: str) -> str:
+    """Validate the baseline password policy used by every account entry point.
+
+    Existing legacy passwords remain usable until their owner changes them, but
+    all newly created, changed, or reset passwords must satisfy this policy.
+    """
+    if len(password) < 10:
+        return "Mật khẩu phải có tối thiểu 10 ký tự."
+    if not any(char.islower() for char in password):
+        return "Mật khẩu phải có ít nhất một chữ thường."
+    if not any(char.isupper() for char in password):
+        return "Mật khẩu phải có ít nhất một chữ hoa."
+    if not any(char.isdigit() for char in password):
+        return "Mật khẩu phải có ít nhất một chữ số."
+    if not any(not char.isalnum() for char in password):
+        return "Mật khẩu phải có ít nhất một ký tự đặc biệt."
+    return ""
+
 def get_password_hash(password: str) -> str:
     """Tạo salt và băm mật khẩu an toàn bằng bcrypt (work factor 12) chống tấn công brute-force"""
     salt = bcrypt.gensalt(rounds=12)

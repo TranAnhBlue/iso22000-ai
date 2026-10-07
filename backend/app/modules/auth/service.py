@@ -2,7 +2,7 @@ from typing import List, Optional, Dict, Any
 import uuid
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
-from app.core.security import get_password_hash, verify_password, create_access_token
+from app.core.security import get_password_hash, verify_password, create_access_token, validate_password_strength
 from app.modules.auth.models import User, Role, Department, AuditLog
 from app.modules.auth.schemas import UserRegisterRequest, UserLoginRequest, TokenResponse, DepartmentOption
 
@@ -44,6 +44,10 @@ def register_user(db: Session, payload: UserRegisterRequest) -> TokenResponse:
     existing_user = db.query(User).filter(User.username == payload.username).first()
     if existing_user:
         raise HTTPException(status_code=400, detail="Tên đăng nhập đã tồn tại trong hệ thống.")
+
+    password_error = validate_password_strength(payload.password)
+    if password_error:
+        raise HTTPException(status_code=400, detail=password_error)
 
     role = db.query(Role).filter((Role.role_code == "user") | (Role.role_code == "USER")).first()
     if not role:

@@ -3,7 +3,7 @@ from typing import Optional
 
 class UserRegisterRequest(BaseModel):
     username: str = Field(..., min_length=3, max_length=50)
-    password: str = Field(..., min_length=6, max_length=100, description="Mật khẩu tối thiểu 6 ký tự")
+    password: str = Field(..., min_length=10, max_length=100, description="Mật khẩu mạnh tối thiểu 10 ký tự")
     full_name: str = Field(..., min_length=2, max_length=100)
     email: Optional[str] = None
     phone: Optional[str] = None
@@ -48,12 +48,12 @@ class DepartmentOption(BaseModel):
 
 class ChangePasswordRequest(BaseModel):
     old_password: str = Field(..., min_length=1)
-    new_password: str = Field(..., min_length=6, description="Mật khẩu mới tối thiểu 6 ký tự")
+    new_password: str = Field(..., min_length=10, description="Mật khẩu mạnh tối thiểu 10 ký tự")
 
 
 class ResetPasswordRequest(BaseModel):
     username: str = Field(..., min_length=2)
-    new_password: Optional[str] = Field(default="123456", min_length=6)
+    new_password: str = Field(..., min_length=10, description="Mật khẩu mạnh mới cho tài khoản")
 
 
 from datetime import datetime
