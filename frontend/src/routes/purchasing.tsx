@@ -51,6 +51,7 @@ import {
   BookOpen,
 } from "lucide-react";
 import api from "@/lib/api";
+import { normalizeWorkflowForSave, workflowErrorMessage } from "@/lib/workflow";
 import { toast } from "sonner";
 import logoImg from "@/assets/logo.png";
 import { DynamicFormRenderer } from "@/components/builder/DynamicFormRenderer";
@@ -4707,12 +4708,11 @@ function PurchasingPage() {
               initialData={workflowTemplate}
               onSave={async (wf) => {
                 try {
-                  await api.post("/builders/workflows", wf);
+                  await api.post("/builders/workflows", normalizeWorkflowForSave(wf));
                   toast.success("Đã lưu quy trình thẩm định nhà cung cấp thành công!");
                   setShowWorkflowModal(false);
                 } catch (err: any) {
-                  const msg = err.response?.data?.detail || err.message;
-                  toast.error("Lỗi khi lưu quy trình: " + msg);
+                  const msg = workflowErrorMessage(err);
                   throw new Error(msg);
                 }
               }}

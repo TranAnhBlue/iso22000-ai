@@ -25,6 +25,7 @@ from app.modules.inventory.schemas import (
     WarehouseInventoryResponse,
     RetainedSampleCreate,
     RetainedSampleUpdate,
+    RetainedSampleDispose,
     RetainedSampleResponse,
     ProductionBatchCreate,
     ProductionBatchUpdate,
@@ -327,8 +328,19 @@ def update_retained_sample(
     sample = db.query(RetainedSample).filter(RetainedSample.sample_id == sample_id).first()
     if not sample:
         raise HTTPException(status_code=404, detail="Không tìm thấy mẫu lưu này")
+    if sample.status == "DISPOSED":
+        raise HTTPException(status_code=409, detail="Mẫu lưu đã tiêu hủy là hồ sơ đóng, không được chỉnh sửa.")
 
     update_data = sample_in.model_dump(exclude_unset=True)
+    effective_sample_date = update_data.get("sample_date", sample.sample_date)
+    effective_expiry_date = update_data.get("expiry_date", sample.expiry_date)
+    if effective_expiry_date < effective_sample_date:
+        raise HTTPException(status_code=422, detail="Thời hạn lưu mẫu không được nhỏ hơn ngày lấy mẫu.")
+    if update_data.get("status") == "DISPOSED":
+        raise HTTPException(
+            status_code=400,
+            detail="Không được chuyển thẳng sang DISPOSED. Hãy dùng thao tác tiêu hủy có lý do và người thực hiện.",
+        )
     for field, val in update_data.items():
         setattr(sample, field, val)
 
@@ -337,18 +349,40 @@ def update_retained_sample(
     return enrich_sample_data(sample)
 
 
-@router.delete("/samples/{sample_id}", status_code=status.HTTP_200_OK)
-def delete_retained_sample(
+@router.post("/samples/{sample_id}/dispose", response_model=RetainedSampleResponse)
+def dispose_retained_sample(
     sample_id: uuid.UUID,
+    disposal: RetainedSampleDispose,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles("admin", "qc", "qa")),
+    current_user: User = Depends(require_roles("admin", "qa")),
 ):
     sample = db.query(RetainedSample).filter(RetainedSample.sample_id == sample_id).first()
     if not sample:
         raise HTTPException(status_code=404, detail="Không tìm thấy mẫu lưu này")
-    db.delete(sample)
+    if sample.status == "DISPOSED":
+        raise HTTPException(status_code=409, detail="Mẫu lưu này đã được tiêu hủy và khóa hồ sơ.")
+    if sample.expiry_date > date.today():
+        raise HTTPException(
+            status_code=400,
+            detail="Chưa đến hạn lưu mẫu. Không thể tiêu hủy trước hạn; hãy dùng quy trình thay đổi/CAPA nếu có ngoại lệ được phê duyệt.",
+        )
+    sample.status = "DISPOSED"
+    sample.disposed_date = disposal.disposed_date or date.today()
+    sample.disposed_by = current_user.full_name or current_user.username
+    disposal_note = f"Tiêu hủy mẫu: {disposal.reason}"
+    sample.notes = f"{sample.notes}\n{disposal_note}".strip() if sample.notes else disposal_note
     db.commit()
-    return {"message": "Đã xóa mẫu lưu thành công", "sample_id": str(sample_id)}
+    db.refresh(sample)
+    return enrich_sample_data(sample)
+
+
+@router.delete("/samples/{sample_id}", status_code=status.HTTP_409_CONFLICT)
+def delete_retained_sample(sample_id: uuid.UUID, _current_user: User = Depends(require_roles("admin", "qa"))):
+    """Retained samples are quality records and cannot be physically deleted."""
+    raise HTTPException(
+        status_code=status.HTTP_409_CONFLICT,
+        detail="Không được xóa vật lý mẫu lưu. Hãy dùng POST /samples/{sample_id}/dispose khi mẫu đã hết hạn và có lý do tiêu hủy.",
+    )
 
 
 # =========================================================================

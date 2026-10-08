@@ -31,6 +31,7 @@ import {
   BookOpen,
 } from "lucide-react";
 import api from "@/lib/api";
+import { normalizeWorkflowForSave, workflowErrorMessage } from "@/lib/workflow";
 import { toast } from "sonner";
 import { WorkflowBuilder, type WorkflowTemplateData } from "@/components/builder/WorkflowBuilder";
 import { useDepartments } from "@/lib/departments";
@@ -2416,12 +2417,11 @@ function CAPAManagementPage() {
               initialData={workflowTemplate}
               onSave={async (wf) => {
                 try {
-                  await api.post("/builders/workflows", wf);
+                  await api.post("/builders/workflows", normalizeWorkflowForSave(wf));
                   toast.success("Đã lưu lưu đồ quy trình CAPA 5 bước thành công!");
                   setShowWorkflowModal(false);
                 } catch (err: any) {
-                  const msg = err.response?.data?.detail || err.message;
-                  toast.error("Lỗi khi lưu quy trình: " + msg);
+                  const msg = workflowErrorMessage(err);
                   throw new Error(msg);
                 }
               }}

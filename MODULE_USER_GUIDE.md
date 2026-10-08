@@ -106,7 +106,43 @@ Quản trị vào **Tổ chức** để tạo phòng ban, tạo tài khoản và
 5. Khi diễn tập thu hồi, kiểm tra thời gian truy xuất, tỷ lệ xác định lô, mẫu thông báo và bằng chứng cách ly. Dùng chức năng quarantine để khóa mẻ nghi ngờ.
 6. Hủy hàng/mẫu chỉ theo biên bản, mã hồ sơ và người có thẩm quyền.
 
-## 10. NC, CAPA, audit, đào tạo và sức khỏe
+### Phiếu kết quả truy xuất: xem, in và điều chỉnh dữ liệu
+
+1. Tại **Truy xuất 1 chạm**, nhập mã mẻ, mã phiếu xuất hoặc mã QR; hệ thống ghép dữ liệu theo chuỗi: lô nguyên liệu/IQC → mẻ sản xuất → giám sát CCP/oPRP → tồn kho, mẫu lưu → phiếu xuất/khách hàng.
+2. Nút **In Phiếu kết quả truy xuất** chỉ tạo bản tổng hợp tại thời điểm tra cứu. Phiếu này là **chỉ đọc**, không phải màn hình nhập liệu và không có chữ ký phê duyệt điện tử thay cho quy trình ký duyệt nội bộ.
+3. Không sửa trực tiếp phiếu tổng hợp. Điều chỉnh tại hồ sơ nguồn theo đúng trách nhiệm: NCC, lô nguyên liệu và IQC ở **Nhà cung cấp & IQC**; mẻ sản xuất và tồn kho/mẫu lưu/phiếu xuất ở **Kho & Tồn kho FEFO**; nhật ký CCP/oPRP ở **HACCP & Mối nguy**.
+4. Người có quyền sửa phải sửa trước khi hồ sơ được phê duyệt/phát hành. Với hồ sơ đã chốt hoặc đã dùng làm bằng chứng đánh giá, lập phiếu điều chỉnh, NC/CAPA hoặc quản lý thay đổi; giữ lại lịch sử và lý do, không ghi đè tùy tiện.
+5. Sau khi hồ sơ nguồn được điều chỉnh hợp lệ, chạy truy xuất lại và in phiếu mới. Phiếu cũ chỉ phản ánh dữ liệu tại thời điểm đã in.
+
+## 10. Liên kết giữa các trang và phân hệ
+
+Hệ thống vận hành theo một chuỗi dữ liệu; trang **Truy xuất 1 chạm** là nơi tổng hợp, không phải nơi nhập lại dữ liệu.
+
+| Từ trang/phân hệ | Dữ liệu chuyển sang | Phân hệ nhận / mục đích |
+| --- | --- | --- |
+| Tổ chức & Người dùng | Phòng ban, vai trò, Đội ATTP, người chịu trách nhiệm | Toàn bộ phân hệ dùng để phân quyền, giao việc và xác định người lập/kiểm tra. |
+| Tài liệu & Hồ sơ | SOP, WI, biểu mẫu, phiên bản hiệu lực | HACCP, PRP, audit, đào tạo và Builder chỉ áp dụng hướng dẫn/biểu mẫu đã phát hành. |
+| Nhà cung cấp & IQC | NCC đạt chuẩn, lô nguyên liệu, COA, kết quả IQC | Kho tạo/nhận lô; mẻ sản xuất chỉ nên dùng lô đã được chấp nhận. |
+| HACCP & Mối nguy | Kế hoạch HACCP, CCP/oPRP, giới hạn tới hạn, nhật ký đo | Gắn với mẻ sản xuất; vi phạm tạo cảnh báo, NC/CAPA và có thể đưa lô sang HOLD. |
+| PRP / GMP / SSOP | Checklist điều kiện nền, vệ sinh, nước, dị nguyên, dịch hại | Là bằng chứng điều kiện vận hành, là đầu vào audit, CAPA và xem xét lãnh đạo. |
+| Thiết bị & Bảo trì | Tình trạng, hiệu chuẩn, chứng thư thiết bị | Thiết bị đo dùng cho CCP/IPQC phải còn hiệu lực; quá hạn cần xử lý trước khi dùng kết quả đo. |
+| Kho & Tồn kho FEFO | Mẻ sản xuất, sử dụng lô nguyên liệu, tồn kho, mẫu lưu, phiếu xuất | Đầu vào chính của truy xuất; FEFO/HOLD/quarantine kiểm soát việc xuất hàng. |
+| Truy xuất 1 chạm | Chuỗi lô, kết quả CCP/IQC, mẫu lưu, điểm giao hàng | Phục vụ điều tra sự cố, diễn tập/thu hồi; có thể yêu cầu biệt trữ tồn kho. |
+| CAPA & Không phù hợp | Sự cố, nguyên nhân, hành động, bằng chứng hiệu lực | Nhận đầu vào từ CCP/PRP/audit/thu hồi/thiết bị; kết quả có thể dẫn tới thay đổi tài liệu hoặc đào tạo. |
+| Đánh giá nội bộ & Đào tạo | Phát hiện audit, năng lực và bằng chứng đào tạo | Phát hiện chuyển NC/CAPA; nhu cầu đào tạo phát sinh từ thay đổi, CAPA hoặc đánh giá năng lực. |
+| Ứng phó khẩn cấp | Sự cố/diễn tập, liên lạc, kết quả | Khi có thu hồi/sự cố ATTP, dùng Truy xuất để xác định phạm vi, sau đó tạo NC/CAPA và xem xét hiệu lực. |
+| Quản lý thay đổi & Builder | Đánh giá ảnh hưởng, biểu mẫu điện tử, workflow phê duyệt | Thay đổi ảnh hưởng HACCP/PRP/tài liệu/đào tạo phải được duyệt trước; Builder chỉ phát hành biểu mẫu/quy trình sau phê duyệt. |
+
+### Luồng thao tác chuẩn cho một lô thành phẩm
+
+1. **Mua hàng/IQC:** tạo NCC, tiếp nhận lô nguyên liệu và kết luận IQC.
+2. **Sản xuất/QA:** tạo mẻ, khai báo lô nguyên liệu đã dùng và ghi CCP/oPRP/IPQC theo ca.
+3. **Kho/QC:** nhập tồn thành phẩm, tạo mẫu lưu; chỉ giải phóng/xuất lô đáp ứng điều kiện.
+4. **Kho/Kinh doanh:** tạo phiếu xuất gắn đúng mẻ và thông tin khách hàng/xe giao.
+5. **QA hoặc người được phân quyền:** vào Truy xuất 1 chạm, quét mã để kiểm tra hoặc thực hiện thu hồi; nếu có nguy cơ, biệt trữ và mở NC/CAPA.
+6. **Lãnh đạo/QA:** xem Dashboard, audit, CAPA và xem xét lãnh đạo để theo dõi hiệu lực của hành động.
+
+## 11. NC, CAPA, audit, đào tạo và sức khỏe
 
 ### NC và CAPA
 
@@ -121,7 +157,7 @@ Quản trị vào **Tổ chức** để tạo phòng ban, tạo tài khoản và
 3. Với đào tạo: tạo yêu cầu, khóa học/kế hoạch, danh sách tham dự và đánh giá sau đào tạo; đối chiếu competency matrix khi phân công công việc.
 4. Khai báo sức khỏe trước ca/khách thăm. Người bị đình chỉ không được bố trí vào khu vực có nguy cơ lây nhiễm thực phẩm.
 
-## 11. Ứng phó khẩn cấp và Builder
+## 12. Ứng phó khẩn cấp và Builder
 
 ### Ứng phó khẩn cấp
 
@@ -136,7 +172,7 @@ Quản trị vào **Tổ chức** để tạo phòng ban, tạo tài khoản và
 3. Tạo workflow với các bước, vai trò, điều kiện chuyển tiếp và người phê duyệt; kiểm tra sơ đồ không có nút rời hoặc vòng lặp sai.
 4. Khởi tạo instance, thực hiện action theo đúng vai trò và kiểm tra lịch sử phê duyệt.
 
-## 12. Kịch bản vận hành tối thiểu mỗi ngày
+## 13. Kịch bản vận hành tối thiểu mỗi ngày
 
 1. QA xem Dashboard và xử lý cảnh báo đỏ.
 2. QC hoàn tất IQC, CCP/IPQC, PRP và tình trạng nước/thiết bị đo.

@@ -491,7 +491,6 @@ export const WorkflowBuilder: React.FC<WorkflowBuilderProps> = ({
                   onClick={() => handleAddNode(nt.type)}
                   className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg bg-slate-50 hover:bg-blue-50 hover:border-blue-300 border border-slate-200 text-left transition-all group"
                 >
-                  <div className={`p-1 rounded text-xs font-bold shrink-0 ${nt.badgeColor}`}>+</div>
                   <div className="flex-1 min-w-0">
                     <div className="text-xs font-bold text-slate-800 group-hover:text-blue-800 truncate">
                       {nt.label}

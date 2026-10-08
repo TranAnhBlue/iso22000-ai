@@ -55,6 +55,7 @@ import {
   ClipboardCheck,
 } from "lucide-react";
 import api from "@/lib/api";
+import { normalizeWorkflowForSave, workflowErrorMessage } from "@/lib/workflow";
 import { toast } from "sonner";
 import logoImg from "@/assets/logo.png";
 import { WorkflowBuilder, type WorkflowTemplateData } from "@/components/builder/WorkflowBuilder";
@@ -4941,19 +4942,18 @@ function HACCPModule() {
                     }));
                     // Giao dịch nguyên tử ở backend: Lưu workflow và đồng bộ công đoạn trong 1 request duy nhất
                     await api.post(`/haccp/plans/${targetPlanId}/save-workflow-and-steps`, {
-                      workflow: wf,
+                      workflow: normalizeWorkflowForSave(wf),
                       steps: stepPayload,
                     });
                   } else {
-                    await api.post("/builders/workflows", wf);
+                    await api.post("/builders/workflows", normalizeWorkflowForSave(wf));
                   }
 
                   toast.success("Đã lưu lưu đồ và đồng bộ danh mục công đoạn HACCP thành công!");
                   setShowWorkflowStudio(false);
                   await fetchData();
                 } catch (err: any) {
-                  const msg = err.response?.data?.detail || err.message;
-                  toast.error("Lỗi khi lưu: " + msg);
+                  const msg = workflowErrorMessage(err);
                   throw new Error(msg);
                 }
               }}

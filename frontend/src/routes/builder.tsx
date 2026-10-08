@@ -32,7 +32,19 @@ import { FormBuilder } from "@/components/builder/FormBuilder";
 import { DynamicFormRenderer } from "@/components/builder/DynamicFormRenderer";
 import { WorkflowBuilder } from "@/components/builder/WorkflowBuilder";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import type { FormTemplateData, WorkflowTemplateData } from "@/components/builder/types";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import type {
+  FormTemplateData,
+  WorkflowNodeData,
+  WorkflowTemplateData,
+} from "@/components/builder/types";
 import { useModuleAccess } from "@/lib/rbac";
 import { EmptyState } from "@/components/EmptyState";
 import { ModuleGuideModal } from "@/components/ModuleGuideModal";
@@ -44,7 +56,9 @@ export const Route = createFileRoute("/builder")({
 
 function BuilderManagementPage() {
   const { canEdit, isAdmin } = useModuleAccess();
-  const [activeTab, setActiveTab] = useState<"FORMS" | "WORKFLOWS" | "SUBMISSIONS" | "INSTANCES">("FORMS");
+  const [activeTab, setActiveTab] = useState<"FORMS" | "WORKFLOWS" | "SUBMISSIONS" | "INSTANCES">(
+    "FORMS",
+  );
   const [loading, setLoading] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
   const [showWfGuide, setShowWfGuide] = useState(false);
@@ -68,6 +82,13 @@ function BuilderManagementPage() {
   const [submissions, setSubmissions] = useState<any[]>([]);
   const [viewingSubmission, setViewingSubmission] = useState<any | null>(null);
   const [instances, setInstances] = useState<any[]>([]);
+  const [pendingInstanceAction, setPendingInstanceAction] = useState<{
+    instanceId: string;
+    action: "ADVANCE" | "APPROVE" | "REJECT";
+    title: string;
+  } | null>(null);
+  const [instanceComments, setInstanceComments] = useState("");
+  const [instanceActionSaving, setInstanceActionSaving] = useState(false);
 
   // Deleting confirmation states
   const [deletingFormItem, setDeletingFormItem] = useState<{ id: string; title: string } | null>(
@@ -173,21 +194,79 @@ function BuilderManagementPage() {
     }
   };
 
+  const getApiErrorMessage = (err: any): string => {
+    const detail = err?.response?.data?.detail;
+    if (typeof detail === "string") return detail;
+    if (Array.isArray(detail)) {
+      return detail
+        .map((item: any) => {
+          const path = Array.isArray(item?.loc)
+            ? item.loc.filter((part: unknown) => part !== "body").join(".")
+            : "";
+          return `${path ? `${path}: ` : ""}${item?.msg || "Dữ liệu không hợp lệ"}`;
+        })
+        .join("; ");
+    }
+    if (detail && typeof detail === "object") {
+      return detail.message || detail.msg || JSON.stringify(detail);
+    }
+    return err?.message || "Không thể kết nối máy chủ.";
+  };
+
+  const normalizeWorkflowForSave = (workflow: WorkflowTemplateData) => ({
+    module: workflow.module.trim().toUpperCase(),
+    code: workflow.code.trim(),
+    title: workflow.title.trim(),
+    description: workflow.description?.trim() || undefined,
+    version: workflow.version.trim() || "1.0",
+    // Sửa định nghĩa workflow tạo một bản nháp cần được phê duyệt lại.
+    status: "DRAFT",
+    nodes: workflow.nodes.map((node, index) => {
+      const legacyConditions = (node as WorkflowNodeData & { conditions?: unknown }).conditions;
+      return {
+        id: String(node.id || "").trim(),
+        type: String(node.type || "process")
+          .trim()
+          .toLowerCase(),
+        label: String(node.label || "").trim(),
+        role: node.role?.trim() || undefined,
+        description: node.description?.trim() || undefined,
+        ...(legacyConditions &&
+        typeof legacyConditions === "object" &&
+        !Array.isArray(legacyConditions)
+          ? { conditions: legacyConditions }
+          : {}),
+        is_ccp: Boolean(node.is_ccp),
+        step_number: index + 1,
+      };
+    }),
+    edges: workflow.edges.map((edge) => ({
+      id: String(edge.id || "").trim(),
+      source: String(edge.source || "").trim(),
+      target: String(edge.target || "").trim(),
+      label: edge.label?.trim() || undefined,
+      condition: edge.condition?.trim() || undefined,
+    })),
+  });
+
   // Save Workflow Template
   const handleSaveWorkflow = async (wfData: WorkflowTemplateData) => {
     try {
+      const payload = normalizeWorkflowForSave(wfData);
       if (wfData.workflow_id) {
-        await api.put(`/builders/workflows/${wfData.workflow_id}`, wfData);
-        toast.success("Cập nhật quy trình thành công!");
+        await api.put(`/builders/workflows/${wfData.workflow_id}`, payload);
+        toast.success(
+          "Đã cập nhật quy trình ở trạng thái Bản nháp; cần phê duyệt lại trước khi áp dụng.",
+        );
       } else {
-        await api.post("/builders/workflows", wfData);
-        toast.success("Tạo quy trình mới thành công!");
+        await api.post("/builders/workflows", payload);
+        toast.success("Đã tạo quy trình ở trạng thái Bản nháp; cần phê duyệt trước khi áp dụng.");
       }
       setEditingWf(null);
       setIsCreatingWf(false);
       await fetchWorkflows();
     } catch (err: any) {
-      throw new Error(err.response?.data?.detail || err.message);
+      throw new Error(getApiErrorMessage(err));
     }
   };
 
@@ -217,19 +296,68 @@ function BuilderManagementPage() {
     }
   };
 
-  const handleInstanceAction = async (instanceId: string, action: "ADVANCE" | "APPROVE" | "REJECT") => {
-    const comments = window.prompt(
-      action === "REJECT" ? "Nêu lý do từ chối:" : "Ghi chú xử lý (không bắt buộc):",
-      "",
-    );
-    if (comments === null) return;
-    try {
-      await api.post(`/builders/instances/${instanceId}/action`, { action, comments });
-      toast.success(action === "REJECT" ? "Đã từ chối phiên quy trình." : "Đã cập nhật bước quy trình.");
-      await fetchInstances();
-    } catch (err: any) {
-      toast.error(err.response?.data?.detail || "Bạn không có quyền hoặc phiên không thể chuyển bước.");
+  const openInstanceAction = (
+    instanceId: string,
+    action: "ADVANCE" | "APPROVE" | "REJECT",
+    title: string,
+  ) => {
+    setInstanceComments("");
+    setPendingInstanceAction({ instanceId, action, title });
+  };
+
+  const handleInstanceAction = async () => {
+    if (!pendingInstanceAction) return;
+    if (pendingInstanceAction.action === "REJECT" && !instanceComments.trim()) {
+      toast.error("Phải nhập lý do từ chối để lưu vào hồ sơ quy trình.");
+      return;
     }
+    setInstanceActionSaving(true);
+    try {
+      await api.post(`/builders/instances/${pendingInstanceAction.instanceId}/action`, {
+        action: pendingInstanceAction.action,
+        comments: instanceComments.trim() || undefined,
+      });
+      toast.success(
+        pendingInstanceAction.action === "REJECT"
+          ? "Đã từ chối phiên quy trình."
+          : "Đã cập nhật bước quy trình.",
+      );
+      await fetchInstances();
+      setPendingInstanceAction(null);
+    } catch (err: any) {
+      toast.error(
+        err.response?.data?.detail || "Bạn không có quyền hoặc phiên không thể chuyển bước.",
+      );
+    } finally {
+      setInstanceActionSaving(false);
+    }
+  };
+
+  const exportInstanceHistory = (instance: any) => {
+    const rows = [
+      ["Quy trình", instance.workflow_title || instance.workflow_code || ""],
+      ["Mã quy trình", instance.workflow_code || ""],
+      ["Trạng thái", instance.status || ""],
+      [],
+      ["Thời gian", "Hành động", "Từ bước", "Đến bước", "Người xử lý", "Ghi chú"],
+      ...(instance.history || []).map((entry: any) => [
+        entry.action_at ? new Date(entry.action_at).toLocaleString("vi-VN") : "",
+        entry.action || "",
+        entry.from_node_label || entry.node_label || "",
+        entry.to_node_label || "",
+        entry.action_by || "",
+        entry.comments || "",
+      ]),
+    ];
+    const csv = rows
+      .map((row) => row.map((value) => `"${String(value ?? "").replaceAll('"', '""')}"`).join(","))
+      .join("\n");
+    const url = URL.createObjectURL(new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" }));
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `workflow-history-${instance.workflow_code || instance.instance_id}.csv`;
+    anchor.click();
+    URL.revokeObjectURL(url);
   };
 
   // Delete Workflow
@@ -419,7 +547,7 @@ function BuilderManagementPage() {
                 icon={FileText}
                 title="Chưa có biểu mẫu nào"
                 description="Hệ thống chưa có biểu mẫu tùy chỉnh nào. Bạn có thể tạo biểu mẫu mới để bắt đầu số hóa quy trình kiểm tra."
-                actionLabel={canEdit ? "+ Tạo Biểu Mẫu Mới" : undefined}
+                actionLabel={canEdit ? "Tạo Biểu Mẫu Mới" : undefined}
                 onAction={
                   canEdit
                     ? () => {
@@ -475,7 +603,9 @@ function BuilderManagementPage() {
                         className="flex-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 text-xs font-bold flex items-center justify-center gap-1.5 shadow-none"
                       >
                         <Play className="w-3.5 h-3.5 text-emerald-700" />
-                        {f.is_approved && f.status === "ACTIVE" ? "Điền Thử Phiếu" : "Chờ Phê Duyệt"}
+                        {f.is_approved && f.status === "ACTIVE"
+                          ? "Điền Thử Phiếu"
+                          : "Chờ Phê Duyệt"}
                       </Button>
 
                       {canEdit && f.template_id && !f.is_approved && (
@@ -608,7 +738,7 @@ function BuilderManagementPage() {
                 icon={Workflow}
                 title="Chưa có quy trình nào"
                 description="Hệ thống chưa có lưu đồ quy trình nào. Hãy tạo quy trình mới để thiết lập các công đoạn và điểm kiểm soát."
-                actionLabel={canEdit ? "+ Tạo Lưu Đồ Quy Trình Mới" : undefined}
+                actionLabel={canEdit ? "Tạo Lưu Đồ Quy Trình Mới" : undefined}
                 onAction={
                   canEdit
                     ? () => {
@@ -827,60 +957,131 @@ function BuilderManagementPage() {
             <div className="flex items-center justify-between bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
               <div>
                 <div className="text-sm font-bold text-slate-900">Phiên thực thi quy trình</div>
-                <div className="text-xs text-slate-500 mt-1">Các thao tác được backend kiểm tra theo vai trò của bước hiện tại.</div>
+                <div className="text-xs text-slate-500 mt-1">
+                  Các thao tác được backend kiểm tra theo vai trò của bước hiện tại.
+                </div>
               </div>
               <Button variant="outline" size="sm" onClick={fetchInstances} className="text-xs">
                 <RotateCcw className="w-3.5 h-3.5 mr-1" /> Làm mới
               </Button>
             </div>
             {instances.length === 0 ? (
-              <EmptyState icon={Workflow} title="Chưa có phiên thực thi" description="Chọn một quy trình đã phê duyệt và bấm nút phát để khởi tạo." onAction={() => setActiveTab("WORKFLOWS")} actionLabel="Xem quy trình" />
+              <EmptyState
+                icon={Workflow}
+                title="Chưa có phiên thực thi"
+                description="Chọn một quy trình đã phê duyệt và bấm nút phát để khởi tạo."
+                onAction={() => setActiveTab("WORKFLOWS")}
+                actionLabel="Xem quy trình"
+              />
             ) : (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {instances.map((instance) => {
-                  const workflow = workflows.find((item) => item.workflow_id === instance.workflow_id);
+                  const workflow = workflows.find(
+                    (item) => item.workflow_id === instance.workflow_id,
+                  );
                   const snapshotNodes = Array.isArray(instance.workflow_snapshot?.nodes)
                     ? instance.workflow_snapshot.nodes
                     : workflow?.nodes || [];
-                  const currentNode = snapshotNodes.find((node: any) => node.id === instance.current_node_id);
+                  const currentNode = snapshotNodes.find(
+                    (node: any) => node.id === instance.current_node_id,
+                  );
                   const isClosed = ["COMPLETED", "REJECTED", "CANCELLED"].includes(instance.status);
                   const isApproval = currentNode?.type === "approval";
                   return (
-                    <div key={instance.instance_id} className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+                    <div
+                      key={instance.instance_id}
+                      className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm"
+                    >
                       <div className="flex items-start justify-between gap-3">
                         <div>
-                          <div className="font-bold text-slate-900">{instance.workflow_title || workflow?.title || "Quy trình"}</div>
-                          <div className="text-[11px] font-mono text-violet-700 mt-1">{instance.workflow_code || workflow?.code}</div>
+                          <div className="font-bold text-slate-900">
+                            {instance.workflow_title || workflow?.title || "Quy trình"}
+                          </div>
+                          <div className="text-[11px] font-mono text-violet-700 mt-1">
+                            {instance.workflow_code || workflow?.code}
+                          </div>
                         </div>
-                        <span className={`px-2 py-1 rounded-full text-[10px] font-bold ${isClosed ? "bg-slate-100 text-slate-700" : "bg-violet-100 text-violet-800"}`}>{instance.status}</span>
+                        <span
+                          className={`px-2 py-1 rounded-full text-[10px] font-bold ${isClosed ? "bg-slate-100 text-slate-700" : "bg-violet-100 text-violet-800"}`}
+                        >
+                          {instance.status}
+                        </span>
                       </div>
                       <div className="mt-4 p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs">
                         <div className="text-slate-500">Bước hiện tại</div>
-                        <div className="font-bold text-slate-900 mt-1">{currentNode?.label || instance.current_node_id}</div>
-                        {currentNode?.role && <div className="text-slate-500 mt-1">Phụ trách: {currentNode.role}</div>}
+                        <div className="font-bold text-slate-900 mt-1">
+                          {currentNode?.label || instance.current_node_id}
+                        </div>
+                        {currentNode?.role && (
+                          <div className="text-slate-500 mt-1">Phụ trách: {currentNode.role}</div>
+                        )}
                       </div>
-                      <div className="mt-3 text-[11px] text-slate-500">Khởi tạo: {instance.created_at ? new Date(instance.created_at).toLocaleString("vi-VN") : "-"}</div>
+                      <div className="mt-3 text-[11px] text-slate-500">
+                        Khởi tạo:{" "}
+                        {instance.created_at
+                          ? new Date(instance.created_at).toLocaleString("vi-VN")
+                          : "-"}
+                      </div>
                       {!isClosed && (
                         <div className="mt-4 flex gap-2">
-                          <Button size="sm" onClick={() => handleInstanceAction(instance.instance_id, isApproval ? "APPROVE" : "ADVANCE")} className="flex-1 bg-violet-600 hover:bg-violet-700 text-xs">
-                            <CheckCircle2 className="w-3.5 h-3.5 mr-1" /> {isApproval ? "Phê duyệt" : "Chuyển bước"}
+                          <Button
+                            size="sm"
+                            onClick={() =>
+                              openInstanceAction(
+                                instance.instance_id,
+                                isApproval ? "APPROVE" : "ADVANCE",
+                                instance.workflow_title || workflow?.title || "Quy trình",
+                              )
+                            }
+                            className="flex-1 bg-violet-600 hover:bg-violet-700 text-xs"
+                          >
+                            <CheckCircle2 className="w-3.5 h-3.5 mr-1" />{" "}
+                            {isApproval ? "Phê duyệt" : "Chuyển bước"}
                           </Button>
-                          <Button size="sm" variant="outline" onClick={() => handleInstanceAction(instance.instance_id, "REJECT")} className="border-rose-300 text-rose-700 hover:bg-rose-50 text-xs">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() =>
+                              openInstanceAction(
+                                instance.instance_id,
+                                "REJECT",
+                                instance.workflow_title || workflow?.title || "Quy trình",
+                              )
+                            }
+                            className="border-rose-300 text-rose-700 hover:bg-rose-50 text-xs"
+                          >
                             Từ chối
                           </Button>
                         </div>
                       )}
                       {instance.history?.length > 0 && (
                         <div className="mt-4 pt-3 border-t border-slate-100 space-y-2">
-                          <div className="text-[11px] font-bold uppercase tracking-wide text-slate-500">Nhật ký xử lý</div>
-                          {instance.history.slice(-3).reverse().map((entry: any, index: number) => (
-                            <div key={`${entry.action_at}-${index}`} className="text-[11px] text-slate-600">
-                              <span className="font-bold text-violet-700">{entry.action}</span> · {entry.action_by || "Hệ thống"}
-                              {entry.comments ? ` — ${entry.comments}` : ""}
-                            </div>
-                          ))}
+                          <div className="text-[11px] font-bold uppercase tracking-wide text-slate-500">
+                            Nhật ký xử lý
+                          </div>
+                          {instance.history
+                            .slice(-3)
+                            .reverse()
+                            .map((entry: any, index: number) => (
+                              <div
+                                key={`${entry.action_at}-${index}`}
+                                className="text-[11px] text-slate-600"
+                              >
+                                <span className="font-bold text-violet-700">{entry.action}</span> ·{" "}
+                                {entry.action_by || "Hệ thống"}
+                                {entry.comments ? ` — ${entry.comments}` : ""}
+                              </div>
+                            ))}
                         </div>
                       )}
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => exportInstanceHistory(instance)}
+                        className="mt-2 h-7 px-2 text-[11px] text-slate-600"
+                      >
+                        <Download className="w-3.5 h-3.5 mr-1" /> Xuất lịch sử CSV
+                      </Button>
                     </div>
                   );
                 })}
@@ -1048,6 +1249,65 @@ function BuilderManagementPage() {
               </div>
             );
           })()}
+
+        <Dialog
+          open={Boolean(pendingInstanceAction)}
+          onOpenChange={(open) => !open && !instanceActionSaving && setPendingInstanceAction(null)}
+        >
+          <DialogContent className="sm:max-w-lg">
+            <DialogHeader>
+              <DialogTitle>
+                {pendingInstanceAction?.action === "REJECT"
+                  ? "Từ chối bước quy trình"
+                  : "Xác nhận xử lý workflow"}
+              </DialogTitle>
+              <DialogDescription>
+                {pendingInstanceAction?.title}. Thao tác sẽ được ghi vào lịch sử phê duyệt cùng tài
+                khoản và thời gian thực hiện.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-2">
+              <label className="text-xs font-semibold text-slate-700">
+                {pendingInstanceAction?.action === "REJECT" ? "Lý do từ chối *" : "Ghi chú xử lý"}
+              </label>
+              <textarea
+                value={instanceComments}
+                onChange={(event) => setInstanceComments(event.target.value)}
+                rows={4}
+                placeholder={
+                  pendingInstanceAction?.action === "REJECT"
+                    ? "Nêu rõ lý do, hành động cần khắc phục hoặc bước cần quay lại..."
+                    : "Ghi chú xử lý (không bắt buộc)..."
+                }
+                className="w-full rounded-lg border border-slate-300 p-3 text-sm focus:border-violet-500 focus:outline-none"
+              />
+            </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setPendingInstanceAction(null)}
+                disabled={instanceActionSaving}
+              >
+                Hủy
+              </Button>
+              <Button
+                onClick={handleInstanceAction}
+                disabled={instanceActionSaving}
+                className={
+                  pendingInstanceAction?.action === "REJECT"
+                    ? "bg-rose-600 hover:bg-rose-700"
+                    : "bg-violet-600 hover:bg-violet-700"
+                }
+              >
+                {instanceActionSaving
+                  ? "Đang lưu..."
+                  : pendingInstanceAction?.action === "REJECT"
+                    ? "Xác nhận từ chối"
+                    : "Xác nhận xử lý"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {/* Modal Xác Nhận Xóa Biểu Mẫu */}
         <ConfirmDialog

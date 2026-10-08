@@ -54,6 +54,7 @@ import {
   HelpCircle,
 } from "lucide-react";
 import api from "@/lib/api";
+import { normalizeWorkflowForSave, workflowErrorMessage } from "@/lib/workflow";
 import { toast } from "sonner";
 import logoImg from "/logo.png";
 import { printHtml } from "@/lib/print";
@@ -5032,13 +5033,12 @@ function AuditManagementPage() {
                 initialData={workflowTemplate}
                 onSave={async (wf) => {
                   try {
-                    await api.post("/builders/workflows", wf);
+                    await api.post("/builders/workflows", normalizeWorkflowForSave(wf));
                     setWorkflowTemplate(wf);
                     toast.success("Đã lưu lưu đồ quy trình Đánh giá nội bộ thành công!");
                     setShowWorkflowModal(false);
                   } catch (err: any) {
-                    const msg = err.response?.data?.detail || err.message;
-                    toast.error("Lỗi khi lưu quy trình: " + msg);
+                    const msg = workflowErrorMessage(err);
                     throw new Error(msg);
                   }
                 }}

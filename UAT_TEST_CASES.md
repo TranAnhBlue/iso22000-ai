@@ -56,6 +56,7 @@ Thực hiện trên môi trường UAT có dữ liệu mẫu hoặc dữ liệu 
 | EQ-03 | Phương tiện | Kho/QC | Tạo kiểm tra xe với một điều kiện không đạt. | Kết quả tự `FAIL/REJECTED`; không bị chuyển thành PASS. |
 | INV-01 | Kho/FEFO | Kho | Tạo hai lô cùng hàng khác hạn dùng, mở đề xuất xuất kho. | Lô hết hạn gần hơn được ưu tiên; lô HOLD không được đề xuất xuất. |
 | INV-02 | Mẫu lưu | QC | Tạo mẫu lưu, thử đặt expiry trước sample date. | Dữ liệu ngày không hợp lệ bị chặn. |
+| INV-02A | Tiêu hủy mẫu lưu | QA | Thử xóa mẫu lưu; sau đó tiêu hủy mẫu đã hết hạn với lý do. | Xóa vật lý trả `409`; chỉ QA/Admin được tiêu hủy mẫu hết hạn, có người/ngày/lý do và trạng thái `DISPOSED`. |
 | INV-03 | Hủy hàng | QA/Kho | Tạo biên bản hủy hàng với mã duy nhất; thử mã trùng. | Biên bản hợp lệ lưu, mã trùng bị từ chối. |
 | TRACE-01 | Truy xuất ngược | QA | Chọn thành phẩm/mẻ có dữ liệu liên kết. | Hiển thị được mẻ, lô nguyên liệu, NCC và mẫu lưu nếu có. |
 | TRACE-02 | Truy xuất xuôi/thu hồi | QA | Chọn lô nguyên liệu, xem điểm giao/khách ảnh hưởng, tạo quarantine. | Danh sách ảnh hưởng đúng; mẻ bị cách ly không thể xuất. |

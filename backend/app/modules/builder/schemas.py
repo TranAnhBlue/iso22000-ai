@@ -346,6 +346,12 @@ class WorkflowInstanceAction(BaseModel):
             raise ValueError(f"Hành động '{v}' không hợp lệ. Phải thuộc một trong các hành động: {', '.join(sorted(ALLOWED_WORKFLOW_ACTIONS))}")
         return act
 
+    @model_validator(mode="after")
+    def require_rejection_reason(self):
+        if self.action == "REJECT" and not (self.comments or "").strip():
+            raise ValueError("Phải nêu lý do khi từ chối bước quy trình.")
+        return self
+
 class WorkflowInstanceResponse(BaseModel):
     instance_id: UUID
     workflow_id: UUID

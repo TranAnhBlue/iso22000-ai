@@ -324,7 +324,7 @@ const MODULE_GUIDES: Record<ModuleKey, GuideContent> = {
       },
       {
         title: "Bước 2: Xem Cây Phả Hệ Chuỗi Cung Ứng",
-        desc: "Khám phá liên kết từ: Nhà cung ứng $\\rightarrow$ Lô nguyên liệu $\\rightarrow$ Công đoạn CCP $\\rightarrow$ Mẫu lưu $\\rightarrow$ Khách hàng nhận hàng.",
+        desc: "Khám phá liên kết từ: Nhà cung ứng → Lô nguyên liệu → Công đoạn CCP → Mẫu lưu → Khách hàng nhận hàng.",
       },
       {
         title: "Bước 3: Thực hiện Diễn tập Thu hồi (Mock Recall)",
@@ -440,7 +440,7 @@ const MODULE_GUIDES: Record<ModuleKey, GuideContent> = {
       },
       {
         title: "Bước 2: Cấu hình Quy trình Duyệt (Workflow)",
-        desc: "Thiết lập các bước duyệt tuần tự hoặc song song (Người lập $\\rightarrow$ Trưởng ca $\\rightarrow$ QA Lead $\\rightarrow$ Giám đốc).",
+        desc: "Thiết lập các bước duyệt tuần tự hoặc song song (Người lập → Trưởng ca → QA Lead → Giám đốc).",
       },
       {
         title: "Bước 3: Triển khai Ghi chép & Phê duyệt Online",

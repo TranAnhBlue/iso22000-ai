@@ -39,6 +39,7 @@ import { QRCodeModal } from "@/components/QRCodeModal";
 import { EmptyState } from "@/components/EmptyState";
 import { ModuleGuideModal } from "@/components/ModuleGuideModal";
 import { printHtml } from "@/lib/print";
+import { getSession } from "@/lib/auth";
 
 import { useModuleAccess } from "@/lib/rbac";
 
@@ -67,6 +68,7 @@ export const Route = createFileRoute("/traceability")({
 
 export function TraceabilityPage() {
   const { canEdit, isManagement, isAdmin, isQA } = useModuleAccess();
+  const session = getSession();
   const [mode, setMode] = useState<"backward" | "forward">("backward");
   const [queryCode, setQueryCode] = useState("");
   const [forwardCode, setForwardCode] = useState("");
@@ -751,10 +753,10 @@ export function TraceabilityPage() {
             {/* DOCUMENT TITLE */}
             <div className="text-center my-6">
               <h1 className="text-xl sm:text-2xl font-black tracking-tight text-foreground uppercase">
-                BIÊN BẢN TRUY XUẤT NGUỒN GỐC LÔ HÀNG THÀNH PHẨM
+                PHIẾU KẾT QUẢ TRUY XUẤT NGUỒN GỐC LÔ HÀNG THÀNH PHẨM
               </h1>
               <p className="text-xs text-muted-foreground italic mt-1">
-                (Áp dụng theo quy định truy xuất nguồn gốc một chạm ISO 22000:2018)
+                (Bản tổng hợp tự động, áp dụng theo quy định truy xuất nguồn gốc ISO 22000:2018)
               </p>
             </div>
 
@@ -825,12 +827,39 @@ export function TraceabilityPage() {
                   III. THẨM ĐỊNH ĐIỂM KIỂM SOÁT TỚI HẠN (CCP / oPRP)
                 </h4>
                 <p className="text-xs text-muted-foreground">
-                  • <b>CCP 1 (Thanh trùng nhiệt độ):</b> Đo thực tế 85.5°C (Giới hạn tới hạn: ≥
-                  85.0°C trong ≥ 15 phút) → <b>ĐẠT TIÊU CHUẨN</b>.
-                  <br />• <b>CCP 2 (Dò kim loại sau đóng gói):</b> Test strip Fe 1.2mm, Non-Fe
-                  1.5mm, SUS 2.0mm → <b>KHÔNG PHÁT HIỆN DỊ VẬT (ĐẠT)</b>.
-                  <br />• <b>Mẫu lưu đối chứng (ML-202608-01):</b> Khối lượng 250g, bảo quản tại Tủ
-                  đông T-01 (≤ -18°C), Hạn lưu đến 25/11/2026.
+                  {backwardTree.ccp_monitoring_records?.length ? (
+                    backwardTree.ccp_monitoring_records.map((ccp: any, idx: number) => (
+                      <span key={`${ccp.ccp_code}-${idx}`}>
+                        •{" "}
+                        <b>
+                          {ccp.ccp_code} ({ccp.ccp_name}):
+                        </b>{" "}
+                        {ccp.measured_value} {ccp.unit}
+                        {ccp.is_critical_limit_exceeded ? (
+                          <b className="text-rose-700"> → VƯỢT NGƯỠNG TỚI HẠN</b>
+                        ) : (
+                          <b className="text-emerald-700"> → ĐẠT</b>
+                        )}
+                        {idx < backwardTree.ccp_monitoring_records.length - 1 && <br />}
+                      </span>
+                    ))
+                  ) : (
+                    <span>Chưa có hồ sơ giám sát CCP/oPRP được liên kết với mẻ này.</span>
+                  )}
+                  {backwardTree.retained_samples?.length > 0 && (
+                    <>
+                      <br />
+                      {backwardTree.retained_samples.map((sample: any, idx: number) => (
+                        <span key={`${sample.sample_code}-${idx}`}>
+                          • <b>Mẫu lưu đối chứng ({sample.sample_code}):</b> bảo quản tại{" "}
+                          {sample.storage_cabinet || "chưa ghi nhận"}, hạn lưu đến{" "}
+                          {sample.expiry_date || "chưa ghi nhận"}, kết quả:{" "}
+                          <b>{sample.test_result || "chưa có"}</b>.
+                          {idx < backwardTree.retained_samples.length - 1 && <br />}
+                        </span>
+                      ))}
+                    </>
+                  )}
                 </p>
               </div>
 
@@ -865,20 +894,23 @@ export function TraceabilityPage() {
                 </table>
               </div>
 
-              {/* SIGNATURE SECTION */}
-              <div className="grid grid-cols-3 gap-4 text-center pt-8 mt-6 border-t">
-                <div className="space-y-12">
-                  <div className="font-bold text-xs">NGƯỜI LẬP BIÊN BẢN</div>
-                  <div className="font-semibold text-xs text-foreground">Trần Thị Lan (QC)</div>
-                </div>
-                <div className="space-y-12">
-                  <div className="font-bold text-xs">TRƯỞNG BAN ISO / QA</div>
-                  <div className="font-semibold text-xs text-foreground">Nguyễn Văn An</div>
-                </div>
-                <div className="space-y-12">
-                  <div className="font-bold text-xs">GIÁM ĐỐC NHÀ MÁY</div>
-                  <div className="font-semibold text-xs text-foreground">Lê Hoàng Quân</div>
-                </div>
+              {/* TRACEABILITY REPORT METADATA */}
+              <div className="mt-6 border-t pt-4 text-xs text-muted-foreground space-y-1">
+                <p>
+                  <b className="text-foreground">Bản tổng hợp truy xuất tự động (chỉ đọc).</b> Dữ
+                  liệu được lấy từ hồ sơ lô sản xuất, IQC, giám sát CCP/oPRP, kho/mẫu lưu và phiếu
+                  xuất kho tại thời điểm in.
+                </p>
+                <p>
+                  Người thực hiện truy xuất:{" "}
+                  <b className="text-foreground">{session?.name || "Chưa xác định"}</b>
+                  {" · "}Thời điểm in: {new Date().toLocaleString("vi-VN")}
+                </p>
+                <p>
+                  Muốn điều chỉnh dữ liệu, cập nhật tại hồ sơ nguồn theo phân quyền; không sửa trên
+                  phiếu tổng hợp này. Nếu hồ sơ đã phê duyệt/phát hành, lập điều chỉnh hoặc CAPA
+                  theo quy trình thay vì sửa trực tiếp.
+                </p>
               </div>
             </div>
           </div>

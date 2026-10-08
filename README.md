@@ -266,22 +266,17 @@ npm run dev -- --host 127.0.0.1 --port 8080
 
 ---
 
-## 👥 TÀI KHOẢN TRẢI NGHIỆM MẪU & MA TRẬN PHÂN QUYỀN (RBAC)
+## 👥 Quản lý tài khoản và phân quyền RBAC
 
-Hệ thống đã cấu hình sẵn 4 tài khoản theo từng vai trò nghiệp vụ. Bạn có thể **bấm chọn trực tiếp thẻ vai trò** tại màn hình đăng nhập để tự động điền tài khoản:
+Tài khoản production không được tạo sẵn hoặc công bố mật khẩu mặc định. Quản trị viên khởi tạo người dùng, gán phòng ban và vai trò trong phân hệ **Tổ chức**. Mỗi người dùng phải đổi mật khẩu theo chính sách bảo mật và không chia sẻ JWT/token.
 
-| Vai trò | Tài khoản | Mật khẩu mặc định | Phân quyền & Nhiệm vụ chính |
-| :--- | :---: | :---: | :--- |
-| **Quản trị hệ thống (Admin)** | `admin` | `123456` hoặc `admin123` | Toàn quyền cấu hình người dùng, phân quyền RBAC, thiết kế Form & Workflow Studio. |
-| **Ban QLCL / Đội ATTP (QA/QC)** | `qa` | `123456` hoặc `qa123` | Quản trị Kế hoạch HACCP, duyệt ngưỡng CCP, kiểm tra IQC, thẩm tra CAPA, đánh giá nội bộ. |
-| **Phòng Sản xuất (Production)** | `production` | `123456` hoặc `prod123` | Ghi nhật ký đo đạc thông số CCP theo ca, theo dõi kho xuất FEFO, báo cáo sự cố máy. |
-| **Phòng Cơ điện & Bảo trì** | `maintenance` | `123456` hoặc `maint123` | Quản lý thiết bị máy móc, lập lịch bảo trì phòng ngừa, ghi nhận chứng chỉ kiểm định hiệu chuẩn. |
+Các vai trò nghiệp vụ chính gồm: Quản trị hệ thống, Ban lãnh đạo, QA/QC/Đội ATTP, Sản xuất, Mua hàng/Kho, Bảo trì, Nhân sự và Người xem. API backend là nguồn kiểm soát quyền cuối cùng; việc ẩn nút trên giao diện không thay thế RBAC.
 
 ---
 
 ## 📚 TÀI LIỆU API & HƯỚNG DẪN SỬ DỤNG
 
-* **Swagger OpenAPI Documentation:** `http://127.0.0.1:8000/docs` — Trình kiểm thử API tương tác trực tiếp trên trình duyệt.
+* **Swagger OpenAPI Documentation:** `/docs` trên địa chỉ backend đang chạy — Trình kiểm thử API tương tác trực tiếp trên trình duyệt.
 * **ReDoc Interactive Specs:** `http://127.0.0.1:8000/redoc` — Tài liệu cấu trúc API chi tiết chuẩn OpenAPI 3.1.
 * **Cẩm nang vận hành chi tiết:** Xem file [USER_GUIDE.md](./USER_GUIDE.md) để xem hướng dẫn từng bước vận hành thực tế tại nhà máy sản xuất.
 

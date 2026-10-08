@@ -1689,17 +1689,22 @@ export function InventoryPage() {
                       >
                         <Edit className="h-3.5 w-3.5" />
                       </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() =>
-                          setDeletingSampleItem({ id: sample.sample_id, code: sample.sample_code })
-                        }
-                        className="h-7 w-7 p-0 text-rose-600 hover:text-rose-700 hover:bg-rose-50"
-                        title="Xóa mẫu lưu"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
+                      {sample.status !== "DISPOSED" && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() =>
+                            setDeletingSampleItem({
+                              id: sample.sample_id,
+                              code: sample.sample_code,
+                            })
+                          }
+                          className="h-7 w-7 p-0 text-rose-600 hover:text-rose-700 hover:bg-rose-50"
+                          title="Lập ghi nhận tiêu hủy mẫu lưu"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -3208,25 +3213,34 @@ export function InventoryPage() {
         variant="destructive"
       />
 
-      {/* Modal Xóa Mẫu Lưu */}
+      {/* Modal tiêu hủy mẫu lưu: hồ sơ chỉ được đóng, không bị xóa vật lý */}
       <ConfirmDialog
         isOpen={!!deletingSampleItem}
         onClose={() => setDeletingSampleItem(null)}
         onConfirm={async () => {
           if (deletingSampleItem) {
             try {
-              await api.delete(`/inventory/samples/${deletingSampleItem.id}`);
-              toast.success(`Đã xoá mẫu lưu [${deletingSampleItem.code}] thành công!`);
-              fetchData();
+              const reason = window.prompt("Lý do tiêu hủy mẫu lưu (bắt buộc):");
+              if (!reason?.trim()) {
+                toast.info("Đã hủy thao tác tiêu hủy mẫu lưu.");
+              } else {
+                await api.post(`/inventory/samples/${deletingSampleItem.id}/dispose`, { reason });
+                toast.success(
+                  `Đã ghi nhận tiêu hủy mẫu lưu [${deletingSampleItem.code}] và khóa hồ sơ.`,
+                );
+                fetchData();
+              }
             } catch (err: any) {
-              toast.error("Lỗi khi xóa mẫu lưu: " + (err.response?.data?.detail || err.message));
+              toast.error(
+                "Lỗi khi tiêu hủy mẫu lưu: " + (err.response?.data?.detail || err.message),
+              );
             }
             setDeletingSampleItem(null);
           }
         }}
-        title="Xác nhận hủy / xóa mẫu lưu nghiệm thức"
-        description={`Bạn có chắc chắn muốn xóa mẫu lưu đối chứng [${deletingSampleItem?.code}] khỏi hệ thống tủ bảo quản?`}
-        confirmLabel="Xóa mẫu lưu"
+        title="Xác nhận tiêu hủy mẫu lưu"
+        description={`Hồ sơ mẫu lưu đối chứng [${deletingSampleItem?.code}] không bị xóa. Hệ thống chỉ cho phép tiêu hủy khi đã đến hạn, đồng thời ghi nhận người thực hiện, ngày và lý do.`}
+        confirmLabel="Tiếp tục tiêu hủy"
         variant="destructive"
       />
 

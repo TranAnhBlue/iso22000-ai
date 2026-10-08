@@ -28,6 +28,9 @@ export function EmptyState({
   className = "",
 }: EmptyStateProps) {
   const handleGuide = onGuide || onOpenGuide;
+  // The button already renders a Plus icon. Normalize older labels that
+  // included a leading "+" so the action never displays it twice.
+  const normalizedActionLabel = actionLabel?.replace(/^\s*\+\s*/, "");
   return (
     <div
       className={`flex flex-col items-center justify-center text-center rounded-2xl border-2 border-dashed border-border/80 bg-card/40 backdrop-blur-sm transition-all duration-300 hover:border-primary/40 ${
@@ -51,13 +54,13 @@ export function EmptyState({
 
       {(onAction || handleGuide) && (
         <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
-          {onAction && actionLabel && (
+          {onAction && normalizedActionLabel && (
             <Button
               onClick={onAction}
               className="bg-primary text-primary-foreground font-medium shadow-md shadow-primary/20 hover:bg-primary/90 gap-2 h-10 px-5 rounded-xl cursor-pointer"
             >
               <Plus className="h-4 w-4" />
-              <span>{actionLabel}</span>
+              <span>{normalizedActionLabel}</span>
             </Button>
           )}
 

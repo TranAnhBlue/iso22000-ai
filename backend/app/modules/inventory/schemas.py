@@ -156,6 +156,20 @@ class RetainedSampleUpdate(BaseModel):
         return v
 
 
+class RetainedSampleDispose(BaseModel):
+    """Controlled disposal record for a retained sample; never a physical delete."""
+    reason: str = Field(..., min_length=5, max_length=1000)
+    disposed_date: Optional[date] = None
+
+    @field_validator("reason")
+    @classmethod
+    def validate_reason(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("Phải nêu lý do tiêu hủy mẫu lưu.")
+        return value
+
+
 class RetainedSampleResponse(RetainedSampleBase):
     model_config = ConfigDict(from_attributes=True)
 
@@ -514,4 +528,3 @@ class LogisticsStatsResponse(BaseModel):
     failed_inspections: int
     total_disposal_records: int
     total_disposed_qty_kg: float
-

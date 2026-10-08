@@ -58,6 +58,7 @@ import {
   FolderArchive,
 } from "lucide-react";
 import api from "@/lib/api";
+import { normalizeWorkflowForSave, workflowErrorMessage } from "@/lib/workflow";
 import logoImg from "@/assets/logo.png";
 import { WorkflowBuilder, type WorkflowTemplateData } from "@/components/builder/WorkflowBuilder";
 import { useModuleAccess } from "@/lib/rbac";
@@ -2727,12 +2728,11 @@ KÝ DUYỆT VĂN BẢN:
               initialData={sopWorkflowTemplate}
               onSave={async (wf) => {
                 try {
-                  await api.post("/builders/workflows", wf);
+                  await api.post("/builders/workflows", normalizeWorkflowForSave(wf));
                   toast.success("Đã lưu lưu đồ quy trình phê duyệt SOP thành công!");
                   setShowSopWorkflowModal(false);
                 } catch (err: any) {
-                  const msg = err.response?.data?.detail || err.message;
-                  toast.error("Lỗi khi lưu quy trình: " + msg);
+                  const msg = workflowErrorMessage(err);
                   throw new Error(msg);
                 }
               }}
