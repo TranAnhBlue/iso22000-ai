@@ -1,4 +1,6 @@
 # SỔ TAY HƯỚNG DẪN SỬ DỤNG HỆ THỐNG WCERT FSMS AI PLATFORM
+
+> **Tài liệu lưu trữ (legacy):** File này còn chứa nội dung demo và các ví dụ cũ, bao gồm tài khoản mẫu/KPI/thời hạn minh họa. Không sử dụng file này làm quy định vận hành, giới hạn CCP/PRP hay hướng dẫn triển khai. Tài liệu hiện hành là [MODULE_USER_GUIDE.md](./MODULE_USER_GUIDE.md); kịch bản kiểm thử là [UAT_TEST_CASES.md](./UAT_TEST_CASES.md).
 ### Hệ Thống Số Hóa Quản Lý An Toàn Thực Phẩm Toàn Diện Theo Chuẩn ISO 22000:2018
 
 ---
@@ -75,7 +77,7 @@
    - Cảnh báo các hành động khắc phục CAPA sắp hoặc đã quá hạn.
    - Cảnh báo các lô hàng kho lạnh sắp hết hạn sử dụng.
 4. **Mục Tiêu Chất Lượng & ATTP (Quality Objectives):**
-   - Theo dõi tiến độ đạt được các chỉ tiêu định lượng (Ví dụ: Tỷ lệ sản phẩm loại 1 > 98%, Tỷ lệ khiếu nại khách hàng < 0.1%).
+   - Theo dõi tiến độ đạt được các chỉ tiêu định lượng theo mục tiêu chất lượng đã được doanh nghiệp phê duyệt.
 5. **Họp Xem Xét Của Lãnh Đạo (Management Review - Điều khoản 9.3):**
    - Quản lý biên bản họp xem xét lãnh đạo định kỳ, phân công các quyết định cải tiến.
 6. **Bộ Công Cụ Trí Tuệ Nhân Tạo (AI Insights):**
@@ -128,7 +130,7 @@ Khi nhà máy có bất kỳ thay đổi nào thuộc nguyên tắc **4M** (*Man
    - Đánh giá xem thay đổi có làm ảnh hưởng đến kế hoạch HACCP, giới hạn tới hạn CCP hay không.
 3. **Phê duyệt & Giám sát triển khai:**
    - Trưởng ban HACCP và Giám đốc nhà máy phê duyệt.
-   - Theo dõi tiến độ triển khai và thẩm tra hiệu lực sau 30 ngày áp dụng thực tế.
+   - Theo dõi tiến độ triển khai và thẩm tra hiệu lực theo thời hạn/kế hoạch đã được phê duyệt.
 
 ---
 
@@ -223,7 +225,7 @@ Hệ thống cho phép truy xuất 2 chiều tức thì:
 
 #### 3. Diễn Tập Thu Hồi Giả Định (Mock Recall)
 * Đáp ứng yêu cầu bắt buộc của ISO 22000 (Ít nhất 1 lần/năm).
-* Giúp doanh nghiệp bấm giờ thực tế: Tính từ lúc phát lệnh giả định thu hồi đến lúc xác định được 100% vị trí các kiện hàng trên thị trường trong vòng dưới **2 đến 4 giờ đồng hồ**.
+* Ghi nhận thời gian thực tế từ lúc phát lệnh giả định thu hồi đến khi xác định phạm vi hàng hóa; tiêu chí thời gian và tỷ lệ hoàn thành do doanh nghiệp phê duyệt.
 
 ---
 
@@ -241,7 +243,7 @@ Khi xảy ra sự cố (Sản phẩm nhiễm vi sinh, nhiệt độ kho bị h�
 3. **Kế Hoạch Khắc Phục & Phòng Ngừa (Corrective & Preventive Action):**
    - Đưa ra biện pháp khắc phục triệt để, chỉ định người phụ trách và hạn chót (Deadline).
 4. **Thẩm Tra Hiệu Lực (Effectiveness Verification):**
-   - Sau thời gian áp dụng (ví dụ: sau 30 ngày), Trưởng ban ISO đánh giá lại xem sự cố có tái diễn hay không trước khi chính thức bấm **Đóng phiếu CAPA (Closed)**.
+   - Theo kế hoạch thẩm tra đã được phê duyệt, Trưởng ban ISO đánh giá lại xem sự cố có tái diễn hay không trước khi chính thức bấm **Đóng phiếu CAPA (Closed)**.
 
 ---
 

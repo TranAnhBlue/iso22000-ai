@@ -48,7 +48,8 @@ Thực hiện trên môi trường UAT có dữ liệu mẫu hoặc dữ liệu 
 | HACCP-04 | CCP lệch ngưỡng | QC/QA | Ghi log vượt giới hạn cho mẻ có liên kết kho. | Log `CRITICAL/DEVIATION`, mẻ/lô bị HOLD và NC được tạo hoặc liên kết. |
 | HACCP-05 | Phê duyệt/thẩm tra | Đội ATTP | Phê duyệt kế hoạch rồi thẩm tra với phiên bản mới. | Có bản ghi review; phiên bản và người phê duyệt đúng. |
 | PRP-01 | Checklist PRP | QC/Sản xuất | Tạo checklist có một mục không đạt và hành động khắc phục. | Tỷ lệ tuân thủ được tính; trạng thái cần hành động, không thể hiện đạt giả. |
-| PRP-02 | Nước/đá | QC/Bảo trì | Ghi phiếu nước pH bình thường nhưng clo 1.1 hoặc E. coli > 0. | `overall_status` tự là `FAIL`. |
+| PRP-01A | Bộ ngưỡng nước/đá | QA/Đội ATTP | Tạo bộ ngưỡng `DRAFT`, rà soát, rồi cập nhật `ACTIVE`; thử kích hoạt bộ thứ hai. | Chỉ vai trò được phân quyền cập nhật; chỉ có một bộ `ACTIVE`, bộ cũ thành `RETIRED`. |
+| PRP-02 | Nước/đá | QC/Bảo trì | Ghi phiếu nước pH bình thường nhưng clo `1.1` hoặc E. coli `> 0`. | `overall_status` tự là `FAIL`. |
 | PRP-03 | Nước/chất thải trùng mã | QA | Tạo hai phiếu có cùng mã nước hoặc mã chất thải. | Lần thứ hai bị từ chối `409`; không sinh bản ghi trùng. |
 | PRP-04 | Hóa chất/môi trường | QA | Thêm hóa chất có MSDS và lịch quan trắc; thử thêm mã trùng. | Bản ghi hợp lệ lưu; mã trùng bị từ chối. |
 | EQ-01 | Thiết bị | Bảo trì | Tạo thiết bị, lịch bảo trì và nhật ký hoàn thành. | Lý lịch/nhật ký liên kết đúng thiết bị và hiện ở danh sách. |
@@ -73,6 +74,8 @@ Thực hiện trên môi trường UAT có dữ liệu mẫu hoặc dữ liệu 
 | BLD-02 | Workflow Builder | Admin/QA | Tạo workflow 2 bước, khởi tạo instance, thực hiện action bằng đúng vai trò. | Instance chỉ chuyển bước khi role hợp lệ; lịch sử action đầy đủ. |
 | API-01 | Toàn hệ thống | Người dùng | Gọi endpoint nghiệp vụ bằng token hết hạn. | Nhận `401`; frontend xóa phiên cũ và yêu cầu đăng nhập lại. |
 | API-02 | Toàn hệ thống | Admin | Mở OpenAPI và kiểm tra các endpoint chính của 20 module. | Route được đăng ký, schema hiển thị, endpoint bảo vệ có Bearer security. |
+
+> **Lưu ý về dữ liệu UAT:** Giá trị `clo 1.1` và `E. coli > 0` ở PRP-02 chỉ là dữ liệu kiểm thử để xác nhận hệ thống chuyển trạng thái `FAIL`; đây **không phải** giới hạn chính thức của ISO 22000 hoặc của doanh nghiệp. Trước go-live, QA/Đội ATTP phải phê duyệt bộ ngưỡng `ACTIVE` trong `water-limit-profiles` theo kế hoạch HACCP/PRP, quy định pháp luật và yêu cầu khách hàng.
 
 ## 4. Tiêu chí nghiệm thu tối thiểu
 

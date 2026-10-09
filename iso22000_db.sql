@@ -1406,8 +1406,31 @@ CREATE TABLE IF NOT EXISTS audit_logs (
 );
 
 -- Bảng: water_safety_records (BM01-SSOP-NUOC: Sổ theo dõi kiểm tra an toàn nguồn nước & đá)
+CREATE TABLE IF NOT EXISTS water_safety_limit_profiles (
+	profile_id UUID DEFAULT gen_random_uuid() NOT NULL,
+	profile_code VARCHAR(50) NOT NULL,
+	profile_name VARCHAR(255) NOT NULL,
+	ph_min NUMERIC(6,2) NOT NULL,
+	ph_max NUMERIC(6,2) NOT NULL,
+	chlorine_min_ppm NUMERIC(8,3) NOT NULL,
+	chlorine_max_ppm NUMERIC(8,3) NOT NULL,
+	turbidity_max_ntu NUMERIC(8,3) NOT NULL,
+	coliform_max_cfu NUMERIC(10,2) NOT NULL,
+	e_coli_max_cfu NUMERIC(10,2) NOT NULL,
+	effective_date DATE DEFAULT CURRENT_DATE NOT NULL,
+	status VARCHAR(20) DEFAULT 'DRAFT' NOT NULL,
+	approved_by_name VARCHAR(100),
+	approved_at TIMESTAMP WITH TIME ZONE,
+	notes TEXT,
+	created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+	updated_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+	PRIMARY KEY (profile_id),
+	UNIQUE (profile_code)
+);
+
 CREATE TABLE IF NOT EXISTS water_safety_records (
 	record_id UUID DEFAULT gen_random_uuid() NOT NULL,
+	limit_profile_id UUID,
 	record_code VARCHAR(50) NOT NULL,
 	sampling_point VARCHAR(255) NOT NULL,
 	sampling_date DATE DEFAULT CURRENT_DATE NOT NULL,
@@ -1425,7 +1448,8 @@ CREATE TABLE IF NOT EXISTS water_safety_records (
 	notes TEXT,
 	created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
 	PRIMARY KEY (record_id),
-	UNIQUE (record_code)
+	UNIQUE (record_code),
+	FOREIGN KEY(limit_profile_id) REFERENCES water_safety_limit_profiles(profile_id) ON DELETE SET NULL
 );
 
 -- Bảng: chemical_records (BM01-SSOP-HOACHAT: Danh mục hóa chất phê duyệt & Quản lý MSDS)

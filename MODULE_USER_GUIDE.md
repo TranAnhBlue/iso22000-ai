@@ -9,6 +9,8 @@ Tài liệu này hướng dẫn người dùng vận hành các phân hệ của
 3. Không xóa dữ liệu đã là bằng chứng ISO. Với hồ sơ đã phê duyệt/tiêu hủy, dùng luồng điều chỉnh, thu hồi hoặc CAPA thay vì sửa trực tiếp.
 4. Các cảnh báo `401 Unauthorized` nghĩa là phiên đăng nhập hết hạn hoặc không có JWT. Đăng nhập lại; không yêu cầu mở quyền công khai cho API nghiệp vụ.
 5. Các vai trò thường dùng: Quản trị, Ban lãnh đạo, QA/QC, Đội ATTP, Sản xuất, Kho, Mua hàng, Bảo trì, Nhân sự và Người xem. Nút không hiện hoặc trả về `403` nghĩa là vai trò chưa có quyền.
+6. **Ngưỡng và KPI không được suy ra từ dữ liệu mẫu.** Giới hạn CCP/PRP, tiêu chí PASS/FAIL, hạn thẩm tra CAPA, thời gian/tỷ lệ mục tiêu diễn tập thu hồi phải lấy từ hồ sơ HACCP, yêu cầu pháp luật, khách hàng và phê duyệt nội bộ của doanh nghiệp. Giá trị trong UAT chỉ phục vụ kiểm thử luồng.
+7. Ngưỡng kiểm nước/đá được quản lý bằng **Bộ ngưỡng** trên API, không lấy từ mã nguồn. Trước khi go-live, QA/Đội ATTP phải đối chiếu, lập/hiệu chỉnh và kích hoạt một bộ ngưỡng `ACTIVE`; mỗi phiếu nước sẽ lưu ID bộ ngưỡng đã áp dụng để phục vụ truy vết.
 
 ## 2. Đăng nhập và phân quyền
 
@@ -87,7 +89,8 @@ Quản trị vào **Tổ chức** để tạo phòng ban, tạo tài khoản và
 1. Ghi nhật ký IPQC theo công đoạn; ghi máy dò kim loại theo ca/mẻ và xử lý kết quả không đạt.
 2. Dùng PRP checklist cho vệ sinh, GMP, SSOP, 5S và kiểm soát dịch hại. Mục không đạt phải có hành động và người phụ trách.
 3. Dùng các nhật ký chuyên biệt: nước/đá, hóa chất/MSDS, chất thải, lịch quan trắc, kiểm soát dị nguyên, khách/nhân viên và sơ cứu.
-4. Phiếu nước sẽ tự `FAIL` khi pH, clo, độ đục, Coliform hoặc E. coli vượt ngưỡng kiểm soát.
+4. Trước khi lập phiếu đầu tiên, QA/Đội ATTP tạo hoặc rà soát **Bộ ngưỡng nước/đá** trên API `POST /api/v1/haccp/water-limit-profiles`, rồi kích hoạt đúng một bộ có `status: ACTIVE`. Chỉ Admin/QA/Đội ATTP được tạo hoặc cập nhật cấu hình. Khi kích hoạt bộ mới, bộ `ACTIVE` cũ được chuyển `RETIRED`.
+5. Phiếu nước sẽ tự `FAIL` khi pH, clo, độ đục, Coliform hoặc E. coli vượt bộ ngưỡng `ACTIVE`. Hệ thống lưu `limit_profile_id` cùng phiếu để kết quả cũ không bị diễn giải lại theo ngưỡng mới. Nếu chưa có bộ `ACTIVE`, hệ thống chặn tạo phiếu và yêu cầu QA/Quản trị cấu hình trước.
 
 ## 8. Thiết bị, hiệu chuẩn và phương tiện
 

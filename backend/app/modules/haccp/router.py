@@ -24,6 +24,7 @@ from app.modules.haccp.models import (
     VisitorHealthDeclaration,
     FirstAidLog,
     VehicleInspectionLog,
+    WaterSafetyLimitProfile,
     WaterSafetyRecord,
     ChemicalRecord,
     WasteLog,
@@ -87,6 +88,8 @@ from app.modules.haccp.schemas import (
     VehicleInspectionLogCreate,
     VehicleInspectionLogUpdate,
     VehicleInspectionLogResponse,
+    WaterSafetyLimitProfileCreate,
+    WaterSafetyLimitProfileResponse,
     WaterSafetyRecordCreate,
     WaterSafetyRecordResponse,
     ChemicalRecordCreate,
@@ -3171,22 +3174,104 @@ def delete_vehicle_inspection(
     return {"message": "Đã xóa biên bản kiểm tra xe vận chuyển thành công"}
 
 
-# ==================== 15. WATER SAFETY RECORDS (BM01-SSOP-NUOC) ====================
-def water_measurements_failed(payload: WaterSafetyRecordCreate) -> bool:
-    """Return whether a water/ice sample violates the limits recorded in BM01-SSOP-NUOC.
-
-    The status supplied by the operator is retained for other observations, but it
-    must never override an objectively failed measurement.
-    """
+# ==================== 15. WATER SAFETY LIMITS & RECORDS (BM01-SSOP-NUOC) ====================
+def water_measurements_failed(
+    payload: WaterSafetyRecordCreate,
+    limits: WaterSafetyLimitProfile,
+) -> bool:
+    """Assess a record against the approved profile, never against code constants."""
     return (
-        payload.ph_level < 6.5
-        or payload.ph_level > 8.5
-        or payload.chlorine_ppm < 0.2
-        or payload.chlorine_ppm > 1.0
-        or payload.turbidity_ntu > 2.0
-        or (payload.coliform_cfu is not None and payload.coliform_cfu > 0)
-        or (payload.e_coli_cfu is not None and payload.e_coli_cfu > 0)
+        payload.ph_level < float(limits.ph_min)
+        or payload.ph_level > float(limits.ph_max)
+        or payload.chlorine_ppm < float(limits.chlorine_min_ppm)
+        or payload.chlorine_ppm > float(limits.chlorine_max_ppm)
+        or payload.turbidity_ntu > float(limits.turbidity_max_ntu)
+        or (payload.coliform_cfu is not None and payload.coliform_cfu > float(limits.coliform_max_cfu))
+        or (payload.e_coli_cfu is not None and payload.e_coli_cfu > float(limits.e_coli_max_cfu))
     )
+
+
+def get_active_water_limit_profile(db: Session) -> WaterSafetyLimitProfile:
+    profile = db.scalar(
+        select(WaterSafetyLimitProfile)
+        .where(WaterSafetyLimitProfile.status == "ACTIVE")
+        .order_by(WaterSafetyLimitProfile.effective_date.desc(), WaterSafetyLimitProfile.created_at.desc())
+    )
+    if not profile:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Chưa có bộ ngưỡng kiểm nước/đá ở trạng thái ACTIVE. QA hoặc Quản trị phải phê duyệt cấu hình trước khi lập phiếu.",
+        )
+    return profile
+
+
+@router.get("/water-limit-profiles/active", response_model=WaterSafetyLimitProfileResponse)
+def get_active_water_limits(db: Session = Depends(get_db)):
+    return get_active_water_limit_profile(db)
+
+
+@router.get("/water-limit-profiles", response_model=List[WaterSafetyLimitProfileResponse])
+def get_water_limit_profiles(db: Session = Depends(get_db)):
+    return db.scalars(
+        select(WaterSafetyLimitProfile).order_by(
+            WaterSafetyLimitProfile.effective_date.desc(), WaterSafetyLimitProfile.created_at.desc()
+        )
+    ).all()
+
+
+@router.post("/water-limit-profiles", response_model=WaterSafetyLimitProfileResponse, status_code=status.HTTP_201_CREATED)
+def create_water_limit_profile(
+    payload: WaterSafetyLimitProfileCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "fst_leader", "fs_team_leader")),
+):
+    if db.scalar(select(WaterSafetyLimitProfile).where(WaterSafetyLimitProfile.profile_code == payload.profile_code.strip())):
+        raise HTTPException(status_code=409, detail=f"Mã bộ ngưỡng '{payload.profile_code}' đã tồn tại")
+    if payload.status == "ACTIVE":
+        db.query(WaterSafetyLimitProfile).filter(WaterSafetyLimitProfile.status == "ACTIVE").update({"status": "RETIRED"})
+    profile = WaterSafetyLimitProfile(
+        **payload.model_dump(),
+        profile_code=payload.profile_code.strip(),
+        profile_name=payload.profile_name.strip(),
+        approved_by_name=current_user.full_name if payload.status == "ACTIVE" else None,
+        approved_at=datetime.now(timezone.utc) if payload.status == "ACTIVE" else None,
+    )
+    db.add(profile)
+    db.commit()
+    db.refresh(profile)
+    return profile
+
+
+@router.put("/water-limit-profiles/{profile_id}", response_model=WaterSafetyLimitProfileResponse)
+def update_water_limit_profile(
+    profile_id: UUID,
+    payload: WaterSafetyLimitProfileCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "fst_leader", "fs_team_leader")),
+):
+    profile = db.get(WaterSafetyLimitProfile, profile_id)
+    if not profile:
+        raise HTTPException(status_code=404, detail="Không tìm thấy bộ ngưỡng kiểm nước/đá")
+    duplicate = db.scalar(
+        select(WaterSafetyLimitProfile).where(
+            WaterSafetyLimitProfile.profile_code == payload.profile_code.strip(),
+            WaterSafetyLimitProfile.profile_id != profile_id,
+        )
+    )
+    if duplicate:
+        raise HTTPException(status_code=409, detail=f"Mã bộ ngưỡng '{payload.profile_code}' đã tồn tại")
+    if payload.status == "ACTIVE":
+        db.query(WaterSafetyLimitProfile).filter(
+            WaterSafetyLimitProfile.status == "ACTIVE",
+            WaterSafetyLimitProfile.profile_id != profile_id,
+        ).update({"status": "RETIRED"})
+    for field, value in payload.model_dump().items():
+        setattr(profile, field, value.strip() if isinstance(value, str) else value)
+    profile.approved_by_name = current_user.full_name if payload.status == "ACTIVE" else profile.approved_by_name
+    profile.approved_at = datetime.now(timezone.utc) if payload.status == "ACTIVE" else profile.approved_at
+    db.commit()
+    db.refresh(profile)
+    return profile
 
 
 @router.get("/water-logs", response_model=List[WaterSafetyRecordResponse])
@@ -3218,8 +3303,10 @@ def create_water_safety_log(
     duplicate = db.scalar(select(WaterSafetyRecord).where(WaterSafetyRecord.record_code == code))
     if duplicate:
         raise HTTPException(status_code=409, detail=f"Mã phiếu kiểm nước '{code}' đã tồn tại")
-    st = "FAIL" if water_measurements_failed(payload) else payload.overall_status
+    limits = get_active_water_limit_profile(db)
+    st = "FAIL" if water_measurements_failed(payload, limits) else payload.overall_status
     log = WaterSafetyRecord(
+        limit_profile_id=limits.profile_id,
         record_code=code,
         sampling_point=payload.sampling_point,
         sampling_date=payload.sampling_date,

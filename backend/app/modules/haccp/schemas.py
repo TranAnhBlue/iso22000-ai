@@ -1,7 +1,7 @@
 from typing import Optional, List, Dict, Any, Union
 from uuid import UUID
 from datetime import datetime, date
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, model_validator
 
 # ==================== 0. HACCP PLAN SCHEMAS ====================
 class HACCPPlanBase(BaseModel):
@@ -652,15 +652,53 @@ class VehicleInspectionLogResponse(VehicleInspectionLogBase):
     model_config = ConfigDict(from_attributes=True)
 
 
-# ==================== 15. WATER SAFETY RECORD SCHEMAS (BM01-SSOP-NUOC) ====================
+# ==================== 15. WATER SAFETY LIMIT PROFILE SCHEMAS (BM01-SSOP-NUOC) ====================
+class WaterSafetyLimitProfileBase(BaseModel):
+    profile_code: str = Field(..., min_length=3, max_length=50)
+    profile_name: str = Field(..., min_length=3, max_length=255)
+    ph_min: float
+    ph_max: float
+    chlorine_min_ppm: float = Field(..., ge=0)
+    chlorine_max_ppm: float = Field(..., ge=0)
+    turbidity_max_ntu: float = Field(..., ge=0)
+    coliform_max_cfu: float = Field(..., ge=0)
+    e_coli_max_cfu: float = Field(..., ge=0)
+    effective_date: date = Field(default_factory=date.today)
+    status: str = Field(default="DRAFT", pattern="^(DRAFT|ACTIVE|RETIRED)$")
+    notes: Optional[str] = None
+
+    @model_validator(mode="after")
+    def validate_ranges(self):
+        if self.ph_min > self.ph_max:
+            raise ValueError("Giới hạn pH nhỏ nhất không được lớn hơn giới hạn lớn nhất")
+        if self.chlorine_min_ppm > self.chlorine_max_ppm:
+            raise ValueError("Giới hạn clo nhỏ nhất không được lớn hơn giới hạn lớn nhất")
+        return self
+
+
+class WaterSafetyLimitProfileCreate(WaterSafetyLimitProfileBase):
+    pass
+
+
+class WaterSafetyLimitProfileResponse(WaterSafetyLimitProfileBase):
+    profile_id: UUID
+    approved_by_name: Optional[str] = None
+    approved_at: Optional[datetime] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+# ==================== 16. WATER SAFETY RECORD SCHEMAS (BM01-SSOP-NUOC) ====================
 class WaterSafetyRecordBase(BaseModel):
     record_code: Optional[str] = None
     sampling_point: str = Field(..., max_length=255, description="Vị trí lấy mẫu nước/đá")
     sampling_date: date = Field(default_factory=date.today)
     sampling_time: str = Field(default="07:00", max_length=20)
-    ph_level: float = Field(default=7.2, description="Độ pH chuẩn 6.5 - 8.5")
-    chlorine_ppm: float = Field(default=0.5, description="Clo dư 0.2 - 1.0 mg/L")
-    turbidity_ntu: float = Field(default=0.5, description="Độ đục <= 2 NTU")
+    ph_level: float = Field(default=7.2, description="Độ pH đo được")
+    chlorine_ppm: float = Field(default=0.5, description="Clo dư đo được (mg/L)")
+    turbidity_ntu: float = Field(default=0.5, description="Độ đục đo được (NTU)")
     sensory_result: str = Field(default="Trong suốt, không màu, không mùi vị lạ", max_length=100)
     coliform_cfu: Optional[float] = 0.0
     e_coli_cfu: Optional[float] = 0.0
@@ -675,6 +713,7 @@ class WaterSafetyRecordCreate(WaterSafetyRecordBase):
 
 class WaterSafetyRecordResponse(WaterSafetyRecordBase):
     record_id: UUID
+    limit_profile_id: Optional[UUID] = None
     created_at: Optional[datetime] = None
 
     model_config = ConfigDict(from_attributes=True)
@@ -766,4 +805,3 @@ class EnvironmentalMonitoringScheduleResponse(EnvironmentalMonitoringScheduleBas
     created_at: Optional[datetime] = None
 
     model_config = ConfigDict(from_attributes=True)
-

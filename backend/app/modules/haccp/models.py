@@ -366,22 +366,47 @@ class VehicleInspectionLog(Base):
     created_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
-# ==================== 15. WATER SAFETY RECORDS (BM01-SSOP-NUOC) ====================
+# ==================== 15. WATER SAFETY LIMIT PROFILES (BM01-SSOP-NUOC) ====================
+class WaterSafetyLimitProfile(Base):
+    """Approved, versioned limits used to assess water/ice monitoring records."""
+    __tablename__ = "water_safety_limit_profiles"
+
+    profile_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    profile_code: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
+    profile_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    ph_min: Mapped[float] = mapped_column(Numeric(6, 2), nullable=False)
+    ph_max: Mapped[float] = mapped_column(Numeric(6, 2), nullable=False)
+    chlorine_min_ppm: Mapped[float] = mapped_column(Numeric(8, 3), nullable=False)
+    chlorine_max_ppm: Mapped[float] = mapped_column(Numeric(8, 3), nullable=False)
+    turbidity_max_ntu: Mapped[float] = mapped_column(Numeric(8, 3), nullable=False)
+    coliform_max_cfu: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
+    e_coli_max_cfu: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
+    effective_date: Mapped[date] = mapped_column(Date, default=date.today, nullable=False)
+    status: Mapped[str] = mapped_column(String(20), default="DRAFT", nullable=False)  # DRAFT, ACTIVE, RETIRED
+    approved_by_name: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    approved_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+
+# ==================== 16. WATER SAFETY RECORDS (BM01-SSOP-NUOC) ====================
 class WaterSafetyRecord(Base):
     """
     Thư mục 07 An Giang - SSOP Nguồn nước & Đá vảy: Sổ theo dõi kiểm tra chất lượng nguồn nước sản xuất
-    Kiểm tra chỉ tiêu nhanh tại hiện trường: pH (6.5-8.5), Clo dư (0.2-1.0 ppm), Độ đục (<=2 NTU), Cảm quan, Vi sinh
+    Ngưỡng đánh giá được lấy từ WaterSafetyLimitProfile đang ACTIVE tại thời điểm lập phiếu.
     """
     __tablename__ = "water_safety_records"
 
     record_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    limit_profile_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), ForeignKey("water_safety_limit_profiles.profile_id", ondelete="SET NULL"), nullable=True)
     record_code: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)  # WSR-2026-001
     sampling_point: Mapped[str] = mapped_column(String(255), nullable=False)  # Bồn chứa ngầm, Đầu ra RO, Vòi chế biến, Bồn làm đá vảy
     sampling_date: Mapped[date] = mapped_column(Date, default=date.today, nullable=False)
     sampling_time: Mapped[str] = mapped_column(String(20), default="07:00", nullable=False)
-    ph_level: Mapped[float] = mapped_column(Numeric(4, 2), default=7.2, nullable=False)  # Chuẩn QCVN 01-1:2018/BYT: 6.5 - 8.5
-    chlorine_ppm: Mapped[float] = mapped_column(Numeric(4, 2), default=0.5, nullable=False)  # Chuẩn: 0.2 - 1.0 mg/L
-    turbidity_ntu: Mapped[float] = mapped_column(Numeric(4, 2), default=0.5, nullable=False)  # Chuẩn: <= 2 NTU
+    ph_level: Mapped[float] = mapped_column(Numeric(4, 2), default=7.2, nullable=False)
+    chlorine_ppm: Mapped[float] = mapped_column(Numeric(4, 2), default=0.5, nullable=False)
+    turbidity_ntu: Mapped[float] = mapped_column(Numeric(4, 2), default=0.5, nullable=False)
     sensory_result: Mapped[str] = mapped_column(String(100), default="Trong suốt, không màu, không mùi vị lạ", nullable=False)
     coliform_cfu: Mapped[Optional[float]] = mapped_column(Numeric(6, 2), default=0.0, nullable=True)
     e_coli_cfu: Mapped[Optional[float]] = mapped_column(Numeric(6, 2), default=0.0, nullable=True)
@@ -461,4 +486,3 @@ class EnvironmentalMonitoringSchedule(Base):
     status: Mapped[str] = mapped_column(String(30), default="SCHEDULED", nullable=False)  # SCHEDULED, COMPLETED, OVERDUE
     last_result: Mapped[Optional[str]] = mapped_column(String(50), default="PASSED", nullable=True)
     created_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), server_default=func.now())
-

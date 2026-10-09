@@ -802,6 +802,37 @@ MIGRATION_STATEMENTS = [
         created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
     );
     """,
+    # Configurable and approved water/ice limits. Records retain the applied profile ID.
+    """
+    CREATE TABLE IF NOT EXISTS water_safety_limit_profiles (
+        profile_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        profile_code VARCHAR(50) UNIQUE NOT NULL,
+        profile_name VARCHAR(255) NOT NULL,
+        ph_min NUMERIC(6,2) NOT NULL,
+        ph_max NUMERIC(6,2) NOT NULL,
+        chlorine_min_ppm NUMERIC(8,3) NOT NULL,
+        chlorine_max_ppm NUMERIC(8,3) NOT NULL,
+        turbidity_max_ntu NUMERIC(8,3) NOT NULL,
+        coliform_max_cfu NUMERIC(10,2) NOT NULL,
+        e_coli_max_cfu NUMERIC(10,2) NOT NULL,
+        effective_date DATE NOT NULL DEFAULT CURRENT_DATE,
+        status VARCHAR(20) NOT NULL DEFAULT 'DRAFT',
+        approved_by_name VARCHAR(100),
+        approved_at TIMESTAMPTZ,
+        notes TEXT,
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+    );
+    """,
+    "ALTER TABLE water_safety_records ADD COLUMN IF NOT EXISTS limit_profile_id UUID REFERENCES water_safety_limit_profiles(profile_id) ON DELETE SET NULL;",
+    """
+    INSERT INTO water_safety_limit_profiles
+        (profile_code, profile_name, ph_min, ph_max, chlorine_min_ppm, chlorine_max_ppm, turbidity_max_ntu, coliform_max_cfu, e_coli_max_cfu, status, approved_by_name, approved_at, notes)
+    SELECT
+        'WATER-INITIAL', 'Bộ ngưỡng cần QA rà soát trước go-live', 6.5, 8.5, 0.2, 1.0, 2.0, 0.0, 0.0, 'DRAFT', NULL, NULL,
+        'Được chuyển từ ngưỡng hệ thống cũ; phải được QA/Đội ATTP xác nhận hoặc thay thế trước khi kích hoạt.'
+    WHERE NOT EXISTS (SELECT 1 FROM water_safety_limit_profiles);
+    """,
     # Chemical Records (BM01-SSOP-HOACHAT)
     """
     CREATE TABLE IF NOT EXISTS chemical_records (

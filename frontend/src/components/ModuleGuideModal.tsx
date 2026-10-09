@@ -238,14 +238,14 @@ const MODULE_GUIDES: Record<ModuleKey, GuideContent> = {
       },
       {
         title: "Bước 3: Lập Biện pháp Khắc phục & Thẩm tra Hiệu lực",
-        desc: "Phân công người thực hiện, thời hạn hoàn thành và tiến hành tái đánh giá sau 30-60 ngày để xác nhận lỗi không tái diễn.",
+        desc: "Phân công người thực hiện, thời hạn hoàn thành và thẩm tra hiệu lực theo kế hoạch đã được phê duyệt để xác nhận lỗi không tái diễn.",
       },
     ],
     forms: [
       "Phiếu Báo cáo Sự Không Phù Hợp (BM-NC-01)",
       "Phiếu Yêu cầu Hành động Khắc phục & Phòng ngừa (BM-CAPA-01)",
       "Báo cáo Phân tích Nguyên nhân Gốc rễ 5-Why",
-      "Biên bản Thẩm tra Hiệu lực CAPA Sau 30 Ngày",
+      "Biên bản Thẩm tra Hiệu lực CAPA",
     ],
     auditTips: [
       "Không bao giờ ghi nguyên nhân gốc rễ là 'Do sơ suất của công nhân'. Phải chỉ ra thiếu sót về đào tạo, quy trình hay thiết bị.",
@@ -294,7 +294,7 @@ const MODULE_GUIDES: Record<ModuleKey, GuideContent> = {
       },
       {
         title: "Bước 2: Quản lý Mẫu lưu Nghiệm thức",
-        desc: "Lưu mẫu đối chứng theo từng mẻ sản xuất trong tủ đông/mát với thời gian lưu = Hạn sử dụng + 30 ngày.",
+        desc: "Lưu mẫu đối chứng theo từng mẻ sản xuất trong tủ đông/mát theo thời hạn lưu mẫu đã được doanh nghiệp phê duyệt.",
       },
       {
         title: "Bước 3: Kiểm tra Phương tiện Vận chuyển (PTVC)",
@@ -316,7 +316,7 @@ const MODULE_GUIDES: Record<ModuleKey, GuideContent> = {
     title: "Truy Xuất Nguồn Gốc 1 Chạm",
     badge: "Ứng Phó Sự Cố",
     objective:
-      "Thực hiện truy xuất ngược dòng từ mẻ thành phẩm/phiếu xuất về tận nhà cung ứng nguyên liệu chỉ trong vài giây, và diễn tập giả lập thu hồi sản phẩm (Mock Recall) đáp ứng thời gian vàng dưới 2 giờ.",
+      "Thực hiện truy xuất ngược dòng từ mẻ thành phẩm/phiếu xuất về nhà cung ứng nguyên liệu và diễn tập giả lập thu hồi sản phẩm (Mock Recall) theo mục tiêu thời gian, phạm vi và tỷ lệ hoàn thành đã được doanh nghiệp phê duyệt.",
     steps: [
       {
         title: "Bước 1: Nhập Mã Truy vết",
@@ -337,8 +337,8 @@ const MODULE_GUIDES: Record<ModuleKey, GuideContent> = {
       "Bảng Cân bằng Vật chất (Mass Balance Sheet)",
     ],
     auditTips: [
-      "Tiêu chuẩn ISO 22000 yêu cầu nhà máy phải diễn tập thu hồi tối thiểu 1 lần/năm với thời gian truy vết hoàn tất ≤ 2 giờ.",
-      "Tỷ lệ cân bằng vật chất giữa nguyên liệu đầu vào và sản phẩm đầu ra phải đạt độ tin cậy trên 98%.",
+      "Xác định tần suất diễn tập, thời gian truy vết, phạm vi và tiêu chí hoàn thành trong kế hoạch thu hồi được doanh nghiệp phê duyệt.",
+      "Đối chiếu cân bằng vật chất giữa nguyên liệu đầu vào và sản phẩm đầu ra theo tiêu chí dung sai đã được doanh nghiệp phê duyệt.",
     ],
   },
   purchasing: {

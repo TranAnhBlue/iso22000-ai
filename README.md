@@ -18,7 +18,7 @@
 4. [Kiến Trúc Công Nghệ (Tech Stack)](#-kiến-trúc-công-nghệ-tech-stack)
 5. [Cấu Trúc Thư Mục Dự Án (Project Structure)](#-cấu-trúc-thư-mục-dự-án-project-structure)
 6. [Hướng Dẫn Cài Đặt & Khởi Chạy Nhanh](#-hướng-dẫn-cài-đặt--khởi-chạy-nhanh)
-7. [Tài Khoản Trải Nghiệm Mẫu & Ma Trận Phân Quyền (RBAC)](#-tài-khoản-trải-nghiệm-mẫu--ma-trận-phân-quyền-rbac)
+7. [Quản lý tài khoản và phân quyền RBAC](#-quản-lý-tài-khoản-và-phân-quyền-rbac)
 8. [Tài Liệu API & Hướng Dẫn Sử Dụng](#-tài-liệu-api--hướng-dẫn-sử-dụng)
 
 ---
@@ -30,11 +30,15 @@
 Hệ thống giúp các doanh nghiệp sản xuất, chế biến thực phẩm - thủy hải sản - đồ uống:
 * **Loại bỏ 100% hồ sơ giấy tờ cồng kềnh**, chuyển dịch sang nhật ký số theo ca thời gian thực.
 * **Ngăn ngừa rủi ro vượt ngưỡng tới hạn CCP** ngay lập tức thông qua thuật toán giám sát trực tiếp.
-* **Đáp ứng chuẩn truy xuất nguồn gốc "Một bước trước - Một bước sau"** trong thời gian tối đa **4 giờ** theo quy định quốc tế.
+* **Hỗ trợ truy xuất nguồn gốc "Một bước trước - Một bước sau"** và ghi nhận kết quả diễn tập/thu hồi theo mục tiêu được doanh nghiệp phê duyệt.
 * **Tự động hóa báo cáo thẩm tra và xem xét của lãnh đạo**, sẵn sàng cho các kỳ đánh giá chứng nhận ISO / BRC / FSSC 22000.
 
+> **Phạm vi kiểm soát:** ISO 22000 yêu cầu tổ chức xác định, duy trì và chứng minh hiệu lực các biện pháp kiểm soát; hệ thống không tự biến một giá trị ví dụ thành giới hạn pháp lý hay giới hạn tới hạn chính thức. Ngưỡng CCP/PRP, thời gian thẩm tra, mục tiêu diễn tập thu hồi và KPI phải được doanh nghiệp phê duyệt theo sản phẩm, yêu cầu pháp luật và khách hàng trước khi vận hành chính thức.
+
 👉 **Tài liệu tham khảo chuyên sâu:**
-* [📘 Sổ Tay Hướng Dẫn Sử Dụng Chi Tiết Cho Người Dùng (USER_GUIDE.md)](./USER_GUIDE.md)
+* [📘 Hướng dẫn sử dụng và liên kết phân hệ hiện hành (MODULE_USER_GUIDE.md)](./MODULE_USER_GUIDE.md)
+* [🧪 Kịch bản UAT (dữ liệu minh họa, không phải quy định) (UAT_TEST_CASES.md)](./UAT_TEST_CASES.md)
+* [🗂️ Ma trận đối chiếu tài liệu An Giang/ISO 22000 (ISO22000_TRACEABILITY_MATRIX.md)](./ISO22000_TRACEABILITY_MATRIX.md)
 
 ---
 
@@ -56,7 +60,7 @@ Hệ thống giúp các doanh nghiệp sản xuất, chế biến thực phẩm 
  │ 🔍 TRUY XUẤT NGUỒN GỐC 4 TẦNG & DIỄN TẬP THU HỒI (TRACEABILITY & MOCK RECALL)           │
  │  • Truy vết ngược: Lô thành phẩm ➔ Ca sản xuất ➔ Đo đạc CCP ➔ Lô IQC ➔ Nhà cung cấp    │
  │  • Truy vết xuôi: Lô phụ gia nhiễm khuẩn ➔ Mẻ thành phẩm liên đới ➔ Khách hàng phân phối│
- │  • Mô phỏng thu hồi nhanh trong 4 giờ đạt tỷ lệ thành công ≥ 98%                       │
+ │  • Mô phỏng thu hồi, ghi nhận thời gian và tỷ lệ hoàn thành theo mục tiêu doanh nghiệp │
  ├────────────────────────────────────────────────────────────────────────────────────────┤
  │ 🎨 STUDIO THIẾT KẾ ĐỘNG NO-CODE (WORKFLOW & FORM STUDIO)                               │
  │  • Thiết kế lưu đồ công nghệ tuần tự ISO 8.5.1 với cơ chế tự động đôn số thứ tự        │
@@ -107,7 +111,7 @@ Hệ thống được tổ chức khoa học theo cấu trúc bậc cao (High-Le
 ### 8. Truy Xuất Nguồn Gốc & Diễn Tập Thu Hồi (`/traceability`)
 * **Truy xuất ngược (Backward):** Tra cứu từ mã lô thành phẩm ra toàn bộ chuỗi thông số chế biến, nhiệt độ CCP, lô nguyên liệu và NCC ban đầu.
 * **Truy xuất xuôi (Forward):** Khi phát hiện nguyên liệu lỗi, tìm kiếm ngay các mẻ thành phẩm liên đới và danh sách khách hàng đã nhận hàng.
-* **Diễn tập thu hồi giả định (Mock Recall):** Đánh giá tỷ lệ thu hồi thành công trong khung thời gian chuẩn 4 giờ.
+* **Diễn tập thu hồi giả định (Mock Recall):** Ghi nhận phạm vi, thời gian xử lý, cân bằng vật chất và kết quả theo mục tiêu diễn tập đã được doanh nghiệp phê duyệt.
 
 ### 9. Thiết Bị, Bảo Trì & Hiệu Chuẩn Đo Lường (`/equipment`)
 * **Lý lịch máy & Thiết bị trọng yếu CCP:** Nồi tiệt trùng cao áp, máy dò kim loại, tủ cấp đông siêu tốc IQF.
@@ -121,7 +125,7 @@ Hệ thống được tổ chức khoa học theo cấu trúc bậc cao (High-Le
 
 ### 11. Sự Không Phù Hợp & Hành Động Khắc Phục CAPA (`/capa`)
 * **Biên bản NC:** Ghi nhận sự cố, niêm phong cô lập lô hàng không phù hợp tức thời.
-* **Quy trình 5 bước CAPA:** Trợ lý AI phân tích 5-Whys & biểu đồ Ishikawa ➔ Lập kế hoạch khắc phục ➔ Thẩm tra lại sau 30 ngày để đóng phiếu.
+* **Quy trình 5 bước CAPA:** Trợ lý AI hỗ trợ phân tích 5-Whys & biểu đồ Ishikawa ➔ Lập kế hoạch khắc phục ➔ Thẩm tra hiệu lực theo kế hoạch/hạn được phê duyệt trước khi đóng phiếu.
 
 ### 12. Tình Huống Khẩn Cấp & Khủng Hoảng (`/emergency`)
 * **Danh bạ khẩn cấp một chạm:** Gọi nhanh PCCC, cấp cứu 115, Trung tâm y tế dự phòng, Đội ứng phó sự cố nhà máy.
