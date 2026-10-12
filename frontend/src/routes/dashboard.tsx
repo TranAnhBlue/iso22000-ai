@@ -59,6 +59,25 @@ interface RadarPillars {
   supply_traceability: number;
 }
 
+const RADAR_PILLAR_META: Array<{
+  key: keyof RadarPillars;
+  label: string;
+  point: [number, number];
+}> = [
+  { key: "context_leadership", label: "Bối cảnh & Lãnh đạo", point: [120, 20] },
+  { key: "planning_haccp", label: "Kế hoạch & Điểm CCP", point: [198, 58] },
+  { key: "support_training", label: "Nguồn lực & Đào tạo", point: [217, 142] },
+  { key: "operation_prp", label: "Vận hành & Vệ sinh PRP", point: [163, 210] },
+  { key: "performance_audit", label: "Đánh giá hiệu năng", point: [77, 210] },
+  { key: "improvement_capa", label: "Cải tiến & Khắc phục CAPA", point: [23, 142] },
+  { key: "supply_traceability", label: "Chuỗi cung ứng & Kho hàng", point: [42, 58] },
+];
+
+const radarPoint = ([x, y]: [number, number], percentage: number) => {
+  const ratio = Math.max(0, Math.min(100, percentage)) / 100;
+  return `${120 + (x - 120) * ratio},${120 + (y - 120) * ratio}`;
+};
+
 interface ExecutiveOverviewStats {
   overall_health_score: number;
   health_level: string;
@@ -188,10 +207,20 @@ function ExecutiveDashboard() {
   );
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<ExecutiveOverviewStats | null>(null);
+  const [hoveredRadarPillar, setHoveredRadarPillar] = useState<{
+    label: string;
+    value: number;
+  } | null>(null);
   const [alerts, setAlerts] = useState<ExecutiveAlertItem[]>([]);
   const [objectives, setObjectives] = useState<QualityObjective[]>([]);
   const [reviews, setReviews] = useState<ManagementReview[]>([]);
   const [selectedReview, setSelectedReview] = useState<ManagementReview | null>(null);
+
+  const radarValues = RADAR_PILLAR_META.map((pillar) => ({
+    ...pillar,
+    value: stats?.radar_pillars[pillar.key] ?? 0,
+  }));
+  const radarDataPoints = radarValues.map((pillar) => radarPoint(pillar.point, pillar.value)).join(" ");
 
   // Cửa sổ biểu mẫu & lưu đồ
   const [showAddObjectiveModal, setShowAddObjectiveModal] = useState(false);
@@ -852,89 +881,56 @@ function ExecutiveDashboard() {
                     viewBox="0 0 240 240"
                     className="w-full max-w-[220px] sm:max-w-[240px] h-auto overflow-visible"
                   >
+                    {[100, 75, 50, 25].map((percentage) => (
+                      <polygon
+                        key={percentage}
+                        points={RADAR_PILLAR_META.map((pillar) => radarPoint(pillar.point, percentage)).join(" ")}
+                        fill="none"
+                        stroke="currentColor"
+                        strokeOpacity={percentage === 100 ? 0.14 : 0.08}
+                        strokeWidth="1"
+                      />
+                    ))}
+                    {RADAR_PILLAR_META.map((pillar) => (
+                      <line
+                        key={pillar.key}
+                        x1="120"
+                        y1="120"
+                        x2={pillar.point[0]}
+                        y2={pillar.point[1]}
+                        stroke="currentColor"
+                        strokeOpacity="0.12"
+                      />
+                    ))}
                     <polygon
-                      points="120,20 206,70 206,170 120,220 34,170 34,70"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeOpacity="0.1"
-                      strokeWidth="1"
-                    />
-                    <polygon
-                      points="120,45 185,83 185,158 120,195 55,158 55,83"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeOpacity="0.15"
-                      strokeWidth="1"
-                    />
-                    <polygon
-                      points="120,70 163,95 163,145 120,170 77,145 77,95"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeOpacity="0.2"
-                      strokeWidth="1"
-                    />
-                    <line
-                      x1="120"
-                      y1="120"
-                      x2="120"
-                      y2="20"
-                      stroke="currentColor"
-                      strokeOpacity="0.15"
-                    />
-                    <line
-                      x1="120"
-                      y1="120"
-                      x2="206"
-                      y2="70"
-                      stroke="currentColor"
-                      strokeOpacity="0.15"
-                    />
-                    <line
-                      x1="120"
-                      y1="120"
-                      x2="206"
-                      y2="170"
-                      stroke="currentColor"
-                      strokeOpacity="0.15"
-                    />
-                    <line
-                      x1="120"
-                      y1="120"
-                      x2="120"
-                      y2="220"
-                      stroke="currentColor"
-                      strokeOpacity="0.15"
-                    />
-                    <line
-                      x1="120"
-                      y1="120"
-                      x2="34"
-                      y2="170"
-                      stroke="currentColor"
-                      strokeOpacity="0.15"
-                    />
-                    <line
-                      x1="120"
-                      y1="120"
-                      x2="34"
-                      y2="70"
-                      stroke="currentColor"
-                      strokeOpacity="0.15"
-                    />
-
-                    <polygon
-                      points="120,26 206,70 198,165 120,203 72,148 68,90"
+                      points={radarDataPoints}
                       fill="oklch(0.62 0.16 152 / 0.35)"
                       stroke="oklch(0.62 0.16 152)"
                       strokeWidth="2"
                     />
-                    <circle cx="120" cy="26" r="3.5" fill="oklch(0.62 0.16 152)" />
-                    <circle cx="206" cy="70" r="3.5" fill="oklch(0.62 0.16 152)" />
-                    <circle cx="198" cy="165" r="3.5" fill="oklch(0.62 0.16 152)" />
-                    <circle cx="120" cy="203" r="3.5" fill="oklch(0.62 0.16 152)" />
-                    <circle cx="72" cy="148" r="3.5" fill="oklch(0.62 0.16 152)" />
-                    <circle cx="68" cy="90" r="3.5" fill="oklch(0.62 0.16 152)" />
+                    {radarValues.map((pillar) => {
+                      const [x, y] = radarPoint(pillar.point, pillar.value).split(",");
+                      return (
+                        <circle
+                          key={pillar.key}
+                          cx={x}
+                          cy={y}
+                          r="5"
+                          fill="oklch(0.62 0.16 152)"
+                          className="cursor-pointer"
+                          onMouseEnter={() => setHoveredRadarPillar(pillar)}
+                          onMouseLeave={() => setHoveredRadarPillar(null)}
+                        >
+                          <title>{`${pillar.label}: ${pillar.value}%`}</title>
+                        </circle>
+                      );
+                    })}
                   </svg>
+                  {hoveredRadarPillar && (
+                    <div className="pointer-events-none absolute bottom-1 rounded-md bg-slate-900 px-2 py-1 text-xs font-semibold text-white shadow">
+                      {hoveredRadarPillar.label}: {hoveredRadarPillar.value}%
+                    </div>
+                  )}
                 </div>
 
                 {/* Chi tiết từng trụ cột */}

@@ -23,6 +23,8 @@ def run_migration_sql(sql_query: str):
 
 
 MIGRATION_STATEMENTS = [
+    # Public registrations are requests only; an admin must activate and assign roles.
+    "ALTER TABLE users ADD COLUMN IF NOT EXISTS approval_status VARCHAR(20) NOT NULL DEFAULT 'APPROVED';",
     # Documents columns & approvals migration
     "ALTER TABLE documents ADD COLUMN IF NOT EXISTS department VARCHAR(100);",
     "ALTER TABLE documents ADD COLUMN IF NOT EXISTS standard VARCHAR(100);",
@@ -195,6 +197,16 @@ MIGRATION_STATEMENTS = [
     "ALTER TABLE capa_records ADD COLUMN IF NOT EXISTS verified_by_name VARCHAR(150);",
     "ALTER TABLE capa_records ADD COLUMN IF NOT EXISTS verification_date DATE;",
     "ALTER TABLE capa_records ADD COLUMN IF NOT EXISTS verification_status VARCHAR(30) DEFAULT 'PENDING_VERIFY';",
+    "ALTER TABLE capa_records ADD COLUMN IF NOT EXISTS review_status VARCHAR(30) DEFAULT 'DRAFT';",
+    "ALTER TABLE capa_records ADD COLUMN IF NOT EXISTS reviewed_by_name VARCHAR(150);",
+    "ALTER TABLE capa_records ADD COLUMN IF NOT EXISTS reviewed_at TIMESTAMPTZ;",
+    "ALTER TABLE capa_records ADD COLUMN IF NOT EXISTS review_comments TEXT;",
+    "ALTER TABLE capa_records ADD COLUMN IF NOT EXISTS approved_by_name VARCHAR(150);",
+    "ALTER TABLE capa_records ADD COLUMN IF NOT EXISTS approved_at TIMESTAMPTZ;",
+    "ALTER TABLE capa_records ADD COLUMN IF NOT EXISTS approval_comments TEXT;",
+    """UPDATE capa_records SET review_status = 'APPROVED'
+       WHERE review_status IS NULL
+          OR (review_status = 'DRAFT' AND status IN ('IN_PROGRESS', 'PENDING_VERIFICATION', 'COMPLETED', 'OVERDUE'));""",
     "ALTER TABLE capa_records ADD COLUMN IF NOT EXISTS evidence_urls JSONB DEFAULT '[]'::jsonb;",
     "ALTER TABLE capa_records ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP;",
     "ALTER TABLE capa_records ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP;",
@@ -895,6 +907,13 @@ MIGRATION_STATEMENTS = [
 def run_migrations():
     """Hàm chạy toàn bộ DDL create_all và migration statements tối ưu qua 1 kết nối duy nhất"""
     try:
+        # Some ORM models use uuid_generate_v4() in their server defaults.
+        # Enable extensions before Base.metadata.create_all so a fresh local
+        # PostgreSQL database can bootstrap just like Supabase.
+        with engine.connect() as conn:
+            autocommit_conn = conn.execution_options(isolation_level="AUTOCOMMIT")
+            autocommit_conn.execute(text('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"'))
+            autocommit_conn.execute(text('CREATE EXTENSION IF NOT EXISTS "pgcrypto"'))
         print("[MIGRATION] Khởi tạo các bảng từ Base.metadata...")
         Base.metadata.create_all(bind=engine)
         print(f"[MIGRATION] Đang chạy {len(MIGRATION_STATEMENTS)} câu lệnh migration...")

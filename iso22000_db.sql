@@ -43,6 +43,7 @@ CREATE TABLE IF NOT EXISTS users (
 	email VARCHAR(100),
 	phone VARCHAR(20),
 	is_active BOOLEAN NOT NULL,
+	approval_status VARCHAR(20) DEFAULT 'APPROVED' NOT NULL,
 	created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
 	PRIMARY KEY (user_id),
 	UNIQUE (username)
@@ -288,6 +289,13 @@ CREATE TABLE IF NOT EXISTS capa_records (
 	assigned_dept VARCHAR(150),
 	target_date DATE NOT NULL,
 	completed_date DATE,
+	review_status VARCHAR(30) DEFAULT 'DRAFT',
+	reviewed_by_name VARCHAR(150),
+	reviewed_at TIMESTAMP WITH TIME ZONE,
+	review_comments TEXT,
+	approved_by_name VARCHAR(150),
+	approved_at TIMESTAMP WITH TIME ZONE,
+	approval_comments TEXT,
 	verified_by UUID,
 	verified_by_name VARCHAR(150),
 	verification_date DATE,
@@ -1537,7 +1545,7 @@ INSERT INTO roles (role_id, role_code, role_name, description) VALUES
 ON CONFLICT (role_code) DO UPDATE SET role_name = EXCLUDED.role_name, description = EXCLUDED.description;
 
 -- Tài khoản Quản trị viên hệ thống mặc định (Tên đăng nhập: admin / Mật khẩu: 123456)
-INSERT INTO users (user_id, username, password_hash, full_name, department, email, phone, is_active) VALUES
+INSERT INTO users (user_id, username, password_hash, full_name, department, email, phone, is_active, approval_status) VALUES
 (
     'a0000000-0000-0000-0000-000000000001',
     'admin',
@@ -1546,9 +1554,10 @@ INSERT INTO users (user_id, username, password_hash, full_name, department, emai
     'Quản trị hệ thống',
     'admin@wcert.vn',
     '0901234567',
-    TRUE
+	TRUE,
+	'APPROVED'
 )
-ON CONFLICT (username) DO UPDATE SET full_name = EXCLUDED.full_name, is_active = EXCLUDED.is_active;
+ON CONFLICT (username) DO UPDATE SET full_name = EXCLUDED.full_name, is_active = EXCLUDED.is_active, approval_status = EXCLUDED.approval_status;
 
 -- Gán quyền Quản trị tối cao (admin) cho tài khoản admin
 INSERT INTO user_roles (user_id, role_id)

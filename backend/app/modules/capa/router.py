@@ -16,7 +16,7 @@ from app.modules.capa.schemas import (
     NonConformanceResponse,
     CAPARecordCreate,
     CAPARecordUpdate,
-    CAPAVerifyRequest,
+    CAPAVerifyRequest, CAPAReviewRequest, CAPAApprovalRequest, CAPAEvidenceRequest,
     CAPARecordResponse,
     CAPAStatsResponse,
     AI5WhyRequest,
@@ -78,6 +78,13 @@ def format_capa_out(c: Any) -> CAPARecordResponse:
         verification_result=str(c.verification_result) if c.verification_result else None,
         verification_status=str(c.verification_status),
         status=str(c.status),
+        review_status=str(getattr(c, "review_status", "DRAFT")),
+        reviewed_by_name=getattr(c, "reviewed_by_name", None),
+        reviewed_at=getattr(c, "reviewed_at", None),
+        review_comments=getattr(c, "review_comments", None),
+        approved_by_name=getattr(c, "approved_by_name", None),
+        approved_at=getattr(c, "approved_at", None),
+        approval_comments=getattr(c, "approval_comments", None),
         evidence_urls=list(c.evidence_urls or []),
         created_at=c.created_at,
         updated_at=c.updated_at,
@@ -187,7 +194,8 @@ def create_non_conformance(payload: NonConformanceCreate, db: Session = Depends(
         affected_quantity=payload.affected_quantity.strip() if payload.affected_quantity else None,
         reported_by=payload.reported_by,
         reported_by_name=payload.reported_by_name or "KCS Ca sản xuất",
-        status=payload.status,
+        status="DRAFT",
+        review_status="DRAFT",
     )
     db.add(new_nc)
     db.commit()
@@ -322,9 +330,12 @@ def create_capa_record(
         assigned_to_name=payload.assigned_to_name,
         assigned_dept=payload.assigned_dept,
         target_date=payload.target_date,
-        completed_date=payload.completed_date,
-        verification_status=payload.verification_status,
-        status=payload.status,
+        # A CAPA must be reviewed and approved before it can be implemented.
+        # Never trust lifecycle fields supplied by the client on creation.
+        completed_date=None,
+        verification_status="PENDING_VERIFY",
+        review_status="DRAFT",
+        status="DRAFT",
         evidence_urls=payload.evidence_urls or [],
     )
     db.add(new_capa)
@@ -346,6 +357,54 @@ def get_capa_record_by_id(capa_id: UUID, db: Session = Depends(get_db)):
     return format_capa_out(c)
 
 
+@router.post("/records/{capa_id}/submit-review", response_model=CAPARecordResponse)
+def submit_capa_for_review(capa_id: UUID, db: Session = Depends(get_db), current_user: User = Depends(require_roles("admin", "qa", "fst_leader"))):
+    c = db.get(CAPARecord, capa_id)
+    if not c:
+        raise HTTPException(status_code=404, detail="Không tìm thấy hồ sơ CAPA")
+    if c.review_status not in ["DRAFT", "REJECTED"]:
+        raise HTTPException(status_code=409, detail="CAPA không ở trạng thái dự thảo/từ chối để gửi xem xét")
+    c.review_status = "PENDING_REVIEW"
+    c.status = "DRAFT"
+    db.commit(); db.refresh(c)
+    return format_capa_out(c)
+
+
+@router.post("/records/{capa_id}/review", response_model=CAPARecordResponse)
+def review_capa(capa_id: UUID, payload: CAPAReviewRequest, db: Session = Depends(get_db), current_user: User = Depends(require_roles("admin", "qa", "fst_leader", "fs_team_leader"))):
+    c = db.get(CAPARecord, capa_id)
+    if not c:
+        raise HTTPException(status_code=404, detail="Không tìm thấy hồ sơ CAPA")
+    if c.review_status != "PENDING_REVIEW":
+        raise HTTPException(status_code=409, detail="CAPA phải được gửi xem xét trước khi ghi nhận nhận xét")
+    c.review_status = "REVIEWED"
+    c.reviewed_by_name = current_user.full_name or current_user.username
+    c.reviewed_at = datetime.now(timezone.utc)
+    c.review_comments = payload.comments.strip()
+    db.commit(); db.refresh(c)
+    return format_capa_out(c)
+
+
+@router.post("/records/{capa_id}/approve", response_model=CAPARecordResponse)
+def approve_capa(capa_id: UUID, payload: CAPAApprovalRequest, db: Session = Depends(get_db), current_user: User = Depends(require_roles("admin", "management", "manager", "executive"))):
+    c = db.get(CAPARecord, capa_id)
+    if not c:
+        raise HTTPException(status_code=404, detail="Không tìm thấy hồ sơ CAPA")
+    if c.review_status != "REVIEWED":
+        raise HTTPException(status_code=409, detail="CAPA phải được Trưởng ban QLCL/ATTP xem xét trước khi phê duyệt")
+    c.approval_comments = payload.comments.strip()
+    if payload.approved:
+        c.review_status = "APPROVED"
+        c.status = "IN_PROGRESS"
+        c.approved_by_name = current_user.full_name or current_user.username
+        c.approved_at = datetime.now(timezone.utc)
+    else:
+        c.review_status = "REJECTED"
+        c.status = "DRAFT"
+    db.commit(); db.refresh(c)
+    return format_capa_out(c)
+
+
 @router.put("/records/{capa_id}", response_model=CAPARecordResponse)
 def update_capa_record(
     capa_id: UUID,
@@ -356,6 +415,11 @@ def update_capa_record(
     c = db.get(CAPARecord, capa_id)
     if not c:
         raise HTTPException(status_code=404, detail="Không tìm thấy hồ sơ CAPA")
+    if c.review_status not in ["DRAFT", "REJECTED"]:
+        raise HTTPException(
+            status_code=409,
+            detail="Kế hoạch đã gửi xem xét hoặc được phê duyệt không thể sửa trực tiếp; hãy lập phiên bản/phiếu điều chỉnh theo quy trình.",
+        )
 
     if payload.title is not None:
         c.title = payload.title.strip()
@@ -377,11 +441,54 @@ def update_capa_record(
         c.target_date = payload.target_date
     if payload.completed_date is not None:
         c.completed_date = payload.completed_date
-    if payload.status is not None:
-        c.status = payload.status
+    # Status transitions are intentionally handled only by the dedicated
+    # submit-review, approve, submit-verification and verify endpoints.
     if payload.evidence_urls is not None:
         c.evidence_urls = payload.evidence_urls
 
+    db.commit()
+    db.refresh(c)
+    return format_capa_out(c)
+
+
+@router.post("/records/{capa_id}/submit-verification", response_model=CAPARecordResponse)
+def submit_capa_for_verification(
+    capa_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "fst_leader")),
+):
+    """Record completion and submit approved CAPA evidence for effectiveness verification."""
+    c = db.get(CAPARecord, capa_id)
+    if not c:
+        raise HTTPException(status_code=404, detail="Không tìm thấy hồ sơ CAPA")
+    if c.review_status != "APPROVED" or c.status != "IN_PROGRESS":
+        raise HTTPException(status_code=409, detail="Chỉ CAPA đã được phê duyệt và đang thực hiện mới được gửi thẩm tra")
+    if not c.evidence_urls:
+        raise HTTPException(status_code=422, detail="Cần đính kèm ít nhất một bằng chứng thực hiện trước khi gửi thẩm tra")
+    c.status = "PENDING_VERIFICATION"
+    c.completed_date = c.completed_date or date.today()
+    db.commit()
+    db.refresh(c)
+    return format_capa_out(c)
+
+
+@router.put("/records/{capa_id}/evidence", response_model=CAPARecordResponse)
+def update_capa_evidence(
+    capa_id: UUID,
+    payload: CAPAEvidenceRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "fst_leader")),
+):
+    """Append/replace implementation evidence without reopening an approved plan."""
+    c = db.get(CAPARecord, capa_id)
+    if not c:
+        raise HTTPException(status_code=404, detail="Không tìm thấy hồ sơ CAPA")
+    if c.review_status != "APPROVED" or c.status not in ["IN_PROGRESS", "PENDING_VERIFICATION"]:
+        raise HTTPException(status_code=409, detail="Chỉ CAPA đã phê duyệt đang thực hiện/chờ thẩm tra mới được cập nhật bằng chứng")
+    evidence_urls = [url.strip() for url in payload.evidence_urls if url.strip()]
+    if not evidence_urls:
+        raise HTTPException(status_code=422, detail="Cần có ít nhất một liên kết bằng chứng hợp lệ")
+    c.evidence_urls = evidence_urls
     db.commit()
     db.refresh(c)
     return format_capa_out(c)
@@ -397,6 +504,11 @@ def verify_capa_record(
     c = db.get(CAPARecord, capa_id)
     if not c:
         raise HTTPException(status_code=404, detail="Không tìm thấy hồ sơ CAPA")
+    if c.review_status != "APPROVED" or c.status != "PENDING_VERIFICATION":
+        raise HTTPException(
+            status_code=409,
+            detail="CAPA phải được phê duyệt, hoàn tất thực hiện và gửi thẩm tra trước khi đánh giá hiệu lực/đóng phiếu",
+        )
 
     today = date.today()
     c.verified_by_name = payload.verified_by_name
@@ -455,33 +567,14 @@ def delete_capa_record(
 @router.get("/sla-warnings")
 def get_capa_sla_warnings(db: Session = Depends(get_db)):
     """
-    Theo dõi quy tắc SLA & Cảnh báo quá hạn theo ISO 22000:2018:
-    - SLA Khắc phục tức thời (Corrections - Clause 8.9.2): Phiếu NC mới quá 48h chưa phân công CAPA.
-    - SLA Hành động khắc phục & Phòng ngừa (CAPA - Clause 10.1): Hồ sơ quá hạn target_date hoặc sắp đến hạn trong vòng 3 ngày.
+    Theo dõi cảnh báo hạn hoàn thành CAPA do doanh nghiệp thiết lập.
+    ISO 22000 yêu cầu xử lý sự không phù hợp và theo dõi hiệu lực, nhưng không
+    ấn định một mốc SLA cố định cho mọi doanh nghiệp.
     """
     today = date.today()
     warnings = []
 
-    # 1. Kiểm tra NC mở
-    open_ncs = db.scalars(
-        select(NonConformance).where(NonConformance.status.in_(["NEW", "INVESTIGATING"]))
-    ).all()
-
-    for nc in open_ncs:
-        days_open = (today - nc.occurred_date).days if nc.occurred_date else 0
-        if days_open >= 2:  # Quá 48h
-            warnings.append({
-                "type": "NC_SLA_BREACH",
-                "severity": "CRITICAL" if nc.severity == "CRITICAL" else "MAJOR",
-                "code": str(nc.nc_number),
-                "title": str(nc.title),
-                "source": str(nc.source),
-                "occurred_date": str(nc.occurred_date),
-                "days_overdue": days_open - 2,
-                "message": f"Sự cố NC '{nc.nc_number}' đã mở {days_open} ngày (> 48h) nhưng chưa hoàn thành lập kế hoạch CAPA theo ISO 22000 Clause 8.9.2.",
-            })
-
-    # 2. Kiểm tra CAPA chưa hoàn tất
+    # Kiểm tra CAPA chưa hoàn tất theo target_date trên từng hồ sơ.
     pending_capas = db.scalars(
         select(CAPARecord).where(CAPARecord.status.in_(["DRAFT", "IN_PROGRESS", "PENDING_VERIFICATION"]))
     ).all()

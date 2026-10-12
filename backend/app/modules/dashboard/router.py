@@ -122,10 +122,20 @@ def get_executive_overview_stats(db: Session = Depends(get_db)):
     today_suspended = sum(1 for h in health_records if h.cleared_for_shift == "SUSPENDED" and h.shift_date == date.today())
     today_cleared = sum(1 for h in health_records if h.cleared_for_shift == "CLEARED" and h.shift_date == date.today())
 
+    # Clause 4, 5 & 9.3: only approved management-review records evidence
+    # leadership review; never substitute demo percentages for missing records.
+    total_management_reviews = db.query(ManagementReview).count()
+    approved_management_reviews = db.query(ManagementReview).filter(
+        ManagementReview.status == "APPROVED"
+    ).count()
+    leadership_review_rate = round(
+        approved_management_reviews / total_management_reviews * 100, 1
+    ) if total_management_reviews > 0 else 0.0
+
     # Kiểm tra xem hệ thống có dữ liệu thực tế chưa
     has_any_data = (total_docs > 0 or total_lots > 0 or total_monitoring_logs > 0 or 
                     len(prp_logs) > 0 or total_equipment > 0 or total_ncs > 0 or 
-                    total_audits > 0 or len(participants) > 0)
+                    total_audits > 0 or len(participants) > 0 or total_management_reviews > 0)
 
     if not has_any_data:
         overall_health_score = 0.0
@@ -156,9 +166,10 @@ def get_executive_overview_stats(db: Session = Depends(get_db)):
 
     # Radar 7 Pillars
     radar_pillars = RadarPillars(
-        context_leadership=0.0 if not has_any_data else 94.0,
+        context_leadership=leadership_review_rate,
         planning_haccp=ccp_in_control_rate,
-        support_training=0.0 if not has_any_data else round((training_pass_rate + (100.0 if pending_docs == 0 else 88.0)) / 2, 1),
+        support_training=round((training_pass_rate + doc_approval_rate) / 2, 1)
+        if (len(participants) > 0 or total_docs > 0) else 0.0,
         operation_prp=prp_compliance_rate,
         performance_audit=audit_conformity_rate,
         improvement_capa=capa_effective_rate,

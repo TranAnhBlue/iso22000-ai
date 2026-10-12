@@ -10,6 +10,7 @@ from app.modules.auth.schemas import (
     UserRegisterRequest,
     UserLoginRequest,
     TokenResponse,
+    RegistrationRequestResponse,
     UserProfileUpdateRequest,
     DepartmentOption,
     ChangePasswordRequest,
@@ -25,7 +26,7 @@ def get_departments_from_roles(db: Session = Depends(get_db)):
     """Lấy danh sách các phòng ban chuẩn hóa từ bảng departments trong CSDL"""
     return service.get_department_options(db)
 
-@router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/register", response_model=RegistrationRequestResponse, status_code=status.HTTP_201_CREATED)
 def register(payload: UserRegisterRequest, db: Session = Depends(get_db)):
     return service.register_user(db, payload)
 

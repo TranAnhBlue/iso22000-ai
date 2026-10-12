@@ -67,15 +67,15 @@ def format_batch_res(b: Any, usages_res: List[BatchMaterialUsageResponse], ccp_l
 
 def format_supplier_node(u: Any, mat_lot: Any, supplier: Any, iqc: Any) -> TraceabilitySupplierNode:
     return TraceabilitySupplierNode(
-        supplier_code=str(supplier.supplier_code) if supplier and supplier.supplier_code else "NCC-EXT",
-        supplier_name=str(supplier.supplier_name) if supplier and supplier.supplier_name else "Nhà cung ứng chỉ định",
-        rating_score=float(supplier.rating_score) if supplier and supplier.rating_score is not None else 98.0,
-        certifications=supplier.certifications if supplier and supplier.certifications else ["ISO 22000:2018", "HACCP"],
+        supplier_code=str(supplier.supplier_code) if supplier and supplier.supplier_code else "CHƯA_GẮN",
+        supplier_name=str(supplier.supplier_name) if supplier and supplier.supplier_name else "Chưa gắn nhà cung cấp",
+        rating_score=float(supplier.rating_score) if supplier and supplier.rating_score is not None else 0.0,
+        certifications=supplier.certifications if supplier and supplier.certifications else [],
         lot_number=str(u.lot_number),
         material_name=str(u.material_name),
         received_date=mat_lot.received_date if mat_lot else None,
-        iqc_status=str(iqc.status if iqc and iqc.status else (mat_lot.status if mat_lot and mat_lot.status else "APPROVED")),
-        iqc_inspector=str(iqc.inspector.full_name) if iqc and iqc.inspector and iqc.inspector.full_name else "QC Tiếp nhận",
+        iqc_status=str(iqc.status if iqc and iqc.status else (mat_lot.status if mat_lot and mat_lot.status else "CHƯA_CÓ_IQC")),
+        iqc_inspector=str(iqc.inspector.full_name) if iqc and iqc.inspector and iqc.inspector.full_name else None,
         coa_file_url=str(mat_lot.coa_file_url) if mat_lot and mat_lot.coa_file_url else None,
     )
 
@@ -128,6 +128,7 @@ def format_dispatch_node(d: Any, default_status: Optional[str] = None) -> Tracea
 def backward_traceability(
     query_code: str = Query(..., description="Mã mẻ sản xuất (LOT-202608-B01), Mã phiếu xuất (PXK-2026-0801), hoặc Mã QR"),
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "warehouse", "management", "manager", "executive")),
 ):
     code = query_code.strip()
     
@@ -224,8 +225,10 @@ def backward_traceability(
     dispatch_nodes = [format_dispatch_node(d) for d in dispatches]
 
     # Tính toán chỉ số Tuân thủ ISO
-    all_ccp_ok = all(not c.is_critical_limit_exceeded for c in ccp_nodes) if ccp_nodes else True
-    all_iqc_ok = all(s.iqc_status in ["PASSED", "APPROVED"] for s in supplier_nodes) if supplier_nodes else True
+    # Missing traceability records are an incomplete evidence set, never an
+    # implicit PASS/release decision.
+    all_ccp_ok = bool(ccp_nodes) and all(not c.is_critical_limit_exceeded for c in ccp_nodes)
+    all_iqc_ok = bool(supplier_nodes) and all(s.iqc_status in ["PASSED", "APPROVED"] for s in supplier_nodes)
     has_sample = len(sample_nodes) > 0
     total_disp_qty = sum(d.quantity_dispatched for d in dispatch_nodes)
     total_stock_qty = sum(float(getattr(s, "quantity", 0.0) or 0.0) for s in stocks)
@@ -261,13 +264,16 @@ def backward_traceability(
 def forward_traceability_mock_recall(
     material_lot_number: str = Query(..., description="Mã lô nguyên liệu nghi ngờ sự cố: NL-2606-04"),
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "warehouse", "management", "manager", "executive")),
 ):
     lot_code = material_lot_number.strip()
     
     # 1. Tìm thông tin lô nguyên liệu
     mat_lot = db.query(MaterialLot).filter(MaterialLot.lot_number.ilike(lot_code)).first()
-    material_name = mat_lot.material_name if mat_lot else f"Nguyên liệu ({lot_code})"
-    supplier_name = mat_lot.supplier.supplier_name if mat_lot and mat_lot.supplier else "Nhà cung cấp đối tác"
+    if not mat_lot:
+        raise HTTPException(status_code=404, detail=f"Không tìm thấy lô nguyên liệu '{lot_code}' để truy xuất xuôi")
+    material_name = mat_lot.material_name
+    supplier_name = mat_lot.supplier.supplier_name if mat_lot.supplier else None
 
     # 2. Tìm tất cả các mẻ sản xuất đã sử dụng lô nguyên liệu này
     usages = db.query(BatchMaterialUsage).filter(BatchMaterialUsage.lot_number.ilike(lot_code)).all()
@@ -304,7 +310,7 @@ def forward_traceability_mock_recall(
     return MockRecallResponse(
         material_lot_number=lot_code,
         material_name=str(material_name),
-        supplier_name=str(supplier_name),
+        supplier_name=str(supplier_name) if supplier_name else "Chưa gắn nhà cung cấp",
         affected_batches=affected_batch_numbers,
         total_affected_production_qty=float(total_prod_qty),
         stock_in_warehouse=stock_responses,
@@ -312,7 +318,9 @@ def forward_traceability_mock_recall(
         affected_customers=affected_customers,
         total_units_in_market=float(total_market_qty),
         recall_risk_level=risk_level,
-        iso_recall_time_est_minutes=12,
+        # ISO 22000 does not prescribe a universal recall-time target. The
+        # actual drill duration must be recorded in the emergency module.
+        iso_recall_time_est_minutes=None,
     )
 
 
@@ -578,11 +586,11 @@ def get_mock_recall_summary(
     batch_number: Optional[str] = Query(None, description="Mã mẻ kiểm tra diễn tập"),
     elapsed_minutes: int = Query(45, description="Thời gian hoàn tất diễn tập (phút)"),
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "management", "manager", "executive")),
 ):
-    """
-    Biên bản kết quả & Hiệu lực diễn tập thu hồi sản phẩm (ISO 22000:2018 Clause 8.9.5)
-    Quy định: Thời gian truy vết hoàn tất < 120 phút và Tỷ lệ xác định vị trí sản phẩm >= 98%.
-    """
+    """Demo-only recall drill helper; production drills are managed in Emergency."""
+    if not demo_seed_enabled():
+        raise HTTPException(status_code=404, detail="Mô phỏng diễn tập đã tắt. Hãy ghi nhận diễn tập thực tế tại phân hệ Ứng phó khẩn cấp.")
     target_time_minutes = 120
     is_time_compliant = elapsed_minutes <= target_time_minutes
 
@@ -626,13 +634,11 @@ def get_recall_notice_templates(
     product_name: str = Query("Chả cá Ba Sa Thượng Hạng 500g"),
     batch_number: str = Query("LOT-202608-B01"),
     recall_reason: str = Query("Nghi ngờ lỗi đường hàn nhiệt bao bì và sai lệch nhiệt độ bảo quản"),
+    current_user: User = Depends(require_roles("admin", "qa", "management", "manager", "executive")),
 ):
-    """
-    Hệ thống mẫu văn bản thông báo thu hồi sản phẩm khẩn cấp gửi:
-    1. Khách hàng & Đại lý phân phối
-    2. Nhà cung cấp nguyên liệu
-    3. Cơ quan quản lý nhà nước (Chi cục ATVSTP)
-    """
+    """Demo-only notice examples, never a production recall record."""
+    if not demo_seed_enabled():
+        raise HTTPException(status_code=404, detail="Mẫu thông báo demo đã tắt. Dùng hồ sơ sự cố/thu hồi thực tế tại phân hệ Ứng phó khẩn cấp.")
     today_str = date.today().strftime("%d/%m/%Y")
     return {
         "customer_notice": {

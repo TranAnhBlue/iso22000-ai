@@ -79,7 +79,7 @@ class CAPARecordBase(BaseModel):
     verification_date: Optional[date] = None
     verification_result: Optional[str] = None
     verification_status: str = Field(default="PENDING_VERIFY", description="PENDING_VERIFY, EFFECTIVE, INEFFECTIVE")
-    status: str = Field(default="IN_PROGRESS", description="DRAFT, IN_PROGRESS, PENDING_VERIFICATION, COMPLETED, OVERDUE")
+    status: str = Field(default="DRAFT", description="DRAFT, IN_PROGRESS, PENDING_VERIFICATION, COMPLETED, OVERDUE")
     evidence_urls: Optional[List[str]] = Field(default_factory=list)
 
 
@@ -103,9 +103,22 @@ class CAPARecordUpdate(BaseModel):
 
 
 class CAPAVerifyRequest(BaseModel):
-    verified_by_name: str = Field("Trưởng Ban QLCL & ATTP", max_length=150)
-    verification_result: str = Field(..., description="Nội dung kết luận thẩm tra hiệu lực sau 30 ngày")
+    verified_by_name: str = Field(default="Trưởng Ban QLCL & ATTP", max_length=150)
+    verification_result: str = Field(..., description="Nội dung kết luận thẩm tra hiệu lực")
     verification_status: str = Field(default="EFFECTIVE", description="EFFECTIVE (Hiệu lực), INEFFECTIVE (Không hiệu lực - cần tái mở CAPA)")
+
+
+class CAPAReviewRequest(BaseModel):
+    comments: str = Field(..., min_length=3, description="Nhận xét xem xét kế hoạch CAPA")
+
+
+class CAPAApprovalRequest(BaseModel):
+    approved: bool
+    comments: str = Field(..., min_length=3, description="Ý kiến phê duyệt hoặc từ chối")
+
+
+class CAPAEvidenceRequest(BaseModel):
+    evidence_urls: List[str] = Field(..., min_length=1, description="Liên kết bằng chứng thực hiện CAPA")
 
 
 class CAPARecordResponse(CAPARecordBase):
@@ -115,6 +128,13 @@ class CAPARecordResponse(CAPARecordBase):
     nc_number: Optional[str] = None
     nc_title: Optional[str] = None
     nc_severity: Optional[str] = None
+    review_status: str = "DRAFT"
+    reviewed_by_name: Optional[str] = None
+    reviewed_at: Optional[datetime] = None
+    review_comments: Optional[str] = None
+    approved_by_name: Optional[str] = None
+    approved_at: Optional[datetime] = None
+    approval_comments: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
 

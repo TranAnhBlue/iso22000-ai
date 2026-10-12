@@ -41,6 +41,8 @@ class User(Base):
     email: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     phone: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    # PENDING → APPROVED | REJECTED | SUSPENDED. Registration must not create an operable account.
+    approval_status: Mapped[str] = mapped_column(String(20), default="APPROVED", nullable=False)
     created_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     roles: Mapped[List[Role]] = relationship("Role", secondary=user_roles, lazy="joined")

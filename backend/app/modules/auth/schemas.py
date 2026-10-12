@@ -29,6 +29,14 @@ class TokenResponse(BaseModel):
     email: Optional[str] = None
 
 
+class RegistrationRequestResponse(BaseModel):
+    """Returned for public registration. Never includes a JWT."""
+    message: str
+    user_id: str
+    username: str
+    approval_status: str = "PENDING"
+
+
 class UserProfileUpdateRequest(BaseModel):
     """Các trường người dùng được phép tự cập nhật cho chính mình.
 

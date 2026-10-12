@@ -630,7 +630,11 @@ def update_supplier(supplier_id: UUID, supplier_in: SupplierUpdate, db: Session 
 
 
 @router.delete("/suppliers/{supplier_id}")
-def delete_supplier(supplier_id: UUID, db: Session = Depends(get_db)):
+def delete_supplier(
+    supplier_id: UUID,
+    db: Session = Depends(get_db),
+    _current_user: User = Depends(require_roles("admin", "qa", "fst_leader", "fs_team_leader", "purchasing")),
+):
     supplier = db.query(Supplier).filter(Supplier.supplier_id == supplier_id).first()
     if not supplier:
         raise HTTPException(status_code=404, detail="Không tìm thấy nhà cung cấp.")
@@ -857,7 +861,11 @@ def update_material_lot(lot_id: UUID, lot_in: MaterialLotUpdate, db: Session = D
 
 
 @router.delete("/lots/{lot_id}")
-def delete_material_lot(lot_id: UUID, db: Session = Depends(get_db)):
+def delete_material_lot(
+    lot_id: UUID,
+    db: Session = Depends(get_db),
+    _current_user: User = Depends(require_roles("admin", "qa", "fst_leader", "fs_team_leader", "purchasing")),
+):
     lot = db.query(MaterialLot).filter(MaterialLot.material_lot_id == lot_id).first()
     if not lot:
         raise HTTPException(status_code=404, detail="Không tìm thấy lô nguyên liệu.")
@@ -1034,7 +1042,11 @@ def update_iqc_inspection(inspection_id: UUID, insp_in: IQCInspectionUpdate, db:
 
 
 @router.delete("/inspections/{inspection_id}")
-def delete_iqc_inspection(inspection_id: UUID, db: Session = Depends(get_db)):
+def delete_iqc_inspection(
+    inspection_id: UUID,
+    db: Session = Depends(get_db),
+    _current_user: User = Depends(require_roles("admin", "qa", "fst_leader", "fs_team_leader")),
+):
     insp = db.query(IQCInspection).filter(IQCInspection.inspection_id == inspection_id).first()
     if not insp:
         raise HTTPException(status_code=404, detail="Không tìm thấy biên bản IQC.")
@@ -1456,7 +1468,8 @@ def update_supplier_evaluation_plan(
 @router.delete("/evaluation-plans/{plan_id}")
 def delete_supplier_evaluation_plan(
     plan_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _current_user: User = Depends(require_roles("admin", "qa", "fst_leader", "fs_team_leader", "purchasing")),
 ):
     plan = db.query(SupplierEvaluationPlan).filter(SupplierEvaluationPlan.id == plan_id).first()
     if not plan:
@@ -1667,7 +1680,8 @@ def update_supplier_evaluation(
 @router.delete("/evaluations/{eval_id}")
 def delete_supplier_evaluation(
     eval_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _current_user: User = Depends(require_roles("admin", "qa", "fst_leader", "fs_team_leader")),
 ):
     e = db.query(SupplierEvaluation).filter(SupplierEvaluation.id == eval_id).first()
     if not e:

@@ -918,12 +918,12 @@ export function TraceabilityPage() {
       )}
 
       {/* =========================================================================
-          MODE B: FORWARD TRACEABILITY & MOCK RECALL (GIẢ LẬP THU HỒI SỰ CỐ)
+          MODE B: FORWARD TRACEABILITY & RECALL ASSESSMENT
       ========================================================================= */}
       {mode === "forward" && !forwardRecall && (
         <EmptyState
           icon={ShieldAlert}
-          title="Chưa thực hiện quét giả lập thu hồi khẩn cấp"
+          title="Chưa thực hiện truy xuất xuôi"
           description="Nhập mã lô nguyên liệu nghi ngờ bị sự cố để quét toàn bộ các mẻ sản xuất và khách hàng/đại lý cần kích hoạt thu hồi khẩn cấp."
           actionLabel="Xem Hướng Dẫn Thu Hồi"
           onAction={() => setShowGuide(true)}
@@ -933,7 +933,7 @@ export function TraceabilityPage() {
 
       {mode === "forward" && forwardRecall && (
         <div className="space-y-6">
-          {/* MOCK RECALL BANNER */}
+          {/* FORWARD TRACEABILITY BANNER */}
           <div className="rounded-xl border border-rose-500/40 bg-rose-50/30 p-5 space-y-3">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div className="flex items-center gap-3">
@@ -943,7 +943,7 @@ export function TraceabilityPage() {
                 <div>
                   <div className="flex items-center gap-2">
                     <h3 className="text-base font-bold text-rose-950">
-                      Báo Cáo Giả Lập Thu Hồi Sự Cố ATTP (Mock Recall Report)
+                      Báo Cáo Truy Xuất Xuôi Lô Nguyên Liệu
                     </h3>
                     <span className="bg-rose-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">
                       MỨC ĐỘ RỦI RO: {forwardRecall.recall_risk_level}
@@ -965,9 +965,9 @@ export function TraceabilityPage() {
                 ) : (
                   <Button
                     onClick={() =>
-                      handleQuarantine(forwardRecall.affected_batches[0] || "LOT-202608-B01")
+                      handleQuarantine(forwardRecall.affected_batches[0])
                     }
-                    disabled={quarantining}
+                    disabled={quarantining || forwardRecall.affected_batches.length === 0}
                     className="gap-2 bg-rose-600 hover:bg-rose-700 text-white font-bold shadow-sm"
                     size="sm"
                   >
@@ -993,10 +993,9 @@ export function TraceabilityPage() {
             {/* TIME BENCHMARK */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-3 border-t border-rose-200 text-xs">
               <div className="bg-white/80 p-2.5 rounded-lg border border-rose-100">
-                <span className="text-muted-foreground">Thời gian truy xuất hoàn thành:</span>
+                <span className="text-muted-foreground">Thời lượng truy xuất:</span>
                 <div className="text-base font-bold text-emerald-700 flex items-center gap-1">
-                  <Clock className="h-4 w-4" /> {forwardRecall.iso_recall_time_est_minutes} Phút
-                  (Chuẩn ISO &lt; 120 Phút)
+                  <Clock className="h-4 w-4" /> {forwardRecall.iso_recall_time_est_minutes != null ? `${forwardRecall.iso_recall_time_est_minutes} phút` : "Chưa ghi nhận"}
                 </div>
               </div>
               <div className="bg-white/80 p-2.5 rounded-lg border border-rose-100">

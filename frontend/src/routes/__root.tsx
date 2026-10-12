@@ -75,6 +75,10 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
 }
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
+  // The FSMS is an authenticated internal SPA and is deployed as static files
+  // on Vercel. Rendering route content only in the browser prevents an SSR /
+  // localStorage hydration split that left interactive controls inert.
+  ssr: false,
   head: () => ({
     meta: [
       { charSet: "utf-8" },

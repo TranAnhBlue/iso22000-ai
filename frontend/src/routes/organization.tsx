@@ -373,14 +373,16 @@ function Org() {
       key: "status",
       label: "Trạng thái",
       type: "select",
-      options: ["Hoạt động", "Khoá"],
+      options: ["Chờ duyệt", "Hoạt động", "Khoá"],
       render: (v: string) => (
         <Pill
           value={v}
           tone={
             v === "Hoạt động"
               ? "bg-emerald-500/10 text-emerald-700"
-              : "bg-rose-500/10 text-rose-700"
+              : v === "Chờ duyệt"
+                ? "bg-amber-500/10 text-amber-700"
+                : "bg-rose-500/10 text-rose-700"
           }
         />
       ),

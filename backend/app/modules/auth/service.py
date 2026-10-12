@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 from app.core.security import get_password_hash, verify_password, create_access_token, validate_password_strength
 from app.modules.auth.models import User, Role, Department, AuditLog
-from app.modules.auth.schemas import UserRegisterRequest, UserLoginRequest, TokenResponse, DepartmentOption
+from app.modules.auth.schemas import UserRegisterRequest, UserLoginRequest, TokenResponse, DepartmentOption, RegistrationRequestResponse
 
 def get_department_options(db: Session) -> List[DepartmentOption]:
     try:
@@ -40,7 +40,7 @@ def get_department_options(db: Session) -> List[DepartmentOption]:
         ]
         return [DepartmentOption(role_code=c, role_name=n) for c, n in fallback]
 
-def register_user(db: Session, payload: UserRegisterRequest) -> TokenResponse:
+def register_user(db: Session, payload: UserRegisterRequest) -> RegistrationRequestResponse:
     existing_user = db.query(User).filter(User.username == payload.username).first()
     if existing_user:
         raise HTTPException(status_code=400, detail="Tên đăng nhập đã tồn tại trong hệ thống.")
@@ -63,22 +63,27 @@ def register_user(db: Session, payload: UserRegisterRequest) -> TokenResponse:
         department=payload.department or "Chờ phân bổ",
         email=payload.email,
         phone=payload.phone,
-        is_active=True
+        is_active=False,
+        approval_status="PENDING",
     )
     new_user.roles.append(role)
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
 
-    token = create_access_token(data={"sub": str(new_user.user_id), "role": "user"})
-    return TokenResponse(
-        access_token=token,
+    create_audit_log(
+        db,
+        username=new_user.username,
+        action="REGISTER_PENDING_APPROVAL",
+        entity_type="AUTH",
+        user_id=new_user.user_id,
+        details={"department": new_user.department},
+    )
+    db.commit()
+    return RegistrationRequestResponse(
+        message="Đăng ký thành công. Tài khoản đang chờ Quản trị viên phê duyệt và phân quyền.",
         user_id=str(new_user.user_id),
         username=str(new_user.username),
-        full_name=str(new_user.full_name),
-        role="user",
-        department=str(new_user.department) if new_user.department else None,
-        phone=str(new_user.phone) if new_user.phone else None
     )
 
 def authenticate_user(db: Session, payload: UserLoginRequest) -> TokenResponse:
@@ -93,7 +98,12 @@ def authenticate_user(db: Session, payload: UserLoginRequest) -> TokenResponse:
     if not user or not verify_password(payload.password, str(user.password_hash)):
         raise HTTPException(status_code=400, detail="Sai tên đăng nhập hoặc mật khẩu.")
 
-    if not user.is_active:
+    approval_status = str(getattr(user, "approval_status", "APPROVED")).upper()
+    if approval_status == "PENDING":
+        raise HTTPException(status_code=403, detail="Tài khoản đang chờ Quản trị viên phê duyệt và phân quyền.")
+    if approval_status == "REJECTED":
+        raise HTTPException(status_code=403, detail="Yêu cầu đăng ký tài khoản đã bị từ chối. Vui lòng liên hệ Quản trị viên.")
+    if not user.is_active or approval_status == "SUSPENDED":
         raise HTTPException(status_code=403, detail="Tài khoản đã bị tạm khóa.")
 
     # Ghi nhận Audit Log đăng nhập thành công

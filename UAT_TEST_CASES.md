@@ -61,9 +61,10 @@ Thực hiện trên môi trường UAT có dữ liệu mẫu hoặc dữ liệu 
 | INV-03 | Hủy hàng | QA/Kho | Tạo biên bản hủy hàng với mã duy nhất; thử mã trùng. | Biên bản hợp lệ lưu, mã trùng bị từ chối. |
 | TRACE-01 | Truy xuất ngược | QA | Chọn thành phẩm/mẻ có dữ liệu liên kết. | Hiển thị được mẻ, lô nguyên liệu, NCC và mẫu lưu nếu có. |
 | TRACE-02 | Truy xuất xuôi/thu hồi | QA | Chọn lô nguyên liệu, xem điểm giao/khách ảnh hưởng, tạo quarantine. | Danh sách ảnh hưởng đúng; mẻ bị cách ly không thể xuất. |
-| TRACE-03 | Diễn tập thu hồi | QA/Lãnh đạo | Mở mock recall summary và notice template. | Có thời gian ước tính, đánh giá mục tiêu và nội dung thông báo. |
+| TRACE-03 | Diễn tập thu hồi | QA/Lãnh đạo | Lập hồ sơ diễn tập tại Ứng phó khẩn cấp; dùng dữ liệu truy xuất thực tế để đối soát phạm vi, thời gian, liên lạc và quarantine. | Có hồ sơ diễn tập, bằng chứng đối soát và kết luận theo mục tiêu doanh nghiệp đã phê duyệt; không dùng số liệu mock. |
 | CAPA-01 | NC | QA/QC | Tạo NC với lô ảnh hưởng, mức độ và correction. | NC có mã duy nhất và trạng thái mở phù hợp. |
-| CAPA-02 | CAPA hiệu lực | QA | Tạo CAPA, nhập nguyên nhân, hành động, bằng chứng; xác minh `EFFECTIVE`. | Chỉ CAPA đã xác minh hiệu lực mới đủ điều kiện đóng. |
+| CAPA-02 | CAPA hiệu lực | QA/QLCL/Lãnh đạo | Tạo dự thảo CAPA, gửi xem xét, ghi nhận nhận xét, phê duyệt, đính kèm bằng chứng, gửi thẩm tra và xác minh `EFFECTIVE`. | Chỉ CAPA đã được phê duyệt, có bằng chứng và được xác minh hiệu lực mới đủ điều kiện đóng. |
+| CAPA-02A | Chặn sai luồng CAPA | QA | Thử xác minh hoặc đóng CAPA khi còn `DRAFT`, `PENDING_REVIEW`, `REVIEWED` hoặc chưa gửi thẩm tra. | API từ chối `409`; không thay đổi trạng thái hay đóng NC. |
 | CAPA-03 | CAPA quá hạn | QA | Tạo CAPA có hạn quá khứ/chưa hoàn thành, mở SLA warnings. | Cảnh báo quá hạn hiển thị đúng. |
 | AUD-01 | Audit/finding | Auditor | Lập audit, tạo finding và chuyển finding thành NC. | Finding liên kết audit; NC được tạo đúng nguồn. |
 | AUD-02 | Đào tạo | HR/QA | Tạo yêu cầu, khóa học, học viên và đánh giá sau đào tạo. | Các bản ghi liên kết; kết quả đánh giá hiển thị ở học viên/competency. |

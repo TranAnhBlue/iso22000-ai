@@ -52,7 +52,7 @@ export const Route = createFileRoute("/capa")({
       {
         property: "og:description",
         content:
-          "Quy trình 5 bước CAPA chuẩn ISO 22000 với Trợ lý AI phân tích nguyên nhân gốc rễ và thẩm tra sau 30 ngày.",
+          "Quy trình CAPA theo ISO 22000: phân tích nguyên nhân, xem xét, phê duyệt, thực hiện và thẩm tra hiệu lực.",
       },
     ],
   }),
@@ -125,6 +125,13 @@ interface CAPAPlan {
   verification_result?: string;
   verification_status: "PENDING_VERIFY" | "EFFECTIVE" | "INEFFECTIVE";
   status: "DRAFT" | "IN_PROGRESS" | "PENDING_VERIFICATION" | "COMPLETED" | "OVERDUE";
+  review_status?: "DRAFT" | "PENDING_REVIEW" | "REVIEWED" | "APPROVED" | "REJECTED" | string;
+  reviewed_by_name?: string;
+  reviewed_at?: string;
+  review_comments?: string;
+  approved_by_name?: string;
+  approved_at?: string;
+  approval_comments?: string;
   evidence_urls?: string[];
   nc_number?: string;
   nc_title?: string;
@@ -185,10 +192,17 @@ function CAPAManagementPage() {
   const [showVerifyModal, setShowVerifyModal] = useState(false);
   const [verifyingCAPA, setVerifyingCAPA] = useState<CAPARecord | null>(null);
   const [verificationForm, setVerificationForm] = useState({
-    verified_by_name: "Lê Hoàng Nam (Trưởng ban QA/QC)",
+    verified_by_name: "",
     verification_result: "",
     verification_status: "EFFECTIVE",
   });
+  const [capaAction, setCapaAction] = useState<{
+    capa: CAPARecord;
+    type: "review" | "approve" | "reject";
+  } | null>(null);
+  const [capaActionComments, setCapaActionComments] = useState("");
+  const [evidenceCAPA, setEvidenceCAPA] = useState<CAPARecord | null>(null);
+  const [evidenceText, setEvidenceText] = useState("");
 
   const [showPrintModal, setShowPrintModal] = useState(false);
   const [printingCAPA, setPrintingCAPA] = useState<CAPARecord | null>(null);
@@ -327,19 +341,19 @@ function CAPAManagementPage() {
         </div>
 
         <div class="sec-box">
-          <div class="sec-hdr">IV. THẨM TRA HIỆU LỰC SAU 30 NGÀY & KẾT LUẬN ĐÓNG PHIẾU (VERIFICATION)</div>
+          <div class="sec-hdr">IV. THẨM TRA HIỆU LỰC & KẾT LUẬN ĐÓNG PHIẾU (VERIFICATION)</div>
           <div class="sec-body">
             <div class="grid-2">
-              <div class="col"><b>Người thẩm tra:</b> ${capa.verified_by_name || "Trưởng Ban QLCL & ATTP"}</div>
-              <div class="col"><b>Ngày thẩm tra:</b> ${capa.verification_date || "Sau 30 ngày"}</div>
+              <div class="col"><b>Người thẩm tra:</b> ${capa.verified_by_name || "Chưa xác định"}</div>
+              <div class="col"><b>Ngày thẩm tra:</b> ${capa.verification_date || "Theo kế hoạch thẩm tra"}</div>
             </div>
             <div style="margin-top: 4px;">
               <b>Kết luận hiệu lực: </b>
               <strong style="color: ${capa.verification_status === "EFFECTIVE" ? "#047857" : "#d97706"};">
-                ${capa.verification_status === "EFFECTIVE" ? "✓ ĐẠT HIỆU LỰC (EFFECTIVE) — ĐỒNG Ý ĐÓNG PHIẾU" : "⏳ ĐANG THEO DÕI CHU KỲ 30 NGÀY"}
+                ${capa.verification_status === "EFFECTIVE" ? "✓ ĐẠT HIỆU LỰC (EFFECTIVE) — ĐỒNG Ý ĐÓNG PHIẾU" : "⏳ ĐANG CHỜ THẨM TRA HIỆU LỰC"}
               </strong>
             </div>
-            <div class="content-p">${capa.verification_result || "Đoàn đánh giá nội bộ sẽ tái thẩm tra số liệu tại hiện trường sau 30 ngày vận hành ổn định."}</div>
+            <div class="content-p">${capa.verification_result || "Chưa có kết luận thẩm tra hiệu lực."}</div>
           </div>
         </div>
 
@@ -348,7 +362,7 @@ function CAPAManagementPage() {
             <td>
               <strong>NGƯỜI LẬP BÁO CÁO</strong><br/>
               <i>(Ký và ghi rõ họ tên)</i><br/><br/><br/><br/>
-              <strong>${capa.assigned_to_name || "Trần Văn An"}</strong>
+              <strong>${capa.assigned_to_name || "Chưa xác định"}</strong>
             </td>
             <td>
               <strong>TRƯỞNG BỘ PHẬN PHỤ TRÁCH</strong><br/>
@@ -444,7 +458,7 @@ function CAPAManagementPage() {
               type: "approval",
               label: "5. Thẩm tra Hiệu lực & Đóng phiếu CAPA",
               role: "Ban QLCL & ATTP (QA Lead)",
-              description: "Đánh giá lại sau 30 ngày, xác nhận lỗi không tái diễn và đóng NC.",
+              description: "Đánh giá hiệu lực theo kỳ hạn, xác nhận lỗi không tái diễn và đóng NC.",
               is_ccp: false,
               step_number: 5,
             },
@@ -568,7 +582,10 @@ function CAPAManagementPage() {
       assigned_to_name: (fd.get("assigned_to_name") as string) || "Trưởng bộ phận",
       assigned_dept: (fd.get("assigned_dept") as string) || "Phòng Sản xuất",
       target_date: fd.get("target_date") as string,
-      status: (fd.get("status") as string) || "IN_PROGRESS",
+      evidence_urls: String(fd.get("evidence_urls") || "")
+        .split(/\r?\n/)
+        .map((url) => url.trim())
+        .filter(Boolean),
     };
 
     try {
@@ -585,6 +602,70 @@ function CAPAManagementPage() {
       fetchData();
     } catch (err: any) {
       toast.error("Lỗi khi lưu CAPA: " + (err.response?.data?.detail || err.message));
+    }
+  };
+
+  const submitForReview = async (capa: CAPARecord) => {
+    try {
+      await api.post(`/capa/records/${capa.capa_id}/submit-review`);
+      toast.success("Đã gửi kế hoạch CAPA để Trưởng ban QLCL/ATTP xem xét.");
+      fetchData();
+    } catch (err: any) {
+      toast.error("Không thể gửi xem xét: " + (err.response?.data?.detail || err.message));
+    }
+  };
+
+  const handleCAPAAction = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!capaAction || capaActionComments.trim().length < 3) {
+      toast.error("Vui lòng nhập ý kiến tối thiểu 3 ký tự.");
+      return;
+    }
+    const { capa, type } = capaAction;
+    try {
+      if (type === "review") {
+        await api.post(`/capa/records/${capa.capa_id}/review`, { comments: capaActionComments });
+        toast.success("Đã ghi nhận xem xét và chuyển lãnh đạo phê duyệt.");
+      } else {
+        await api.post(`/capa/records/${capa.capa_id}/approve`, {
+          approved: type === "approve",
+          comments: capaActionComments,
+        });
+        toast.success(type === "approve" ? "CAPA đã được phê duyệt để triển khai." : "CAPA đã bị từ chối và trả về dự thảo.");
+      }
+      setCapaAction(null);
+      setCapaActionComments("");
+      fetchData();
+    } catch (err: any) {
+      toast.error("Không thể cập nhật CAPA: " + (err.response?.data?.detail || err.message));
+    }
+  };
+
+  const submitForVerification = async (capa: CAPARecord) => {
+    try {
+      await api.post(`/capa/records/${capa.capa_id}/submit-verification`);
+      toast.success("Đã gửi bằng chứng để thẩm tra hiệu lực.");
+      fetchData();
+    } catch (err: any) {
+      toast.error("Không thể gửi thẩm tra: " + (err.response?.data?.detail || err.message));
+    }
+  };
+
+  const saveEvidence = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!evidenceCAPA) return;
+    const evidence_urls = evidenceText.split(/\r?\n/).map((url) => url.trim()).filter(Boolean);
+    if (!evidence_urls.length) {
+      toast.error("Nhập ít nhất một liên kết bằng chứng.");
+      return;
+    }
+    try {
+      await api.put(`/capa/records/${evidenceCAPA.capa_id}/evidence`, { evidence_urls });
+      toast.success("Đã cập nhật bằng chứng thực hiện.");
+      setEvidenceCAPA(null);
+      fetchData();
+    } catch (err: any) {
+      toast.error("Không thể cập nhật bằng chứng: " + (err.response?.data?.detail || err.message));
     }
   };
 
@@ -721,7 +802,7 @@ function CAPAManagementPage() {
           </div>
           <p className="text-slate-600 text-sm mt-1.5 font-normal">
             Ghi nhận NC hiện trường, cô lập tức thì, truy vết nguyên nhân gốc rễ 5-Why/Fishbone và
-            thẩm tra hiệu lực sau 30 ngày.
+            thẩm tra hiệu lực theo kỳ hạn đã được phê duyệt.
           </p>
         </div>
 
@@ -763,7 +844,7 @@ function CAPAManagementPage() {
       <AIBadge>
         <b>Trợ lý AI CAPA Studio:</b> Tự động truy vết nguyên nhân gốc rễ bằng phương pháp{" "}
         <b>5-Why</b> hoặc <b>Sơ đồ xương cá Ishikawa 5M+1E</b> · Đề xuất hành động khắc phục tức
-        thì, ngăn ngừa tái diễn và thiết lập cơ chế thẩm tra sau 30 ngày.
+        thì, ngăn ngừa tái diễn và thiết lập cơ chế thẩm tra theo kỳ hạn đã phê duyệt.
       </AIBadge>
 
       {/* ==================== 4 KPI STATS CARDS ==================== */}
@@ -817,7 +898,7 @@ function CAPAManagementPage() {
               {stats.in_progress_capas + stats.pending_verify_capas}
             </h3>
             <div className="flex items-center gap-2 mt-2 text-xs font-semibold text-purple-700 bg-purple-50 px-2 py-0.5 rounded border border-purple-200">
-              <span>{stats.pending_verify_capas} Chờ thẩm tra 30 ngày</span>
+              <span>{stats.pending_verify_capas} Chờ thẩm tra</span>
             </div>
           </div>
           <div className="p-3.5 bg-amber-50 text-amber-600 rounded-2xl border border-amber-100">
@@ -825,7 +906,7 @@ function CAPAManagementPage() {
           </div>
         </div>
 
-        {/* KPI 4: Tỷ Lệ Hiệu Lực Sau 30 Ngày */}
+        {/* KPI 4: Tỷ lệ thẩm tra hiệu lực */}
         <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
           <div>
             <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">
@@ -896,7 +977,7 @@ function CAPAManagementPage() {
         >
           <ShieldCheck className="h-4 w-4 text-emerald-600" />
           <span>
-            4. Thẩm Tra 30 Ngày & Đóng Hồ Sơ (
+            4. Thẩm Tra Hiệu Lực & Đóng Hồ Sơ (
             {capas.filter((c) => c.status === "PENDING_VERIFICATION").length})
           </span>
         </button>
@@ -1189,7 +1270,7 @@ function CAPAManagementPage() {
                         {c.status === "COMPLETED"
                           ? "Hoàn Thành"
                           : c.status === "PENDING_VERIFICATION"
-                            ? "Chờ Thẩm Tra 30 Ngày"
+                            ? "Chờ Thẩm Tra"
                             : "Đang Triển Khai"}
                       </span>
                     </div>
@@ -1248,6 +1329,36 @@ function CAPAManagementPage() {
                     </div>
 
                     <div className="flex items-center gap-2">
+                      {(["DRAFT", "REJECTED"].includes(c.review_status || "DRAFT")) && (
+                        <Button
+                          size="sm"
+                          onClick={() => submitForReview(c)}
+                          className="h-8 text-xs px-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold"
+                        >
+                          Gửi xem xét
+                        </Button>
+                      )}
+                      {c.review_status === "PENDING_REVIEW" && (
+                        <Button
+                          size="sm"
+                          onClick={() => { setCapaAction({ capa: c, type: "review" }); setCapaActionComments(""); }}
+                          className="h-8 text-xs px-3 bg-amber-600 hover:bg-amber-700 text-white font-bold"
+                        >
+                          Xem xét kế hoạch
+                        </Button>
+                      )}
+                      {c.review_status === "REVIEWED" && (
+                        <>
+                          <Button size="sm" onClick={() => { setCapaAction({ capa: c, type: "approve" }); setCapaActionComments(""); }} className="h-8 text-xs px-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold">Phê duyệt</Button>
+                          <Button variant="outline" size="sm" onClick={() => { setCapaAction({ capa: c, type: "reject" }); setCapaActionComments(""); }} className="h-8 text-xs px-3 text-rose-700 border-rose-300">Từ chối</Button>
+                        </>
+                      )}
+                      {c.review_status === "APPROVED" && c.status === "IN_PROGRESS" && (
+                        <>
+                          <Button variant="outline" size="sm" onClick={() => { setEvidenceCAPA(c); setEvidenceText((c.evidence_urls || []).join("\n")); }} className="h-8 text-xs px-3 text-slate-700 border-slate-300">Bằng chứng</Button>
+                          <Button size="sm" onClick={() => submitForVerification(c)} className="h-8 text-xs px-3 bg-purple-600 hover:bg-purple-700 text-white font-bold">Gửi thẩm tra</Button>
+                        </>
+                      )}
                       <Button
                         variant="outline"
                         size="sm"
@@ -1261,7 +1372,7 @@ function CAPAManagementPage() {
                         <span>In BM-CAPA-01</span>
                       </Button>
 
-                      <Button
+                      {(["DRAFT", "REJECTED"].includes(c.review_status || "DRAFT")) && <Button
                         variant="outline"
                         size="sm"
                         onClick={() => {
@@ -1271,7 +1382,7 @@ function CAPAManagementPage() {
                         className="h-8 text-xs px-3 text-slate-700 hover:bg-slate-100 font-medium"
                       >
                         Sửa
-                      </Button>
+                      </Button>}
                     </div>
                   </div>
                 </div>
@@ -1577,7 +1688,7 @@ function CAPAManagementPage() {
 
               <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 text-xs flex items-center justify-between">
                 <div>
-                  <span className="font-bold text-slate-800">Kế hoạch thẩm tra sau 30 ngày: </span>
+                  <span className="font-bold text-slate-800">Kế hoạch thẩm tra hiệu lực: </span>
                   <span className="text-slate-600 font-medium">
                     {aiSuggestResult.verification_method_30days}
                   </span>
@@ -1594,7 +1705,7 @@ function CAPAManagementPage() {
           <div className="flex items-center justify-between">
             <div>
               <h3 className="font-extrabold text-slate-900 text-base">
-                Thẩm Tra Hiệu Lực Sau 15 - 30 Ngày & Đóng Hồ Sơ NC
+                Thẩm Tra Hiệu Lực & Đóng Hồ Sơ NC
               </h3>
               <p className="text-slate-600 text-sm mt-0.5">
                 Xem xét và thẩm tra bằng chứng thực tế xác nhận sự cố không còn tái diễn trước khi
@@ -1605,14 +1716,12 @@ function CAPAManagementPage() {
 
           {capas.filter(
             (c) =>
-              c.status === "PENDING_VERIFICATION" ||
-              c.verification_status === "PENDING_VERIFY" ||
-              c.status === "COMPLETED",
+              c.status === "PENDING_VERIFICATION" || c.status === "COMPLETED",
           ).length === 0 ? (
             <EmptyState
               icon={ShieldCheck}
               title="Chưa có hồ sơ CAPA chờ thẩm tra"
-              description="Các hành động khắc phục sau khi triển khai hoàn tất sẽ được chuyển sang danh sách chờ thẩm tra hiệu lực thực tế (15 - 30 ngày) trước khi chính thức đóng hồ sơ NC."
+              description="Các hành động khắc phục sau khi triển khai hoàn tất và có bằng chứng sẽ được chuyển sang danh sách chờ thẩm tra hiệu lực trước khi chính thức đóng hồ sơ NC."
               actionLabel="+ Lập kế hoạch CAPA mới"
               onAction={() => {
                 setSelectedNCForCAPA(null);
@@ -1626,9 +1735,7 @@ function CAPAManagementPage() {
               {capas
                 .filter(
                   (c) =>
-                    c.status === "PENDING_VERIFICATION" ||
-                    c.verification_status === "PENDING_VERIFY" ||
-                    c.status === "COMPLETED",
+                    c.status === "PENDING_VERIFICATION" || c.status === "COMPLETED",
                 )
                 .map((c) => (
                   <div
@@ -1674,8 +1781,8 @@ function CAPAManagementPage() {
                           onClick={() => {
                             setVerifyingCAPA(c);
                             setVerificationForm({
-                              verified_by_name: "Trưởng Ban QLCL & ATTP",
-                              verification_result: `Đã thẩm tra sau 30 ngày kể từ khi hoàn tất khắc phục: Kiểm tra ngẫu nhiên các lô sản xuất và hồ sơ nhật ký đo đạc không phát sinh lỗi tương tự; 100% nhân sự tuân thủ quy chuẩn.`,
+                              verified_by_name: "",
+                              verification_result: "",
                               verification_status: "EFFECTIVE",
                             });
                             setShowVerifyModal(true);
@@ -1683,7 +1790,7 @@ function CAPAManagementPage() {
                           className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs h-9 px-4 font-bold flex items-center gap-1.5 shadow-sm"
                         >
                           <ShieldCheck className="h-4 w-4" />
-                          <span>Thẩm Tra 30 Ngày & Đóng NC</span>
+                          <span>Thẩm tra hiệu lực & Đóng NC</span>
                         </Button>
                       )}
                     </div>
@@ -1691,6 +1798,49 @@ function CAPAManagementPage() {
                 ))}
             </div>
           )}
+        </div>
+      )}
+
+      {capaAction && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <form onSubmit={handleCAPAAction} className="w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden">
+            <div className="p-5 border-b border-slate-100 flex items-start justify-between gap-4">
+              <div>
+                <h3 className="font-bold text-slate-900">
+                  {capaAction.type === "review" ? "Xem xét kế hoạch CAPA" : capaAction.type === "approve" ? "Phê duyệt kế hoạch CAPA" : "Từ chối kế hoạch CAPA"}
+                </h3>
+                <p className="text-xs text-slate-500 mt-1">{capaAction.capa.capa_number} — {capaAction.capa.title}</p>
+              </div>
+              <button type="button" onClick={() => setCapaAction(null)} className="text-slate-400 hover:text-slate-700"><X className="h-5 w-5" /></button>
+            </div>
+            <div className="p-5 space-y-3">
+              <label className="block text-sm font-semibold text-slate-700">Ý kiến *</label>
+              <Textarea value={capaActionComments} onChange={(e) => setCapaActionComments(e.target.value)} rows={4} required minLength={3} placeholder="Ghi rõ nhận xét, điều kiện phê duyệt hoặc lý do từ chối..." />
+              <p className="text-xs text-slate-500">Ý kiến được lưu trong lịch sử CAPA để phục vụ truy xuất và đánh giá.</p>
+            </div>
+            <div className="p-4 bg-slate-50 flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => setCapaAction(null)}>Hủy</Button>
+              <Button type="submit" className={capaAction.type === "reject" ? "bg-rose-600 hover:bg-rose-700" : "bg-emerald-600 hover:bg-emerald-700"}>
+                {capaAction.type === "review" ? "Xác nhận xem xét" : capaAction.type === "approve" ? "Xác nhận phê duyệt" : "Xác nhận từ chối"}
+              </Button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {evidenceCAPA && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <form onSubmit={saveEvidence} className="w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden">
+            <div className="p-5 border-b border-slate-100 flex items-start justify-between gap-4">
+              <div><h3 className="font-bold text-slate-900">Cập nhật bằng chứng thực hiện</h3><p className="text-xs text-slate-500 mt-1">{evidenceCAPA.capa_number}</p></div>
+              <button type="button" onClick={() => setEvidenceCAPA(null)} className="text-slate-400 hover:text-slate-700"><X className="h-5 w-5" /></button>
+            </div>
+            <div className="p-5 space-y-3">
+              <label className="block text-sm font-semibold text-slate-700">Liên kết bằng chứng (mỗi dòng một liên kết) *</label>
+              <Textarea value={evidenceText} onChange={(e) => setEvidenceText(e.target.value)} rows={5} required placeholder="https://.../bien-ban-thuc-hien.pdf" />
+            </div>
+            <div className="p-4 bg-slate-50 flex justify-end gap-2"><Button type="button" variant="outline" onClick={() => setEvidenceCAPA(null)}>Hủy</Button><Button type="submit" className="bg-emerald-600 hover:bg-emerald-700">Lưu bằng chứng</Button></div>
+          </form>
         </div>
       )}
 
@@ -1997,10 +2147,7 @@ function CAPAManagementPage() {
                   <Input
                     type="date"
                     name="target_date"
-                    defaultValue={
-                      editingCAPA?.target_date ||
-                      new Date(Date.now() + 14 * 86400000).toISOString().split("T")[0]
-                    }
+                    defaultValue={editingCAPA?.target_date || ""}
                     required
                     className="text-xs h-9"
                   />
@@ -2054,10 +2201,8 @@ function CAPAManagementPage() {
                   </label>
                   <Input
                     name="assigned_to_name"
-                    defaultValue={
-                      editingCAPA?.assigned_to_name ||
-                      "Phạm Hùng Cường (Trưởng phòng Cơ Điện & Bảo trì)"
-                    }
+                    defaultValue={editingCAPA?.assigned_to_name || ""}
+                    placeholder="Nhập người chịu trách nhiệm"
                     className="text-xs h-9"
                   />
                 </div>
@@ -2068,7 +2213,7 @@ function CAPAManagementPage() {
                   </label>
                   <select
                     name="assigned_dept"
-                    defaultValue={editingCAPA?.assigned_dept || departments[0] || "Phòng Thiết bị"}
+                    defaultValue={editingCAPA?.assigned_dept || ""}
                     className="w-full text-xs h-9 bg-white border border-slate-200 rounded-lg px-2.5 font-semibold focus:outline-none focus:ring-1 focus:ring-emerald-500"
                   >
                     {departments.map((d) => (
@@ -2079,18 +2224,20 @@ function CAPAManagementPage() {
                   </select>
                 </div>
 
-                <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Trạng Thái</label>
-                  <select
-                    name="status"
-                    defaultValue={editingCAPA?.status || "IN_PROGRESS"}
-                    className="w-full text-xs h-9 bg-white border border-slate-200 rounded-lg px-2.5 font-semibold"
-                  >
-                    <option value="IN_PROGRESS">Đang triển khai</option>
-                    <option value="PENDING_VERIFICATION">Chờ thẩm tra 30 ngày</option>
-                    <option value="COMPLETED">Đã hoàn thành</option>
-                  </select>
-                </div>
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">
+                  Bằng chứng thực hiện (mỗi dòng một liên kết)
+                </label>
+                <Textarea
+                  name="evidence_urls"
+                  defaultValue={(editingCAPA?.evidence_urls || []).join("\n")}
+                  rows={2}
+                  placeholder="https://.../bien-ban-thuc-hien.pdf"
+                  className="text-xs"
+                />
+                <p className="text-[11px] text-slate-500 mt-1">Bằng chứng là bắt buộc trước khi gửi thẩm tra hiệu lực.</p>
               </div>
 
               <div className="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-2 -mx-6 -mb-6">
@@ -2115,14 +2262,14 @@ function CAPAManagementPage() {
         </div>
       )}
 
-      {/* ==================== MODAL 3: 30-DAY VERIFICATION ==================== */}
+      {/* ==================== MODAL 3: EFFECTIVENESS VERIFICATION ==================== */}
       {showVerifyModal && verifyingCAPA && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden">
             <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-emerald-50">
               <h3 className="font-bold text-emerald-900 text-sm flex items-center gap-2">
                 <ShieldCheck className="h-4 w-4 text-emerald-700" />
-                Thẩm Tra Hiệu Lực CAPA Sau 30 Ngày
+                Thẩm Tra Hiệu Lực CAPA
               </h3>
               <button
                 onClick={() => setShowVerifyModal(false)}
@@ -2357,16 +2504,16 @@ function CAPAManagementPage() {
                 {/* Section 4: Verification */}
                 <div className="space-y-2 border border-slate-400 p-3.5 rounded">
                   <h4 className="font-bold text-slate-900 uppercase text-[11px] bg-slate-100 p-1.5 -m-3.5 mb-2 border-b border-slate-400">
-                    IV. THẨM TRA HIỆU LỰC SAU 30 NGÀY & KẾT LUẬN ĐÓNG PHIẾU (VERIFICATION)
+                    IV. THẨM TRA HIỆU LỰC & KẾT LUẬN ĐÓNG PHIẾU (VERIFICATION)
                   </h4>
                   <div className="text-[11px] space-y-1.5">
                     <div className="flex items-center justify-between">
                       <div>
                         <b>Người thẩm tra:</b>{" "}
-                        {printingCAPA.verified_by_name || "Trưởng Ban QLCL & ATTP"}
+                        {printingCAPA.verified_by_name || "Chưa xác định"}
                       </div>
                       <div>
-                        <b>Ngày thẩm tra:</b> {printingCAPA.verification_date || "Sau 30 ngày"}
+                        <b>Ngày thẩm tra:</b> {printingCAPA.verification_date || "Theo kế hoạch thẩm tra"}
                       </div>
                     </div>
                     <div>
@@ -2374,12 +2521,12 @@ function CAPAManagementPage() {
                       <span className="font-bold text-emerald-700">
                         {printingCAPA.verification_status === "EFFECTIVE"
                           ? "✅ ĐẠT HIỆU LỰC (EFFECTIVE)"
-                          : "⏳ Đang theo dõi chu kỳ 30 ngày"}
+                          : "⏳ Đang chờ thẩm tra hiệu lực"}
                       </span>
                     </div>
                     <p className="p-2 bg-slate-50 border border-slate-200 rounded text-slate-800 leading-relaxed font-medium">
                       {printingCAPA.verification_result ||
-                        "Đoàn đánh giá nội bộ sẽ tái thẩm tra số liệu tại hiện trường sau 30 ngày vận hành ổn định."}
+                        "Chưa có kết luận thẩm tra hiệu lực."}
                     </p>
                   </div>
                 </div>

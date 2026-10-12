@@ -108,21 +108,9 @@ function LoginPage() {
           phone: phone.trim() || undefined,
         });
         const data = res.data;
-        setSession(
-          {
-            role: data.role,
-            name: data.full_name,
-            loggedAt: new Date().toISOString(),
-            userId: data.user_id,
-            username: data.username,
-            department: data.department,
-            phone: data.phone || phone.trim() || undefined,
-          },
-          data.access_token,
-        );
-        toast.success(`Tạo tài khoản thành công! Chào mừng ${data.full_name}`);
-        const target = getDefaultRouteForRole(data.role);
-        navigate({ to: target as any, replace: true });
+        setPassword("");
+        setIsLogin(true);
+        toast.success(data.message || "Đăng ký thành công. Vui lòng chờ Quản trị viên phê duyệt.");
       }
     } catch (err: any) {
       const msg =

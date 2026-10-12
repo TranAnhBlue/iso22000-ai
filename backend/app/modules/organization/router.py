@@ -5,6 +5,7 @@ from app.core.database import get_db
 from app.core.security import get_password_hash, validate_password_strength
 from app.core.dependencies import get_current_user, require_roles
 from app.modules.auth.models import User, Role, Department
+from app.modules.auth.service import create_audit_log
 from app.modules.organization.models import InterestedParty, ContextRisk, CommunicationLog, FoodSafetyTeamMember
 from app.modules.organization.schemas import (
     UserOut, UserCreate, UserUpdate,
@@ -34,7 +35,10 @@ def format_user_out(user: User) -> UserOut:
         role=role_label,
         email=str(user.email) if user.email else None,
         phone=str(user.phone) if user.phone else None,
-        status="Hoạt động" if user.is_active else "Khoá"
+        status=(
+            "Chờ duyệt" if str(getattr(user, "approval_status", "APPROVED")).upper() == "PENDING"
+            else "Hoạt động" if user.is_active else "Khoá"
+        )
     )
 
 def format_dept_out(dept: Department, count: int = 0) -> DepartmentOut:
@@ -83,7 +87,8 @@ def create_user(
         department=payload.dept,
         email=payload.email,
         phone=payload.phone,
-        is_active=(payload.status == "Hoạt động")
+        is_active=(payload.status == "Hoạt động"),
+        approval_status="PENDING" if payload.status == "Chờ duyệt" else "APPROVED",
     )
     if role:
         new_user.roles.append(role)
@@ -114,8 +119,17 @@ def update_user(
         user.email = payload.email
     if payload.phone is not None:
         user.phone = payload.phone
+    previous_status = str(getattr(user, "approval_status", "APPROVED"))
     if payload.status is not None:
-        user.is_active = (payload.status == "Hoạt động")
+        if payload.status == "Hoạt động":
+            user.is_active = True
+            user.approval_status = "APPROVED"
+        elif payload.status == "Chờ duyệt":
+            user.is_active = False
+            user.approval_status = "PENDING"
+        else:
+            user.is_active = False
+            user.approval_status = "SUSPENDED"
 
     if payload.role_code is not None:
         role = db.query(Role).filter(
@@ -130,6 +144,22 @@ def update_user(
 
     db.commit()
     db.refresh(user)
+
+    if payload.status is not None and previous_status != str(user.approval_status):
+        create_audit_log(
+            db,
+            username=user.username,
+            action="USER_APPROVAL_STATUS_CHANGED",
+            entity_type="AUTH",
+            user_id=user.user_id,
+            details={
+                "previous_status": previous_status,
+                "new_status": user.approval_status,
+                "changed_by": admin_user.username,
+                "role_code": str(user.roles[0].role_code) if user.roles else "user",
+            },
+        )
+        db.commit()
 
     return format_user_out(user)
 

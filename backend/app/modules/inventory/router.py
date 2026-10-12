@@ -46,6 +46,32 @@ from app.modules.inventory.schemas import (
 router = APIRouter()
 
 
+def validate_batch_materials(db: Session, materials: List[Any]) -> None:
+    """A production batch may only consume individually identified, IQC-approved lots."""
+    seen_ids: set[str] = set()
+    for material in materials:
+        material_lot_id = getattr(material, "material_lot_id", None)
+        if material_lot_id is None and isinstance(material, dict):
+            material_lot_id = material.get("material_lot_id")
+        if not material_lot_id:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Mỗi nguyên liệu dùng cho mẻ phải chọn lô nguyên liệu đã được IQC phê duyệt.",
+            )
+        key = str(material_lot_id)
+        if key in seen_ids:
+            raise HTTPException(status_code=422, detail="Không được khai báo trùng một lô nguyên liệu trong cùng mẻ sản xuất.")
+        seen_ids.add(key)
+        lot = db.get(MaterialLot, material_lot_id)
+        if not lot:
+            raise HTTPException(status_code=404, detail=f"Không tìm thấy lô nguyên liệu '{material_lot_id}'.")
+        if str(lot.status).upper() != "APPROVED":
+            raise HTTPException(
+                status_code=409,
+                detail=f"Lô nguyên liệu '{lot.lot_number}' có trạng thái {lot.status}; chỉ lô APPROVED sau IQC mới được dùng cho sản xuất.",
+            )
+
+
 # =========================================================================
 # HELPER: DYNAMIC FEFO CALCULATION
 # =========================================================================
@@ -469,6 +495,9 @@ def create_production_batch(
     if exist:
         raise HTTPException(status_code=400, detail=f"Mã mẻ sản xuất {batch_in.batch_number} đã tồn tại!")
 
+    if batch_in.materials:
+        validate_batch_materials(db, batch_in.materials)
+
     new_batch = ProductionBatch(
         batch_number=batch_in.batch_number,
         product_name=batch_in.product_name,
@@ -523,6 +552,18 @@ def update_production_batch(
         setattr(batch, field, val)
 
     if materials is not None:
+        linked_evidence = (
+            db.query(CCPMonitoringLog).filter(CCPMonitoringLog.batch_number == batch.batch_number).first()
+            or db.query(WarehouseInventory).filter(WarehouseInventory.batch_id == batch.batch_id).first()
+            or db.query(RetainedSample).filter(RetainedSample.batch_id == batch.batch_id).first()
+            or db.query(OrderDispatch).filter(OrderDispatch.batch_id == batch.batch_id).first()
+        )
+        if linked_evidence:
+            raise HTTPException(
+                status_code=409,
+                detail="Mẻ đã có hồ sơ CCP, mẫu lưu hoặc phiếu xuất. Không được thay đổi lô nguyên liệu để bảo toàn truy xuất; hãy lập NC/CAPA hoặc phiếu điều chỉnh.",
+            )
+        validate_batch_materials(db, materials)
         db.query(BatchMaterialUsage).filter(BatchMaterialUsage.batch_id == batch.batch_id).delete()
         for mat in materials:
             usage = BatchMaterialUsage(
@@ -549,6 +590,18 @@ def delete_production_batch(
     batch = db.query(ProductionBatch).filter(ProductionBatch.batch_id == batch_id).first()
     if not batch:
         raise HTTPException(status_code=404, detail="Không tìm thấy mẻ sản xuất này")
+    linked_evidence = (
+        db.query(CCPMonitoringLog).filter(CCPMonitoringLog.batch_number == batch.batch_number).first()
+        or db.query(BatchMaterialUsage).filter(BatchMaterialUsage.batch_id == batch.batch_id).first()
+        or db.query(WarehouseInventory).filter(WarehouseInventory.batch_id == batch.batch_id).first()
+        or db.query(RetainedSample).filter(RetainedSample.batch_id == batch.batch_id).first()
+        or db.query(OrderDispatch).filter(OrderDispatch.batch_id == batch.batch_id).first()
+    )
+    if linked_evidence:
+        raise HTTPException(
+            status_code=409,
+            detail="Không thể xóa mẻ đã có liên kết nguyên liệu hoặc hồ sơ vận hành/truy xuất. Hãy hủy theo luồng có kiểm soát hoặc lập NC/CAPA.",
+        )
     db.delete(batch)
     db.commit()
     return {"message": "Đã xóa mẻ sản xuất thành công", "batch_id": str(batch_id)}

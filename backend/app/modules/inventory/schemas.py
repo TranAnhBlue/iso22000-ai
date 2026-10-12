@@ -405,10 +405,10 @@ class TraceabilityTreeResponse(BaseModel):
     # Tổng kết chỉ số ISO
     compliance_summary: dict = {
         "iso_clause": "ISO 22000:2018 Điều khoản 8.5.2 & 8.7",
-        "is_safe_to_release": True,
-        "ccp_compliant": True,
-        "iqc_compliant": True,
-        "sample_secured": True,
+        "is_safe_to_release": False,
+        "ccp_compliant": False,
+        "iqc_compliant": False,
+        "sample_secured": False,
         "total_dispatched_qty": 0.0,
         "total_in_stock_qty": 0.0,
     }
@@ -425,7 +425,7 @@ class MockRecallResponse(BaseModel):
     affected_customers: List[TraceabilityCustomerNode] = []
     total_units_in_market: float = 0.0
     recall_risk_level: str = "HIGH"  # CRITICAL, HIGH, MEDIUM, LOW
-    iso_recall_time_est_minutes: int = 15  # Thời gian hoàn thành truy xuất thu hồi (chuẩn ISO < 120 phút)
+    iso_recall_time_est_minutes: Optional[int] = None  # Chỉ có khi doanh nghiệp ghi nhận thời lượng thực tế
 
 
 # ==================== 7. VEHICLE INSPECTION SCHEMAS (BM01-PTVC) ====================
