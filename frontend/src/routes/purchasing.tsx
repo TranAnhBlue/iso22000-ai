@@ -1758,9 +1758,9 @@ function PurchasingPage() {
             variant="outline"
             size="sm"
             onClick={() => setShowGuide(true)}
-            className="border-emerald-300 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 flex items-center gap-1.5 font-bold text-xs"
+            className="border border-emerald-400/80 text-emerald-800 bg-emerald-50 hover:bg-emerald-600 hover:text-white hover:border-emerald-600 flex items-center gap-1.5 font-bold text-xs shadow-sm transition-all duration-150"
           >
-            <BookOpen className="h-4 w-4 text-emerald-600" />
+            <BookOpen className="h-4 w-4 transition-colors" />
             <span>Hướng Dẫn Nghiệp Vụ</span>
           </Button>
 
@@ -1768,9 +1768,9 @@ function PurchasingPage() {
             variant="outline"
             size="sm"
             onClick={handleOpenSupplierWorkflow}
-            className="border-purple-300 text-purple-700 bg-purple-50 hover:bg-purple-100 flex items-center gap-1.5 font-semibold text-xs"
+            className="border border-purple-400/80 text-purple-800 bg-purple-50 hover:bg-purple-600 hover:text-white hover:border-purple-600 flex items-center gap-1.5 font-bold text-xs shadow-sm transition-all duration-150"
           >
-            <GitFork className="h-4 w-4 text-purple-600" />
+            <GitFork className="h-4 w-4 transition-colors" />
             <span>Quy Trình Phê Duyệt ASL (Workflow)</span>
           </Button>
 
@@ -1778,9 +1778,9 @@ function PurchasingPage() {
             variant="outline"
             size="sm"
             onClick={() => setIsPrintAslOpen(true)}
-            className="flex items-center gap-1.5 border-primary/20 text-primary hover:bg-primary/5"
+            className="border border-slate-300 bg-white text-slate-800 hover:bg-slate-900 hover:text-white hover:border-slate-900 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700 flex items-center gap-1.5 text-xs font-semibold shadow-sm transition-all duration-150"
           >
-            <Printer className="h-4 w-4" />
+            <Printer className="h-4 w-4 transition-colors" />
             <span>In Danh bạ ASL</span>
           </Button>
 
@@ -1788,9 +1788,9 @@ function PurchasingPage() {
             variant="outline"
             size="sm"
             onClick={() => handleOpenCreateLot()}
-            className="flex items-center gap-1.5"
+            className="border border-slate-300 bg-white text-slate-800 hover:bg-slate-900 hover:text-white hover:border-slate-900 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700 flex items-center gap-1.5 text-xs font-semibold shadow-sm transition-all duration-150 group"
           >
-            <Boxes className="h-4 w-4 text-sky-600" />
+            <Boxes className="h-4 w-4 text-sky-600 group-hover:text-white transition-colors" />
             <span>Nhận Lô mới</span>
           </Button>
 
@@ -1798,9 +1798,9 @@ function PurchasingPage() {
             variant="outline"
             size="sm"
             onClick={() => handleOpenCreateInspection()}
-            className="flex items-center gap-1.5"
+            className="border border-slate-300 bg-white text-slate-800 hover:bg-slate-900 hover:text-white hover:border-slate-900 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700 flex items-center gap-1.5 text-xs font-semibold shadow-sm transition-all duration-150 group"
           >
-            <FileCheck className="h-4 w-4 text-emerald-600" />
+            <FileCheck className="h-4 w-4 text-emerald-600 group-hover:text-white transition-colors" />
             <span>Lập Phiếu IQC</span>
           </Button>
 
@@ -1915,145 +1915,181 @@ function PurchasingPage() {
         </div>
       </div>
 
-      {/* 4 NAVIGATION TABS */}
-      <div className="border-b border-border overflow-x-auto no-scrollbar pb-2">
-        <div className="flex items-center gap-2 min-w-max">
+      {/* MODERN CONSOLIDATED TABS NAVIGATION - NO HORIZONTAL CUT-OFF */}
+      <div className="space-y-3">
+        <div className="bg-slate-100/90 dark:bg-slate-900/90 p-1.5 rounded-2xl border border-slate-200/80 dark:border-slate-800 flex flex-wrap items-center gap-1.5 sm:gap-2 shadow-xs">
+          {/* Nhóm 1: Danh Bạ Nhà Cung Cấp (ASL) */}
           <button
             onClick={() => {
               setActiveTab("suppliers");
               setSearchQuery("");
             }}
-            className={`flex items-center gap-2 rounded-lg px-3.5 py-2 text-xs sm:text-sm font-medium transition-all ${
+            className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all ${
               activeTab === "suppliers"
-                ? "bg-primary text-primary-foreground shadow-sm"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                ? "bg-white dark:bg-slate-800 text-emerald-800 dark:text-emerald-400 shadow-sm border border-slate-200/80 dark:border-slate-700 font-black"
+                : "text-slate-700 dark:text-slate-300 hover:text-slate-900 hover:bg-white/60 dark:hover:bg-slate-800/60"
             }`}
           >
-            <Building2 className="h-4 w-4 shrink-0" />
-            <span>Danh bạ Nhà cung cấp (ASL)</span>
+            <Building2 className="h-4 w-4 shrink-0 text-emerald-600" />
+            <span>Danh Bạ Nhà Cung Cấp (ASL)</span>
             <span
-              className={`ml-1 rounded-full px-1.5 py-0.5 text-[11px] ${
+              className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${
                 activeTab === "suppliers"
-                  ? "bg-white/20 text-white"
-                  : "bg-muted text-muted-foreground"
+                  ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300"
+                  : "bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200"
               }`}
             >
               {suppliers.length}
             </span>
           </button>
 
+          {/* Nhóm 2: Nguyên Liệu & Kiểm Định IQC */}
           <button
             onClick={() => {
-              setActiveTab("lots");
-              setSearchQuery("");
+              if (activeTab !== "lots" && activeTab !== "inspections") {
+                setActiveTab("lots");
+                setSearchQuery("");
+              }
             }}
-            className={`flex items-center gap-2 rounded-lg px-3.5 py-2 text-xs sm:text-sm font-medium transition-all ${
-              activeTab === "lots"
-                ? "bg-primary text-primary-foreground shadow-sm"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+            className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all ${
+              activeTab === "lots" || activeTab === "inspections"
+                ? "bg-white dark:bg-slate-800 text-blue-800 dark:text-blue-400 shadow-sm border border-slate-200/80 dark:border-slate-700 font-black"
+                : "text-slate-700 dark:text-slate-300 hover:text-slate-900 hover:bg-white/60 dark:hover:bg-slate-800/60"
             }`}
           >
-            <Boxes className="h-4 w-4 shrink-0" />
-            <span>Lô Nguyên vật liệu (FEFO)</span>
+            <Boxes className="h-4 w-4 shrink-0 text-blue-600" />
+            <span>Nguyên Liệu & Kiểm Định IQC</span>
             <span
-              className={`ml-1 rounded-full px-1.5 py-0.5 text-[11px] ${
-                activeTab === "lots" ? "bg-white/20 text-white" : "bg-muted text-muted-foreground"
+              className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${
+                activeTab === "lots" || activeTab === "inspections"
+                  ? "bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300"
+                  : "bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200"
               }`}
             >
-              {lots.length}
+              {lots.length + inspections.length}
             </span>
           </button>
 
+          {/* Nhóm 3: Đánh Giá Nhà Cung Cấp (BM02/03/04) */}
           <button
             onClick={() => {
-              setActiveTab("inspections");
-              setSearchQuery("");
+              if (activeTab !== "eval_plans" && activeTab !== "evaluations") {
+                setActiveTab("eval_plans");
+                setPlanSearch("");
+              }
             }}
-            className={`flex items-center gap-2 rounded-lg px-3.5 py-2 text-xs sm:text-sm font-medium transition-all ${
-              activeTab === "inspections"
-                ? "bg-primary text-primary-foreground shadow-sm"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+            className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all ${
+              activeTab === "eval_plans" || activeTab === "evaluations"
+                ? "bg-white dark:bg-slate-800 text-amber-800 dark:text-amber-400 shadow-sm border border-slate-200/80 dark:border-slate-700 font-black"
+                : "text-slate-700 dark:text-slate-300 hover:text-slate-900 hover:bg-white/60 dark:hover:bg-slate-800/60"
             }`}
           >
-            <FileCheck className="h-4 w-4 shrink-0" />
-            <span>Biên bản Kiểm định (IQC)</span>
+            <Award className="h-4 w-4 shrink-0 text-amber-600" />
+            <span>Đánh Giá Nhà Cung Cấp</span>
             <span
-              className={`ml-1 rounded-full px-1.5 py-0.5 text-[11px] ${
-                activeTab === "inspections"
-                  ? "bg-white/20 text-white"
-                  : "bg-muted text-muted-foreground"
+              className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${
+                activeTab === "eval_plans" || activeTab === "evaluations"
+                  ? "bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300"
+                  : "bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200"
               }`}
             >
-              {inspections.length}
+              {evaluationPlans.length + evaluations.length}
             </span>
           </button>
 
-          <button
-            onClick={() => {
-              setActiveTab("eval_plans");
-              setPlanSearch("");
-            }}
-            className={`flex items-center gap-2 rounded-lg px-3.5 py-2 text-xs sm:text-sm font-medium transition-all ${
-              activeTab === "eval_plans"
-                ? "bg-primary text-primary-foreground shadow-sm"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground"
-            }`}
-          >
-            <Calendar className="h-4 w-4 shrink-0" />
-            <span>Kế Hoạch ĐG Hàng Năm (BM02)</span>
-            <span
-              className={`ml-1 rounded-full px-1.5 py-0.5 text-[11px] ${
-                activeTab === "eval_plans"
-                  ? "bg-white/20 text-white"
-                  : "bg-muted text-muted-foreground"
-              }`}
-            >
-              {evaluationPlans.length}
-            </span>
-          </button>
-
-          <button
-            onClick={() => {
-              setActiveTab("evaluations");
-              setEvalSearch("");
-            }}
-            className={`flex items-center gap-2 rounded-lg px-3.5 py-2 text-xs sm:text-sm font-medium transition-all ${
-              activeTab === "evaluations"
-                ? "bg-primary text-primary-foreground shadow-sm"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground"
-            }`}
-          >
-            <Award className="h-4 w-4 shrink-0" />
-            <span>Phiếu Đánh Giá NCC (BM03/04)</span>
-            <span
-              className={`ml-1 rounded-full px-1.5 py-0.5 text-[11px] ${
-                activeTab === "evaluations"
-                  ? "bg-white/20 text-white"
-                  : "bg-muted text-muted-foreground"
-              }`}
-            >
-              {evaluations.length}
-            </span>
-          </button>
-
+          {/* Nhóm 4: Trợ Lý AI Thẩm Định COA */}
           <button
             onClick={() => {
               setActiveTab("ai_coa");
               if (!coaAiResult) handleAnalyzeCoa("SEAFOOD");
             }}
-            className={`flex items-center gap-2 rounded-lg px-3.5 py-2 text-xs sm:text-sm font-medium transition-all ${
+            className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all ${
               activeTab === "ai_coa"
-                ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-sm"
-                : "text-purple-700 hover:bg-purple-50 dark:text-purple-400 dark:hover:bg-purple-950/30"
+                ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-sm font-black"
+                : "text-purple-700 dark:text-purple-400 hover:bg-purple-100/60 dark:hover:bg-purple-950/40"
             }`}
           >
             <Sparkles className="h-4 w-4 shrink-0" />
-            <span>Trợ lý AI Thẩm định COA</span>
-            <span className="rounded bg-purple-500/20 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider">
+            <span>Trợ Lý AI Thẩm Định COA</span>
+            <span
+              className={`px-2 py-0.5 rounded-full text-[10px] uppercase font-extrabold ${
+                activeTab === "ai_coa"
+                  ? "bg-white/20 text-white"
+                  : "bg-purple-100 text-purple-800 dark:bg-purple-900/60 dark:text-purple-300"
+              }`}
+            >
               AI Tool
             </span>
           </button>
         </div>
+
+        {/* SUB-TABS: Khi đang ở Nhóm Nguyên Liệu & Kiểm Định IQC */}
+        {(activeTab === "lots" || activeTab === "inspections") && (
+          <div className="flex flex-wrap items-center gap-1.5 p-1 bg-slate-50 dark:bg-slate-900/60 rounded-xl border border-slate-200/80 dark:border-slate-800 w-fit">
+            <button
+              onClick={() => {
+                setActiveTab("lots");
+                setSearchQuery("");
+              }}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                activeTab === "lots"
+                  ? "bg-blue-600 text-white shadow-xs"
+                  : "text-slate-700 hover:text-slate-900 hover:bg-white dark:text-slate-300 dark:hover:bg-slate-800"
+              }`}
+            >
+              <Boxes className="h-3.5 w-3.5" />
+              <span>1. Lô Nguyên Vật Liệu (FEFO) ({lots.length})</span>
+            </button>
+            <button
+              onClick={() => {
+                setActiveTab("inspections");
+                setSearchQuery("");
+              }}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                activeTab === "inspections"
+                  ? "bg-blue-600 text-white shadow-xs"
+                  : "text-slate-700 hover:text-slate-900 hover:bg-white dark:text-slate-300 dark:hover:bg-slate-800"
+              }`}
+            >
+              <FileCheck className="h-3.5 w-3.5" />
+              <span>2. Biên Bản Kiểm Định Đầu Vào (IQC) ({inspections.length})</span>
+            </button>
+          </div>
+        )}
+
+        {/* SUB-TABS: Khi đang ở Nhóm Đánh Giá Nhà Cung Cấp */}
+        {(activeTab === "eval_plans" || activeTab === "evaluations") && (
+          <div className="flex flex-wrap items-center gap-1.5 p-1 bg-slate-50 dark:bg-slate-900/60 rounded-xl border border-slate-200/80 dark:border-slate-800 w-fit">
+            <button
+              onClick={() => {
+                setActiveTab("eval_plans");
+                setPlanSearch("");
+              }}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                activeTab === "eval_plans"
+                  ? "bg-amber-600 text-white shadow-xs"
+                  : "text-slate-700 hover:text-slate-900 hover:bg-white dark:text-slate-300 dark:hover:bg-slate-800"
+              }`}
+            >
+              <Calendar className="h-3.5 w-3.5" />
+              <span>1. Kế Hoạch Đánh Giá Hàng Năm (BM02) ({evaluationPlans.length})</span>
+            </button>
+            <button
+              onClick={() => {
+                setActiveTab("evaluations");
+                setEvalSearch("");
+              }}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                activeTab === "evaluations"
+                  ? "bg-amber-600 text-white shadow-xs"
+                  : "text-slate-700 hover:text-slate-900 hover:bg-white dark:text-slate-300 dark:hover:bg-slate-800"
+              }`}
+            >
+              <Award className="h-3.5 w-3.5" />
+              <span>2. Phiếu Đánh Giá Nhà Cung Cấp (BM03/04) ({evaluations.length})</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* SEARCH & FILTER BAR */}

@@ -26,10 +26,10 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import api from "@/lib/api";
-import { printHtml } from "@/lib/print";
-import { ExternalDocument } from "@/routes/documents";
+import type { ExternalDocument } from "@/lib/documentConstants";
+import { DEPARTMENTS } from "@/lib/documentConstants";
 import { generateExternalDocMasterListHtml } from "./dmsPrintHelpers";
-import { DEPARTMENTS } from "@/routes/documents";
+import { printHtml } from "@/lib/print";
 
 interface ExternalDocumentsTabProps {
   externalDocs: ExternalDocument[];
@@ -82,10 +82,10 @@ export function ExternalDocumentsTab({
   // KPIs
   const stats = useMemo(() => {
     const total = externalDocs.length;
-    const active = externalDocs.filter((d) => d.status === "ACTIVE").length;
-    const qcvn = externalDocs.filter((d) => d.doc_type === "STANDARD_QCVN").length;
+    const active = externalDocs.filter((d) => d.status === "ACTIVE" || d.status === "EFFECTIVE").length;
+    const qcvn = externalDocs.filter((d) => (d.doc_type || d.category) === "STANDARD_QCVN" || (d.category || "").includes("STANDARD")).length;
     const laws = externalDocs.filter((d) =>
-      ["LAW", "DECREE", "CIRCULAR"].includes(d.doc_type),
+      ["LAW", "DECREE", "CIRCULAR", "LAW_REGULATION"].includes(d.doc_type || d.category || ""),
     ).length;
     return { total, active, qcvn, laws };
   }, [externalDocs]);
@@ -98,9 +98,11 @@ export function ExternalDocumentsTab({
         d.doc_title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         d.issuing_body.toLowerCase().includes(searchQuery.toLowerCase());
 
-      const matchType = selectedType === "ALL" || d.doc_type === selectedType;
+      const docTypeVal = d.doc_type || d.category || "";
+      const matchType = selectedType === "ALL" || docTypeVal === selectedType;
       const matchStatus = selectedStatus === "ALL" || d.status === selectedStatus;
-      const matchDept = selectedDept === "ALL" || d.managing_department === selectedDept;
+      const deptVal = d.managing_department || d.department_in_charge || "";
+      const matchDept = selectedDept === "ALL" || deptVal === selectedDept;
 
       return matchSearch && matchType && matchStatus && matchDept;
     });
@@ -132,13 +134,13 @@ export function ExternalDocumentsTab({
       doc_code: doc.doc_code,
       doc_title: doc.doc_title,
       issuing_body: doc.issuing_body,
-      doc_type: doc.doc_type,
-      issue_date: doc.issue_date || "",
+      doc_type: doc.doc_type || doc.category || "CIRCULAR",
+      issue_date: doc.issue_date || doc.published_date || "",
       effective_date: doc.effective_date || "",
-      managing_department: doc.managing_department || "Ban QLCL & ATTP",
+      managing_department: doc.managing_department || doc.department_in_charge || "Ban QLCL & ATTP",
       storage_location: doc.storage_location || "",
       status: doc.status,
-      attachment_url: doc.attachment_url || "",
+      attachment_url: doc.attachment_url || doc.file_url || "",
       notes: doc.notes || "",
     });
     setIsFormOpen(true);
@@ -376,7 +378,7 @@ export function ExternalDocumentsTab({
                     <td className="px-3 py-3 font-medium text-foreground">{doc.issuing_body}</td>
                     <td className="px-3 py-3">
                       <span className="inline-block rounded px-2 py-0.5 text-[10px] font-medium border bg-muted/50 text-muted-foreground">
-                        {DOC_TYPES[doc.doc_type] || doc.doc_type}
+                        {(doc.doc_type && DOC_TYPES[doc.doc_type]) || doc.doc_type || (doc.category && DOC_TYPES[doc.category]) || doc.category || "---"}
                       </span>
                     </td>
                     <td className="px-3 py-3 text-center text-muted-foreground">

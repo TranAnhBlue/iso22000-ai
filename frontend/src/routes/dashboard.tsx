@@ -606,22 +606,22 @@ function ExecutiveDashboard() {
             variant="outline"
             size="sm"
             onClick={() => setShowGuide(true)}
-            className="gap-1.5 text-xs w-full sm:w-auto text-primary border-primary/30 hover:bg-primary/5"
+            className="gap-1.5 text-xs w-full sm:w-auto border border-emerald-400/80 bg-emerald-50 text-emerald-800 hover:bg-emerald-600 hover:text-white hover:border-emerald-600 font-bold shadow-sm transition-all duration-150"
           >
-            <BookOpen className="h-3.5 w-3.5" /> Hướng Dẫn Nghiệp Vụ
+            <BookOpen className="h-3.5 w-3.5 transition-colors" /> Hướng Dẫn Nghiệp Vụ
           </Button>
           <Button
             variant="outline"
             size="sm"
             onClick={() => setShowWorkflowModal(true)}
-            className="gap-1.5 text-xs w-full sm:w-auto"
+            className="gap-1.5 text-xs w-full sm:w-auto border border-purple-400/80 bg-purple-50 text-purple-800 hover:bg-purple-600 hover:text-white hover:border-purple-600 font-bold shadow-sm transition-all duration-150"
           >
-            <Workflow className="h-3.5 w-3.5 text-primary" /> Lưu Đồ Quy Trình Xem Xét
+            <Workflow className="h-3.5 w-3.5 transition-colors" /> Lưu Đồ Quy Trình Xem Xét
           </Button>
           <Button
             size="sm"
             onClick={() => setShowAddObjectiveModal(true)}
-            className="gap-1.5 text-xs w-full sm:w-auto"
+            className="gap-1.5 text-xs w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-sm"
           >
             <Target className="h-3.5 w-3.5" /> Lập Mục Tiêu Mới
           </Button>
@@ -630,9 +630,9 @@ function ExecutiveDashboard() {
               variant="outline"
               size="sm"
               onClick={() => triggerPrintManagementReview(selectedReview)}
-              className="gap-1.5 text-xs border-primary/40 bg-primary/5 hover:bg-primary/10 text-primary w-full sm:w-auto"
+              className="gap-1.5 text-xs border border-slate-300 bg-white text-slate-800 hover:bg-slate-900 hover:text-white hover:border-slate-900 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700 font-semibold shadow-sm transition-all duration-150 w-full sm:w-auto"
             >
-              <Printer className="h-3.5 w-3.5" /> In Báo Cáo BM-MR-01
+              <Printer className="h-3.5 w-3.5 transition-colors" /> In Báo Cáo BM-MR-01
             </Button>
           )}
         </div>
@@ -641,21 +641,21 @@ function ExecutiveDashboard() {
       {/* 5 Hero KPI Scorecards */}
       <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
         {/* Card 1: FSMS Health Score */}
-        <div className="rounded-2xl border bg-card/90 p-4 shadow-sm backdrop-blur transition hover:shadow-md">
+        <div className="rounded-2xl border border-slate-200 bg-card/90 p-4 shadow-sm backdrop-blur transition hover:shadow-md">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] sm:text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+            <span className="text-[11px] sm:text-xs font-bold text-slate-800 uppercase tracking-wider">
               Chỉ Số Tuân Thủ FSMS
             </span>
             <span
               className={`rounded-full px-2 py-0.5 text-[10px] sm:text-[11px] font-bold ${
                 stats?.health_level === "EXCELLENT"
-                  ? "bg-emerald-500/10 text-emerald-600"
+                  ? "bg-emerald-500/10 text-emerald-700"
                   : stats?.health_level === "GOOD"
-                    ? "bg-primary/10 text-primary"
+                    ? "bg-emerald-500/10 text-emerald-700"
                     : stats?.health_level === "PENDING_DATA" ||
                         (stats?.overall_health_score ?? 0) === 0
-                      ? "bg-muted text-muted-foreground"
-                      : "bg-amber-500/10 text-amber-600"
+                      ? "bg-slate-200 text-slate-800"
+                      : "bg-amber-500/10 text-amber-700"
               }`}
             >
               {stats?.health_level === "EXCELLENT"
@@ -669,132 +669,132 @@ function ExecutiveDashboard() {
             </span>
           </div>
           <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
+            <span className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
               {stats?.overall_health_score ?? 0}%
             </span>
             {(stats?.overall_health_score ?? 0) > 0 ? (
-              <span className="text-xs text-emerald-600 font-medium flex items-center">
+              <span className="text-xs text-emerald-700 font-bold flex items-center">
                 <TrendingUp className="h-3 w-3 mr-0.5" /> Đang vận hành
               </span>
             ) : (
-              <span className="text-xs text-muted-foreground font-medium">Chưa có dữ liệu</span>
+              <span className="text-xs text-slate-600 font-semibold">Chưa có dữ liệu</span>
             )}
           </div>
-          <div className="mt-1.5 text-[11px] sm:text-xs text-muted-foreground">
+          <div className="mt-1.5 text-[11px] sm:text-xs text-slate-700 font-medium">
             Tích hợp dữ liệu 8 phân hệ
           </div>
-          <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+          <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-200">
             <div
-              className="h-full bg-gradient-to-r from-emerald-500 to-teal-400"
+              className="h-full bg-gradient-to-r from-emerald-600 to-teal-500"
               style={{ width: `${stats?.overall_health_score ?? 0}%` }}
             />
           </div>
         </div>
 
         {/* Card 2: HACCP & CCP Control */}
-        <div className="rounded-2xl border bg-card/90 p-4 shadow-sm backdrop-blur transition hover:shadow-md">
+        <div className="rounded-2xl border border-slate-200 bg-card/90 p-4 shadow-sm backdrop-blur transition hover:shadow-md">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] sm:text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+            <span className="text-[11px] sm:text-xs font-bold text-slate-800 uppercase tracking-wider">
               Kiểm Soát Điểm CCP
             </span>
-            <div className="grid h-7 w-7 place-items-center rounded-lg bg-primary/10 text-primary">
+            <div className="grid h-7 w-7 place-items-center rounded-lg bg-emerald-500/10 text-emerald-700">
               <ShieldCheck className="h-4 w-4" />
             </div>
           </div>
           <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
+            <span className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
               {stats?.haccp_ccp.in_control_rate ?? 0}%
             </span>
-            <span className="text-xs text-muted-foreground">An toàn</span>
+            <span className="text-xs text-slate-700 font-bold">An toàn</span>
           </div>
-          <div className="mt-1.5 text-[11px] sm:text-xs text-muted-foreground">
+          <div className="mt-1.5 text-[11px] sm:text-xs text-slate-700 font-medium">
             {stats?.haccp_ccp.total_ccps ?? 0} điểm CCP ·{" "}
             {stats?.haccp_ccp.critical_deviations ?? 0} sai lệch
           </div>
-          <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+          <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-200">
             <div
-              className="h-full bg-primary"
+              className="h-full bg-emerald-600"
               style={{ width: `${stats?.haccp_ccp.in_control_rate ?? 0}%` }}
             />
           </div>
         </div>
 
         {/* Card 3: CAPA & NC Effectiveness */}
-        <div className="rounded-2xl border bg-card/90 p-4 shadow-sm backdrop-blur transition hover:shadow-md">
+        <div className="rounded-2xl border border-slate-200 bg-card/90 p-4 shadow-sm backdrop-blur transition hover:shadow-md">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] sm:text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+            <span className="text-[11px] sm:text-xs font-bold text-slate-800 uppercase tracking-wider">
               Hiệu Lực Khắc Phục CAPA
             </span>
-            <div className="grid h-7 w-7 place-items-center rounded-lg bg-amber-500/10 text-amber-600">
+            <div className="grid h-7 w-7 place-items-center rounded-lg bg-amber-500/10 text-amber-700">
               <Award className="h-4 w-4" />
             </div>
           </div>
           <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
+            <span className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
               {stats?.capa_nc.effectiveness_rate ?? 0}%
             </span>
-            <span className="text-xs text-muted-foreground">Thẩm tra</span>
+            <span className="text-xs text-slate-700 font-bold">Thẩm tra</span>
           </div>
-          <div className="mt-1.5 text-[11px] sm:text-xs text-muted-foreground">
+          <div className="mt-1.5 text-[11px] sm:text-xs text-slate-700 font-medium">
             {stats?.capa_nc.total_capas ?? 0} phiếu khắc phục
           </div>
-          <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+          <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-200">
             <div
-              className="h-full bg-amber-500"
+              className="h-full bg-amber-600"
               style={{ width: `${stats?.capa_nc.effectiveness_rate ?? 0}%` }}
             />
           </div>
         </div>
 
         {/* Card 4: PRP Hygiene Compliance */}
-        <div className="rounded-2xl border bg-card/90 p-4 shadow-sm backdrop-blur transition hover:shadow-md">
+        <div className="rounded-2xl border border-slate-200 bg-card/90 p-4 shadow-sm backdrop-blur transition hover:shadow-md">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] sm:text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+            <span className="text-[11px] sm:text-xs font-bold text-slate-800 uppercase tracking-wider">
               Vệ Sinh Nhà Xưởng PRP
             </span>
-            <div className="grid h-7 w-7 place-items-center rounded-lg bg-emerald-500/10 text-emerald-600">
+            <div className="grid h-7 w-7 place-items-center rounded-lg bg-emerald-500/10 text-emerald-700">
               <ClipboardCheck className="h-4 w-4" />
             </div>
           </div>
           <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
+            <span className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
               {stats?.prp_hygiene.compliance_rate ?? 0}%
             </span>
-            <span className="text-xs text-muted-foreground">GMP/SSOP</span>
+            <span className="text-xs text-slate-700 font-bold">GMP/SSOP</span>
           </div>
-          <div className="mt-1.5 text-[11px] sm:text-xs text-muted-foreground">
+          <div className="mt-1.5 text-[11px] sm:text-xs text-slate-700 font-medium">
             {stats?.prp_hygiene.total_prps ?? 0} chương trình giám sát
           </div>
-          <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+          <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-200">
             <div
-              className="h-full bg-emerald-500"
+              className="h-full bg-emerald-600"
               style={{ width: `${stats?.prp_hygiene.compliance_rate ?? 0}%` }}
             />
           </div>
         </div>
 
         {/* Card 5: Training & Health Compliance */}
-        <div className="rounded-2xl border bg-card/90 p-4 shadow-sm backdrop-blur transition hover:shadow-md">
+        <div className="rounded-2xl border border-slate-200 bg-card/90 p-4 shadow-sm backdrop-blur transition hover:shadow-md">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] sm:text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+            <span className="text-[11px] sm:text-xs font-bold text-slate-800 uppercase tracking-wider">
               Năng Lực Nhân Sự
             </span>
-            <div className="grid h-7 w-7 place-items-center rounded-lg bg-sky-500/10 text-sky-600">
+            <div className="grid h-7 w-7 place-items-center rounded-lg bg-sky-500/10 text-sky-700">
               <Users className="h-4 w-4" />
             </div>
           </div>
           <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
+            <span className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
               {stats?.audit_training_health.training_pass_rate ?? 0}%
             </span>
-            <span className="text-xs text-muted-foreground">Sát hạch</span>
+            <span className="text-xs text-slate-700 font-bold">Sát hạch</span>
           </div>
-          <div className="mt-1.5 text-[11px] sm:text-xs text-muted-foreground">
+          <div className="mt-1.5 text-[11px] sm:text-xs text-slate-700 font-medium">
             {stats?.audit_training_health.total_learners ?? 0} nhân sự đã đánh giá
           </div>
-          <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+          <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-200">
             <div
-              className="h-full bg-sky-500"
+              className="h-full bg-sky-600"
               style={{ width: `${stats?.audit_training_health.training_pass_rate ?? 0}%` }}
             />
           </div>
@@ -807,8 +807,8 @@ function ExecutiveDashboard() {
           onClick={() => setActiveTab("overview")}
           className={`flex items-center gap-1.5 sm:gap-2 border-b-2 px-3 sm:px-4 py-2.5 sm:py-3 transition shrink-0 ${
             activeTab === "overview"
-              ? "border-primary font-semibold text-primary"
-              : "border-transparent text-muted-foreground hover:text-foreground"
+              ? "border-emerald-600 text-emerald-800 font-black"
+              : "border-transparent text-slate-700 font-bold hover:text-slate-900"
           }`}
         >
           <Activity className="h-4 w-4" /> Tổng Quan Điều Hành & Ma Trận ATTP
@@ -817,12 +817,12 @@ function ExecutiveDashboard() {
           onClick={() => setActiveTab("objectives")}
           className={`flex items-center gap-1.5 sm:gap-2 border-b-2 px-3 sm:px-4 py-2.5 sm:py-3 transition shrink-0 ${
             activeTab === "objectives"
-              ? "border-primary font-semibold text-primary"
-              : "border-transparent text-muted-foreground hover:text-foreground"
+              ? "border-emerald-600 text-emerald-800 font-black"
+              : "border-transparent text-slate-700 font-bold hover:text-slate-900"
           }`}
         >
           <Target className="h-4 w-4" /> Mục Tiêu Chất Lượng & ATTP
-          <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] sm:text-xs">
+          <span className="rounded-full bg-slate-200 text-slate-800 font-bold px-1.5 py-0.5 text-[10px] sm:text-xs">
             {objectives.length}
           </span>
         </button>
@@ -830,12 +830,12 @@ function ExecutiveDashboard() {
           onClick={() => setActiveTab("reviews")}
           className={`flex items-center gap-1.5 sm:gap-2 border-b-2 px-3 sm:px-4 py-2.5 sm:py-3 transition shrink-0 ${
             activeTab === "reviews"
-              ? "border-primary font-semibold text-primary"
-              : "border-transparent text-muted-foreground hover:text-foreground"
+              ? "border-emerald-600 text-emerald-800 font-black"
+              : "border-transparent text-slate-700 font-bold hover:text-slate-900"
           }`}
         >
           <Calendar className="h-4 w-4" /> Xem Xét Của Lãnh Đạo
-          <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] sm:text-xs">
+          <span className="rounded-full bg-slate-200 text-slate-800 font-bold px-1.5 py-0.5 text-[10px] sm:text-xs">
             {reviews.length}
           </span>
         </button>
@@ -843,8 +843,8 @@ function ExecutiveDashboard() {
           onClick={() => setActiveTab("ai_studio")}
           className={`flex items-center gap-1.5 sm:gap-2 border-b-2 px-3 sm:px-4 py-2.5 sm:py-3 transition shrink-0 ${
             activeTab === "ai_studio"
-              ? "border-primary font-semibold text-primary"
-              : "border-transparent text-muted-foreground hover:text-foreground"
+              ? "border-emerald-600 text-emerald-800 font-black"
+              : "border-transparent text-slate-700 font-bold hover:text-slate-900"
           }`}
         >
           <Sparkles className="h-4 w-4 text-amber-500" /> Cố Vấn Trí Tuệ Nhân Tạo ATTP
@@ -1039,117 +1039,117 @@ function ExecutiveDashboard() {
               <Button
                 variant="outline"
                 size="sm"
-                className="mt-3 w-full text-xs gap-1.5"
+                className="mt-3 w-full text-xs gap-1.5 border border-emerald-400/80 bg-emerald-50 text-emerald-800 hover:bg-emerald-600 hover:text-white hover:border-emerald-600 font-bold shadow-sm transition-all duration-150 group"
                 onClick={() => setActiveTab("ai_studio")}
               >
-                <Sparkles className="h-3.5 w-3.5 text-primary" /> Phân Tích Rủi Ro Với Cố Vấn AI
+                <Sparkles className="h-3.5 w-3.5 text-emerald-600 group-hover:text-white transition-colors" /> Phân Tích Rủi Ro Với Cố Vấn AI
               </Button>
             </div>
           </div>
 
           {/* Lưới 8 phân hệ nghiệp vụ kết nối */}
           <div>
-            <h3 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
-              <Layers className="h-4 w-4 text-primary" /> Tình Trạng Kết Nối 8 Phân Hệ Nghiệp Vụ
+            <h3 className="text-sm font-extrabold text-slate-900 mb-3 flex items-center gap-2">
+              <Layers className="h-4 w-4 text-emerald-700" /> Tình Trạng Kết Nối 8 Phân Hệ Nghiệp Vụ
             </h3>
             <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 md:grid-cols-4">
-              <div className="rounded-xl border bg-card p-3 shadow-sm">
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <div className="rounded-xl border border-slate-300 bg-white p-3 shadow-sm hover:border-emerald-500 transition-all">
+                <div className="flex items-center justify-between text-xs font-bold text-slate-800">
                   <span>1. Tài liệu & Quy trình</span>
-                  <FileText className="h-3.5 w-3.5 text-primary" />
+                  <FileText className="h-4 w-4 text-emerald-700" />
                 </div>
-                <div className="mt-2 text-lg font-bold">
+                <div className="mt-2 text-xl font-black text-slate-900">
                   {stats?.documents.approved_documents ?? 0} /{" "}
                   {stats?.documents.total_documents ?? 0}
                 </div>
-                <div className="text-[11px] text-muted-foreground">Tài liệu đã ban hành</div>
+                <div className="text-[11px] font-semibold text-slate-700">Tài liệu đã ban hành</div>
               </div>
 
-              <div className="rounded-xl border bg-card p-3 shadow-sm">
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <div className="rounded-xl border border-slate-300 bg-white p-3 shadow-sm hover:border-sky-500 transition-all">
+                <div className="flex items-center justify-between text-xs font-bold text-slate-800">
                   <span>2. Mua hàng & Tiếp nhận</span>
-                  <Truck className="h-3.5 w-3.5 text-sky-600" />
+                  <Truck className="h-4 w-4 text-sky-700" />
                 </div>
-                <div className="mt-2 text-lg font-bold">
+                <div className="mt-2 text-xl font-black text-slate-900">
                   {stats?.purchasing_iqc.lot_pass_rate ?? 0}%
                 </div>
-                <div className="text-[11px] text-muted-foreground">
+                <div className="text-[11px] font-semibold text-slate-700">
                   {stats?.purchasing_iqc.total_suppliers ?? 0} Nhà cung cấp
                 </div>
               </div>
 
-              <div className="rounded-xl border bg-card p-3 shadow-sm">
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <div className="rounded-xl border border-slate-300 bg-white p-3 shadow-sm hover:border-rose-500 transition-all">
+                <div className="flex items-center justify-between text-xs font-bold text-slate-800">
                   <span>3. Kế hoạch HACCP & Điểm CCP</span>
-                  <Flame className="h-3.5 w-3.5 text-rose-600" />
+                  <Flame className="h-4 w-4 text-rose-700" />
                 </div>
-                <div className="mt-2 text-lg font-bold">
+                <div className="mt-2 text-xl font-black text-slate-900">
                   {stats?.haccp_ccp.in_control_rate ?? 0}%
                 </div>
-                <div className="text-[11px] text-muted-foreground">
+                <div className="text-[11px] font-semibold text-slate-700">
                   {stats?.haccp_ccp.total_ccps ?? 0} Điểm CCP an toàn
                 </div>
               </div>
 
-              <div className="rounded-xl border bg-card p-3 shadow-sm">
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <div className="rounded-xl border border-slate-300 bg-white p-3 shadow-sm hover:border-emerald-500 transition-all">
+                <div className="flex items-center justify-between text-xs font-bold text-slate-800">
                   <span>4. Chương trình PRP</span>
-                  <ClipboardCheck className="h-3.5 w-3.5 text-emerald-600" />
+                  <ClipboardCheck className="h-4 w-4 text-emerald-700" />
                 </div>
-                <div className="mt-2 text-lg font-bold">
+                <div className="mt-2 text-xl font-black text-slate-900">
                   {stats?.prp_hygiene.compliance_rate ?? 0}%
                 </div>
-                <div className="text-[11px] text-muted-foreground">
+                <div className="text-[11px] font-semibold text-slate-700">
                   {stats?.prp_hygiene.total_prps ?? 0} Quy trình GMP/SSOP
                 </div>
               </div>
 
-              <div className="rounded-xl border bg-card p-3 shadow-sm">
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <div className="rounded-xl border border-slate-300 bg-white p-3 shadow-sm hover:border-indigo-500 transition-all">
+                <div className="flex items-center justify-between text-xs font-bold text-slate-800">
                   <span>5. Thiết bị & Đo lường</span>
-                  <Sliders className="h-3.5 w-3.5 text-indigo-600" />
+                  <Sliders className="h-4 w-4 text-indigo-700" />
                 </div>
-                <div className="mt-2 text-lg font-bold">
+                <div className="mt-2 text-xl font-black text-slate-900">
                   {stats?.equipment_calibration.calibration_pass_rate ?? 0}%
                 </div>
-                <div className="text-[11px] text-muted-foreground">
+                <div className="text-[11px] font-semibold text-slate-700">
                   {stats?.equipment_calibration.total_equipment ?? 0} Thiết bị kiểm định
                 </div>
               </div>
 
-              <div className="rounded-xl border bg-card p-3 shadow-sm">
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <div className="rounded-xl border border-slate-300 bg-white p-3 shadow-sm hover:border-amber-500 transition-all">
+                <div className="flex items-center justify-between text-xs font-bold text-slate-800">
                   <span>6. Kho hàng & Truy xuất</span>
-                  <Search className="h-3.5 w-3.5 text-amber-600" />
+                  <Search className="h-4 w-4 text-amber-700" />
                 </div>
-                <div className="mt-2 text-lg font-bold">
+                <div className="mt-2 text-xl font-black text-slate-900">
                   {stats?.inventory_traceability.total_batches ?? 0} Lô SX
                 </div>
-                <div className="text-[11px] text-muted-foreground">Xuất nhập tồn theo hạn dùng</div>
+                <div className="text-[11px] font-semibold text-slate-700">Xuất nhập tồn theo hạn dùng</div>
               </div>
 
-              <div className="rounded-xl border bg-card p-3 shadow-sm">
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <div className="rounded-xl border border-slate-300 bg-white p-3 shadow-sm hover:border-amber-500 transition-all">
+                <div className="flex items-center justify-between text-xs font-bold text-slate-800">
                   <span>7. Sự cố & Khắc phục CAPA</span>
-                  <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
+                  <AlertTriangle className="h-4 w-4 text-amber-700" />
                 </div>
-                <div className="mt-2 text-lg font-bold">
+                <div className="mt-2 text-xl font-black text-slate-900">
                   {stats?.capa_nc.effectiveness_rate ?? 0}%
                 </div>
-                <div className="text-[11px] text-muted-foreground">
+                <div className="text-[11px] font-semibold text-slate-700">
                   {stats?.capa_nc.total_capas ?? 0} Phiếu khắc phục
                 </div>
               </div>
 
-              <div className="rounded-xl border bg-card p-3 shadow-sm">
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <div className="rounded-xl border border-slate-300 bg-white p-3 shadow-sm hover:border-teal-500 transition-all">
+                <div className="flex items-center justify-between text-xs font-bold text-slate-800">
                   <span>8. Đánh giá nội bộ & Đào tạo</span>
-                  <Users className="h-3.5 w-3.5 text-teal-600" />
+                  <Users className="h-4 w-4 text-teal-700" />
                 </div>
-                <div className="mt-2 text-lg font-bold">
+                <div className="mt-2 text-xl font-black text-slate-900">
                   {stats?.audit_training_health.training_pass_rate ?? 0}%
                 </div>
-                <div className="text-[11px] text-muted-foreground">
+                <div className="text-[11px] font-semibold text-slate-700">
                   {stats?.audit_training_health.total_audits ?? 0} Đợt đánh giá
                 </div>
               </div>
@@ -1191,7 +1191,7 @@ function ExecutiveDashboard() {
           ) : (
             <div className="overflow-x-auto rounded-xl border bg-card shadow-sm -mx-3 sm:mx-0">
               <table className="w-full text-left text-xs min-w-[700px]">
-                <thead className="bg-muted/60 text-muted-foreground font-semibold border-b">
+                <thead className="bg-slate-100/90 text-slate-800 font-bold border-b">
                   <tr>
                     <th className="py-3 px-4">Mã Chỉ Tiêu</th>
                     <th className="py-3 px-4">Tên Chỉ Tiêu Chất Lượng & ATTP</th>
@@ -1301,7 +1301,7 @@ function ExecutiveDashboard() {
                   size="sm"
                   variant="outline"
                   onClick={() => setShowAddReviewModal(true)}
-                  className="gap-1 text-xs"
+                  className="gap-1 text-xs border border-slate-300 bg-white text-slate-800 hover:bg-slate-900 hover:text-white hover:border-slate-900 shadow-sm transition-all duration-150 font-semibold"
                 >
                   <Plus className="h-3 w-3" /> Lập Biên Bản
                 </Button>
@@ -1438,7 +1438,7 @@ function ExecutiveDashboard() {
                   </h4>
                   <div className="overflow-x-auto rounded-xl border -mx-3 sm:mx-0">
                     <table className="w-full text-left text-xs min-w-[500px]">
-                      <thead className="bg-muted/50 text-muted-foreground border-b">
+                      <thead className="bg-slate-100/90 text-slate-800 font-bold border-b">
                         <tr>
                           <th className="py-2.5 px-3">Quyết định / Kế hoạch cải tiến</th>
                           <th className="py-2.5 px-3">Phụ trách</th>
@@ -1559,12 +1559,12 @@ function ExecutiveDashboard() {
                 variant="outline"
                 onClick={runGenerateReport}
                 disabled={reportLoading}
-                className="gap-1.5 text-xs w-full sm:w-auto"
+                className="gap-1.5 text-xs w-full sm:w-auto border border-emerald-400/80 bg-emerald-50 text-emerald-800 hover:bg-emerald-600 hover:text-white hover:border-emerald-600 font-bold shadow-sm transition-all duration-150 group"
               >
                 {reportLoading ? (
                   <RefreshCw className="h-3.5 w-3.5 animate-spin" />
                 ) : (
-                  <Sparkles className="h-3.5 w-3.5 text-emerald-600" />
+                  <Sparkles className="h-3.5 w-3.5 text-emerald-600 group-hover:text-white transition-colors" />
                 )}
                 Sinh Báo Cáo
               </Button>

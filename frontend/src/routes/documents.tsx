@@ -3,6 +3,8 @@ import { useEffect, useState, useMemo } from "react";
 import { AppShell } from "@/components/AppShell";
 import { PageHeader } from "@/components/PageHeader";
 import { printHtml } from "@/lib/print";
+import { exportHtmlStringToPdf } from "@/lib/pdfExporter";
+import { generateCleanWordDocHtml, cleanTextToHtml } from "@/lib/documentContentHelper";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -27,6 +29,7 @@ import {
   ExternalLink,
   Eye,
   Pencil,
+  Save,
   Trash2,
   FileCheck,
   BookOpen,
@@ -70,6 +73,7 @@ import { ExternalDocumentsTab } from "@/components/documents/ExternalDocumentsTa
 import { PeriodicReviewTab } from "@/components/documents/PeriodicReviewTab";
 import { RecordsRetentionTab } from "@/components/documents/RecordsRetentionTab";
 import { generateMasterDocumentListHtml } from "@/components/documents/dmsPrintHelpers";
+import { WordDocumentEditorModal } from "@/components/documents/WordDocumentEditorModal";
 
 export const Route = createFileRoute("/documents")({
   head: () => ({
@@ -113,235 +117,27 @@ async function openDocumentAttachment(fileUrl: string) {
   }
 }
 
-// Định nghĩa Cấu trúc Dữ liệu Tài liệu Nội bộ
-export interface DocumentItem {
-  id?: string; // mapped from document_id
-  document_id: string;
-  doc_code: string;
-  doc_title: string;
-  doc_type: string; // POLICY, MANUAL, SOP, WI, FORM, RECORD
-  department?: string | null;
-  standard?: string | null;
-  current_version: string;
-  status: string; // APPROVED, PENDING_APPROVAL, DRAFT, OBSOLETE
-  content?: string | null;
-  file_url?: string | null;
-  approved_by?: string | null;
-  approver_name?: string | null;
-  effective_date?: string | null;
-  review_due_date?: string | null;
-  last_reviewed_date?: string | null;
-  review_frequency_years?: number;
-  drafter_name?: string | null;
-  reviewer_name?: string | null;
-  security_level?: string;
-  created_at?: string | null;
-}
+import { useDepartments } from "@/lib/departments";
+import {
+  DEPARTMENTS,
+  STANDARDS,
+  DOC_TYPES,
+  STATUS_CONFIG,
+  type DocumentItem,
+  type DocumentChangeRequest,
+  type DocumentDistribution,
+  type ExternalDocument,
+  type PeriodicReviewItem,
+  type RecordRetention,
+} from "@/lib/documentConstants";
 
-// BM01-KSTL: Phiếu Yêu Cầu Xem Xét Tài Liệu
-export interface DocumentChangeRequest {
-  request_id: string;
-  request_code: string;
-  document_id?: string | null;
-  doc_code: string;
-  doc_title: string;
-  change_type: string; // NEW, REVISION, OBSOLETE, OTHER
-  department: string;
-  requested_by?: string | null;
-  requested_by_name: string;
-  request_date: string;
-  reason: string;
-  proposed_content?: string | null;
-  target_completion_date?: string | null;
-  assigned_drafter?: string | null;
-  dept_head_opinion?: string | null;
-  dept_head_comment?: string | null;
-  dept_head_signed_at?: string | null;
-  dept_head_signer_name?: string | null;
-  qa_head_opinion?: string | null;
-  qa_head_comment?: string | null;
-  qa_head_signed_at?: string | null;
-  qa_head_signer_name?: string | null;
-  director_approval?: string | null;
-  director_comment?: string | null;
-  director_signed_at?: string | null;
-  director_signer_name?: string | null;
-  status: string; // SUBMITTED, DEPT_REVIEWED, QA_REVIEWED, APPROVED, REJECTED
-  created_at?: string | null;
-}
-
-// BM02-KSTL: Thông Báo Thay Đổi & Sổ Phân Phối
-export interface DocumentDistribution {
-  distribution_id: string;
-  notice_code: string;
-  document_id: string;
-  doc_code: string;
-  doc_title: string;
-  version: string;
-  effective_date: string;
-  change_summary?: string | null;
-  department_recipient: string;
-  distribution_method: string; // PORTAL, HARDCOPY_CONTROLLED
-  copy_number: number;
-  distributed_by_name: string;
-  distribution_date: string;
-  acknowledged: boolean;
-  acknowledged_by_name?: string | null;
-  acknowledged_at?: string | null;
-  obsolete_copy_retrieved: boolean;
-  retrieval_date?: string | null;
-  notes?: string | null;
-  created_at?: string | null;
-}
-
-// BM04-KSTL: Danh Mục Tài Liệu Nguồn Gốc Bên Ngoài
-export interface ExternalDocument {
-  external_doc_id: string;
-  doc_code: string;
-  doc_title: string;
-  category: string; // LAW_REGULATION, STANDARD_TCVN_ISO, TECHNICAL_SPEC_CUSTOMER, INDUSTRY_GUIDELINE
-  issuing_body: string;
-  published_date?: string | null;
-  effective_date?: string | null;
-  status: string; // EFFECTIVE, EXPIRED, SUPERSEDED
-  superseded_by?: string | null;
-  department_in_charge: string;
-  review_frequency: string;
-  last_checked_date?: string | null;
-  checked_by_name?: string | null;
-  file_url?: string | null;
-  notes?: string | null;
-  created_at?: string | null;
-}
-
-// BM05-KSTL: Lịch Soát Xét Định Kỳ 3 Năm
-export interface PeriodicReviewItem {
-  document_id: string;
-  doc_code: string;
-  doc_title: string;
-  doc_type: string;
-  department: string;
-  current_version: string;
-  effective_date?: string | null;
-  last_reviewed_date?: string | null;
-  review_due_date?: string | null;
-  days_remaining?: number | null;
-  review_status: "VALID" | "DUE_SOON" | "OVERDUE";
-  review_frequency_years: number;
-}
-
-// BM01/BM02-KSHS: Danh Mục Hồ Sơ Lưu Trữ & Tiêu Hủy (QT-KSHS An Giang)
-export interface RecordRetention {
-  retention_id: string;
-  record_code: string;
-  record_name: string;
-  department: string;
-  storage_location: string;
-  retention_period: string;
-  disposal_method?: string | null;
-  responsible_person?: string | null;
-  status: "RETAINED" | "READY_FOR_DISPOSAL" | "DISPOSED";
-  disposal_date?: string | null;
-  disposal_council?: string | null;
-  disposal_minutes_code?: string | null;
-  notes?: string | null;
-  created_at?: string | null;
-  updated_at?: string | null;
-}
-
-import { useDepartments, DEFAULT_DEPARTMENTS } from "@/lib/departments";
-
-// Danh sách phòng ban chuẩn hóa từ CSDL
-export const DEPARTMENTS = DEFAULT_DEPARTMENTS;
-
-// Danh sách tiêu chuẩn ATTP
-export const STANDARDS = [
-  "ISO 22000:2018",
-  "HACCP Codex",
-  "PRP / SSOP",
-  "FSSC 22000",
-  "ISO 9001:2015",
-  "VietGAP / GlobalGAP",
-];
-
-// Cấu hình 5 cấp tài liệu ISO 22000:2018
-export const DOC_TYPES: Record<
-  string,
-  { label: string; level: string; color: string; bg: string; icon: any }
-> = {
-  POLICY: {
-    label: "Chính sách",
-    level: "Cấp 1",
-    color: "text-purple-700 dark:text-purple-300",
-    bg: "bg-purple-500/10 border-purple-200 dark:border-purple-800",
-    icon: BookOpen,
-  },
-  MANUAL: {
-    label: "Sổ tay",
-    level: "Cấp 2",
-    color: "text-blue-700 dark:text-blue-300",
-    bg: "bg-blue-500/10 border-blue-200 dark:border-blue-800",
-    icon: FileText,
-  },
-  SOP: {
-    label: "Quy trình (SOP)",
-    level: "Cấp 3",
-    color: "text-emerald-700 dark:text-emerald-300",
-    bg: "bg-emerald-500/10 border-emerald-200 dark:border-emerald-800",
-    icon: FileCheck,
-  },
-  WI: {
-    label: "Hướng dẫn (WI)",
-    level: "Cấp 4",
-    color: "text-amber-700 dark:text-amber-300",
-    bg: "bg-amber-500/10 border-amber-200 dark:border-amber-800",
-    icon: FileCode,
-  },
-  FORM: {
-    label: "Biểu mẫu",
-    level: "Cấp 5",
-    color: "text-sky-700 dark:text-sky-300",
-    bg: "bg-sky-500/10 border-sky-200 dark:border-sky-800",
-    icon: FileSpreadsheet,
-  },
-  RECORD: {
-    label: "Hồ sơ",
-    level: "Hồ sơ",
-    color: "text-slate-700 dark:text-slate-300",
-    bg: "bg-slate-500/10 border-slate-200 dark:border-slate-800",
-    icon: FileText,
-  },
-};
-
-// Cấu hình trạng thái tài liệu
-export const STATUS_CONFIG: Record<
-  string,
-  { label: string; color: string; bg: string; icon: any }
-> = {
-  APPROVED: {
-    label: "Đã phê duyệt",
-    color: "text-emerald-700 dark:text-emerald-300",
-    bg: "bg-emerald-500/10 border-emerald-200 dark:border-emerald-800",
-    icon: CheckCircle2,
-  },
-  PENDING_APPROVAL: {
-    label: "Chờ phê duyệt",
-    color: "text-amber-700 dark:text-amber-300",
-    bg: "bg-amber-500/10 border-amber-200 dark:border-amber-800",
-    icon: Clock,
-  },
-  DRAFT: {
-    label: "Bản thảo",
-    color: "text-slate-700 dark:text-slate-300",
-    bg: "bg-slate-500/10 border-slate-200 dark:border-slate-800",
-    icon: Clock,
-  },
-  OBSOLETE: {
-    label: "Hết hiệu lực",
-    color: "text-rose-700 dark:text-rose-300",
-    bg: "bg-rose-500/10 border-rose-200 dark:border-rose-800",
-    icon: AlertTriangle,
-  },
+export type {
+  DocumentItem,
+  DocumentChangeRequest,
+  DocumentDistribution,
+  ExternalDocument,
+  PeriodicReviewItem,
+  RecordRetention,
 };
 
 // Các mẫu gợi ý AI cho ISO 22000
@@ -566,8 +362,11 @@ function DocumentsPage() {
 
   // Modal Xuất / Xem trước PDF
   const [exportingDoc, setExportingDoc] = useState<DocumentItem | null>(null);
+  const [wasCreateOpenBeforeExport, setWasCreateOpenBeforeExport] = useState(false);
   const [exportContent, setExportContent] = useState<string>("");
   const [isCopiedExport, setIsCopiedExport] = useState(false);
+  const [isEditingExport, setIsEditingExport] = useState(false);
+  const [isSavingExport, setIsSavingExport] = useState(false);
 
   // Workflow Builder State
   const [showSopWorkflowModal, setShowSopWorkflowModal] = useState(false);
@@ -722,11 +521,22 @@ function DocumentsPage() {
           prev.map((d) => (d.document_id === editingDoc.document_id ? updated : d)),
         );
       } else {
-        // Tạo mới
+        // Tạo mới - Đảm bảo mã tài liệu không bị trùng gây lỗi 400
+        let targetCode = (formData.doc_code || "").trim();
+        const existingCodes = new Set(documents.map((d) => d.doc_code.toUpperCase()));
+        if (existingCodes.has(targetCode.toUpperCase())) {
+          const prefix = targetCode.replace(/-\d+$/, "");
+          let counter = 1;
+          while (existingCodes.has(`${prefix}-${String(counter).padStart(2, "0")}`.toUpperCase())) {
+            counter++;
+          }
+          targetCode = `${prefix}-${String(counter).padStart(2, "0")}`;
+        }
+
         const res = await api.post("/documents", {
-          doc_code: formData.doc_code,
-          doc_title: formData.doc_title,
-          doc_type: formData.doc_type,
+          doc_code: targetCode,
+          doc_title: formData.doc_title || "Tài liệu ISO 22000",
+          doc_type: formData.doc_type || "SOP",
           department: formData.department,
           standard: formData.standard,
           current_version: formData.current_version,
@@ -737,7 +547,7 @@ function DocumentsPage() {
         });
         const created = { ...res.data, id: res.data.document_id };
         setDocuments((prev) => [created, ...prev]);
-        toast.success(`Đã tạo tài liệu mới "${formData.doc_code}" thành công!`);
+        toast.success(`Đã tạo tài liệu mới "${targetCode}" thành công!`);
       }
       setIsCreateOpen(false);
       setEditingDoc(null);
@@ -942,10 +752,106 @@ Quy định trình tự và các bước thao tác chuẩn cho: ${doc.doc_title}
 - Báo cáo sự không phù hợp & phiếu CAPA (khi có phát sinh sự cố)`;
   };
 
-  // Mở Modal Xem trước & Xuất PDF
+  // Mở Trình Soạn thảo Văn bản Trực tiếp Chuẩn Word / Google Docs Clone (ISO 22000)
   const handleOpenExportPDF = (doc: DocumentItem, customContent?: string) => {
+    if (isCreateOpen) {
+      setWasCreateOpenBeforeExport(true);
+      setIsCreateOpen(false);
+    }
+    setViewingDoc(null);
+    setIsAIAssistantOpen(false);
+
     setExportingDoc(doc);
-    setExportContent(customContent || getDocumentContent(doc));
+    if (customContent !== undefined) {
+      setExportContent(customContent);
+    } else {
+      const existing = doc.content && doc.content.trim() ? doc.content : getDocumentContent(doc);
+      setExportContent(existing);
+    }
+  };
+
+  // Lưu tài liệu trực tiếp từ Word / Docs Editor (lưu cả Mã, Tiêu đề, Phân cấp, Phòng ban, Tiêu chuẩn, Phiên bản, Ngày, Người ký, Nội dung sạch không chứa code)
+  const handleSaveWordDocument = async (updatedDoc: DocumentItem, cleanContent: string) => {
+    try {
+      // 1. Đồng bộ vào Form Tạo / Chỉnh sửa tài liệu nếu đang mở (hoặc trước đó mở từ form)
+      if (isCreateOpen || wasCreateOpenBeforeExport || updatedDoc.document_id === "preview") {
+        setFormData((prev) => ({
+          ...prev,
+          doc_code: updatedDoc.doc_code || prev.doc_code,
+          doc_title: updatedDoc.doc_title || prev.doc_title,
+          doc_type: updatedDoc.doc_type || prev.doc_type,
+          department: updatedDoc.department || prev.department,
+          standard: updatedDoc.standard || prev.standard,
+          current_version: updatedDoc.current_version || prev.current_version,
+          effective_date: updatedDoc.effective_date || prev.effective_date,
+          content: cleanContent,
+        }));
+        setExportingDoc({ ...updatedDoc, content: cleanContent });
+        setExportContent(cleanContent);
+        toast.success("Đã đồng bộ toàn bộ tài liệu (mã số, tiêu đề, phòng ban, toàn văn sạch) vào biểu mẫu!");
+      }
+
+      // 2. Nếu là tài liệu đã lưu trên hệ thống (có UUID thực tế)
+      if (
+        updatedDoc.document_id &&
+        updatedDoc.document_id !== "preview" &&
+        updatedDoc.document_id !== "ai-preview"
+      ) {
+        await api.put(`/documents/${updatedDoc.document_id}`, {
+          doc_code: updatedDoc.doc_code,
+          doc_title: updatedDoc.doc_title,
+          doc_type: updatedDoc.doc_type,
+          department: updatedDoc.department,
+          standard: updatedDoc.standard,
+          current_version: updatedDoc.current_version,
+          status: updatedDoc.status,
+          content: cleanContent,
+          file_url: updatedDoc.file_url,
+          effective_date: updatedDoc.effective_date,
+          drafter_name: updatedDoc.drafter_name,
+          reviewer_name: updatedDoc.reviewer_name,
+        });
+
+        // Cập nhật state documents tại chỗ
+        setDocuments((prev) =>
+          prev.map((d) =>
+            d.document_id === updatedDoc.document_id
+              ? { ...d, ...updatedDoc, content: cleanContent }
+              : d,
+          ),
+        );
+
+        // Cập nhật viewingDoc nếu đang mở
+        if (viewingDoc && viewingDoc.document_id === updatedDoc.document_id) {
+          setViewingDoc((prev) =>
+            prev ? { ...prev, ...updatedDoc, content: cleanContent } : null,
+          );
+        }
+
+        setExportingDoc({ ...updatedDoc, content: cleanContent });
+        setExportContent(cleanContent);
+
+        toast.success("Đã lưu toàn bộ thông tin và nội dung tài liệu thành công vào hệ thống!");
+      }
+    } catch (err: any) {
+      console.error("Lỗi khi lưu tài liệu:", err);
+      toast.error(
+        err?.response?.data?.detail || "Không thể lưu thông tin tài liệu",
+      );
+    }
+  };
+
+  // Xuất file PDF từ HTML chuẩn của Word Editor (Trực tiếp tải về file .pdf)
+  const handleExportPDFFromEditor = async (updatedDoc: DocumentItem, cleanHtml: string) => {
+    try {
+      const filename = `${updatedDoc.doc_code || "TAI-LIEU"}_${(updatedDoc.doc_title || "ISO22000").replace(/[/\\?%*:|"<>]/g, "_")}.pdf`;
+      toast.info("Đang tạo và tải tệp PDF...");
+      await exportHtmlStringToPdf(cleanHtml, filename);
+      toast.success(`Đã tải xuống file ${filename}!`);
+    } catch (e) {
+      console.error(e);
+      printHtml(cleanHtml);
+    }
   };
 
   // In / Xuất PDF trực tiếp qua hidden iframe sạch sẽ 100% không bị trắng trang
@@ -1162,47 +1068,34 @@ Quy định trình tự và các bước thao tác chuẩn cho: ${doc.doc_title}
       </html>
     `;
 
-    printHtml(htmlContent);
+    const filename = `${exportingDoc.doc_code}_${(exportingDoc.doc_title || "ISO22000").replace(/[/\\?%*:|"<>]/g, "_")}.pdf`;
+    try {
+      toast.info("Đang tạo và tải tệp PDF...");
+      exportHtmlStringToPdf(htmlContent, filename);
+      toast.success(`Đã tải xuống file ${filename}!`);
+    } catch (err) {
+      console.error(err);
+      printHtml(htmlContent);
+    }
   };
 
-  // Tải file văn bản (.txt / .doc)
+  // Tải file Word (.doc) chuẩn hóa
   const handleDownloadDoc = () => {
     if (!exportingDoc) return;
-    const docData = `================================================================================
-HỆ THỐNG QUẢN LÝ AN TOÀN THỰC PHẨM (FSMS - ISO 22000:2018)
-CÔNG TY CỔ PHẦN CHỨNG NHẬN WCERT TOÀN CẦU
-================================================================================
-MÃ TÀI LIỆU    : ${exportingDoc.doc_code}
-TIÊU ĐỀ        : ${exportingDoc.doc_title}
-PHÂN CẤP       : ${DOC_TYPES[exportingDoc.doc_type]?.label || exportingDoc.doc_type}
-PHÒNG BAN      : ${exportingDoc.department || "Ban QLCL & ATTP"}
-TIÊU CHUẨN     : ${exportingDoc.standard || "ISO 22000:2018"}
-PHIÊN BẢN      : v${exportingDoc.current_version}
-TRẠNG THÁI     : ${STATUS_CONFIG[exportingDoc.status]?.label || exportingDoc.status}
-NGÀY HIỆU LỰC  : ${exportingDoc.effective_date || new Date().toISOString().split("T")[0]}
-NGƯỜI PHÊ DUYỆT: ${exportingDoc.approver_name || "Ban Giám đốc"}
-================================================================================
-
-NỘI DUNG TÀI LIỆU:
-
-${exportContent}
-
-================================================================================
-KÝ DUYỆT VĂN BẢN:
-- Người soạn thảo : ................................... Ngày: ....................
-- Người thẩm tra  : ................................... Ngày: ....................
-- Người phê duyệt : ................................... Ngày: ....................
-================================================================================
-`;
-    const blob = new Blob([docData], { type: "text/plain;charset=utf-8" });
+    const docData = { ...exportingDoc, content: exportContent };
+    const wordHtml = generateCleanWordDocHtml(docData, cleanTextToHtml(exportContent));
+    const blob = new Blob(["\ufeff", wordHtml], {
+      type: "application/msword;charset=utf-8",
+    });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${exportingDoc.doc_code}_${exportingDoc.doc_title.replace(/[/\\?%*:|"<>]/g, "_")}.txt`;
+    a.download = `${exportingDoc.doc_code}_${(exportingDoc.doc_title || "SOP").replace(/[/\\?%*:|"<>]/g, "_")}.doc`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+    toast.success("Đã tải tệp tài liệu Word (.doc) thành công!");
   };
 
   // Thống kê nhanh theo cấp
@@ -1296,9 +1189,9 @@ KÝ DUYỆT VĂN BẢN:
               onClick={() => setShowGuide(true)}
               variant="outline"
               size="sm"
-              className="gap-1.5 border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 text-xs font-bold"
+              className="gap-1.5 border border-emerald-400/80 bg-emerald-50 text-emerald-800 hover:bg-emerald-600 hover:text-white hover:border-emerald-600 text-xs font-bold shadow-sm transition-all duration-150"
             >
-              <BookOpen className="h-3.5 w-3.5 text-emerald-600" />
+              <BookOpen className="h-3.5 w-3.5 transition-colors" />
               Hướng Dẫn Nghiệp Vụ
             </Button>
 
@@ -1306,9 +1199,9 @@ KÝ DUYỆT VĂN BẢN:
               variant="outline"
               size="sm"
               onClick={handleOpenSopWorkflow}
-              className="gap-1.5 border-purple-300 bg-purple-50 text-purple-700 hover:bg-purple-100 text-xs font-semibold"
+              className="gap-1.5 border border-purple-400/80 bg-purple-50 text-purple-800 hover:bg-purple-600 hover:text-white hover:border-purple-600 text-xs font-bold shadow-sm transition-all duration-150"
             >
-              <GitFork className="h-3.5 w-3.5 text-purple-600" />
+              <GitFork className="h-3.5 w-3.5 transition-colors" />
               Lưu Đồ Phê Duyệt SOP
             </Button>
 
@@ -1316,10 +1209,10 @@ KÝ DUYỆT VĂN BẢN:
               variant="outline"
               size="sm"
               onClick={handlePrintInternalMasterList}
-              className="gap-1.5 text-xs"
+              className="gap-1.5 border border-slate-300 bg-white text-slate-800 hover:bg-slate-900 hover:text-white hover:border-slate-900 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-700 dark:hover:bg-slate-700 dark:hover:text-white text-xs font-semibold shadow-sm transition-all duration-150"
             >
-              <Printer className="h-3.5 w-3.5" />
-              In Sổ BM03-KSTL
+              <FileDown className="h-3.5 w-3.5 transition-colors" />
+              Xuất file PDF Sổ BM03-KSTL
             </Button>
 
             <Button
@@ -1327,9 +1220,9 @@ KÝ DUYỆT VĂN BẢN:
               size="sm"
               onClick={fetchDocuments}
               disabled={loading}
-              className="gap-1.5 text-xs"
+              className="gap-1.5 border border-slate-300 bg-white text-slate-800 hover:bg-slate-900 hover:text-white hover:border-slate-900 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-700 dark:hover:bg-slate-700 dark:hover:text-white text-xs font-semibold shadow-sm transition-all duration-150"
             >
-              <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin text-primary" : ""}`} />
+              <RefreshCw className={`h-3.5 w-3.5 transition-colors ${loading ? "animate-spin text-primary" : ""}`} />
               Làm mới
             </Button>
 
@@ -1338,15 +1231,19 @@ KÝ DUYỆT VĂN BẢN:
                 variant="outline"
                 size="sm"
                 onClick={() => setIsAIAssistantOpen(true)}
-                className="gap-1.5 border-primary/30 bg-primary/5 text-xs text-primary hover:bg-primary/10"
+                className="gap-1.5 border border-emerald-500/50 bg-emerald-50 text-emerald-800 hover:bg-emerald-600 hover:text-white hover:border-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-300 dark:hover:bg-emerald-600 dark:hover:text-white text-xs font-bold shadow-sm transition-all duration-150"
               >
-                <Sparkles className="h-3.5 w-3.5 text-primary" />
+                <Sparkles className="h-3.5 w-3.5 transition-colors" />
                 Trợ lý AI
               </Button>
             )}
 
             {canEdit && (
-              <Button onClick={handleOpenCreate} size="sm" className="gap-1.5 text-xs">
+              <Button
+                onClick={handleOpenCreate}
+                size="sm"
+                className="gap-1.5 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition-all duration-150"
+              >
                 <Plus className="h-4 w-4" />
                 Tạo tài liệu mới
               </Button>
@@ -1406,20 +1303,20 @@ KÝ DUYỆT VĂN BẢN:
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as DocumentSubTab)}
-              className={`flex items-center gap-2 px-3.5 py-2 font-medium rounded-t-lg transition border-b-2 whitespace-nowrap ${
+              className={`flex items-center gap-2 px-3.5 py-2 rounded-t-lg transition border-b-2 whitespace-nowrap ${
                 isActive
-                  ? "border-primary text-primary bg-primary/5 font-semibold"
-                  : "border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/40"
+                  ? "border-emerald-600 text-emerald-800 bg-emerald-50/80 font-black"
+                  : "border-transparent text-slate-700 font-bold hover:text-slate-900 hover:bg-slate-100"
               }`}
             >
-              <Icon className={`h-4 w-4 ${isActive ? "text-primary" : "text-muted-foreground"}`} />
+              <Icon className={`h-4 w-4 ${isActive ? "text-emerald-700" : "text-slate-600"}`} />
               <span>{tab.label}</span>
               {typeof tab.badge === "number" && tab.badge > 0 && (
                 <span
                   className={`rounded-full px-1.5 py-0.2 text-[10px] font-bold ${
                     isActive
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted text-muted-foreground"
+                      ? "bg-emerald-600 text-white"
+                      : "bg-slate-200 text-slate-800"
                   }`}
                 >
                   {tab.badge}
@@ -2057,7 +1954,7 @@ KÝ DUYỆT VĂN BẢN:
                     className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 hover:text-emerald-700 bg-emerald-500/10 hover:bg-emerald-500/20 px-2 py-0.5 rounded border border-emerald-300 dark:border-emerald-800 transition"
                   >
                     <ExternalLink className="h-3 w-3" />
-                    Bấm vào Link Docs để mở Form PDF
+                    Soạn thảo văn bản trực tiếp (Word / Docs)
                   </button>
                 </div>
                 <Input
@@ -2067,8 +1964,7 @@ KÝ DUYỆT VĂN BẢN:
                   className="h-9 text-xs font-mono bg-muted/20"
                 />
                 <p className="text-[10.5px] text-muted-foreground">
-                  🔗 Link truy cập nhanh trực tiếp vào giao diện Form văn bản chuẩn ISO 22000 & In
-                  PDF.
+                  🔗 Link truy cập nhanh trực tiếp vào giao diện Form văn bản chuẩn ISO 22000 & Xuất file PDF.
                 </p>
               </div>
 
@@ -2079,9 +1975,6 @@ KÝ DUYỆT VĂN BẢN:
                     Nội dung văn bản gốc (Toàn văn Quy trình / SOP){" "}
                     <span className="text-primary font-normal">• Nguồn dữ liệu xuất PDF</span>
                   </Label>
-                  <span className="text-[10.5px] text-muted-foreground">
-                    Lưu trữ trực tiếp trong CSDL
-                  </span>
                 </div>
                 <textarea
                   rows={8}
@@ -2331,10 +2224,10 @@ KÝ DUYỆT VĂN BẢN:
                         const docToExport = viewingDoc;
                         handleOpenExportPDF(docToExport);
                       }}
-                      className="gap-1.5 border-primary/30 text-primary hover:bg-primary/10"
+                      className="gap-1.5 border border-slate-300 bg-white text-slate-800 hover:bg-slate-900 hover:text-white hover:border-slate-900 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700 text-xs font-semibold shadow-sm transition-all duration-150"
                     >
-                      <Printer className="h-3.5 w-3.5" />
-                      Xem & Xuất PDF
+                      <FileDown className="h-3.5 w-3.5" />
+                      Xuất file PDF
                     </Button>
                     <Button
                       size="sm"
@@ -2457,10 +2350,10 @@ KÝ DUYỆT VĂN BẢN:
                   selectedAITemplate.content,
                 );
               }}
-              className="gap-1.5 border-primary/30 text-primary hover:bg-primary/10"
+              className="gap-1.5 border border-slate-300 bg-white text-slate-800 hover:bg-slate-900 hover:text-white hover:border-slate-900 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700 text-xs font-semibold shadow-sm transition-all duration-150"
             >
-              <Printer className="h-3.5 w-3.5" />
-              Xuất PDF Bản thảo
+              <FileDown className="h-3.5 w-3.5" />
+              Xuất file PDF Bản thảo
             </Button>
             <Button
               size="sm"
@@ -2474,223 +2367,22 @@ KÝ DUYỆT VĂN BẢN:
         </DialogContent>
       </Dialog>
 
-      {/* Modal Xem trước & Xuất PDF chuẩn ISO 22000 */}
-      <Dialog open={!!exportingDoc} onOpenChange={() => setExportingDoc(null)}>
-        <DialogContent className="sm:max-w-4xl max-h-[95vh] overflow-y-auto p-0">
-          {exportingDoc && (
-            <div className="flex flex-col">
-              {/* Header điều khiển (Không in ra) */}
-              <div className="no-print flex items-center justify-between border-b bg-muted/40 p-4 sticky top-0 z-10 bg-background/95 backdrop-blur">
-                <div className="flex items-center gap-2">
-                  <div className="rounded-lg bg-primary/10 p-2 text-primary">
-                    <Printer className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-bold text-foreground">
-                      Xuất văn bản & In PDF Tiêu chuẩn ISO 22000
-                    </h3>
-                    <p className="text-xs text-muted-foreground">
-                      Mã tài liệu:{" "}
-                      <span className="font-mono font-semibold text-primary">
-                        {exportingDoc.doc_code}
-                      </span>{" "}
-                      — {DOC_TYPES[exportingDoc.doc_type]?.label || exportingDoc.doc_type}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => {
-                      navigator.clipboard.writeText(exportContent);
-                      setIsCopiedExport(true);
-                      setTimeout(() => setIsCopiedExport(false), 2000);
-                    }}
-                    className="inline-flex items-center gap-1 rounded-md border bg-background px-2.5 py-1.5 text-xs font-medium shadow-sm hover:bg-muted transition"
-                  >
-                    {isCopiedExport ? (
-                      <>
-                        <Check className="h-3.5 w-3.5 text-emerald-600" />
-                        <span className="text-emerald-600">Đã copy</span>
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="h-3.5 w-3.5" />
-                        <span>Copy nội dung</span>
-                      </>
-                    )}
-                  </button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={handleDownloadDoc}
-                    className="gap-1.5 text-xs"
-                  >
-                    <Download className="h-3.5 w-3.5" />
-                    Tải file (.txt)
-                  </Button>
-                  <Button
-                    size="sm"
-                    onClick={handlePrintPDF}
-                    className="gap-1.5 text-xs bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
-                  >
-                    <Printer className="h-3.5 w-3.5" />
-                    In / Lưu file PDF
-                  </Button>
-                </div>
-              </div>
-
-              {/* Khung tài liệu A4 chuẩn in ấn (Printable Document) */}
-              <div className="p-4 sm:p-6 bg-slate-100 dark:bg-slate-900/50 flex justify-center">
-                <div
-                  id="iso-printable-document"
-                  className="w-full max-w-[210mm] min-h-[297mm] bg-white text-slate-900 shadow-lg rounded-sm p-8 font-sans border border-slate-200"
-                >
-                  {/* Bảng Header Form ISO 22000 tiêu chuẩn */}
-                  <table className="w-full border-2 border-slate-900 text-xs mb-6 border-collapse">
-                    <tbody>
-                      <tr>
-                        <td className="w-1/4 border border-slate-900 p-2.5 text-center align-middle bg-slate-50">
-                          <img
-                            src={logoImg}
-                            alt="WCERT FSMS Logo"
-                            className="h-9 w-auto mx-auto object-contain mb-1"
-                          />
-                          <div className="font-black text-emerald-700 text-xs tracking-wider">
-                            WCERT FSMS
-                          </div>
-                          <div className="text-[9px] text-slate-600 uppercase font-bold mt-0.5">
-                            ISO 22000:2018
-                          </div>
-                        </td>
-                        <td className="w-2/4 border border-slate-900 p-3 text-center align-middle">
-                          <div className="text-[10px] font-bold uppercase text-slate-600">
-                            HỆ THỐNG QUẢN LÝ AN TOÀN THỰC PHẨM
-                          </div>
-                          <div className="text-sm font-black uppercase text-slate-950 mt-1">
-                            {exportingDoc.doc_title}
-                          </div>
-                        </td>
-                        <td className="w-1/4 border border-slate-900 p-2.5 text-[10.5px] space-y-0.5 bg-slate-50">
-                          <div>
-                            <b>Mã hiệu:</b>{" "}
-                            <span className="font-mono">{exportingDoc.doc_code}</span>
-                          </div>
-                          <div>
-                            <b>Phân cấp:</b> {DOC_TYPES[exportingDoc.doc_type]?.label}
-                          </div>
-                          <div>
-                            <b>Lần ban hành:</b> v{exportingDoc.current_version}
-                          </div>
-                          <div>
-                            <b>Ngày hiệu lực:</b> {exportingDoc.effective_date || "2026-08-25"}
-                          </div>
-                          <div>
-                            <b>Trang:</b> 1 / 1
-                          </div>
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-
-                  {/* Thông tin metadata phòng ban & tiêu chuẩn */}
-                  <div className="grid grid-cols-2 gap-4 border-b border-slate-300 pb-3 mb-5 text-xs">
-                    <div>
-                      <span className="font-bold text-slate-700">Đơn vị chủ quản: </span>
-                      <span className="font-semibold text-slate-900">
-                        {exportingDoc.department || "Ban QLCL & ATTP"}
-                      </span>
-                    </div>
-                    <div className="text-right">
-                      <span className="font-bold text-slate-700">Tiêu chuẩn áp dụng: </span>
-                      <span className="font-semibold text-slate-900">
-                        {exportingDoc.standard || "ISO 22000:2018"}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Nội dung chi tiết quy trình */}
-                  <div className="space-y-4 text-xs leading-relaxed text-slate-800 font-normal">
-                    <div className="whitespace-pre-wrap font-sans text-xs leading-6">
-                      {exportContent}
-                    </div>
-                  </div>
-
-                  {/* Khung 3 Chữ ký Phê duyệt Ban hành theo Điều khoản 7.5 */}
-                  <div className="mt-12 pt-6 border-t-2 border-slate-900">
-                    <div className="text-center text-xs font-bold uppercase tracking-wider mb-6 text-slate-700">
-                      TRÁCH NHIỆM PHÊ DUYỆT THÔNG TIN DẠNG VĂN BẢN
-                    </div>
-                    <div className="grid grid-cols-3 gap-4 text-center text-xs">
-                      <div className="space-y-12">
-                        <div>
-                          <div className="font-bold uppercase text-slate-900">NGƯỜI SOẠN THẢO</div>
-                          <div className="text-[10px] text-slate-500 italic">
-                            (Ký & ghi rõ họ tên)
-                          </div>
-                        </div>
-                        <div className="font-semibold text-slate-800 pt-8 border-t border-dashed border-slate-400 mx-4">
-                          Cán bộ ISO / QA
-                        </div>
-                      </div>
-
-                      <div className="space-y-12">
-                        <div>
-                          <div className="font-bold uppercase text-slate-900">NGƯỜI THẨM TRA</div>
-                          <div className="text-[10px] text-slate-500 italic">
-                            (Trưởng Ban ATTP / Trưởng phòng)
-                          </div>
-                        </div>
-                        <div className="font-semibold text-slate-800 pt-8 border-t border-dashed border-slate-400 mx-4">
-                          Trưởng ban QLCL & ATTP
-                        </div>
-                      </div>
-
-                      <div className="space-y-12">
-                        <div>
-                          <div className="font-bold uppercase text-slate-900">NGƯỜI PHÊ DUYỆT</div>
-                          <div className="text-[10px] text-slate-500 italic">
-                            (Tổng Giám đốc / Đại diện LĐ)
-                          </div>
-                        </div>
-                        <div className="font-semibold text-emerald-700 font-bold pt-8 border-t border-dashed border-slate-400 mx-4">
-                          {exportingDoc.status === "APPROVED"
-                            ? "ĐÃ PHÊ DUYỆT (BAN GIÁM ĐỐC)"
-                            : "BẢN THẢO (DRAFT)"}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Dấu số chứng nhận */}
-                    <div className="mt-8 pt-4 flex items-center justify-between text-[10px] text-slate-500 border-t border-slate-200">
-                      <div className="flex items-center gap-1.5 text-emerald-700 font-semibold">
-                        <ShieldCheck className="h-3.5 w-3.5" />
-                        <span>WCERT FSMS CERTIFIED • ISO 22000:2018 SYSTEM COMPLIANT</span>
-                      </div>
-                      <div>Mã xác thực tài liệu điện tử: FSMS-{exportingDoc.doc_code}-2026</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Footer điều khiển dưới */}
-              <div className="no-print p-4 border-t bg-muted/20 flex justify-end gap-2">
-                <Button size="sm" variant="outline" onClick={() => setExportingDoc(null)}>
-                  Đóng cửa sổ
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={handlePrintPDF}
-                  className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white"
-                >
-                  <Printer className="h-3.5 w-3.5" />
-                  In / Xuất file PDF ngay
-                </Button>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+      {/* Modal Soạn thảo Trực tiếp Chuẩn Word / Google Docs Clone (ISO 22000) */}
+      <WordDocumentEditorModal
+        open={!!exportingDoc}
+        doc={exportingDoc}
+        initialContent={exportContent}
+        onClose={() => {
+          setExportingDoc(null);
+          if (wasCreateOpenBeforeExport) {
+            setIsCreateOpen(true);
+            setWasCreateOpenBeforeExport(false);
+          }
+        }}
+        onSave={handleSaveWordDocument}
+        onExportPDF={handleExportPDFFromEditor}
+        departments={DEPARTMENTS}
+      />
 
       {/* CSS cho In ấn & Xuất PDF A4 sắc nét */}
       <style>{`

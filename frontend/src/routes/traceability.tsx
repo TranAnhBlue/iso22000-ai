@@ -225,9 +225,9 @@ export function TraceabilityPage() {
             variant="outline"
             size="sm"
             onClick={() => setShowGuide(true)}
-            className="border-emerald-300 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 flex items-center gap-1.5 font-bold text-xs"
+            className="border border-emerald-400/80 bg-emerald-50 text-emerald-800 hover:bg-emerald-600 hover:text-white hover:border-emerald-600 flex items-center gap-1.5 font-bold text-xs shadow-sm transition-all duration-150"
           >
-            <BookOpen className="h-4 w-4 text-emerald-600" />
+            <BookOpen className="h-4 w-4 transition-colors" />
             <span>Hướng Dẫn Nghiệp Vụ</span>
           </Button>
           {backwardTree && backwardTree.found && mode === "backward" && (
@@ -260,25 +260,25 @@ export function TraceabilityPage() {
           }}
           className={`flex items-start gap-3.5 p-4 rounded-xl border text-left transition-all ${
             mode === "backward"
-              ? "border-emerald-600 bg-emerald-50/20 ring-1 ring-emerald-600"
-              : "border-border bg-card hover:bg-muted/30"
+              ? "border-emerald-600 bg-emerald-50/40 ring-2 ring-emerald-600"
+              : "border-slate-300 bg-white hover:bg-slate-50"
           }`}
         >
           <div
-            className={`p-2.5 rounded-lg shrink-0 ${mode === "backward" ? "bg-emerald-600 text-white" : "bg-muted text-muted-foreground"}`}
+            className={`p-2.5 rounded-lg shrink-0 ${mode === "backward" ? "bg-emerald-600 text-white" : "bg-slate-200 text-slate-800"}`}
           >
             <RotateCcw className="h-5 w-5" />
           </div>
           <div>
-            <div className="font-bold text-sm text-foreground flex items-center gap-2">
+            <div className="font-extrabold text-sm text-slate-900 flex items-center gap-2">
               1. Truy Xuất Ngược (Backward Traceability)
               {mode === "backward" && (
-                <span className="text-[10px] bg-emerald-600 text-white px-2 py-0.5 rounded-full">
+                <span className="text-[10px] bg-emerald-600 text-white font-bold px-2 py-0.5 rounded-full">
                   Đang chọn
                 </span>
               )}
             </div>
-            <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+            <p className="text-xs text-slate-700 font-medium mt-1 leading-relaxed">
               Nhập Mã Lô Thành phẩm → Truy ra toàn bộ: Mẻ SX, Nhật ký CCP, Tủ mẫu lưu, Nguyên liệu
               và Nhà cung ứng.
             </p>
@@ -292,25 +292,25 @@ export function TraceabilityPage() {
           }}
           className={`flex items-start gap-3.5 p-4 rounded-xl border text-left transition-all ${
             mode === "forward"
-              ? "border-rose-600 bg-rose-50/20 ring-1 ring-rose-600"
-              : "border-border bg-card hover:bg-muted/30"
+              ? "border-rose-600 bg-rose-50/40 ring-2 ring-rose-600"
+              : "border-slate-300 bg-white hover:bg-slate-50"
           }`}
         >
           <div
-            className={`p-2.5 rounded-lg shrink-0 ${mode === "forward" ? "bg-rose-600 text-white" : "bg-muted text-muted-foreground"}`}
+            className={`p-2.5 rounded-lg shrink-0 ${mode === "forward" ? "bg-rose-600 text-white" : "bg-slate-200 text-slate-800"}`}
           >
             <ShieldAlert className="h-5 w-5" />
           </div>
           <div>
-            <div className="font-bold text-sm text-foreground flex items-center gap-2">
+            <div className="font-extrabold text-sm text-slate-900 flex items-center gap-2">
               2. Truy Xuất Xuôi & Thu Hồi (Mock Recall)
               {mode === "forward" && (
-                <span className="text-[10px] bg-rose-600 text-white px-2 py-0.5 rounded-full">
+                <span className="text-[10px] bg-rose-600 text-white font-bold px-2 py-0.5 rounded-full">
                   Đang chọn
                 </span>
               )}
             </div>
-            <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+            <p className="text-xs text-slate-700 font-medium mt-1 leading-relaxed">
               Nhập Mã Lô Nguyên liệu sự cố → Quét toàn bộ mẻ đã dùng, tồn kho cần khóa và khách hàng
               cần thu hồi khẩn cấp.
             </p>
@@ -516,7 +516,7 @@ export function TraceabilityPage() {
                           });
                           setQrModalOpen(true);
                         }}
-                        className="h-7 text-xs gap-1.5 font-semibold text-primary border-primary/30 hover:bg-primary/5"
+                        className="h-7 text-xs gap-1.5 font-semibold border border-emerald-400/80 bg-emerald-50 text-emerald-800 hover:bg-emerald-600 hover:text-white hover:border-emerald-600 shadow-sm transition-all duration-150"
                       >
                         <QrCode className="h-3.5 w-3.5" />
                         Xem Tem Mã QR

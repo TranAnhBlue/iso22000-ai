@@ -328,11 +328,13 @@ function AuditManagementPage() {
   const [showEvalModal, setShowEvalModal] = useState(false);
   const [editingEvaluation, setEditingEvaluation] = useState<TrainingEvaluation | null>(null);
   const [evalForm, setEvalForm] = useState({
-    course_id: "",
+    course_id: "" as any,
     evaluation_code: "",
     evaluation_date: new Date().toISOString().split("T")[0],
     evaluator_name: "Lê Văn Trưởng Xưởng",
     evaluator_position: "Trưởng Xưởng Chế Biến",
+    evaluator_title: "Trưởng Xưởng Chế Biến",
+    employee_code: "NV-001",
     evaluated_employee_name: "Nguyễn Văn Kiểm",
     department: "Tổ Sơ Chế & Rửa",
     post_training_period: "1_MONTH" as "1_MONTH" | "3_MONTHS" | "6_MONTHS",
@@ -1404,6 +1406,8 @@ function AuditManagementPage() {
       evaluation_date: new Date().toISOString().split("T")[0],
       evaluator_name: "Lê Văn Trưởng Xưởng",
       evaluator_position: "Trưởng Xưởng Chế Biến",
+      evaluator_title: "Trưởng Xưởng Chế Biến",
+      employee_code: "NV-001",
       evaluated_employee_name: "Nguyễn Văn Kiểm",
       department: "Tổ Sơ Chế & Rửa",
       post_training_period: "1_MONTH",
@@ -1435,6 +1439,8 @@ function AuditManagementPage() {
       evaluation_date: ev.evaluation_date,
       evaluator_name: ev.evaluator_name,
       evaluator_position: ev.evaluator_position || "",
+      evaluator_title: (ev as any).evaluator_title || ev.evaluator_position || "",
+      employee_code: (ev as any).employee_code || "NV-001",
       evaluated_employee_name: ev.evaluated_employee_name,
       department: ev.department,
       post_training_period: ev.post_training_period,
@@ -1651,17 +1657,17 @@ function AuditManagementPage() {
               onClick={() => setShowGuide(true)}
               variant="outline"
               size="sm"
-              className="border-emerald-300 text-emerald-700 bg-emerald-50/50 hover:bg-emerald-100 font-bold text-xs"
+              className="border border-emerald-400/80 text-emerald-800 bg-emerald-50 hover:bg-emerald-600 hover:text-white hover:border-emerald-600 font-bold text-xs shadow-sm transition-all duration-150"
             >
-              <BookOpen className="h-4 w-4 mr-1.5" /> Hướng Dẫn Nghiệp Vụ
+              <BookOpen className="h-4 w-4 mr-1.5 transition-colors" /> Hướng Dẫn Nghiệp Vụ
             </Button>
             <Button
               onClick={handleOpenWorkflow}
               variant="outline"
               size="sm"
-              className="border-indigo-300 text-indigo-700 bg-indigo-50/50 hover:bg-indigo-100 font-bold text-xs"
+              className="border border-indigo-400/80 text-indigo-800 bg-indigo-50 hover:bg-indigo-600 hover:text-white hover:border-indigo-600 font-bold text-xs shadow-sm transition-all duration-150"
             >
-              <GitFork className="h-4 w-4 mr-1.5" /> Lưu Đồ ĐGNB (Workflow)
+              <GitFork className="h-4 w-4 mr-1.5 transition-colors" /> Lưu Đồ ĐGNB (Workflow)
             </Button>
             {activeTab === "audits" && (
               <Button
@@ -1846,10 +1852,10 @@ function AuditManagementPage() {
         <div className="flex space-x-1 sm:space-x-4 min-w-max pb-1">
           <button
             onClick={() => setActiveTab("audits")}
-            className={`pb-3 px-3 text-xs sm:text-sm font-bold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap ${
+            className={`pb-3 px-3 text-xs sm:text-sm border-b-2 transition-all flex items-center gap-2 whitespace-nowrap ${
               activeTab === "audits"
-                ? "border-primary text-primary"
-                : "border-transparent text-muted-foreground hover:text-foreground"
+                ? "border-emerald-600 text-emerald-800 font-black"
+                : "border-transparent text-slate-700 font-bold hover:text-slate-900 hover:border-slate-300"
             }`}
           >
             <ClipboardCheck className="h-4 w-4 shrink-0" />
@@ -1857,10 +1863,10 @@ function AuditManagementPage() {
           </button>
           <button
             onClick={() => setActiveTab("training")}
-            className={`pb-3 px-3 text-xs sm:text-sm font-bold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap ${
+            className={`pb-3 px-3 text-xs sm:text-sm border-b-2 transition-all flex items-center gap-2 whitespace-nowrap ${
               activeTab === "training"
-                ? "border-primary text-primary"
-                : "border-transparent text-muted-foreground hover:text-foreground"
+                ? "border-emerald-600 text-emerald-800 font-black"
+                : "border-transparent text-slate-700 font-bold hover:text-slate-900 hover:border-slate-300"
             }`}
           >
             <GraduationCap className="h-4 w-4 shrink-0" />
@@ -1868,10 +1874,10 @@ function AuditManagementPage() {
           </button>
           <button
             onClick={() => setActiveTab("health")}
-            className={`pb-3 px-3 text-xs sm:text-sm font-bold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap ${
+            className={`pb-3 px-3 text-xs sm:text-sm border-b-2 transition-all flex items-center gap-2 whitespace-nowrap ${
               activeTab === "health"
-                ? "border-primary text-primary"
-                : "border-transparent text-muted-foreground hover:text-foreground"
+                ? "border-emerald-600 text-emerald-800 font-black"
+                : "border-transparent text-slate-700 font-bold hover:text-slate-900 hover:border-slate-300"
             }`}
           >
             <HeartPulse className="h-4 w-4 shrink-0" />
@@ -1879,10 +1885,10 @@ function AuditManagementPage() {
           </button>
           <button
             onClick={() => setActiveTab("ai_studio")}
-            className={`pb-3 px-3 text-xs sm:text-sm font-bold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap ${
+            className={`pb-3 px-3 text-xs sm:text-sm border-b-2 transition-all flex items-center gap-2 whitespace-nowrap ${
               activeTab === "ai_studio"
-                ? "border-primary text-primary"
-                : "border-transparent text-muted-foreground hover:text-foreground"
+                ? "border-emerald-600 text-emerald-800 font-black"
+                : "border-transparent text-slate-700 font-bold hover:text-slate-900 hover:border-slate-300"
             }`}
           >
             <Sparkles className="h-4 w-4 shrink-0 text-amber-500" />
@@ -4113,7 +4119,7 @@ function AuditManagementPage() {
                   className="w-full border rounded-md px-3 py-2 text-xs bg-background font-semibold"
                   value={requestForm.approval_status}
                   onChange={(e) =>
-                    setRequestForm({ ...requestForm, approval_status: e.target.value })
+                    setRequestForm({ ...requestForm, approval_status: e.target.value as any })
                   }
                 >
                   <option value="PENDING">Chờ phê duyệt</option>
@@ -4130,7 +4136,7 @@ function AuditManagementPage() {
                     setRequestForm({
                       ...requestForm,
                       approved_by: e.target.value,
-                      approval_comments: e.target.value,
+                      approval_notes: e.target.value,
                     })
                   }
                 />
@@ -4187,7 +4193,7 @@ function AuditManagementPage() {
                   className="w-full border rounded-md px-3 py-2 text-xs bg-background font-semibold"
                   value={evalForm.post_training_period}
                   onChange={(e) =>
-                    setEvalForm({ ...evalForm, post_training_period: e.target.value })
+                    setEvalForm({ ...evalForm, post_training_period: e.target.value as any })
                   }
                 >
                   <option value="1_MONTH">1 Tháng sau đào tạo</option>
@@ -4205,7 +4211,7 @@ function AuditManagementPage() {
                 onChange={(e) =>
                   setEvalForm({
                     ...evalForm,
-                    course_id: e.target.value ? parseInt(e.target.value) : undefined,
+                    course_id: e.target.value || "",
                   })
                 }
               >

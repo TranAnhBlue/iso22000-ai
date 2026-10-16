@@ -468,6 +468,64 @@ def get_executive_alerts(
 @router.get("/quality-objectives", response_model=List[QualityObjectiveResponse])
 def list_quality_objectives(target_year: Optional[int] = None, db: Session = Depends(get_db)):
     query = db.query(QualityObjective)
+    if query.count() == 0:
+        default_objs = [
+            QualityObjective(
+                objective_code="OBJ-2026-01",
+                metric_name="Đào tạo & Sát hạch nhận thức An toàn thực phẩm cho toàn bộ CBCNV",
+                clause_reference="6.2 & 7.2",
+                department="Phòng Hành chính - Nhân sự",
+                target_year=2026,
+                target_value=100.0,
+                actual_value=100.0,
+                unit="%",
+                status="ON_TRACK",
+                action_plan="Số nhân viên đã được tập huấn chia cho tổng số nhân viên x 100. Đào tạo định kỳ hàng quý và sát hạch trắc nghiệm trên hệ thống.",
+                responsible_person="Trưởng phòng HCNS",
+            ),
+            QualityObjective(
+                objective_code="OBJ-2026-02",
+                metric_name="Tỷ lệ khiếu nại / phàn nàn của khách hàng về chất lượng & ATTP",
+                clause_reference="6.2 & 9.1.2",
+                department="Phòng Kinh doanh & Sản xuất",
+                target_year=2026,
+                target_value=2.0,
+                actual_value=0.8,
+                unit="%",
+                status="ACHIEVED",
+                action_plan="Tỷ lệ khiếu nại của khách hàng trong tháng chia cho tổng số đơn hàng. Duy trì giám sát nghiêm ngặt công đoạn CCP và kiểm định thành phẩm xuất xưởng.",
+                responsible_person="Giám đốc Sản xuất",
+            ),
+            QualityObjective(
+                objective_code="OBJ-2026-03",
+                metric_name="Tỷ lệ các lô nguyên vật liệu đầu vào đảm bảo An toàn vệ sinh thực phẩm",
+                clause_reference="6.2 & 7.1.6",
+                department="Phòng Thu mua & Đội IQC",
+                target_year=2026,
+                target_value=99.0,
+                actual_value=99.4,
+                unit="%",
+                status="ACHIEVED",
+                action_plan="Số lần NCC giao hàng đạt chuẩn chia cho tổng số lần giao hàng trong tháng x 100. Đánh giá NCC hàng năm theo BM02 và kiểm tra 100% xe lạnh, COA.",
+                responsible_person="Trưởng bộ phận IQC",
+            ),
+            QualityObjective(
+                objective_code="OBJ-2026-04",
+                metric_name="Không để xảy ra sự cố mất ATTP hoặc vi phạm tới hạn CCP chưa được cô lập",
+                clause_reference="6.2 & 8.5.4",
+                department="Ban Quản lý An toàn Thực phẩm",
+                target_year=2026,
+                target_value=0.0,
+                actual_value=0.0,
+                unit="vụ",
+                status="ACHIEVED",
+                action_plan="Số vụ vi phạm an toàn thực phẩm hoặc sự cố thu hồi sản phẩm phát sinh trong năm. Giám sát CCP thời gian thực 24/7 và kích hoạt khóa dây chuyền khi vượt ngưỡng.",
+                responsible_person="Đội trưởng Đội ATTP",
+            ),
+        ]
+        db.add_all(default_objs)
+        db.commit()
+        query = db.query(QualityObjective)
     if target_year:
         query = query.filter(QualityObjective.target_year == target_year)
     return query.order_by(QualityObjective.objective_code.asc()).all()

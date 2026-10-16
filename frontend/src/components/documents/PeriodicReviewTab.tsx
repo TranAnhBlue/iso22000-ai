@@ -23,12 +23,12 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { printHtml } from "@/lib/print";
 import { toast } from "sonner";
 import api from "@/lib/api";
-import { printHtml } from "@/lib/print";
-import { PeriodicReviewItem } from "@/routes/documents";
+import type { PeriodicReviewItem } from "@/lib/documentConstants";
+import { DEPARTMENTS } from "@/lib/documentConstants";
 import { generatePeriodicReviewHtml } from "./dmsPrintHelpers";
-import { DEPARTMENTS } from "@/routes/documents";
 
 interface PeriodicReviewTabProps {
   periodicReviews: PeriodicReviewItem[];
@@ -350,7 +350,7 @@ export function PeriodicReviewTab({
                             <button
                               onClick={() => onCreateChangeRequestForDoc(doc)}
                               title="Có thay đổi -> Khởi tạo Phiếu BM01"
-                              className="inline-flex items-center gap-1 rounded border border-primary/30 bg-primary/5 px-2 py-1 text-[11px] font-semibold text-primary hover:bg-primary/10 transition"
+                              className="inline-flex items-center gap-1 rounded border border-emerald-400/80 bg-emerald-50 px-2 py-1 text-[11px] font-semibold text-emerald-800 hover:bg-emerald-600 hover:text-white hover:border-emerald-600 transition shadow-xs"
                             >
                               <FileEdit className="h-3 w-3" />
                               Tạo BM01

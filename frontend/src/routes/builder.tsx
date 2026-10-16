@@ -350,7 +350,7 @@ function BuilderManagementPage() {
       ]),
     ];
     const csv = rows
-      .map((row) => row.map((value) => `"${String(value ?? "").replaceAll('"', '""')}"`).join(","))
+      .map((row) => row.map((value: any) => `"${String(value ?? "").replaceAll('"', '""')}"`).join(","))
       .join("\n");
     const url = URL.createObjectURL(new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" }));
     const anchor = document.createElement("a");
@@ -422,9 +422,9 @@ function BuilderManagementPage() {
               <Button
                 variant="outline"
                 onClick={() => setShowGuide(true)}
-                className="border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 text-xs font-semibold flex items-center gap-2"
+                className="border border-emerald-400/80 bg-emerald-50 text-emerald-800 hover:bg-emerald-600 hover:text-white hover:border-emerald-600 text-xs font-bold flex items-center gap-2 shadow-sm transition-all duration-150"
               >
-                <BookOpen className="w-4 h-4 text-emerald-600" />
+                <BookOpen className="w-4 h-4 transition-colors" />
                 Hướng Dẫn Nghiệp Vụ
               </Button>
             </div>
@@ -498,23 +498,23 @@ function BuilderManagementPage() {
         {activeTab === "FORMS" && (
           <div className="space-y-6">
             {/* Action & Filter Bar */}
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white p-4 rounded-xl border border-slate-300 shadow-sm">
               <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
                 <div className="relative flex-1 sm:w-64">
-                  <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
+                  <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-600" />
                   <input
                     type="text"
                     value={searchForm}
                     onChange={(e) => setSearchForm(e.target.value)}
                     placeholder="Tìm theo tên hoặc mã..."
-                    className="w-full pl-9 pr-3 py-1.5 rounded-lg bg-white border border-slate-300 text-xs text-slate-900 focus:border-emerald-600 focus:outline-none"
+                    className="w-full pl-9 pr-3 py-1.5 rounded-lg bg-white border border-slate-300 text-xs font-semibold text-slate-900 placeholder:text-slate-500 focus:border-emerald-600 focus:outline-none"
                   />
                 </div>
 
                 <select
                   value={selectedModule}
                   onChange={(e) => setSelectedModule(e.target.value)}
-                  className="bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-xs text-slate-800 focus:border-emerald-600 focus:outline-none font-medium"
+                  className="bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-xs text-slate-900 focus:border-emerald-600 focus:outline-none font-bold"
                 >
                   <option value="ALL">Tất cả phân hệ</option>
                   <option value="HACCP">HACCP & Điểm CCP</option>
@@ -563,46 +563,46 @@ function BuilderManagementPage() {
                 {filteredForms.map((f) => (
                   <div
                     key={f.template_id || f.code}
-                    className="bg-white border border-slate-200 hover:border-emerald-400 rounded-2xl p-5 shadow-sm hover:shadow-md flex flex-col justify-between transition-all group"
+                    className="bg-white border border-slate-300 hover:border-emerald-500 rounded-2xl p-5 shadow-sm hover:shadow-md flex flex-col justify-between transition-all group"
                   >
                     <div>
                       <div className="flex items-center justify-between gap-2">
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-mono">
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-200 text-slate-900 font-mono border border-slate-300">
                           {f.code}
                         </span>
-                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+                        <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-900 border border-emerald-300">
                           {f.module}
                         </span>
                       </div>
 
-                      <h3 className="font-bold text-slate-900 text-sm mt-3 group-hover:text-emerald-700 transition-colors">
+                      <h3 className="font-extrabold text-slate-900 text-sm mt-3 group-hover:text-emerald-700 transition-colors">
                         {f.title}
                       </h3>
-                      <p className="text-xs text-slate-500 mt-1 line-clamp-2 leading-relaxed">
+                      <p className="text-xs text-slate-700 font-medium mt-1 line-clamp-2 leading-relaxed">
                         {f.description || "Chưa có mô tả cho biểu mẫu này."}
                       </p>
 
-                      <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+                      <div className="mt-4 pt-3 border-t border-slate-200 flex items-center justify-between text-xs font-bold text-slate-700">
                         <span>{f.fields?.length || 0} trường dữ liệu</span>
-                        <span className="font-mono text-[11px]">v{f.version || "1.0"}</span>
+                        <span className="font-mono text-[11px] text-slate-900 font-extrabold">v{f.version || "1.0"}</span>
                       </div>
-                      <div className="mt-2 text-[11px] font-semibold">
+                      <div className="mt-2 text-[11px] font-bold">
                         {f.is_approved && f.status === "ACTIVE" ? (
-                          <span className="text-emerald-700">● Đã phê duyệt, đang hiệu lực</span>
+                          <span className="text-emerald-800">● Đã phê duyệt, đang hiệu lực</span>
                         ) : (
-                          <span className="text-amber-700">● Bản nháp, chờ phê duyệt</span>
+                          <span className="text-amber-800">● Bản nháp, chờ phê duyệt</span>
                         )}
                       </div>
                     </div>
 
-                    <div className="mt-5 pt-3 border-t border-slate-100 flex items-center gap-2">
+                    <div className="mt-5 pt-3 border-t border-slate-200 flex items-center gap-2">
                       <Button
                         size="sm"
                         disabled={!f.is_approved || f.status !== "ACTIVE"}
                         onClick={() => setTestingForm(f)}
-                        className="flex-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 text-xs font-bold flex items-center justify-center gap-1.5 shadow-none"
+                        className="flex-1 bg-emerald-50 hover:bg-emerald-600 hover:text-white text-emerald-900 hover:border-emerald-600 border border-emerald-400 text-xs font-bold flex items-center justify-center gap-1.5 shadow-none group transition-all"
                       >
-                        <Play className="w-3.5 h-3.5 text-emerald-700" />
+                        <Play className="w-3.5 h-3.5 text-emerald-800 group-hover:text-white transition-colors" />
                         {f.is_approved && f.status === "ACTIVE"
                           ? "Điền Thử Phiếu"
                           : "Chờ Phê Duyệt"}
@@ -654,23 +654,23 @@ function BuilderManagementPage() {
         {activeTab === "WORKFLOWS" && (
           <div className="space-y-6">
             {/* Action & Filter Bar */}
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white p-4 rounded-xl border border-slate-300 shadow-sm">
               <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
                 <div className="relative flex-1 sm:w-64">
-                  <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
+                  <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-600" />
                   <input
                     type="text"
                     value={searchWf}
                     onChange={(e) => setSearchWf(e.target.value)}
                     placeholder="Tìm quy trình..."
-                    className="w-full pl-9 pr-3 py-1.5 rounded-lg bg-white border border-slate-300 text-xs text-slate-900 focus:border-blue-600 focus:outline-none"
+                    className="w-full pl-9 pr-3 py-1.5 rounded-lg bg-white border border-slate-300 text-xs font-semibold text-slate-900 placeholder:text-slate-500 focus:border-blue-600 focus:outline-none"
                   />
                 </div>
 
                 <select
                   value={selectedWfModule}
                   onChange={(e) => setSelectedWfModule(e.target.value)}
-                  className="bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-xs text-slate-800 focus:border-blue-600 focus:outline-none font-medium"
+                  className="bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-xs text-slate-900 focus:border-blue-600 focus:outline-none font-bold"
                 >
                   <option value="ALL">Tất cả phân hệ</option>
                   <option value="HACCP_FLOW">Lưu đồ HACCP</option>
@@ -686,9 +686,9 @@ function BuilderManagementPage() {
                   type="button"
                   variant="outline"
                   onClick={() => setShowWfGuide(true)}
-                  className="border-blue-300 bg-blue-50 text-blue-800 hover:bg-blue-100 font-bold text-xs px-3.5 py-2 flex items-center gap-1.5 shadow-sm justify-center flex-1 sm:flex-none"
+                  className="border border-blue-400/80 bg-blue-50 text-blue-800 hover:bg-blue-600 hover:text-white hover:border-blue-600 font-bold text-xs px-3.5 py-2 flex items-center gap-1.5 shadow-sm justify-center flex-1 sm:flex-none transition-all duration-150"
                 >
-                  <BookOpen className="w-4 h-4 text-blue-600" />
+                  <BookOpen className="w-4 h-4 transition-colors" />
                   Hướng Dẫn Quy Trình
                 </Button>
 
@@ -726,7 +726,7 @@ function BuilderManagementPage() {
                 size="sm"
                 variant="outline"
                 onClick={() => setShowWfGuide(true)}
-                className="shrink-0 bg-white border-blue-300 text-blue-800 hover:bg-blue-100 text-xs font-bold"
+                className="shrink-0 border border-blue-400/80 bg-white text-blue-800 hover:bg-blue-600 hover:text-white hover:border-blue-600 text-xs font-bold shadow-sm transition-all duration-150"
               >
                 Xem Hướng Dẫn Chi Tiết
               </Button>
@@ -757,49 +757,49 @@ function BuilderManagementPage() {
                   return (
                     <div
                       key={w.workflow_id || w.code}
-                      className="bg-white border border-slate-200 hover:border-blue-400 rounded-2xl p-5 shadow-sm hover:shadow-md flex flex-col justify-between transition-all group"
+                      className="bg-white border border-slate-300 hover:border-blue-500 rounded-2xl p-5 shadow-sm hover:shadow-md flex flex-col justify-between transition-all group"
                     >
                       <div>
                         <div className="flex items-center justify-between gap-2">
-                          <span className="text-xs font-mono font-bold px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-300">
+                          <span className="text-xs font-mono font-bold px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-900 border border-blue-300">
                             {w.code}
                           </span>
-                          <span className="text-[11px] px-2.5 py-0.5 rounded-md bg-slate-100 text-slate-700 font-semibold border border-slate-200">
+                          <span className="text-[11px] px-2.5 py-0.5 rounded-md bg-slate-200 text-slate-900 font-bold border border-slate-300">
                             {w.module}
                           </span>
                         </div>
 
-                        <h3 className="text-sm font-bold text-slate-900 mt-3 group-hover:text-blue-700 transition-colors line-clamp-2">
+                        <h3 className="text-sm font-extrabold text-slate-900 mt-3 group-hover:text-blue-700 transition-colors line-clamp-2">
                           {w.title}
                         </h3>
 
                         {w.description && (
-                          <p className="text-xs text-slate-600 mt-2 line-clamp-2 leading-relaxed">
+                          <p className="text-xs text-slate-700 font-medium mt-2 line-clamp-2 leading-relaxed">
                             {w.description}
                           </p>
                         )}
 
-                        <div className="flex items-center gap-3 mt-4 pt-3 border-t border-slate-100 text-xs text-slate-500">
-                          <div className="flex items-center gap-1 font-semibold text-slate-700">
-                            <Workflow className="w-3.5 h-3.5 text-blue-600" />
+                        <div className="flex items-center gap-3 mt-4 pt-3 border-t border-slate-200 text-xs font-bold text-slate-700">
+                          <div className="flex items-center gap-1 font-bold text-slate-900">
+                            <Workflow className="w-3.5 h-3.5 text-blue-700" />
                             <span>{w.nodes.length} bước</span>
                           </div>
                           {ccpCount > 0 && (
                             <>
                               <div>•</div>
-                              <div className="text-rose-700 font-bold flex items-center gap-1">
+                              <div className="text-rose-700 font-extrabold flex items-center gap-1">
                                 <span>★ {ccpCount} CCP</span>
                               </div>
                             </>
                           )}
                           <div>•</div>
-                          <div>Ver {w.version}</div>
+                          <div className="text-slate-800 font-bold">Ver {w.version}</div>
                         </div>
-                        <div className="mt-2 text-[11px] font-semibold">
+                        <div className="mt-2 text-[11px] font-bold">
                           {w.is_approved && w.status === "ACTIVE" ? (
-                            <span className="text-emerald-700">● Đã phê duyệt, đang hiệu lực</span>
+                            <span className="text-emerald-800">● Đã phê duyệt, đang hiệu lực</span>
                           ) : (
-                            <span className="text-amber-700">● Bản nháp, chờ phê duyệt</span>
+                            <span className="text-amber-800">● Bản nháp, chờ phê duyệt</span>
                           )}
                         </div>
                       </div>

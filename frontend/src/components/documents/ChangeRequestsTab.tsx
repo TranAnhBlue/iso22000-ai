@@ -29,9 +29,9 @@ import {
 import { toast } from "sonner";
 import api from "@/lib/api";
 import { printHtml } from "@/lib/print";
-import { DocumentItem, DocumentChangeRequest } from "@/routes/documents";
+import type { DocumentItem, DocumentChangeRequest } from "@/lib/documentConstants";
+import { DEPARTMENTS } from "@/lib/documentConstants";
 import { generateChangeRequestHtml } from "./dmsPrintHelpers";
-import { DEPARTMENTS } from "@/routes/documents";
 
 interface ChangeRequestsTabProps {
   changeRequests: DocumentChangeRequest[];

@@ -52,6 +52,9 @@ import {
   Save,
   BookOpen,
   ChevronDown,
+  ChevronUp,
+  LayoutGrid,
+  Table,
   ClipboardCheck,
 } from "lucide-react";
 import api from "@/lib/api";
@@ -139,6 +142,7 @@ interface ProcessStep {
   is_ccp_or_oprp: boolean;
   hazard_count: number;
   plan_name?: string;
+  plan_code?: string;
   created_at?: string;
 }
 
@@ -169,6 +173,8 @@ interface CCPDefinition {
   ccp_code: string;
   name: string;
   process_step_id?: string;
+  plan_id?: string;
+  plan_code?: string;
   hazard_description: string;
   critical_limit: {
     param?: string;
@@ -558,9 +564,36 @@ function HACCPModule() {
   const [showPrintLogModal, setShowPrintLogModal] = useState(false);
 
   // Deleting Confirmation States
+  const [deletingPlan, setDeletingPlan] = useState<HACCPPlan | null>(null);
   const [deletingStep, setDeletingStep] = useState<ProcessStep | null>(null);
   const [deletingCCP, setDeletingCCP] = useState<CCPDefinition | null>(null);
   const [deletingHazard, setDeletingHazard] = useState<HazardAnalysis | null>(null);
+
+  // Plans directory filters, view mode & flowchart accordion states
+  const [planSearch, setPlanSearch] = useState("");
+  const [planStatusFilter, setPlanStatusFilter] = useState("ALL");
+  const [planViewMode, setPlanViewMode] = useState<"grid" | "table">("grid");
+  const [collapsedPlanIds, setCollapsedPlanIds] = useState<Set<string>>(new Set());
+
+  const toggleCollapsePlan = (planId: string) => {
+    setCollapsedPlanIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(planId)) {
+        next.delete(planId);
+      } else {
+        next.add(planId);
+      }
+      return next;
+    });
+  };
+
+  const collapseAllPlans = () => {
+    setCollapsedPlanIds(new Set(plans.map((p) => p.plan_id)));
+  };
+
+  const expandAllPlans = () => {
+    setCollapsedPlanIds(new Set());
+  };
 
   // AI states
   const [aiStepName, setAiStepName] = useState(AI_STEP_PRESETS[0].step_name);
@@ -1063,21 +1096,45 @@ function HACCPModule() {
     fetchData();
   }, []);
 
+  // Filtered Plans for Directory
+  const filteredPlans = useMemo(() => {
+    return plans.filter((p) => {
+      const matchQ =
+        !planSearch ||
+        p.plan_code.toLowerCase().includes(planSearch.toLowerCase()) ||
+        p.plan_name.toLowerCase().includes(planSearch.toLowerCase()) ||
+        p.product_line.toLowerCase().includes(planSearch.toLowerCase()) ||
+        p.team_leader.toLowerCase().includes(planSearch.toLowerCase());
+      const matchStat = planStatusFilter === "ALL" || p.status === planStatusFilter;
+      return matchQ && matchStat;
+    });
+  }, [plans, planSearch, planStatusFilter]);
+
   // Filtered steps by selected plan
   const filteredSteps = useMemo(() => {
-    if (selectedPlanId === "ALL") return steps;
-    return steps.filter((s) => s.plan_id === selectedPlanId);
+    const list = selectedPlanId === "ALL" ? steps : steps.filter((s) => s.plan_id === selectedPlanId);
+    return [...list].sort((a, b) => (a.step_number || 0) - (b.step_number || 0));
   }, [steps, selectedPlanId]);
 
-  // Selected Plan Object
+  // Selected Plan Object (null if viewing ALL plans)
   const currentPlan = useMemo(() => {
-    if (selectedPlanId === "ALL") return plans[0] || null;
-    return plans.find((p) => p.plan_id === selectedPlanId) || plans[0] || null;
+    if (selectedPlanId === "ALL") return null;
+    return plans.find((p) => p.plan_id === selectedPlanId) || null;
   }, [plans, selectedPlanId]);
 
   // Filtered CCPs
   const filteredCCPs = useMemo(() => {
+    const planStepIds =
+      selectedPlanId !== "ALL"
+        ? new Set(steps.filter((s) => s.plan_id === selectedPlanId).map((s) => s.step_id))
+        : null;
+
     return ccps.filter((c) => {
+      if (selectedPlanId !== "ALL") {
+        const matchesDirect = c.plan_id === selectedPlanId;
+        const matchesStep = c.process_step_id ? planStepIds?.has(c.process_step_id) : false;
+        if (!matchesDirect && !matchesStep) return false;
+      }
       const matchQ =
         !ccpSearch ||
         c.ccp_code.toLowerCase().includes(ccpSearch.toLowerCase()) ||
@@ -1086,16 +1143,22 @@ function HACCPModule() {
       const matchStat = ccpStatusFilter === "ALL" || c.status === ccpStatusFilter;
       return matchQ && matchStat;
     });
-  }, [ccps, ccpSearch, ccpStatusFilter]);
+  }, [ccps, ccpSearch, ccpStatusFilter, selectedPlanId, steps]);
 
   // Filtered Hazards
   const filteredHazards = useMemo(() => {
+    const planStepIds =
+      selectedPlanId !== "ALL"
+        ? new Set(steps.filter((s) => s.plan_id === selectedPlanId).map((s) => s.step_id))
+        : null;
+
     return hazards.filter((h) => {
+      if (selectedPlanId !== "ALL" && !planStepIds?.has(h.step_id)) return false;
       const matchType = hzTypeFilter === "ALL" || h.hazard_type === hzTypeFilter;
       const matchClass = hzClassFilter === "ALL" || h.classification === hzClassFilter;
       return matchType && matchClass;
     });
-  }, [hazards, hzTypeFilter, hzClassFilter]);
+  }, [hazards, hzTypeFilter, hzClassFilter, selectedPlanId, steps]);
 
   // Filtered Logs
   const filteredLogs = useMemo(() => {
@@ -1636,14 +1699,33 @@ function HACCPModule() {
     }
   };
 
+  const executeDeletePlan = async (plan: HACCPPlan) => {
+    try {
+      await api.delete(`/haccp/plans/${plan.plan_id}`);
+      toast.success(`Đã xóa kế hoạch HACCP '${plan.plan_name}' thành công!`);
+      if (selectedPlanId === plan.plan_id) {
+        setSelectedPlanId("ALL");
+      }
+      fetchData();
+    } catch (err: any) {
+      toast.error(err.response?.data?.detail || "Lỗi khi xóa kế hoạch HACCP");
+    }
+  };
+
   // ==================== ACTIONS: PROCESS STEPS ====================
-  const handleOpenCreateStep = () => {
+  const handleOpenCreateStep = (targetPlanId?: string) => {
     setEditingStep(null);
+    const chosenPlanId =
+      targetPlanId ||
+      (selectedPlanId !== "ALL" ? selectedPlanId : plans[0]?.plan_id || "");
+    const targetPlan = plans.find((p) => p.plan_id === chosenPlanId) || plans[0] || null;
+    const planSteps = steps.filter((s) => s.plan_id === chosenPlanId);
+
     setStepForm({
-      plan_id: currentPlan?.plan_id || plans[0]?.plan_id || "",
-      step_number: filteredSteps.length + 1,
+      plan_id: chosenPlanId,
+      step_number: planSteps.length + 1,
       step_name: "",
-      product_line: currentPlan?.product_line || "Chế biến Thủy hải sản",
+      product_line: targetPlan?.product_line || "Chế biến Thủy hải sản",
       description: "",
       is_ccp_or_oprp: false,
     });
@@ -2200,25 +2282,25 @@ function HACCPModule() {
               variant="outline"
               size="sm"
               onClick={() => setShowGuide(true)}
-              className="text-xs border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 font-semibold"
+              className="text-xs border border-emerald-400/80 bg-emerald-50 text-emerald-800 hover:bg-emerald-600 hover:text-white hover:border-emerald-600 font-bold shadow-sm transition-all duration-150"
             >
-              <BookOpen className="h-3.5 w-3.5 mr-1.5 text-emerald-600" /> Hướng Dẫn Nghiệp Vụ
+              <BookOpen className="h-3.5 w-3.5 mr-1.5 transition-colors" /> Hướng Dẫn Nghiệp Vụ
             </Button>
             <Button
               variant="outline"
               size="sm"
               onClick={() => setShowPrintPlanModal(true)}
-              className="text-xs border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
+              className="text-xs border border-slate-300 bg-white text-slate-800 hover:bg-slate-900 hover:text-white hover:border-slate-900 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700 font-semibold shadow-sm transition-all duration-150"
             >
-              <Printer className="h-3.5 w-3.5 mr-1.5" /> In Kế Hoạch HACCP
+              <Printer className="h-3.5 w-3.5 mr-1.5 transition-colors" /> In Kế Hoạch HACCP
             </Button>
             <Button
               variant="outline"
               size="sm"
               onClick={() => setShowPrintLogModal(true)}
-              className="text-xs border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
+              className="text-xs border border-slate-300 bg-white text-slate-800 hover:bg-slate-900 hover:text-white hover:border-slate-900 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700 font-semibold shadow-sm transition-all duration-150"
             >
-              <Printer className="h-3.5 w-3.5 mr-1.5" /> In Nhật Ký Đo Đạc
+              <Printer className="h-3.5 w-3.5 mr-1.5 transition-colors" /> In Nhật Ký Đo Đạc
             </Button>
             <Button
               size="sm"
@@ -2245,20 +2327,20 @@ function HACCPModule() {
           </div>
           <div className="mt-3 flex items-baseline gap-2">
             <span className="text-3xl font-black text-slate-900">{stats?.total_ccps ?? 4}</span>
-            <span className="text-xs font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded border border-emerald-200">
+            <span className="text-xs font-bold text-emerald-900 bg-emerald-100 px-2 py-0.5 rounded border border-emerald-300">
               {stats?.active_ccps ?? 4} Hoạt động 100%
             </span>
           </div>
-          <p className="mt-1 text-xs text-slate-500">Bao quát toàn bộ lưu đồ chế biến</p>
+          <p className="mt-1 text-xs text-slate-700 font-medium">Bao quát toàn bộ lưu đồ chế biến</p>
         </div>
 
         {/* Card 2 */}
         <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+            <span className="text-xs font-black uppercase tracking-wider text-slate-700">
               Đo Đạc Trong Ngưỡng
             </span>
-            <div className="p-2 bg-emerald-100 rounded-lg text-emerald-600 border border-emerald-200">
+            <div className="p-2 bg-emerald-100 rounded-lg text-emerald-700 border border-emerald-200">
               <Percent className="h-4 w-4" />
             </div>
           </div>
@@ -2266,20 +2348,20 @@ function HACCPModule() {
             <span className="text-3xl font-black text-emerald-700">
               {stats?.in_limit_percentage ?? 100}%
             </span>
-            <span className="text-xs font-semibold text-slate-500">
+            <span className="text-xs font-bold text-slate-700">
               ({stats?.normal_logs_count ?? 5}/{stats?.total_logs_today ?? 6} mẻ)
             </span>
           </div>
-          <p className="mt-1 text-xs text-slate-500">Đạt chỉ tiêu an toàn thực phẩm</p>
+          <p className="mt-1 text-xs text-slate-700 font-medium">Đạt chỉ tiêu an toàn thực phẩm</p>
         </div>
 
         {/* Card 3 */}
         <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+            <span className="text-xs font-black uppercase tracking-wider text-slate-700">
               Cảnh Báo Sát Ngưỡng
             </span>
-            <div className="p-2 bg-amber-100 rounded-lg text-amber-600 border border-amber-200">
+            <div className="p-2 bg-amber-100 rounded-lg text-amber-700 border border-amber-200">
               <AlertTriangle className="h-4 w-4" />
             </div>
           </div>
@@ -2287,17 +2369,17 @@ function HACCPModule() {
             <span className="text-3xl font-black text-amber-700">
               {stats?.warning_logs_count ?? 1}
             </span>
-            <span className="text-xs font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded border border-amber-200">
+            <span className="text-xs font-bold text-amber-900 bg-amber-100 px-2 py-0.5 rounded border border-amber-300">
               Tiệm cận ±5%
             </span>
           </div>
-          <p className="mt-1 text-xs text-slate-500">Đã căn chỉnh thông số vận hành</p>
+          <p className="mt-1 text-xs text-slate-700 font-medium">Đã căn chỉnh thông số vận hành</p>
         </div>
 
         {/* Card 4 */}
         <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+            <span className="text-xs font-black uppercase tracking-wider text-slate-700">
               Vi Phạm Tới Hạn (24h)
             </span>
             <div
@@ -2312,101 +2394,174 @@ function HACCPModule() {
             >
               {stats?.critical_breaches_count ?? 0}
             </span>
-            <span className="text-xs font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded border border-emerald-200">
+            <span className="text-xs font-bold text-emerald-900 bg-emerald-100 px-2 py-0.5 rounded border border-emerald-300">
               0 Lô Cách Ly
             </span>
           </div>
-          <p className="mt-1 text-xs text-slate-500">Hệ thống an toàn tuyệt đối</p>
+          <p className="mt-1 text-xs text-slate-700 font-medium">Hệ thống an toàn tuyệt đối</p>
         </div>
       </div>
 
-      {/* 5 TABS NAVIGATION */}
-      <div className="border-b border-slate-200 overflow-x-auto no-scrollbar">
-        <div className="flex space-x-3 min-w-max pb-1">
+      {/* MODERN CONSOLIDATED TABS NAVIGATION - NO HORIZONTAL CUT-OFF */}
+      <div className="space-y-3">
+        <div className="bg-slate-100/90 dark:bg-slate-900/90 p-1.5 rounded-2xl border border-slate-200/80 dark:border-slate-800 flex flex-wrap items-center gap-1.5 sm:gap-2 shadow-xs">
+          {/* Nhóm 1: Kế Hoạch & Thiết Kế HACCP */}
           <button
-            onClick={() => setActiveTab("flowchart")}
-            className={`pb-3 px-4 text-xs sm:text-sm font-bold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap ${
-              activeTab === "flowchart"
-                ? "border-emerald-600 text-emerald-700"
-                : "border-transparent text-slate-500 hover:text-slate-900"
+            onClick={() => {
+              if (activeTab !== "flowchart" && activeTab !== "ccp_plan" && activeTab !== "hazards") {
+                setActiveTab("flowchart");
+              }
+            }}
+            className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all ${
+              activeTab === "flowchart" || activeTab === "ccp_plan" || activeTab === "hazards"
+                ? "bg-white dark:bg-slate-800 text-emerald-800 dark:text-emerald-400 shadow-sm border border-slate-200/80 dark:border-slate-700 font-black"
+                : "text-slate-700 dark:text-slate-300 hover:text-slate-900 hover:bg-white/60 dark:hover:bg-slate-800/60"
             }`}
           >
-            <Workflow className="h-4 w-4 shrink-0" />
-            Kế Hoạch HACCP & Lưu Đồ Công Đoạn ({filteredSteps.length})
+            <Workflow className="h-4 w-4 shrink-0 text-emerald-600" />
+            <span>Kế Hoạch & Phân Tích Mối Nguy</span>
+            <span
+              className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${
+                activeTab === "flowchart" || activeTab === "ccp_plan" || activeTab === "hazards"
+                  ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300"
+                  : "bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200"
+              }`}
+            >
+              {filteredSteps.length + hazards.length + ccps.length}
+            </span>
           </button>
 
+          {/* Nhóm 2: Giám Sát Vận Hành (CCP & IPQC) */}
           <button
-            onClick={() => setActiveTab("ccp_plan")}
-            className={`pb-3 px-4 text-xs sm:text-sm font-bold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap ${
-              activeTab === "ccp_plan"
-                ? "border-rose-600 text-rose-700"
-                : "border-transparent text-slate-500 hover:text-slate-900"
+            onClick={() => {
+              if (activeTab !== "logs" && activeTab !== "ipqc") {
+                setActiveTab("logs");
+              }
+            }}
+            className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all ${
+              activeTab === "logs" || activeTab === "ipqc"
+                ? "bg-white dark:bg-slate-800 text-amber-800 dark:text-amber-400 shadow-sm border border-slate-200/80 dark:border-slate-700 font-black"
+                : "text-slate-700 dark:text-slate-300 hover:text-slate-900 hover:bg-white/60 dark:hover:bg-slate-800/60"
             }`}
           >
-            <Flame className="h-4 w-4 shrink-0" />
-            Kế Hoạch Kiểm Soát CCP & oPRP ({ccps.length})
+            <Clock className="h-4 w-4 shrink-0 text-amber-600" />
+            <span>Giám Sát Vận Hành (CCP & IPQC)</span>
+            <span
+              className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${
+                activeTab === "logs" || activeTab === "ipqc"
+                  ? "bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300"
+                  : "bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200"
+              }`}
+            >
+              {logs.length + metalDetectorLogs.length + inProcessLogs.length}
+            </span>
           </button>
 
-          <button
-            onClick={() => setActiveTab("hazards")}
-            className={`pb-3 px-4 text-xs sm:text-sm font-bold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap ${
-              activeTab === "hazards"
-                ? "border-blue-600 text-blue-700"
-                : "border-transparent text-slate-500 hover:text-slate-900"
-            }`}
-          >
-            <Layers className="h-4 w-4 shrink-0" />
-            Bảng Phân Tích Mối Nguy ({hazards.length})
-          </button>
-
-          <button
-            onClick={() => setActiveTab("logs")}
-            className={`pb-3 px-4 text-xs sm:text-sm font-bold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap ${
-              activeTab === "logs"
-                ? "border-amber-600 text-amber-700"
-                : "border-transparent text-slate-500 hover:text-slate-900"
-            }`}
-          >
-            <Clock className="h-4 w-4 shrink-0" />
-            Nhật Ký Giám Sát Thời Gian Thực ({logs.length})
-          </button>
-
+          {/* Nhóm 3: Thẩm Tra Kế Hoạch */}
           <button
             onClick={() => setActiveTab("reviews")}
-            className={`pb-3 px-4 text-xs sm:text-sm font-bold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap ${
+            className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all ${
               activeTab === "reviews"
-                ? "border-teal-600 text-teal-700"
-                : "border-transparent text-slate-500 hover:text-slate-900"
+                ? "bg-white dark:bg-slate-800 text-teal-800 dark:text-teal-400 shadow-sm border border-slate-200/80 dark:border-slate-700 font-black"
+                : "text-slate-700 dark:text-slate-300 hover:text-slate-900 hover:bg-white/60 dark:hover:bg-slate-800/60"
             }`}
           >
-            <ShieldCheck className="h-4 w-4 shrink-0" />
-            Thẩm Tra Kế Hoạch ({reviews.length})
+            <ShieldCheck className="h-4 w-4 shrink-0 text-teal-600" />
+            <span>Thẩm Tra Kế Hoạch</span>
+            <span
+              className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${
+                activeTab === "reviews"
+                  ? "bg-teal-100 text-teal-800 dark:bg-teal-950/60 dark:text-teal-300"
+                  : "bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200"
+              }`}
+            >
+              {reviews.length}
+            </span>
           </button>
 
-          <button
-            onClick={() => setActiveTab("ipqc")}
-            className={`pb-3 px-4 text-xs sm:text-sm font-bold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap ${
-              activeTab === "ipqc"
-                ? "border-indigo-600 text-indigo-700"
-                : "border-transparent text-slate-500 hover:text-slate-900"
-            }`}
-          >
-            <ScanLine className="h-4 w-4 shrink-0" />
-            Kiểm Soát Quá Trình (IPQC) & Máy Dò ({metalDetectorLogs.length + inProcessLogs.length})
-          </button>
-
+          {/* Nhóm 4: Trợ Lý AI Chuyên Gia HACCP */}
           <button
             onClick={() => setActiveTab("ai")}
-            className={`pb-3 px-4 text-xs sm:text-sm font-bold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap ${
+            className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all ${
               activeTab === "ai"
-                ? "border-purple-600 text-purple-700"
-                : "border-transparent text-slate-500 hover:text-purple-700"
+                ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-sm font-black"
+                : "text-purple-700 dark:text-purple-400 hover:bg-purple-100/60 dark:hover:bg-purple-950/40"
             }`}
           >
-            <Sparkles className="h-4 w-4 text-purple-600 shrink-0" />
-            Trợ Lý AI Chuyên Gia HACCP
+            <Sparkles className="h-4 w-4 shrink-0" />
+            <span>Trợ Lý AI HACCP</span>
+            <span className={`px-2 py-0.5 rounded-full text-[10px] uppercase font-extrabold ${activeTab === "ai" ? "bg-white/20 text-white" : "bg-purple-100 text-purple-800 dark:bg-purple-900/60 dark:text-purple-300"}`}>
+              AI Pro
+            </span>
           </button>
         </div>
+
+        {/* SUB-TABS: Khi đang ở Nhóm Kế Hoạch & Mối Nguy */}
+        {(activeTab === "flowchart" || activeTab === "ccp_plan" || activeTab === "hazards") && (
+          <div className="flex flex-wrap items-center gap-1.5 p-1 bg-slate-50 dark:bg-slate-900/60 rounded-xl border border-slate-200/80 dark:border-slate-800 w-fit">
+            <button
+              onClick={() => setActiveTab("flowchart")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                activeTab === "flowchart"
+                  ? "bg-emerald-600 text-white shadow-xs"
+                  : "text-slate-700 hover:text-slate-900 hover:bg-white dark:text-slate-300 dark:hover:bg-slate-800"
+              }`}
+            >
+              <Workflow className="h-3.5 w-3.5" />
+              <span>1. Kế Hoạch & Lưu Đồ Công Đoạn ({filteredSteps.length})</span>
+            </button>
+            <button
+              onClick={() => setActiveTab("hazards")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                activeTab === "hazards"
+                  ? "bg-emerald-600 text-white shadow-xs"
+                  : "text-slate-700 hover:text-slate-900 hover:bg-white dark:text-slate-300 dark:hover:bg-slate-800"
+              }`}
+            >
+              <Layers className="h-3.5 w-3.5" />
+              <span>2. Bảng Phân Tích Mối Nguy ({hazards.length})</span>
+            </button>
+            <button
+              onClick={() => setActiveTab("ccp_plan")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                activeTab === "ccp_plan"
+                  ? "bg-emerald-600 text-white shadow-xs"
+                  : "text-slate-700 hover:text-slate-900 hover:bg-white dark:text-slate-300 dark:hover:bg-slate-800"
+              }`}
+            >
+              <Flame className="h-3.5 w-3.5" />
+              <span>3. Kế Hoạch Kiểm Soát CCP & oPRP ({ccps.length})</span>
+            </button>
+          </div>
+        )}
+
+        {/* SUB-TABS: Khi đang ở Nhóm Giám Sát Vận Hành */}
+        {(activeTab === "logs" || activeTab === "ipqc") && (
+          <div className="flex flex-wrap items-center gap-1.5 p-1 bg-slate-50 dark:bg-slate-900/60 rounded-xl border border-slate-200/80 dark:border-slate-800 w-fit">
+            <button
+              onClick={() => setActiveTab("logs")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                activeTab === "logs"
+                  ? "bg-amber-600 text-white shadow-xs"
+                  : "text-slate-700 hover:text-slate-900 hover:bg-white dark:text-slate-300 dark:hover:bg-slate-800"
+              }`}
+            >
+              <Clock className="h-3.5 w-3.5" />
+              <span>1. Nhật Ký Giám Sát CCP Thời Gian Thực ({logs.length})</span>
+            </button>
+            <button
+              onClick={() => setActiveTab("ipqc")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                activeTab === "ipqc"
+                  ? "bg-amber-600 text-white shadow-xs"
+                  : "text-slate-700 hover:text-slate-900 hover:bg-white dark:text-slate-300 dark:hover:bg-slate-800"
+              }`}
+            >
+              <ScanLine className="h-3.5 w-3.5" />
+              <span>2. Kiểm Soát Quá Trình (IPQC) & Máy Dò ({metalDetectorLogs.length + inProcessLogs.length})</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* ==================== TAB 1: KẾ HOẠCH HACCP & LƯU ĐỒ CÔNG ĐOẠN ==================== */}
@@ -2445,24 +2600,44 @@ function HACCPModule() {
                 </Button>
 
                 {currentPlan && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleOpenEditPlan(currentPlan)}
-                    className="border-slate-300 bg-white text-slate-700 hover:bg-slate-50 text-xs font-semibold flex items-center gap-1.5"
-                  >
-                    <Pencil className="w-3.5 h-3.5 text-slate-500" />
-                    Sửa Hồ Sơ Kế Hoạch
-                  </Button>
+                  <>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleOpenEditPlan(currentPlan)}
+                      className="border border-slate-300 bg-white text-slate-800 hover:bg-slate-900 hover:text-white hover:border-slate-900 text-xs font-semibold flex items-center gap-1.5 shadow-sm transition-all duration-150 group"
+                    >
+                      <Pencil className="w-3.5 h-3.5 text-slate-500 group-hover:text-white transition-colors" />
+                      Sửa Hồ Sơ Kế Hoạch
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={handlePrintHaccpPlan}
+                      className="border border-slate-300 bg-white text-slate-800 hover:bg-slate-900 hover:text-white hover:border-slate-900 text-xs font-semibold flex items-center gap-1.5 shadow-sm transition-all duration-150 group"
+                    >
+                      <Printer className="w-3.5 h-3.5 text-slate-500 group-hover:text-white transition-colors" />
+                      In Kế Hoạch
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setDeletingPlan(currentPlan)}
+                      className="border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-600 hover:text-white hover:border-rose-600 text-xs font-semibold flex items-center gap-1.5 shadow-sm transition-all duration-150 group"
+                    >
+                      <Trash2 className="w-3.5 h-3.5 text-rose-500 group-hover:text-white transition-colors" />
+                      Xóa Kế Hoạch
+                    </Button>
+                  </>
                 )}
 
                 <Button
                   size="sm"
                   variant="outline"
                   onClick={() => setShowWorkflowStudio(true)}
-                  className="border-blue-300 bg-blue-50 text-blue-800 hover:bg-blue-100 text-xs font-bold flex items-center gap-1.5"
+                  className="border border-blue-400/80 bg-blue-50 text-blue-800 hover:bg-blue-600 hover:text-white hover:border-blue-600 text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all duration-150 group"
                 >
-                  <Workflow className="w-3.5 h-3.5 text-blue-600" />
+                  <Workflow className="w-3.5 h-3.5 text-blue-600 group-hover:text-white transition-colors" />
                   Bộ Thiết Kế Lưu Đồ (Studio)
                 </Button>
 
@@ -2470,35 +2645,339 @@ function HACCPModule() {
                   size="sm"
                   variant="outline"
                   onClick={() => setShowWfGuide(true)}
-                  className="border-indigo-300 bg-indigo-50 text-indigo-800 hover:bg-indigo-100 text-xs font-bold flex items-center gap-1.5 shadow-sm"
+                  className="border border-indigo-400/80 bg-indigo-50 text-indigo-800 hover:bg-indigo-600 hover:text-white hover:border-indigo-600 text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all duration-150 group"
                 >
-                  <BookOpen className="w-3.5 h-3.5 text-indigo-600" />
+                  <BookOpen className="w-3.5 h-3.5 text-indigo-600 group-hover:text-white transition-colors" />
                   Hướng Dẫn Lưu Đồ HACCP
                 </Button>
               </div>
             </div>
 
-            {/* Plan Info Card */}
-            {currentPlan && (
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-700">
-                <div>
-                  <span className="text-slate-500 font-semibold">Mã kế hoạch:</span>
-                  <div className="font-mono font-bold text-emerald-700 mt-0.5">
-                    {currentPlan.plan_code}
+            {/* Khi chọn Tất cả kế hoạch: Hiển thị danh sách đầy đủ tất cả các kế hoạch HACCP */}
+            {selectedPlanId === "ALL" && (
+              <div className="space-y-4 pt-3 border-t border-slate-100">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="text-xs font-bold text-slate-800 flex items-center gap-2 uppercase tracking-wider">
+                    <Layers className="w-4 h-4 text-emerald-600" />
+                    Danh Mục Tất Cả Kế Hoạch HACCP ({filteredPlans.length}/{plans.length})
+                  </div>
+
+                  {/* Search, Filter & View Toggle */}
+                  <div className="flex flex-wrap items-center gap-2">
+                    <div className="relative min-w-[200px]">
+                      <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-slate-500" />
+                      <Input
+                        value={planSearch}
+                        onChange={(e) => setPlanSearch(e.target.value)}
+                        placeholder="Tìm mã, tên, dây chuyền..."
+                        className="pl-8 h-8 text-xs bg-white border-slate-300 text-slate-900 placeholder:text-slate-500 font-medium"
+                      />
+                    </div>
+
+                    <select
+                      value={planStatusFilter}
+                      onChange={(e) => setPlanStatusFilter(e.target.value)}
+                      className="h-8 bg-white border border-slate-300 rounded-lg px-2.5 text-xs font-bold text-slate-800"
+                    >
+                      <option value="ALL">Tất cả trạng thái</option>
+                      <option value="APPROVED">Đã phê duyệt (APPROVED)</option>
+                      <option value="ACTIVE">Đang hoạt động (ACTIVE)</option>
+                      <option value="DRAFT">Bản thảo (DRAFT)</option>
+                    </select>
+
+                    <div className="flex items-center rounded-lg border border-slate-200 bg-slate-50 p-0.5">
+                      <button
+                        type="button"
+                        onClick={() => setPlanViewMode("grid")}
+                        className={`h-7 px-2.5 rounded-md text-xs font-semibold flex items-center gap-1 transition ${
+                          planViewMode === "grid"
+                            ? "bg-white text-emerald-700 shadow-xs font-bold"
+                            : "text-slate-500 hover:text-slate-800"
+                        }`}
+                        title="Dạng lưới thẻ"
+                      >
+                        <LayoutGrid className="w-3.5 h-3.5" />
+                        <span className="hidden sm:inline">Thẻ</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPlanViewMode("table")}
+                        className={`h-7 px-2.5 rounded-md text-xs font-semibold flex items-center gap-1 transition ${
+                          planViewMode === "table"
+                            ? "bg-white text-emerald-700 shadow-xs font-bold"
+                            : "text-slate-500 hover:text-slate-800"
+                        }`}
+                        title="Dạng bảng dữ liệu chuẩn (phù hợp nhiều kế hoạch)"
+                      >
+                        <Table className="w-3.5 h-3.5" />
+                        <span className="hidden sm:inline">Bảng</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
-                <div>
-                  <span className="text-slate-500 font-semibold">Dây chuyền áp dụng:</span>
-                  <div className="font-bold text-slate-900 mt-0.5">{currentPlan.product_line}</div>
+
+                {filteredPlans.length === 0 ? (
+                  <div className="p-8 text-center text-slate-500 text-xs border border-dashed border-slate-200 rounded-xl bg-slate-50">
+                    {plans.length === 0
+                      ? 'Chưa có kế hoạch HACCP nào. Nhấp "+ Tạo Kế Hoạch HACCP Mới" để bắt đầu.'
+                      : "Không tìm thấy kế hoạch HACCP nào khớp với điều kiện tìm kiếm."}
+                  </div>
+                ) : planViewMode === "grid" ? (
+                  /* DẠNG 1: LƯỚI THẺ (GRID CARDS) */
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {filteredPlans.map((p) => {
+                      const pSteps = steps.filter((s) => s.plan_id === p.plan_id);
+                      const pCcps = pSteps.filter((s) => s.is_ccp_or_oprp);
+                      return (
+                        <div
+                          key={p.plan_id}
+                          className="p-4 rounded-xl border border-slate-200 bg-white hover:border-emerald-400 hover:shadow-md transition-all space-y-3 flex flex-col justify-between"
+                        >
+                          <div>
+                            <div className="flex items-start justify-between gap-2">
+                              <div>
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className="font-mono font-black text-xs px-2.5 py-0.5 rounded bg-emerald-100 text-emerald-900 border border-emerald-300">
+                                    {p.plan_code}
+                                  </span>
+                                  <span className="text-xs font-bold text-slate-700">
+                                    Ver {p.version}
+                                  </span>
+                                  <span
+                                    className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
+                                      p.status === "APPROVED"
+                                        ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
+                                        : p.status === "ACTIVE"
+                                        ? "bg-blue-100 text-blue-800 border border-blue-300"
+                                        : "bg-amber-100 text-amber-800 border border-amber-300"
+                                    }`}
+                                  >
+                                    {p.status}
+                                  </span>
+                                </div>
+                                <h4 className="font-black text-sm text-slate-900 mt-1.5">
+                                  {p.plan_name}
+                                </h4>
+                              </div>
+
+                              <div className="flex items-center gap-1 shrink-0">
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleOpenEditPlan(p)}
+                                  className="h-7 w-7 p-0 text-slate-700 hover:text-slate-900 hover:bg-slate-200"
+                                  title="Sửa kế hoạch"
+                                >
+                                  <Pencil className="w-3.5 h-3.5" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => setDeletingPlan(p)}
+                                  className="h-7 w-7 p-0 text-rose-600 hover:text-rose-800 hover:bg-rose-100"
+                                  title="Xóa kế hoạch"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </Button>
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-2 text-[11px] bg-slate-100/70 p-2.5 rounded-lg border border-slate-200 mt-3">
+                              <div>
+                                <span className="text-slate-700 font-bold block text-[11px]">Dây chuyền:</span>
+                                <span className="font-black text-slate-900 truncate block">
+                                  {p.product_line}
+                                </span>
+                              </div>
+                              <div>
+                                <span className="text-slate-700 font-bold block text-[11px]">Trưởng ban HACCP:</span>
+                                <span className="font-black text-slate-900 truncate block">
+                                  {p.team_leader}
+                                </span>
+                              </div>
+                              <div>
+                                <span className="text-slate-700 font-bold block text-[11px]">Ngày ban hành:</span>
+                                <span className="font-bold text-slate-900 block">
+                                  {p.effective_date || "15/01/2026"}
+                                </span>
+                              </div>
+                              <div>
+                                <span className="text-slate-700 font-bold block text-[11px]">Quy mô kiểm soát:</span>
+                                <span className="font-black text-emerald-800 block">
+                                  {pSteps.length} công đoạn • {pCcps.length} CCP
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center justify-between pt-2 border-t border-slate-100 gap-2">
+                            <span className="text-xs text-slate-700 font-medium truncate">
+                              {p.scope_description || "Kế hoạch kiểm soát HACCP chuẩn"}
+                            </span>
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleOpenCreateStep(p.plan_id)}
+                                className="h-7 px-2.5 text-[11px] border-emerald-400 text-emerald-800 hover:bg-emerald-50 font-bold"
+                              >
+                                <Plus className="w-3 h-3 mr-1" />
+                                Thêm Công Đoạn
+                              </Button>
+                              <Button
+                                size="sm"
+                                onClick={() => setSelectedPlanId(p.plan_id)}
+                                className="h-7 px-3 text-[11px] bg-emerald-600 hover:bg-emerald-700 text-white font-bold"
+                              >
+                                Xem Lưu Đồ
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  /* DẠNG 2: BẢNG DỮ LIỆU CHUẨN ISO (DATA TABLE - TỐI ƯU KHI CÓ NHIỀU KẾ HOẠCH) */
+                  <div className="overflow-x-auto rounded-xl border border-slate-300 bg-white shadow-xs">
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead>
+                        <tr className="bg-slate-100 border-b border-slate-300 text-slate-900 font-black">
+                          <th className="py-2.5 px-3">Mã Kế Hoạch</th>
+                          <th className="py-2.5 px-3">Tên Kế Hoạch & Phạm Vi</th>
+                          <th className="py-2.5 px-3">Dây Chuyền</th>
+                          <th className="py-2.5 px-3">Trưởng Ban</th>
+                          <th className="py-2.5 px-3 text-center">Quy Mô</th>
+                          <th className="py-2.5 px-3 text-center">Trạng Thái</th>
+                          <th className="py-2.5 px-3 text-right">Thao Tác</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-200 text-slate-800">
+                        {filteredPlans.map((p) => {
+                          const pSteps = steps.filter((s) => s.plan_id === p.plan_id);
+                          const pCcps = pSteps.filter((s) => s.is_ccp_or_oprp);
+                          return (
+                            <tr key={p.plan_id} className="hover:bg-slate-50/90 transition-colors">
+                              <td className="py-3 px-3">
+                                <div className="font-mono font-black text-emerald-800">{p.plan_code}</div>
+                                <div className="text-[11px] text-slate-600 font-bold">Ver {p.version}</div>
+                              </td>
+                              <td className="py-3 px-3">
+                                <div className="font-black text-slate-900">{p.plan_name}</div>
+                                <div className="text-[11px] text-slate-700 font-medium truncate max-w-xs">
+                                  {p.scope_description || "Kế hoạch kiểm soát an toàn"}
+                                </div>
+                              </td>
+                              <td className="py-3 px-3 font-bold text-slate-900">{p.product_line}</td>
+                              <td className="py-3 px-3 text-slate-800 font-medium">{p.team_leader}</td>
+                              <td className="py-3 px-3 text-center">
+                                <span className="inline-block px-2.5 py-0.5 rounded bg-emerald-50 text-emerald-900 font-black text-[11px] border border-emerald-300">
+                                  {pSteps.length} bước • {pCcps.length} CCP
+                                </span>
+                              </td>
+                              <td className="py-3 px-3 text-center">
+                                <span
+                                  className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
+                                    p.status === "APPROVED"
+                                      ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
+                                      : p.status === "ACTIVE"
+                                      ? "bg-blue-100 text-blue-800 border border-blue-300"
+                                      : "bg-amber-100 text-amber-800 border border-amber-300"
+                                  }`}
+                                >
+                                  {p.status}
+                                </span>
+                              </td>
+                              <td className="py-3 px-3 text-right">
+                                <div className="flex items-center justify-end gap-1.5">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => handleOpenCreateStep(p.plan_id)}
+                                    className="h-7 px-2 text-[11px] border-emerald-400 text-emerald-800 hover:bg-emerald-50 font-bold"
+                                    title="Thêm công đoạn cho kế hoạch này"
+                                  >
+                                    <Plus className="w-3 h-3" />
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    onClick={() => setSelectedPlanId(p.plan_id)}
+                                    className="h-7 px-2.5 text-[11px] bg-slate-900 hover:bg-slate-800 text-white font-bold"
+                                  >
+                                    Xem Lưu Đồ
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => handleOpenEditPlan(p)}
+                                    className="h-7 w-7 p-0 text-slate-600 hover:text-slate-900 hover:bg-slate-200"
+                                    title="Sửa kế hoạch"
+                                  >
+                                    <Pencil className="w-3.5 h-3.5" />
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => setDeletingPlan(p)}
+                                    className="h-7 w-7 p-0 text-rose-600 hover:text-rose-800 hover:bg-rose-100"
+                                    title="Xóa kế hoạch"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </Button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Khi chọn một kế hoạch cụ thể: Hiển thị thẻ thông tin kế hoạch đó */}
+            {currentPlan && (
+              <div className="space-y-3 pt-3 border-t border-slate-100">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-black text-slate-700 uppercase tracking-wider">
+                      Đang xem chi tiết:
+                    </span>
+                    <span className="font-black text-xs text-emerald-900 bg-emerald-100 px-2 py-0.5 rounded border border-emerald-300">
+                      {currentPlan.plan_code} - {currentPlan.plan_name}
+                    </span>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setSelectedPlanId("ALL")}
+                    className="text-xs text-slate-700 hover:text-slate-900 font-bold flex items-center gap-1 h-7 px-2"
+                  >
+                    ← Quay lại xem tất cả kế hoạch
+                  </Button>
                 </div>
-                <div>
-                  <span className="text-slate-500 font-semibold">Trưởng ban HACCP:</span>
-                  <div className="font-bold text-slate-900 mt-0.5">{currentPlan.team_leader}</div>
-                </div>
-                <div>
-                  <span className="text-slate-500 font-semibold">Ngày ban hành & Phiên bản:</span>
-                  <div className="font-bold text-slate-900 mt-0.5">
-                    {currentPlan.effective_date || "15/01/2026"} (Ver {currentPlan.version})
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800">
+                  <div>
+                    <span className="text-slate-700 font-bold">Mã kế hoạch:</span>
+                    <div className="font-mono font-black text-emerald-800 mt-0.5">
+                      {currentPlan.plan_code}
+                    </div>
+                  </div>
+                  <div>
+                    <span className="text-slate-700 font-bold">Dây chuyền áp dụng:</span>
+                    <div className="font-black text-slate-900 mt-0.5">{currentPlan.product_line}</div>
+                  </div>
+                  <div>
+                    <span className="text-slate-700 font-bold">Trưởng ban HACCP:</span>
+                    <div className="font-black text-slate-900 mt-0.5">{currentPlan.team_leader}</div>
+                  </div>
+                  <div>
+                    <span className="text-slate-700 font-bold">Ngày ban hành & Phiên bản:</span>
+                    <div className="font-black text-slate-900 mt-0.5">
+                      {currentPlan.effective_date || "15/01/2026"} (Ver {currentPlan.version})
+                    </div>
                   </div>
                 </div>
               </div>
@@ -2507,32 +2986,55 @@ function HACCPModule() {
 
           {/* Flowchart Diagram Section */}
           <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-6">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
               <div>
                 <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
                   <GitBranch className="w-4 h-4 text-emerald-600" />
                   Sơ Đồ Lưu Đồ Quy Trình Công Đoạn Tuần Tự
                 </h3>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Lưu đồ thể hiện toàn bộ các bước sản xuất từ tiếp nhận đến thành phẩm và vị trí
-                  các điểm kiểm soát tới hạn CCP.
+                  {selectedPlanId === "ALL"
+                    ? "Hiển thị lưu đồ tuần tự theo từng kế hoạch HACCP từ tiếp nhận đến thành phẩm và vị trí các điểm kiểm soát tới hạn CCP."
+                    : `Lưu đồ công đoạn sản xuất cho kế hoạch [${currentPlan?.plan_code}] ${currentPlan?.plan_name || ""}.`}
                 </p>
               </div>
 
               <div className="flex items-center gap-2">
+                {selectedPlanId === "ALL" && plans.length > 1 && (
+                  <div className="flex items-center gap-1.5 mr-1">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={collapseAllPlans}
+                      className="border-slate-200 text-slate-600 hover:bg-slate-100 text-xs h-8"
+                      title="Thu gọn tất cả lưu đồ để nhìn tổng quan"
+                    >
+                      Thu Gọn Tất Cả
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={expandAllPlans}
+                      className="border-slate-200 text-slate-600 hover:bg-slate-100 text-xs h-8"
+                      title="Mở rộng toàn bộ lưu đồ"
+                    >
+                      Mở Rộng Tất Cả
+                    </Button>
+                  </div>
+                )}
                 <Button
                   size="sm"
                   variant="outline"
                   onClick={() => setShowWfGuide(true)}
-                  className="border-slate-300 text-slate-700 hover:bg-slate-100 text-xs font-semibold flex items-center gap-1.5"
+                  className="border-slate-300 text-slate-700 hover:bg-slate-100 text-xs font-semibold flex items-center gap-1.5 h-8"
                 >
                   <BookOpen className="w-3.5 h-3.5 text-blue-600" />
                   Nguyên Tắc Lưu Đồ
                 </Button>
                 <Button
                   size="sm"
-                  onClick={handleOpenCreateStep}
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm"
+                  onClick={() => handleOpenCreateStep(currentPlan?.plan_id)}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm h-8"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   Thêm Công Đoạn
@@ -2540,12 +3042,46 @@ function HACCPModule() {
               </div>
             </div>
 
+            {/* Quick Jump Chips when viewing ALL plans */}
+            {selectedPlanId === "ALL" && plans.length > 1 && (
+              <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-thin">
+                <span className="text-xs font-black text-slate-800 shrink-0 uppercase tracking-wider flex items-center gap-1">
+                  <GitBranch className="w-3.5 h-3.5 text-emerald-600" />
+                  Nhảy Nhanh Đến Dây Chuyền:
+                </span>
+                {plans.map((p) => {
+                  const pSteps = steps.filter((s) => s.plan_id === p.plan_id);
+                  const isCollapsed = collapsedPlanIds.has(p.plan_id);
+                  return (
+                    <button
+                      key={p.plan_id}
+                      type="button"
+                      onClick={() => {
+                        if (isCollapsed) toggleCollapsePlan(p.plan_id);
+                        const el = document.getElementById(`plan-flowchart-${p.plan_id}`);
+                        el?.scrollIntoView({ behavior: "smooth", block: "start" });
+                      }}
+                      className="shrink-0 px-2.5 py-1.5 rounded-lg text-xs font-bold border transition-all flex items-center gap-1.5 bg-white border-slate-300 text-slate-800 hover:border-emerald-500 hover:text-emerald-900 hover:bg-emerald-50/70 shadow-xs"
+                    >
+                      <span className="font-mono font-black text-[11px] bg-emerald-100 text-emerald-900 px-1.5 py-0.2 rounded border border-emerald-300">
+                        {p.plan_code}
+                      </span>
+                      <span className="truncate max-w-[150px] font-bold text-slate-900">{p.plan_name}</span>
+                      <span className="text-[11px] text-emerald-900 font-black bg-emerald-50 border border-emerald-200 px-1.5 py-0.2 rounded-full">
+                        {pSteps.length}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
             {/* Inline Guidance Tip Banner */}
-            <div className="flex items-center justify-between gap-3 p-3.5 rounded-xl bg-gradient-to-r from-blue-50/80 via-indigo-50/50 to-blue-50/80 border border-blue-200 text-xs text-blue-900 shadow-sm">
+            <div className="flex items-center justify-between gap-3 p-3.5 rounded-xl bg-gradient-to-r from-blue-50 via-indigo-50/70 to-blue-50 border border-blue-300 text-xs text-blue-950 font-medium shadow-sm">
               <div className="flex items-center gap-2.5">
-                <Sparkles className="w-4 h-4 text-blue-600 shrink-0" />
+                <Sparkles className="w-4 h-4 text-blue-700 shrink-0" />
                 <span>
-                  <strong>Hướng Dẫn Chuẩn Hóa Lưu Đồ Công Đoạn:</strong> Đảm bảo tính tuần tự liên
+                  <strong className="font-black text-blue-900">Hướng Dẫn Chuẩn Hóa Lưu Đồ Công Đoạn:</strong> Đảm bảo tính tuần tự liên
                   tục từ tiếp nhận đến xuất kho, xác định đầy đủ thông số kỹ thuật (nhiệt độ, thời
                   gian, thiết bị) và đánh dấu nổi bật các điểm kiểm soát tới hạn CCP/oPRP.
                 </span>
@@ -2553,98 +3089,362 @@ function HACCPModule() {
               <button
                 type="button"
                 onClick={() => setShowWfGuide(true)}
-                className="shrink-0 px-2.5 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-[11px] flex items-center gap-1 shadow-sm transition"
+                className="shrink-0 px-2.5 py-1 rounded-lg bg-blue-700 hover:bg-blue-800 text-white font-bold text-[11px] flex items-center gap-1 shadow-sm transition"
               >
                 Xem Hướng Dẫn
               </button>
             </div>
 
             {/* Visual Flow Pipeline */}
-            {filteredSteps.length === 0 ? (
-              <EmptyState
-                icon={GitBranch}
-                title="Chưa có lưu đồ công đoạn nào"
-                description="Hãy bắt đầu thiết lập các bước công nghệ trong dây chuyền sản xuất từ khâu tiếp nhận nguyên liệu đến bảo quản thành phẩm."
-                actionLabel="+ Thêm Công Đoạn Đầu Tiên"
-                onAction={handleOpenCreateStep}
-                onGuide={() => setShowGuide(true)}
-              />
-            ) : (
-              <div className="max-w-2xl mx-auto space-y-3 py-2">
-                {filteredSteps.map((step, idx) => (
-                  <React.Fragment key={step.step_id}>
-                    {/* Step Card */}
-                    <div
-                      className={`p-4 rounded-2xl border transition-all flex items-start justify-between gap-4 ${
-                        step.is_ccp_or_oprp
-                          ? "bg-rose-50 border-rose-300 shadow-sm hover:border-rose-400"
-                          : "bg-white border-slate-200 hover:border-slate-300 shadow-sm"
-                      }`}
-                    >
-                      <div className="flex items-start gap-3.5">
-                        <div
-                          className={`w-8 h-8 rounded-xl flex items-center justify-center font-black text-sm shrink-0 ${
-                            step.is_ccp_or_oprp
-                              ? "bg-rose-600 text-white"
-                              : "bg-emerald-600 text-white"
-                          }`}
-                        >
-                          {step.step_number}
-                        </div>
+            {selectedPlanId === "ALL" ? (
+              <div className="space-y-8 py-2">
+                {plans.length === 0 ? (
+                  <EmptyState
+                    icon={GitBranch}
+                    title="Chưa có kế hoạch HACCP nào"
+                    description="Hãy bắt đầu tạo kế hoạch HACCP và thiết lập các bước công nghệ trong dây chuyền sản xuất."
+                    actionLabel="+ Tạo Kế Hoạch HACCP Mới"
+                    onAction={handleOpenCreatePlan}
+                    onGuide={() => setShowGuide(true)}
+                  />
+                ) : (
+                  plans.map((plan) => {
+                    const planSteps = steps
+                      .filter((s) => s.plan_id === plan.plan_id)
+                      .sort((a, b) => (a.step_number || 0) - (b.step_number || 0));
+                    const planCcps = planSteps.filter((s) => s.is_ccp_or_oprp);
+                    const isPlanCollapsed = collapsedPlanIds.has(plan.plan_id);
 
-                        <div>
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <h4 className="text-sm font-bold text-slate-900">{step.step_name}</h4>
-                            {step.is_ccp_or_oprp && (
-                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-600 text-white flex items-center gap-1 animate-pulse">
-                                <Flame className="w-3 h-3" /> ★ ĐIỂM KIỂM SOÁT TỚI HẠN (CCP)
-                              </span>
-                            )}
-                            <span className="text-[10px] px-2 py-0.5 rounded bg-slate-100 text-slate-600 font-semibold border border-slate-200">
-                              {step.hazard_count} mối nguy
+                    return (
+                      <div
+                        key={plan.plan_id}
+                        id={`plan-flowchart-${plan.plan_id}`}
+                        className="rounded-2xl border border-slate-200 bg-slate-50/40 p-5 space-y-4 scroll-mt-24 transition-all"
+                      >
+                        {/* Plan Sub-header */}
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200">
+                          <div className="flex items-center gap-2.5">
+                            <span className="font-mono font-black text-xs px-2.5 py-1 rounded-lg bg-emerald-700 text-white shadow-sm">
+                              {plan.plan_code}
                             </span>
+                            <div>
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <h4 className="text-sm font-black text-slate-900">
+                                  {plan.plan_name}
+                                </h4>
+                                <span className="text-xs text-slate-700 font-bold">
+                                  (Dây chuyền: {plan.product_line})
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2 mt-0.5 text-xs text-slate-700 font-bold">
+                                <span className="text-emerald-800">
+                                  {planSteps.length} công đoạn
+                                </span>
+                                <span>•</span>
+                                <span className="text-rose-700">
+                                  {planCcps.length} CCP/oPRP
+                                </span>
+                                <span>•</span>
+                                <span>Ver {plan.version}</span>
+                              </div>
+                            </div>
                           </div>
 
-                          {step.description && (
-                            <p className="text-xs text-slate-600 mt-1.5 leading-relaxed bg-slate-50 p-2.5 rounded-lg border border-slate-200">
-                              {step.description}
+                          <div className="flex items-center gap-2">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => toggleCollapsePlan(plan.plan_id)}
+                              className="text-xs h-8 text-slate-700 hover:text-slate-900 font-bold flex items-center gap-1"
+                              title={isPlanCollapsed ? "Mở rộng lưu đồ chi tiết" : "Thu gọn lưu đồ"}
+                            >
+                              {isPlanCollapsed ? (
+                                <>
+                                  <ChevronDown className="w-3.5 h-3.5 text-slate-600" />
+                                  Mở Rộng ({planSteps.length})
+                                </>
+                              ) : (
+                                <>
+                                  <ChevronUp className="w-3.5 h-3.5 text-slate-600" />
+                                  Thu Gọn
+                                </>
+                              )}
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => setSelectedPlanId(plan.plan_id)}
+                              className="text-xs h-8 border-slate-300 text-slate-700 hover:bg-slate-100 font-semibold"
+                            >
+                              Chỉ Xem Kế Hoạch Này
+                            </Button>
+                            <Button
+                              size="sm"
+                              onClick={() => handleOpenCreateStep(plan.plan_id)}
+                              className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold h-8 flex items-center gap-1.5 shadow-sm"
+                            >
+                              <Plus className="w-3.5 h-3.5" />
+                              Thêm Công Đoạn
+                            </Button>
+                          </div>
+                        </div>
+
+                        {/* Plan Steps Sequence or Collapsed Banner */}
+                        {isPlanCollapsed ? (
+                          <div
+                            onClick={() => toggleCollapsePlan(plan.plan_id)}
+                            className="p-3.5 text-center rounded-xl bg-slate-100/90 border border-slate-300 text-xs text-slate-800 font-bold hover:bg-emerald-50/80 hover:text-emerald-900 hover:border-emerald-300 cursor-pointer transition flex items-center justify-center gap-2 shadow-xs group"
+                          >
+                            <ChevronDown className="w-3.5 h-3.5 text-slate-600 group-hover:text-emerald-700 transition" />
+                            <span>
+                              Đang thu gọn lưu đồ ({planSteps.length} công đoạn, {planCcps.length} CCP) — <strong className="underline text-emerald-800">Nhấp để mở rộng sơ đồ chi tiết</strong>
+                            </span>
+                          </div>
+                        ) : planSteps.length === 0 ? (
+                          <div className="p-6 text-center rounded-xl bg-white border border-dashed border-slate-300 space-y-2">
+                            <GitBranch className="w-8 h-8 text-slate-300 mx-auto" />
+                            <div className="text-xs font-bold text-slate-800">
+                              Kế hoạch [{plan.plan_code}] chưa có công đoạn lưu đồ nào
+                            </div>
+                            <p className="text-xs text-slate-600 max-w-md mx-auto">
+                              Bổ sung các bước công nghệ cho dây chuyền "{plan.product_line}" để hoàn thiện lưu đồ quy trình sản xuất.
                             </p>
-                          )}
+                            <Button
+                              size="sm"
+                              onClick={() => handleOpenCreateStep(plan.plan_id)}
+                              className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold mt-2 shadow-sm"
+                            >
+                              <Plus className="w-3.5 h-3.5 mr-1" />
+                              Thêm Công Đoạn Cho {plan.plan_code}
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="max-w-2xl mx-auto space-y-3 py-1">
+                            {planSteps.map((step, idx) => (
+                              <React.Fragment key={step.step_id}>
+                                <div
+                                  className={`p-4 rounded-2xl border transition-all flex items-start justify-between gap-4 ${
+                                    step.is_ccp_or_oprp
+                                      ? "bg-rose-50 border-rose-300 shadow-sm hover:border-rose-400"
+                                      : "bg-white border-slate-200 hover:border-slate-300 shadow-sm"
+                                  }`}
+                                >
+                                  <div className="flex items-start gap-3.5">
+                                    <div
+                                      className={`w-8 h-8 rounded-xl flex items-center justify-center font-black text-sm shrink-0 ${
+                                        step.is_ccp_or_oprp
+                                          ? "bg-rose-600 text-white"
+                                          : "bg-emerald-600 text-white"
+                                      }`}
+                                    >
+                                      {step.step_number}
+                                    </div>
+
+                                    <div>
+                                      <div className="flex items-center gap-2 flex-wrap">
+                                        <h4 className="text-sm font-black text-slate-900">
+                                          {step.step_name}
+                                        </h4>
+                                        {step.is_ccp_or_oprp && (
+                                          <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-rose-600 text-white flex items-center gap-1 animate-pulse">
+                                            <Flame className="w-3 h-3" /> ★ ĐIỂM KIỂM SOÁT TỚI HẠN (CCP)
+                                          </span>
+                                        )}
+                                        <span className="text-[10px] px-2 py-0.5 rounded bg-slate-200/90 text-slate-900 font-black border border-slate-300">
+                                          {step.hazard_count} mối nguy
+                                        </span>
+                                      </div>
+
+                                      {step.description && (
+                                        <p className="text-xs text-slate-800 font-medium mt-1.5 leading-relaxed bg-slate-100/80 p-2.5 rounded-lg border border-slate-300">
+                                          {step.description}
+                                        </p>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  <div className="flex items-center gap-1.5 shrink-0">
+                                    <button
+                                      onClick={() => handleOpenEditStep(step)}
+                                      className="p-1.5 rounded-lg bg-slate-100 text-slate-600 hover:text-slate-900 hover:bg-slate-200 transition-colors"
+                                      title="Chỉnh sửa công đoạn"
+                                    >
+                                      <Pencil className="w-3.5 h-3.5" />
+                                    </button>
+                                    <button
+                                      onClick={() => setDeletingStep(step)}
+                                      className="p-1.5 rounded-lg bg-rose-50 text-rose-600 hover:text-rose-800 hover:bg-rose-100 transition-colors"
+                                      title="Xóa công đoạn"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
+                                </div>
+
+                                {idx < planSteps.length - 1 && (
+                                  <div className="flex flex-col items-center my-0.5">
+                                    <div className="w-0.5 h-3 bg-slate-300" />
+                                    <div className="px-3 py-0.5 rounded-full bg-white border border-slate-300 text-[10px] font-black text-slate-800 flex items-center gap-1 font-mono shadow-xs">
+                                      <ChevronDown className="w-3 h-3 text-slate-600" />
+                                      <span>
+                                        {step.is_ccp_or_oprp ? "Kiểm soát CCP Đạt" : "Chuyển tiếp"}
+                                      </span>
+                                    </div>
+                                    <div className="w-0.5 h-3 bg-slate-300" />
+                                  </div>
+                                )}
+                              </React.Fragment>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })
+                )}
+
+                {/* Kiểm tra có công đoạn mồ côi (không thuộc kế hoạch nào) */}
+                {(() => {
+                  const orphanSteps = steps.filter(
+                    (s) => !plans.some((p) => p.plan_id === s.plan_id)
+                  );
+                  if (orphanSteps.length === 0) return null;
+                  return (
+                    <div className="rounded-2xl border border-amber-200 bg-amber-50/50 p-5 space-y-4">
+                      <div className="flex items-center justify-between pb-3 border-b border-amber-200">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono font-bold text-xs px-2.5 py-1 rounded-lg bg-amber-600 text-white">
+                            Chưa phân loại
+                          </span>
+                          <h4 className="text-sm font-bold text-slate-900">
+                            Các Công Đoạn Chưa Gán Kế Hoạch ({orphanSteps.length})
+                          </h4>
                         </div>
                       </div>
-
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        <button
-                          onClick={() => handleOpenEditStep(step)}
-                          className="p-1.5 rounded-lg bg-slate-100 text-slate-600 hover:text-slate-900 hover:bg-slate-200 transition-colors"
-                          title="Chỉnh sửa công đoạn"
-                        >
-                          <Pencil className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={() => setDeletingStep(step)}
-                          className="p-1.5 rounded-lg bg-rose-50 text-rose-600 hover:text-rose-800 hover:bg-rose-100 transition-colors"
-                          title="Xóa công đoạn"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                      <div className="max-w-2xl mx-auto space-y-3 py-1">
+                        {orphanSteps.map((step, idx) => (
+                          <React.Fragment key={step.step_id}>
+                            <div className="p-4 rounded-2xl border bg-white border-amber-200 shadow-sm flex items-start justify-between gap-4">
+                              <div className="flex items-start gap-3.5">
+                                <div className="w-8 h-8 rounded-xl flex items-center justify-center font-black text-sm shrink-0 bg-slate-500 text-white">
+                                  {step.step_number}
+                                </div>
+                                <div>
+                                  <h4 className="text-sm font-bold text-slate-900">{step.step_name}</h4>
+                                  {step.description && (
+                                    <p className="text-xs text-slate-600 mt-1">{step.description}</p>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                <button
+                                  onClick={() => handleOpenEditStep(step)}
+                                  className="p-1.5 rounded-lg bg-slate-100 text-slate-600 hover:text-slate-900"
+                                >
+                                  <Pencil className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  onClick={() => setDeletingStep(step)}
+                                  className="p-1.5 rounded-lg bg-rose-50 text-rose-600 hover:text-rose-800"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </div>
+                          </React.Fragment>
+                        ))}
                       </div>
                     </div>
-
-                    {/* Flow Arrow */}
-                    {idx < filteredSteps.length - 1 && (
-                      <div className="flex flex-col items-center my-0.5">
-                        <div className="w-0.5 h-3 bg-slate-300" />
-                        <div className="px-3 py-0.5 rounded-full bg-white border border-slate-300 text-[10px] font-bold text-slate-600 flex items-center gap-1 font-mono shadow-sm">
-                          <ChevronDown className="w-3 h-3 text-slate-400" />
-                          <span>{step.is_ccp_or_oprp ? "Kiểm soát CCP Đạt" : "Chuyển tiếp"}</span>
-                        </div>
-                        <div className="w-0.5 h-3 bg-slate-300" />
-                      </div>
-                    )}
-                  </React.Fragment>
-                ))}
+                  );
+                })()}
               </div>
+            ) : (
+              /* Khi chọn 1 kế hoạch cụ thể */
+              filteredSteps.length === 0 ? (
+                <EmptyState
+                  icon={GitBranch}
+                  title={`Kế hoạch [${currentPlan?.plan_code || ""}] chưa có công đoạn nào`}
+                  description="Hãy bắt đầu thiết lập các bước công nghệ trong dây chuyền sản xuất từ khâu tiếp nhận nguyên liệu đến bảo quản thành phẩm."
+                  actionLabel="+ Thêm Công Đoạn Đầu Tiên"
+                  onAction={() => handleOpenCreateStep(currentPlan?.plan_id)}
+                  onGuide={() => setShowGuide(true)}
+                />
+              ) : (
+                <div className="max-w-2xl mx-auto space-y-3 py-2">
+                  {filteredSteps.map((step, idx) => (
+                    <React.Fragment key={step.step_id}>
+                      {/* Step Card */}
+                      <div
+                        className={`p-4 rounded-2xl border transition-all flex items-start justify-between gap-4 ${
+                          step.is_ccp_or_oprp
+                            ? "bg-rose-50 border-rose-300 shadow-sm hover:border-rose-400"
+                            : "bg-white border-slate-200 hover:border-slate-300 shadow-sm"
+                        }`}
+                      >
+                        <div className="flex items-start gap-3.5">
+                          <div
+                            className={`w-8 h-8 rounded-xl flex items-center justify-center font-black text-sm shrink-0 ${
+                              step.is_ccp_or_oprp
+                                ? "bg-rose-600 text-white"
+                                : "bg-emerald-600 text-white"
+                            }`}
+                          >
+                            {step.step_number}
+                          </div>
+
+                          <div>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <h4 className="text-sm font-black text-slate-900">{step.step_name}</h4>
+                              {step.is_ccp_or_oprp && (
+                                <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-rose-600 text-white flex items-center gap-1 animate-pulse">
+                                  <Flame className="w-3 h-3" /> ★ ĐIỂM KIỂM SOÁT TỚI HẠN (CCP)
+                                </span>
+                              )}
+                              <span className="text-[10px] px-2 py-0.5 rounded bg-slate-200/90 text-slate-900 font-black border border-slate-300">
+                                {step.hazard_count} mối nguy
+                              </span>
+                            </div>
+
+                            {step.description && (
+                              <p className="text-xs text-slate-800 font-medium mt-1.5 leading-relaxed bg-slate-100/80 p-2.5 rounded-lg border border-slate-300">
+                                {step.description}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <button
+                            onClick={() => handleOpenEditStep(step)}
+                            className="p-1.5 rounded-lg bg-slate-100 text-slate-600 hover:text-slate-900 hover:bg-slate-200 transition-colors"
+                            title="Chỉnh sửa công đoạn"
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => setDeletingStep(step)}
+                            className="p-1.5 rounded-lg bg-rose-50 text-rose-600 hover:text-rose-800 hover:bg-rose-100 transition-colors"
+                            title="Xóa công đoạn"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Flow Arrow */}
+                      {idx < filteredSteps.length - 1 && (
+                        <div className="flex flex-col items-center my-0.5">
+                          <div className="w-0.5 h-3 bg-slate-300" />
+                          <div className="px-3 py-0.5 rounded-full bg-white border border-slate-300 text-[10px] font-black text-slate-800 flex items-center gap-1 font-mono shadow-xs">
+                            <ChevronDown className="w-3 h-3 text-slate-600" />
+                            <span>{step.is_ccp_or_oprp ? "Kiểm soát CCP Đạt" : "Chuyển tiếp"}</span>
+                          </div>
+                          <div className="w-0.5 h-3 bg-slate-300" />
+                        </div>
+                      )}
+                    </React.Fragment>
+                  ))}
+                </div>
+              )
             )}
           </div>
         </div>
@@ -2786,9 +3586,9 @@ function HACCPModule() {
                       <Button
                         size="sm"
                         onClick={() => handleOpenCreateLog(ccp)}
-                        className="w-full bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 text-xs font-bold py-1.5 shadow-none"
+                        className="w-full bg-emerald-50 hover:bg-emerald-600 hover:text-white text-emerald-800 hover:border-emerald-600 border border-emerald-300 text-xs font-bold py-1.5 shadow-none group transition-all"
                       >
-                        <Thermometer className="h-3.5 w-3.5 mr-1.5 text-emerald-600" /> Ghi Nhật Ký
+                        <Thermometer className="h-3.5 w-3.5 mr-1.5 text-emerald-600 group-hover:text-white transition-colors" /> Ghi Nhật Ký
                         Đo Đạc Cho {ccp.ccp_code}
                       </Button>
                     </div>
@@ -2953,9 +3753,9 @@ function HACCPModule() {
                 size="sm"
                 variant="outline"
                 onClick={handleOpenDynamicFormLog}
-                className="border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 text-xs font-bold flex items-center gap-1.5"
+                className="border border-emerald-400/80 bg-emerald-50 text-emerald-800 hover:bg-emerald-600 hover:text-white hover:border-emerald-600 text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all duration-150"
               >
-                <Sliders className="w-3.5 h-3.5 text-emerald-600" />
+                <Sliders className="w-3.5 h-3.5 transition-colors" />
                 Mở Phiếu Form Động
               </Button>
 
@@ -4846,7 +5646,17 @@ function HACCPModule() {
                 <Label className="text-slate-700 font-semibold">Kế hoạch HACCP</Label>
                 <select
                   value={stepForm.plan_id}
-                  onChange={(e) => setStepForm({ ...stepForm, plan_id: e.target.value })}
+                  onChange={(e) => {
+                    const newPlanId = e.target.value;
+                    const planSteps = steps.filter((s) => s.plan_id === newPlanId);
+                    const targetPlan = plans.find((p) => p.plan_id === newPlanId);
+                    setStepForm({
+                      ...stepForm,
+                      plan_id: newPlanId,
+                      step_number: editingStep ? stepForm.step_number : planSteps.length + 1,
+                      product_line: targetPlan?.product_line || stepForm.product_line,
+                    });
+                  }}
                   className="w-full mt-1 bg-white border border-slate-300 rounded-lg p-2 text-xs text-slate-900 font-medium"
                 >
                   {plans.map((p) => (
@@ -5658,6 +6468,23 @@ function HACCPModule() {
           </div>
         </div>
       )}
+
+      {/* Modal Xác Nhận Xóa Kế Hoạch HACCP */}
+      <ConfirmDialog
+        isOpen={!!deletingPlan}
+        onClose={() => setDeletingPlan(null)}
+        onConfirm={() => {
+          if (deletingPlan) {
+            executeDeletePlan(deletingPlan);
+            setDeletingPlan(null);
+          }
+        }}
+        title="Xác nhận xóa kế hoạch HACCP"
+        description={`Bạn có chắc chắn muốn xóa kế hoạch HACCP [${deletingPlan?.plan_code}] - "${deletingPlan?.plan_name}" không? Toàn bộ các công đoạn và điểm kiểm soát liên kết sẽ bị ảnh hưởng.`}
+        confirmLabel="Xóa kế hoạch"
+        variant="destructive"
+      />
+
       {/* Modal Xác Nhận Xóa Công Đoạn Lưu Đồ */}
       <ConfirmDialog
         isOpen={!!deletingStep}

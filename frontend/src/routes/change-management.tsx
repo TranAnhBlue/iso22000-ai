@@ -449,9 +449,9 @@ function ChangeManagementPage() {
               variant="outline"
               size="sm"
               onClick={() => setShowGuide(true)}
-              className="border-emerald-300 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 flex items-center gap-1.5 font-bold text-xs"
+              className="border border-emerald-400/80 bg-emerald-50 text-emerald-800 hover:bg-emerald-600 hover:text-white hover:border-emerald-600 flex items-center gap-1.5 font-bold text-xs shadow-sm transition-all duration-150"
             >
-              <BookOpen className="h-4 w-4 text-emerald-600" />
+              <BookOpen className="h-4 w-4 transition-colors" />
               <span>Hướng Dẫn Nghiệp Vụ</span>
             </Button>
             <Button
@@ -467,18 +467,18 @@ function ChangeManagementPage() {
 
       {/* KPI STATS */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
+        <div className="rounded-xl border border-slate-300 bg-white p-4 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-muted-foreground">
+            <span className="text-xs font-bold text-slate-700">
               Tổng Số Phiếu Thay Đổi
             </span>
-            <div className="rounded-lg bg-primary/10 p-2 text-primary">
+            <div className="rounded-lg bg-emerald-100 p-2 text-emerald-800">
               <GitCompare className="h-4 w-4" />
             </div>
           </div>
-          <div className="mt-2 text-2xl font-bold text-foreground">{stats.total}</div>
-          <div className="mt-1 text-xs text-muted-foreground flex items-center gap-1">
-            <TrendingUp className="h-3 w-3 text-emerald-500" />
+          <div className="mt-2 text-2xl font-black text-slate-900">{stats.total}</div>
+          <div className="mt-1 text-xs text-slate-700 font-medium flex items-center gap-1">
+            <TrendingUp className="h-3 w-3 text-emerald-600" />
             <span>Tuân thủ Tiêu Chuẩn</span>
           </div>
         </div>

@@ -29,9 +29,9 @@ import {
 import { toast } from "sonner";
 import api from "@/lib/api";
 import { printHtml } from "@/lib/print";
-import { DocumentItem, DocumentDistribution } from "@/routes/documents";
+import type { DocumentItem, DocumentDistribution } from "@/lib/documentConstants";
+import { DEPARTMENTS } from "@/lib/documentConstants";
 import { generateDistributionNoticeHtml } from "./dmsPrintHelpers";
-import { DEPARTMENTS } from "@/routes/documents";
 
 interface DistributionsTabProps {
   distributions: DocumentDistribution[];

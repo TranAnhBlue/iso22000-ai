@@ -807,18 +807,18 @@ function EmergencyPage() {
               variant="outline"
               size="sm"
               onClick={() => setShowGuide(true)}
-              className="gap-1.5 text-primary border-primary/30 hover:bg-primary/5"
+              className="gap-1.5 border border-emerald-400/80 bg-emerald-50 text-emerald-800 hover:bg-emerald-600 hover:text-white hover:border-emerald-600 font-bold text-xs shadow-sm transition-all duration-150"
             >
-              <BookOpen className="h-4 w-4" /> Hướng dẫn nghiệp vụ
+              <BookOpen className="h-4 w-4 transition-colors" /> Hướng dẫn nghiệp vụ
             </Button>
             <Button
               variant="outline"
               size="sm"
               onClick={fetchData}
               disabled={loading}
-              className="gap-2"
+              className="gap-2 border border-slate-300 bg-white text-slate-800 hover:bg-slate-900 hover:text-white hover:border-slate-900 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700 text-xs font-semibold shadow-sm transition-all duration-150"
             >
-              <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+              <RefreshCw className={`h-4 w-4 transition-colors ${loading ? "animate-spin text-primary" : ""}`} />
               Làm mới
             </Button>
             {canEdit && (
@@ -940,30 +940,30 @@ function EmergencyPage() {
         <nav className="flex space-x-6">
           <button
             onClick={() => setActiveTab("contacts")}
-            className={`pb-3 text-sm font-semibold flex items-center gap-2 border-b-2 transition-colors ${
+            className={`pb-3 text-sm flex items-center gap-2 border-b-2 transition-colors ${
               activeTab === "contacts"
-                ? "border-emerald-600 text-emerald-600"
-                : "border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300"
+                ? "border-emerald-600 text-emerald-800 font-black"
+                : "border-transparent text-slate-700 font-bold hover:text-slate-900 hover:border-slate-300"
             }`}
           >
             <Phone className="h-4 w-4" /> Danh bạ liên lạc khẩn cấp ({contacts.length})
           </button>
           <button
             onClick={() => setActiveTab("procedures")}
-            className={`pb-3 text-sm font-semibold flex items-center gap-2 border-b-2 transition-colors ${
+            className={`pb-3 text-sm flex items-center gap-2 border-b-2 transition-colors ${
               activeTab === "procedures"
-                ? "border-emerald-600 text-emerald-600"
-                : "border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300"
+                ? "border-emerald-600 text-emerald-800 font-black"
+                : "border-transparent text-slate-700 font-bold hover:text-slate-900 hover:border-slate-300"
             }`}
           >
             <ShieldAlert className="h-4 w-4" /> Kịch bản & Quy trình ứng phó ({procedures.length})
           </button>
           <button
             onClick={() => setActiveTab("drills")}
-            className={`pb-3 text-sm font-semibold flex items-center gap-2 border-b-2 transition-colors ${
+            className={`pb-3 text-sm flex items-center gap-2 border-b-2 transition-colors ${
               activeTab === "drills"
-                ? "border-emerald-600 text-emerald-600"
-                : "border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300"
+                ? "border-emerald-600 text-emerald-800 font-black"
+                : "border-transparent text-slate-700 font-bold hover:text-slate-900 hover:border-slate-300"
             }`}
           >
             <FileCheck2 className="h-4 w-4" /> Nhật ký diễn tập & Sự cố ({drills.length})
@@ -1408,7 +1408,7 @@ function EmergencyPage() {
                             <Button
                               variant="outline"
                               size="sm"
-                              className="h-8 text-xs gap-1 text-slate-700"
+                              className="h-8 text-xs gap-1 border border-slate-300 bg-white text-slate-800 hover:bg-slate-900 hover:text-white hover:border-slate-900 shadow-sm transition-all duration-150 font-semibold"
                               onClick={() => handlePrintDrill(d)}
                               title="In biên bản A4 BM-EMERGENCY-01"
                             >

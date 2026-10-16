@@ -55,6 +55,7 @@ import {
   Siren,
   GitCompare,
   Truck,
+  RefreshCw,
 } from "lucide-react";
 import { AIChatWidget } from "@/components/AIChatWidget";
 
@@ -418,6 +419,7 @@ export function AppShell({ children, module }: { children: ReactNode; module?: M
   const [unreadCount, setUnreadCount] = useState<number>(0);
   const [notifPopoverOpen, setNotifPopoverOpen] = useState(false);
   const [userPopoverOpen, setUserPopoverOpen] = useState(false);
+  const [checking, setChecking] = useState(false);
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
@@ -628,6 +630,10 @@ export function AppShell({ children, module }: { children: ReactNode; module?: M
     }
     return (role || "US").slice(0, 2).toUpperCase();
   };
+  const handleCheckRoleUpdate = () => {
+    setChecking(true);
+    window.location.reload();
+  };
 
   // MÀN HÌNH CHẶN KHI TÀI KHOẢN CHƯA ĐƯỢC PHÂN QUYỀN (ROLE = user)
   if (session.role === "user") {
@@ -674,10 +680,10 @@ export function AppShell({ children, module }: { children: ReactNode; module?: M
         <div className="flex h-16 items-center gap-3 border-b px-5">
           <img src={logoImg} alt="WCERT" className="h-10 w-auto object-contain" />
           <div className="flex flex-col">
-            <span className="text-sm font-bold tracking-tight text-primary leading-tight">
+            <span className="text-sm font-bold tracking-tight text-emerald-800 leading-tight">
               WCERT FSMS
             </span>
-            <span className="text-[10px] text-muted-foreground font-medium">ISO 22000:2018</span>
+            <span className="text-[10px] text-emerald-700 font-bold">ISO 22000:2018</span>
           </div>
         </div>
         <nav className="flex-1 space-y-1 overflow-y-auto p-3">
@@ -690,11 +696,11 @@ export function AppShell({ children, module }: { children: ReactNode; module?: M
                 to={item.to}
                 className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition ${
                   active
-                    ? "bg-primary text-primary-foreground shadow-sm font-medium"
-                    : "text-sidebar-foreground hover:bg-sidebar-accent"
+                    ? "bg-emerald-600 text-white shadow-sm font-bold"
+                    : "text-slate-800 font-semibold hover:bg-emerald-50 hover:text-emerald-950"
                 }`}
               >
-                <Icon className="h-4 w-4 shrink-0" />
+                <Icon className={`h-4 w-4 shrink-0 ${active ? "text-white" : "text-slate-600"}`} />
                 <span className="truncate">{item.label}</span>
               </Link>
             );
@@ -706,16 +712,16 @@ export function AppShell({ children, module }: { children: ReactNode; module?: M
             onClick={() => window.dispatchEvent(new CustomEvent("open-ai-chat"))}
             className="w-full text-left rounded-xl bg-gradient-to-br from-primary/10 via-primary/5 to-emerald-500/10 hover:from-primary/15 hover:to-emerald-500/15 border border-primary/20 p-3 text-xs transition cursor-pointer group shadow-xs hover:shadow-sm"
           >
-            <div className="flex items-center justify-between font-semibold text-primary">
+            <div className="flex items-center justify-between font-bold text-emerald-800">
               <span className="flex items-center gap-1.5">
                 <Sparkles className="h-3.5 w-3.5 shrink-0 text-emerald-600 animate-pulse" /> Trợ lý
                 AI
               </span>
-              <span className="text-[10px] bg-emerald-600 text-white px-2 py-0.5 rounded-full font-medium shadow-xs group-hover:scale-105 transition">
+              <span className="text-[10px] bg-emerald-600 text-white px-2 py-0.5 rounded-full font-bold shadow-xs group-hover:scale-105 transition">
                 Mở chat
               </span>
             </div>
-            <p className="mt-1 text-muted-foreground line-clamp-2 text-[11px]">
+            <p className="mt-1 text-slate-700 font-medium line-clamp-2 text-[11px]">
               Trợ lý AI sẵn sàng hỗ trợ nghiệp vụ ISO 22000.
             </p>
           </button>
@@ -736,17 +742,17 @@ export function AppShell({ children, module }: { children: ReactNode; module?: M
               <div className="flex items-center gap-2.5">
                 <img src={logoImg} alt="WCERT" className="h-9 w-auto object-contain" />
                 <div className="flex flex-col">
-                  <span className="text-sm font-bold tracking-tight text-primary leading-tight">
+                  <span className="text-sm font-bold tracking-tight text-emerald-800 leading-tight">
                     WCERT FSMS
                   </span>
-                  <span className="text-[10px] text-muted-foreground font-medium">
+                  <span className="text-[10px] text-emerald-700 font-bold">
                     ISO 22000:2018
                   </span>
                 </div>
               </div>
               <button
                 onClick={() => setMobileMenuOpen(false)}
-                className="rounded-lg p-1.5 text-muted-foreground hover:bg-sidebar-accent hover:text-foreground"
+                className="rounded-lg p-1.5 text-slate-700 hover:bg-sidebar-accent hover:text-slate-900"
                 aria-label="Đóng menu"
               >
                 <X className="h-5 w-5" />
@@ -973,10 +979,10 @@ export function AppShell({ children, module }: { children: ReactNode; module?: M
             <button
               type="button"
               onClick={() => window.dispatchEvent(new CustomEvent("open-ai-chat"))}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-emerald-500/30 bg-emerald-50/90 hover:bg-emerald-100 text-emerald-800 transition text-xs font-semibold shadow-xs"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-emerald-500/50 bg-emerald-50 text-emerald-800 hover:bg-emerald-600 hover:text-white hover:border-emerald-600 transition text-xs font-bold shadow-xs group"
               title="Mở Trợ lý AI ISO 22000"
             >
-              <Sparkles className="h-3.5 w-3.5 text-emerald-600 animate-pulse" />
+              <Sparkles className="h-3.5 w-3.5 text-emerald-600 group-hover:text-white transition-colors animate-pulse" />
               <span className="hidden sm:inline">Trợ lý AI</span>
             </button>
 
@@ -1026,22 +1032,22 @@ export function AppShell({ children, module }: { children: ReactNode; module?: M
                     </div>
                   </div>
 
-                  <div className="pt-2.5 border-t border-slate-700/80 space-y-1.5 text-xs text-slate-300">
+                  <div className="pt-2.5 border-t border-slate-700/80 space-y-1.5 text-xs text-slate-200">
                     <div className="flex items-center justify-between">
-                      <span className="text-slate-400">Vai trò:</span>
-                      <span className="font-semibold text-emerald-400">
+                      <span className="text-slate-200 font-medium">Vai trò:</span>
+                      <span className="font-bold text-emerald-300">
                         {roleLabel(session.role)}
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-slate-400">Phòng ban:</span>
-                      <span className="font-semibold text-slate-200 truncate max-w-[190px]">
+                      <span className="text-slate-200 font-medium">Phòng ban:</span>
+                      <span className="font-bold text-white truncate max-w-[190px]">
                         {session.department || "Chưa cập nhật"}
                       </span>
                     </div>
                     <div className="flex items-center justify-between pt-0.5">
-                      <span className="text-slate-400">Số điện thoại:</span>
-                      <span className="font-semibold text-emerald-300 font-mono flex items-center gap-1">
+                      <span className="text-slate-200 font-medium">Số điện thoại:</span>
+                      <span className="font-bold text-emerald-300 font-mono flex items-center gap-1">
                         <Phone className="w-3 h-3 text-emerald-400 shrink-0" />
                         {session.phone && session.phone.trim() ? session.phone : "Chưa cập nhật"}
                       </span>
@@ -1050,10 +1056,10 @@ export function AppShell({ children, module }: { children: ReactNode; module?: M
                 </div>
 
                 {/* Role-Specific Quick Action Tabs / Links */}
-                <div className="px-3 pt-3 pb-1 border-b border-slate-100 bg-slate-50/70">
-                  <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 flex items-center justify-between">
+                <div className="px-3 pt-3 pb-1 border-b border-slate-200 bg-slate-50">
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-slate-700 flex items-center justify-between">
                     <span>Lối tắt chuyên môn</span>
-                    <span className="text-emerald-700 font-semibold truncate max-w-[150px]">
+                    <span className="text-emerald-800 font-bold truncate max-w-[150px]">
                       {roleLabel(session.role)}
                     </span>
                   </div>
@@ -1067,16 +1073,16 @@ export function AppShell({ children, module }: { children: ReactNode; module?: M
                         key={idx}
                         to={link.to}
                         onClick={() => setUserPopoverOpen(false)}
-                        className="w-full flex items-start gap-2.5 p-2 rounded-xl text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition text-left group border border-transparent hover:border-slate-200"
+                        className="w-full flex items-start gap-2.5 p-2 rounded-xl text-slate-800 hover:bg-slate-100 hover:text-slate-900 transition text-left group border border-transparent hover:border-slate-200"
                       >
                         <div className={`p-1.5 rounded-lg shrink-0 mt-0.5 border ${link.tone}`}>
                           <Icon className="w-3.5 h-3.5" />
                         </div>
                         <div className="min-w-0 flex-1">
-                          <div className="font-bold text-slate-800 group-hover:text-emerald-700 text-xs truncate">
+                          <div className="font-bold text-slate-900 group-hover:text-emerald-700 text-xs truncate">
                             {link.label}
                           </div>
-                          <div className="text-[10px] text-slate-500 truncate mt-0.5">
+                          <div className="text-[10px] text-slate-600 font-medium truncate mt-0.5">
                             {link.sublabel}
                           </div>
                         </div>
@@ -1086,25 +1092,23 @@ export function AppShell({ children, module }: { children: ReactNode; module?: M
                 </div>
 
                 {/* System Actions List */}
-                <div className="p-2 border-t border-slate-100 bg-slate-50/40 space-y-1 text-xs">
+                <div className="p-2 border-t border-slate-200 bg-slate-50/60 space-y-1.5 text-xs">
                   <button
                     onClick={openProfile}
-                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-slate-700 hover:bg-slate-100 hover:text-slate-900 font-medium transition"
+                    className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-800 font-bold hover:bg-slate-100 hover:text-slate-900 transition shadow-2xs"
                   >
-                    <UserCheck className="w-4 h-4 text-emerald-600" />
+                    <UserCheck className="w-4 h-4 text-emerald-700" />
                     Hồ sơ cá nhân
                   </button>
-
-                  <div className="my-1 border-t border-slate-100" />
 
                   <button
                     onClick={() => {
                       setUserPopoverOpen(false);
                       logout();
                     }}
-                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-rose-600 hover:bg-rose-50 font-semibold transition"
+                    className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-rose-200 bg-rose-50/70 text-rose-700 hover:bg-rose-100 hover:text-rose-800 font-bold transition shadow-2xs"
                   >
-                    <LogOut className="w-4 h-4" />
+                    <LogOut className="w-4 h-4 text-rose-700" />
                     Đăng xuất khỏi hệ thống
                   </button>
                 </div>

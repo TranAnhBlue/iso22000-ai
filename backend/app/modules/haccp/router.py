@@ -148,6 +148,7 @@ def format_step_out(step: Any) -> ProcessStepResponse:
         is_ccp_or_oprp=bool(getattr(step, "is_ccp_or_oprp", False)),
         hazard_count=h_count,
         plan_name=str(getattr(plan_obj, "plan_name", "")) if plan_obj else None,
+        plan_code=str(getattr(plan_obj, "plan_code", "")) if plan_obj else None,
         created_at=getattr(step, "created_at", None),
     )
 
@@ -184,6 +185,9 @@ def format_ccp_out(c: Any, last_log: Any = None) -> CCPDefinitionResponse:
     c_id_val = getattr(c, "ccp_id", None)
     step_id_val = getattr(c, "process_step_id", None)
     step_obj = getattr(c, "process_step", None)
+    plan_id_val = getattr(step_obj, "plan_id", None) if step_obj else None
+    plan_obj = getattr(step_obj, "haccp_plan", None) if step_obj else None
+    plan_code_val = getattr(plan_obj, "plan_code", None) if plan_obj else None
     
     last_val_str = None
     last_stat_str = "NORMAL"
@@ -198,6 +202,8 @@ def format_ccp_out(c: Any, last_log: Any = None) -> CCPDefinitionResponse:
         ccp_code=str(getattr(c, "ccp_code", "")),
         name=str(getattr(c, "name", "")),
         process_step_id=UUID(str(step_id_val)) if step_id_val is not None else None,
+        plan_id=UUID(str(plan_id_val)) if plan_id_val is not None else None,
+        plan_code=str(plan_code_val) if plan_code_val is not None else None,
         hazard_description=str(getattr(c, "hazard_description", "")),
         critical_limit=dict(getattr(c, "critical_limit", {}) or {}),
         monitoring_frequency=str(getattr(c, "monitoring_frequency", "Mỗi mẻ")),
@@ -1228,7 +1234,7 @@ def get_process_steps(
     db: Session = Depends(get_db)
 ):
     seed_haccp_data_if_empty(db)
-    stmt = select(ProcessStep).order_by(ProcessStep.step_number.asc())
+    stmt = select(ProcessStep).order_by(ProcessStep.plan_id.asc(), ProcessStep.step_number.asc())
     if q:
         stmt = stmt.where(ProcessStep.step_name.ilike(f"%{q.strip()}%"))
     if plan_id:
@@ -1237,12 +1243,7 @@ def get_process_steps(
         stmt = stmt.where(ProcessStep.product_line == product_line)
     
     steps = db.scalars(stmt).unique().all()
-    out = []
-    for idx, s in enumerate(steps, start=1):
-        formatted = format_step_out(s)
-        formatted.step_number = idx
-        out.append(formatted)
-    return out
+    return [format_step_out(s) for s in steps]
 
 
 @router.post("/process-steps", response_model=ProcessStepResponse, status_code=status.HTTP_201_CREATED)

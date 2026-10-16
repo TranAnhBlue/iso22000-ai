@@ -152,9 +152,9 @@ export const DynamicFormRenderer: React.FC<DynamicFormRendererProps> = ({
                 Phân hệ: {template.module}
               </span>
             </div>
-            <h2 className="text-xl font-bold text-slate-900">{template.title}</h2>
+            <h2 className="text-xl font-black text-slate-900">{template.title}</h2>
             {template.description && (
-              <p className="text-xs text-slate-600 mt-1">{template.description}</p>
+              <p className="text-xs text-slate-700 font-medium mt-1">{template.description}</p>
             )}
           </div>
 
@@ -162,7 +162,7 @@ export const DynamicFormRenderer: React.FC<DynamicFormRendererProps> = ({
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-3 bg-white p-2.5 rounded-xl border border-slate-200 shadow-sm">
               <div className="text-right">
-                <div className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">
+                <div className="text-[10px] uppercase font-black text-slate-700 tracking-wider">
                   Điểm Tuân Thủ Dự Kiến
                 </div>
                 <div
@@ -194,7 +194,7 @@ export const DynamicFormRenderer: React.FC<DynamicFormRendererProps> = ({
               <button
                 type="button"
                 onClick={onCancel}
-                className="p-2 rounded-xl border border-slate-300 bg-white text-slate-500 hover:text-slate-900 hover:bg-slate-100 shadow-sm transition-colors"
+                className="p-2 rounded-xl border border-slate-300 bg-white text-slate-700 hover:text-slate-900 hover:bg-slate-100 shadow-xs transition-colors"
                 title="Đóng phiếu"
               >
                 <X className="w-5 h-5" />
@@ -213,13 +213,13 @@ export const DynamicFormRenderer: React.FC<DynamicFormRendererProps> = ({
           return (
             <div key={field.id} className={`pt-4 first:pt-0 space-y-2`}>
               <div className="flex items-start justify-between gap-2">
-                <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                  <span className="text-slate-500">{idx + 1}.</span>
+                <label className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                  <span className="text-slate-700 font-black">{idx + 1}.</span>
                   <span>{field.label}</span>
                   {field.required && <span className="text-rose-600 font-bold">*</span>}
                 </label>
                 {field.unit && (
-                  <span className="text-[10px] font-mono font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+                  <span className="text-[10px] font-mono font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded border border-slate-300">
                     Đơn vị: {field.unit}
                   </span>
                 )}
@@ -233,7 +233,7 @@ export const DynamicFormRenderer: React.FC<DynamicFormRendererProps> = ({
                   value={value || ""}
                   placeholder={field.placeholder || "Nhập thông tin..."}
                   onChange={(e) => handleChange(field.name, e.target.value)}
-                  className={`w-full bg-white border rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:outline-none transition-all ${
+                  className={`w-full bg-white border rounded-xl px-3.5 py-2 text-xs text-slate-900 placeholder:text-slate-500 font-medium focus:outline-none transition-all ${
                     hasError
                       ? "border-rose-400 focus:border-rose-500 ring-1 ring-rose-300"
                       : "border-slate-300 focus:border-emerald-600"
@@ -250,14 +250,14 @@ export const DynamicFormRenderer: React.FC<DynamicFormRendererProps> = ({
                     value={value !== undefined ? value : ""}
                     placeholder={field.placeholder || "Nhập giá trị số..."}
                     onChange={(e) => handleChange(field.name, e.target.value)}
-                    className={`w-full bg-white border rounded-xl px-3.5 py-2 text-xs font-mono font-bold text-slate-900 focus:outline-none transition-all ${
+                    className={`w-full bg-white border rounded-xl px-3.5 py-2 text-xs font-mono font-bold text-slate-900 placeholder:text-slate-500 focus:outline-none transition-all ${
                       hasError
                         ? "border-rose-400 focus:border-rose-500 ring-1 ring-rose-300"
                         : "border-slate-300 focus:border-emerald-600"
                     }`}
                   />
                   {field.unit && (
-                    <span className="absolute right-3.5 top-2.5 text-xs text-slate-500 font-bold">
+                    <span className="absolute right-3.5 top-2.5 text-xs text-slate-700 font-bold">
                       {field.unit}
                     </span>
                   )}
@@ -286,10 +286,10 @@ export const DynamicFormRenderer: React.FC<DynamicFormRendererProps> = ({
                     type="button"
                     disabled={disabled}
                     onClick={() => handleChange(field.name, true)}
-                    className={`flex-1 py-2 px-4 rounded-xl text-xs font-bold flex items-center justify-center gap-2 border transition-all ${
+                    className={`flex-1 py-2 px-4 rounded-xl text-xs font-bold flex items-center justify-center gap-2 border-2 transition-all ${
                       value === true
                         ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
-                        : "bg-slate-50 text-slate-700 border-slate-300 hover:bg-slate-100"
+                        : "bg-emerald-50/50 text-emerald-900 border-emerald-300 hover:bg-emerald-100"
                     }`}
                   >
                     <CheckCircle2 className="w-4 h-4" />
@@ -300,10 +300,10 @@ export const DynamicFormRenderer: React.FC<DynamicFormRendererProps> = ({
                     type="button"
                     disabled={disabled}
                     onClick={() => handleChange(field.name, false)}
-                    className={`flex-1 py-2 px-4 rounded-xl text-xs font-bold flex items-center justify-center gap-2 border transition-all ${
+                    className={`flex-1 py-2 px-4 rounded-xl text-xs font-bold flex items-center justify-center gap-2 border-2 transition-all ${
                       value === false
                         ? "bg-rose-600 text-white border-rose-600 shadow-sm"
-                        : "bg-slate-50 text-slate-700 border-slate-300 hover:bg-slate-100"
+                        : "bg-rose-50/50 text-rose-900 border-rose-300 hover:bg-rose-100"
                     }`}
                   >
                     <AlertTriangle className="w-4 h-4" />
@@ -359,11 +359,11 @@ export const DynamicFormRenderer: React.FC<DynamicFormRendererProps> = ({
 
               {field.type === "SIGNATURE" && (
                 <div className="p-3 bg-slate-50 border border-slate-300 rounded-xl space-y-2">
-                  <div className="flex items-center justify-between text-xs text-slate-700">
-                    <span className="font-semibold flex items-center gap-1.5">
+                  <div className="flex items-center justify-between text-xs text-slate-800">
+                    <span className="font-bold flex items-center gap-1.5">
                       <PenTool className="w-3.5 h-3.5 text-blue-600" /> Ký tên điện tử xác nhận
                     </span>
-                    <span className="text-[10px] text-slate-500">Ký họ tên hoặc mã KCS</span>
+                    <span className="text-[10px] text-slate-700 font-bold">Ký họ tên hoặc mã KCS</span>
                   </div>
                   <input
                     type="text"
@@ -371,15 +371,15 @@ export const DynamicFormRenderer: React.FC<DynamicFormRendererProps> = ({
                     value={value || ""}
                     placeholder="Nhập chữ ký điện tử hoặc họ tên người phụ trách..."
                     onChange={(e) => handleChange(field.name, e.target.value)}
-                    className="w-full bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-xs text-slate-900 font-mono focus:border-emerald-600 focus:outline-none"
+                    className="w-full bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-xs text-slate-900 placeholder:text-slate-500 font-mono focus:border-emerald-600 focus:outline-none"
                   />
                 </div>
               )}
 
               {field.type === "PHOTO" && (
                 <div className="p-4 border-2 border-dashed border-slate-300 rounded-xl bg-slate-50 text-center space-y-2">
-                  <Camera className="w-6 h-6 text-slate-400 mx-auto" />
-                  <div className="text-xs text-slate-700 font-semibold">
+                  <Camera className="w-6 h-6 text-slate-600 mx-auto" />
+                  <div className="text-xs text-slate-900 font-bold">
                     Tải lên hình ảnh bằng chứng hiện trường
                   </div>
                   <input
@@ -388,7 +388,7 @@ export const DynamicFormRenderer: React.FC<DynamicFormRendererProps> = ({
                     value={value || ""}
                     placeholder="Nhập đường dẫn URL ảnh hoặc ghi chú ảnh hiện trường..."
                     onChange={(e) => handleChange(field.name, e.target.value)}
-                    className="w-full bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-xs text-slate-900 focus:border-emerald-600 focus:outline-none"
+                    className="w-full bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-xs text-slate-900 placeholder:text-slate-500 font-medium focus:border-emerald-600 focus:outline-none"
                   />
                 </div>
               )}
@@ -400,8 +400,8 @@ export const DynamicFormRenderer: React.FC<DynamicFormRendererProps> = ({
                   {errors[field.name]}
                 </div>
               ) : field.help_text ? (
-                <div className="text-[11px] text-slate-500 flex items-center gap-1">
-                  <Info className="w-3.5 h-3.5 text-slate-400" />
+                <div className="text-[11px] text-slate-700 font-medium flex items-center gap-1">
+                  <Info className="w-3.5 h-3.5 text-blue-600" />
                   {field.help_text}
                 </div>
               ) : null}
@@ -413,7 +413,7 @@ export const DynamicFormRenderer: React.FC<DynamicFormRendererProps> = ({
       {/* Footer Submit Bar */}
       {!disabled && (
         <div className="bg-slate-50 border-t border-slate-200 p-4 flex flex-wrap items-center justify-between gap-3">
-          <div className="text-xs text-slate-600 flex items-center gap-1.5">
+          <div className="text-xs text-slate-800 font-bold flex items-center gap-1.5">
             <FileCheck className="w-4 h-4 text-emerald-600" />
             <span>Xác nhận thông tin đo đạc chính xác theo tiêu chuẩn ISO 22000:2018</span>
           </div>
@@ -424,7 +424,7 @@ export const DynamicFormRenderer: React.FC<DynamicFormRendererProps> = ({
                 type="button"
                 variant="outline"
                 onClick={onCancel}
-                className="text-xs font-bold border-slate-300 text-slate-700 hover:bg-slate-100 px-4 py-2.5 rounded-xl"
+                className="text-xs font-bold border-2 border-slate-300 text-slate-800 bg-white hover:bg-slate-100 px-4 py-2.5 rounded-xl shadow-2xs"
               >
                 Hủy / Đóng
               </Button>

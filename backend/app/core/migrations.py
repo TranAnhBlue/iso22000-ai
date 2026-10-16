@@ -925,6 +925,16 @@ def run_migrations():
                 except Exception:
                     pass
         print("[MIGRATION] Hoàn tất migrations thành công!")
+
+        # Tự động đồng bộ các Biểu mẫu và Quy trình mẫu chuẩn ISO 22000:2018
+        try:
+            from app.core.database import SessionLocal
+            from app.modules.builder.router import ensure_default_builder_templates
+            with SessionLocal() as db_session:
+                ensure_default_builder_templates(db_session)
+            print("[MIGRATION] Đã khởi tạo đầy đủ biểu mẫu và quy trình mẫu ISO 22000.")
+        except Exception as seed_err:
+            print(f"[MIGRATION WARNING] Builder default seed note: {seed_err}")
     except Exception as e:
         print(f"[MIGRATION WARNING] Database tables create_all note: {e}")
 

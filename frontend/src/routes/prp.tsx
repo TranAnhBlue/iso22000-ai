@@ -58,6 +58,7 @@ import type { FormTemplateData } from "@/components/builder/types";
 import { printHtml } from "@/lib/print";
 import { EmptyState } from "@/components/EmptyState";
 import { ModuleGuideModal } from "@/components/ModuleGuideModal";
+import { WaterChemicalWasteTab } from "@/components/prp/WaterChemicalWasteTab";
 
 export const Route = createFileRoute("/prp")({
   head: () => ({
@@ -210,7 +211,7 @@ const DEFAULT_CHECKLIST_QUESTIONS: Record<string, string[]> = {
 function PRPModule() {
   const { departments } = useDepartments();
   const [activeTab, setActiveTab] = useState<
-    "programs" | "checklists" | "pest_control" | "allergens" | "visitor_health" | "first_aid"
+    "programs" | "checklists" | "pest_control" | "allergens" | "visitor_health" | "first_aid" | "water_chemical"
   >("programs");
 
   // Data states
@@ -654,7 +655,7 @@ function PRPModule() {
       status: item.status,
       traps:
         Array.isArray(item.trap_locations) && item.trap_locations.length > 0
-          ? item.trap_locations
+          ? item.trap_locations.map((t: any) => ({ ...t, notes: t.notes || "" }))
           : [],
     });
     setShowPestModal(true);
@@ -1364,12 +1365,15 @@ function PRPModule() {
         setGmpFormTemplate(found);
       } else {
         setGmpFormTemplate({
+          template_id: "FORM-GMP-01",
           module: "PRP",
           code: "FORM-GMP-01",
           title: "Phiếu Kiểm Tra Vệ Sinh Nhà Xưởng & Thiết Bị (GMP-01)",
           description:
             "Giám sát tình trạng vệ sinh bề mặt tiếp xúc thực phẩm, bảo hộ lao động và hệ thống thoát sàn trước ca sản xuất.",
           version: "1.0",
+          status: "ACTIVE",
+          is_approved: true,
           fields: [
             {
               id: "g_shift",
@@ -1437,7 +1441,6 @@ function PRPModule() {
               default_value: "Mọi tiêu chuẩn vệ sinh đều đạt yêu cầu trước khi bắt đầu ca.",
             },
           ],
-          status: "ACTIVE",
         });
       }
       setShowDynamicGmpModal(true);
@@ -1449,7 +1452,7 @@ function PRPModule() {
   const handleSaveGmpDynamicForm = async (vals: Record<string, any>) => {
     try {
       await api.post("/builders/submissions", {
-        template_id: gmpFormTemplate?.template_id || "FORM-GMP-01",
+        template_id: gmpFormTemplate?.template_id || gmpFormTemplate?.code || "FORM-GMP-01",
         reference_id: selectedProgramForForm ? selectedProgramForForm.program_id : "PRP-GLOBAL",
         reference_type: "PRP_PROGRAM",
         submitted_by_name: "Giám Sát Viên GMP / SSOP",
@@ -1562,32 +1565,38 @@ function PRPModule() {
             variant="outline"
             size="sm"
             onClick={() => setShowGuide(true)}
-            className="border-emerald-300 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 flex items-center gap-1.5 font-bold text-xs"
+            className="border border-emerald-400/80 bg-emerald-50 text-emerald-800 hover:bg-emerald-600 hover:text-white hover:border-emerald-600 flex items-center gap-1.5 font-bold text-xs shadow-sm transition-all duration-150"
           >
-            <BookOpen className="h-4 w-4 text-emerald-600" />
+            <BookOpen className="h-4 w-4 transition-colors" />
             <span>Hướng Dẫn Nghiệp Vụ</span>
           </Button>
           <Button
             variant="outline"
             size="sm"
             onClick={() => handleOpenGmpDynamicForm()}
-            className="border-emerald-300 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 flex items-center gap-1.5 font-semibold text-xs"
+            className="border border-blue-400/80 bg-blue-50 text-blue-800 hover:bg-blue-600 hover:text-white hover:border-blue-600 flex items-center gap-1.5 font-bold text-xs shadow-sm transition-all duration-150"
           >
-            <Sliders className="h-4 w-4 text-emerald-600" />
+            <Sliders className="h-4 w-4 transition-colors" />
             <span>Ghi Nhật Ký Bằng Form Động (GMP-01)</span>
           </Button>
 
-          <Button variant="outline" size="sm" onClick={fetchData} disabled={loading}>
-            <RefreshCw className={`h-4 w-4 mr-1.5 ${loading ? "animate-spin" : ""}`} />
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={fetchData}
+            disabled={loading}
+            className="border border-slate-300 bg-white text-slate-800 hover:bg-slate-900 hover:text-white hover:border-slate-900 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700 text-xs font-semibold shadow-sm transition-all duration-150"
+          >
+            <RefreshCw className={`h-4 w-4 mr-1.5 transition-colors ${loading ? "animate-spin text-primary" : ""}`} />
             Làm mới
           </Button>
           <Button
             variant="outline"
             size="sm"
             onClick={() => setShowPrintModal(true)}
-            className="border-primary/30 text-primary hover:bg-primary/5"
+            className="border border-purple-400/80 bg-purple-50 text-purple-800 hover:bg-purple-600 hover:text-white hover:border-purple-600 dark:bg-purple-950/40 dark:text-purple-300 dark:hover:bg-purple-600 dark:hover:text-white font-bold text-xs shadow-sm transition-all duration-150"
           >
-            <Printer className="h-4 w-4 mr-1.5" />
+            <Printer className="h-4 w-4 mr-1.5 transition-colors" />
             <span className="hidden sm:inline">In Bảng Đánh Giá PRP (BM-PRP-01)</span>
             <span className="sm:hidden">In BM-PRP-01</span>
           </Button>
@@ -1687,76 +1696,183 @@ function PRPModule() {
         </div>
       </div>
 
-      {/* ==================== 6 TABS NAVIGATION ==================== */}
-      <div className="border-b overflow-x-auto no-scrollbar">
-        <div className="flex space-x-1 sm:space-x-4 min-w-max pb-1">
+      {/* MODERN CONSOLIDATED TABS NAVIGATION - NO HORIZONTAL CUT-OFF */}
+      <div className="space-y-3">
+        <div className="bg-slate-100/90 dark:bg-slate-900/90 p-1.5 rounded-2xl border border-slate-200/80 dark:border-slate-800 flex flex-wrap items-center gap-1.5 sm:gap-2 shadow-xs">
+          {/* Nhóm 1: Thư viện Quy Chuẩn PRP / GMP / SSOP */}
           <button
             onClick={() => setActiveTab("programs")}
-            className={`pb-2.5 px-2.5 sm:px-3 text-xs sm:text-sm font-semibold border-b-2 transition-all flex items-center gap-1.5 sm:gap-2 whitespace-nowrap ${
+            className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all ${
               activeTab === "programs"
-                ? "border-primary text-primary"
-                : "border-transparent text-muted-foreground hover:text-foreground"
+                ? "bg-white dark:bg-slate-800 text-emerald-800 dark:text-emerald-400 shadow-sm border border-slate-200/80 dark:border-slate-700 font-black"
+                : "text-slate-700 dark:text-slate-300 hover:text-slate-900 hover:bg-white/60 dark:hover:bg-slate-800/60"
             }`}
           >
-            <Layers className="h-4 w-4 shrink-0" />
-            Thư viện Quy chuẩn PRP ({programs.length})
+            <Layers className="h-4 w-4 shrink-0 text-emerald-600" />
+            <span>Quy Chuẩn PRP / GMP / SSOP</span>
+            <span
+              className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${
+                activeTab === "programs"
+                  ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300"
+                  : "bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200"
+              }`}
+            >
+              {programs.length}
+            </span>
           </button>
+
+          {/* Nhóm 2: Checklist Giám Sát Ca */}
           <button
             onClick={() => setActiveTab("checklists")}
-            className={`pb-2.5 px-2.5 sm:px-3 text-xs sm:text-sm font-semibold border-b-2 transition-all flex items-center gap-1.5 sm:gap-2 whitespace-nowrap ${
+            className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all ${
               activeTab === "checklists"
-                ? "border-primary text-primary"
-                : "border-transparent text-muted-foreground hover:text-foreground"
+                ? "bg-white dark:bg-slate-800 text-teal-800 dark:text-teal-400 shadow-sm border border-slate-200/80 dark:border-slate-700 font-black"
+                : "text-slate-700 dark:text-slate-300 hover:text-slate-900 hover:bg-white/60 dark:hover:bg-slate-800/60"
             }`}
           >
-            <ClipboardCheck className="h-4 w-4" />
-            Checklist Giám Sát Theo Ca ({checklists.length})
+            <ClipboardCheck className="h-4 w-4 shrink-0 text-teal-600" />
+            <span>Checklist Giám Sát Ca</span>
+            <span
+              className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${
+                activeTab === "checklists"
+                  ? "bg-teal-100 text-teal-800 dark:bg-teal-950/60 dark:text-teal-300"
+                  : "bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200"
+              }`}
+            >
+              {checklists.length}
+            </span>
           </button>
+
+          {/* Nhóm 3: Kiểm Soát Dịch Hại & Dị Ứng */}
           <button
-            onClick={() => setActiveTab("pest_control")}
-            className={`pb-2.5 px-2.5 sm:px-3 text-xs sm:text-sm font-semibold border-b-2 transition-all flex items-center gap-1.5 sm:gap-2 whitespace-nowrap ${
-              activeTab === "pest_control"
-                ? "border-primary text-primary"
-                : "border-transparent text-muted-foreground hover:text-foreground"
+            onClick={() => {
+              if (activeTab !== "pest_control" && activeTab !== "allergens") {
+                setActiveTab("pest_control");
+              }
+            }}
+            className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all ${
+              activeTab === "pest_control" || activeTab === "allergens"
+                ? "bg-white dark:bg-slate-800 text-amber-800 dark:text-amber-400 shadow-sm border border-slate-200/80 dark:border-slate-700 font-black"
+                : "text-slate-700 dark:text-slate-300 hover:text-slate-900 hover:bg-white/60 dark:hover:bg-slate-800/60"
             }`}
           >
-            <Bug className="h-4 w-4 text-emerald-600" />
-            Kiểm Soát Bẫy Chuột & Côn Trùng (BM01-SVGH) ({pestLogs.length})
+            <Bug className="h-4 w-4 shrink-0 text-amber-600" />
+            <span>Kiểm Soát Dịch Hại & Dị Ứng</span>
+            <span
+              className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${
+                activeTab === "pest_control" || activeTab === "allergens"
+                  ? "bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300"
+                  : "bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200"
+              }`}
+            >
+              {pestLogs.length + allergens.length}
+            </span>
           </button>
+
+          {/* Nhóm 4: Sức Khỏe & Y Tế Lao Động */}
           <button
-            onClick={() => setActiveTab("allergens")}
-            className={`pb-2.5 px-2.5 sm:px-3 text-xs sm:text-sm font-semibold border-b-2 transition-all flex items-center gap-1.5 sm:gap-2 whitespace-nowrap ${
-              activeTab === "allergens"
-                ? "border-primary text-primary"
-                : "border-transparent text-muted-foreground hover:text-foreground"
+            onClick={() => {
+              if (activeTab !== "visitor_health" && activeTab !== "first_aid") {
+                setActiveTab("visitor_health");
+              }
+            }}
+            className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all ${
+              activeTab === "visitor_health" || activeTab === "first_aid"
+                ? "bg-white dark:bg-slate-800 text-rose-800 dark:text-rose-400 shadow-sm border border-slate-200/80 dark:border-slate-700 font-black"
+                : "text-slate-700 dark:text-slate-300 hover:text-slate-900 hover:bg-white/60 dark:hover:bg-slate-800/60"
             }`}
           >
-            <ShieldAlert className="h-4 w-4 text-amber-600" />
-            Chất Gây Dị Ứng (BM01-CGDU) ({allergens.length})
+            <HeartPulse className="h-4 w-4 shrink-0 text-rose-600" />
+            <span>Sức Khỏe & Y Tế Lao Động</span>
+            <span
+              className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${
+                activeTab === "visitor_health" || activeTab === "first_aid"
+                  ? "bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300"
+                  : "bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200"
+              }`}
+            >
+              {visitorDeclarations.length + firstAidLogs.length}
+            </span>
           </button>
+
+          {/* Nhóm 5: Môi Trường, Hóa Chất & Nguồn Nước (SSOP) */}
           <button
-            onClick={() => setActiveTab("visitor_health")}
-            className={`pb-2.5 px-2.5 sm:px-3 text-xs sm:text-sm font-semibold border-b-2 transition-all flex items-center gap-1.5 sm:gap-2 whitespace-nowrap ${
-              activeTab === "visitor_health"
-                ? "border-primary text-primary"
-                : "border-transparent text-muted-foreground hover:text-foreground"
+            onClick={() => setActiveTab("water_chemical")}
+            className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all ${
+              activeTab === "water_chemical"
+                ? "bg-white dark:bg-slate-800 text-cyan-800 dark:text-cyan-400 shadow-sm border border-slate-200/80 dark:border-slate-700 font-black"
+                : "text-slate-700 dark:text-slate-300 hover:text-slate-900 hover:bg-white/60 dark:hover:bg-slate-800/60"
             }`}
           >
-            <UserCheck className="h-4 w-4 text-blue-600" />
-            Kê Khai Y Tế Khách (BM03-KSSK) ({visitorDeclarations.length})
-          </button>
-          <button
-            onClick={() => setActiveTab("first_aid")}
-            className={`pb-2.5 px-2.5 sm:px-3 text-xs sm:text-sm font-semibold border-b-2 transition-all flex items-center gap-1.5 sm:gap-2 whitespace-nowrap ${
-              activeTab === "first_aid"
-                ? "border-primary text-primary"
-                : "border-transparent text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <HeartPulse className="h-4 w-4 text-rose-600" />
-            Tủ Thuốc Sơ Cứu Xưởng (BM01-KSSK) ({firstAidLogs.length})
+            <Droplets className="h-4 w-4 shrink-0 text-cyan-600" />
+            <span>Nguồn Nước, Hóa Chất & Môi Trường</span>
+            <span
+              className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${
+                activeTab === "water_chemical"
+                  ? "bg-cyan-100 text-cyan-800 dark:bg-cyan-950/60 dark:text-cyan-300"
+                  : "bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200"
+              }`}
+            >
+              SSOP
+            </span>
           </button>
         </div>
+
+        {/* SUB-TABS: Khi đang ở Nhóm Kiểm Soát Dịch Hại & Dị Ứng */}
+        {(activeTab === "pest_control" || activeTab === "allergens") && (
+          <div className="flex flex-wrap items-center gap-1.5 p-1 bg-slate-50 dark:bg-slate-900/60 rounded-xl border border-slate-200/80 dark:border-slate-800 w-fit">
+            <button
+              onClick={() => setActiveTab("pest_control")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                activeTab === "pest_control"
+                  ? "bg-amber-600 text-white shadow-xs"
+                  : "text-slate-700 hover:text-slate-900 hover:bg-white dark:text-slate-300 dark:hover:bg-slate-800"
+              }`}
+            >
+              <Bug className="h-3.5 w-3.5" />
+              <span>1. Bẫy Chuột & Côn Trùng (BM01-SVGH) ({pestLogs.length})</span>
+            </button>
+            <button
+              onClick={() => setActiveTab("allergens")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                activeTab === "allergens"
+                  ? "bg-amber-600 text-white shadow-xs"
+                  : "text-slate-700 hover:text-slate-900 hover:bg-white dark:text-slate-300 dark:hover:bg-slate-800"
+              }`}
+            >
+              <ShieldAlert className="h-3.5 w-3.5" />
+              <span>2. Kiểm Soát Chất Gây Dị Ứng (BM01-CGDU) ({allergens.length})</span>
+            </button>
+          </div>
+        )}
+
+        {/* SUB-TABS: Khi đang ở Nhóm Sức Khỏe & Y Tế Lao Động */}
+        {(activeTab === "visitor_health" || activeTab === "first_aid") && (
+          <div className="flex flex-wrap items-center gap-1.5 p-1 bg-slate-50 dark:bg-slate-900/60 rounded-xl border border-slate-200/80 dark:border-slate-800 w-fit">
+            <button
+              onClick={() => setActiveTab("visitor_health")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                activeTab === "visitor_health"
+                  ? "bg-rose-600 text-white shadow-xs"
+                  : "text-slate-700 hover:text-slate-900 hover:bg-white dark:text-slate-300 dark:hover:bg-slate-800"
+              }`}
+            >
+              <UserCheck className="h-3.5 w-3.5" />
+              <span>1. Kê Khai Y Tế Khách (BM03-KSSK) ({visitorDeclarations.length})</span>
+            </button>
+            <button
+              onClick={() => setActiveTab("first_aid")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                activeTab === "first_aid"
+                  ? "bg-rose-600 text-white shadow-xs"
+                  : "text-slate-700 hover:text-slate-900 hover:bg-white dark:text-slate-300 dark:hover:bg-slate-800"
+              }`}
+            >
+              <HeartPulse className="h-3.5 w-3.5" />
+              <span>2. Tủ Thuốc Sơ Cứu Xưởng (BM01-KSSK) ({firstAidLogs.length})</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* ==================== TAB 1: PRP PROGRAMS ==================== */}
@@ -1774,17 +1890,17 @@ function PRPModule() {
           <div className="space-y-4">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
               <div className="relative w-full sm:w-72">
-                <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-500" />
                 <Input
                   placeholder="Tìm mã, tên chương trình..."
-                  className="pl-9 text-sm"
+                  className="pl-9 text-sm border-slate-300 font-semibold text-slate-900 placeholder:text-slate-500"
                   value={progSearch}
                   onChange={(e) => setProgSearch(e.target.value)}
                 />
               </div>
               <div className="flex items-center gap-2 w-full sm:w-auto">
                 <select
-                  className="border rounded-md px-3 py-2 text-sm bg-background text-foreground"
+                  className="border border-slate-300 rounded-md px-3 py-2 text-sm bg-white text-slate-900 font-semibold shadow-2xs focus:border-emerald-600 focus:outline-none"
                   value={progGroupFilter}
                   onChange={(e) => setProgGroupFilter(e.target.value)}
                 >
@@ -1796,7 +1912,7 @@ function PRPModule() {
                 <Button
                   onClick={handleOpenCreateProg}
                   size="sm"
-                  className="bg-primary text-primary-foreground"
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-sm"
                 >
                   <Plus className="h-4 w-4 mr-2" /> Thêm chương trình mới
                 </Button>
@@ -1821,7 +1937,8 @@ function PRPModule() {
                         variant="ghost"
                         size="icon"
                         onClick={() => handleOpenEditProg(p)}
-                        className="h-7 w-7 text-muted-foreground hover:text-primary"
+                        className="h-7 w-7 text-slate-700 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg"
+                        title="Chỉnh sửa chương trình"
                       >
                         <Pencil className="h-3.5 w-3.5" />
                       </Button>
@@ -1829,7 +1946,7 @@ function PRPModule() {
                         variant="ghost"
                         size="icon"
                         onClick={() => setDeletingProg(p)}
-                        className="h-7 w-7 text-muted-foreground hover:text-rose-600"
+                        className="h-7 w-7 text-slate-700 hover:text-rose-600 hover:bg-rose-50 rounded-lg"
                         title="Xóa chương trình"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
@@ -1838,49 +1955,49 @@ function PRPModule() {
                   </div>
 
                   <div>
-                    <h4 className="font-bold text-sm text-foreground">{p.program_name}</h4>
+                    <h4 className="font-extrabold text-sm text-slate-900">{p.program_name}</h4>
                     {p.description && (
-                      <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                      <p className="text-xs text-slate-600 font-medium mt-1 line-clamp-2">
                         {p.description}
                       </p>
                     )}
                   </div>
 
-                  <div className="bg-muted/40 p-2.5 rounded-lg border text-xs space-y-1">
+                  <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-xs space-y-1">
                     <p>
-                      <span className="text-muted-foreground">Phạm vi:</span>{" "}
-                      <span className="font-medium text-foreground">
+                      <span className="text-slate-600 font-semibold">Phạm vi:</span>{" "}
+                      <span className="font-bold text-slate-900">
                         {p.scope || "Toàn nhà máy"}
                       </span>
                     </p>
                     <p>
-                      <span className="text-muted-foreground">Tần suất:</span>{" "}
-                      <span className="font-medium text-foreground">{p.frequency}</span>
+                      <span className="text-slate-600 font-semibold">Tần suất:</span>{" "}
+                      <span className="font-bold text-slate-900">{p.frequency}</span>
                     </p>
                     <p>
-                      <span className="text-muted-foreground">Phụ trách:</span>{" "}
-                      <span className="font-medium text-foreground">{p.responsible_dept}</span>
+                      <span className="text-slate-600 font-semibold">Phụ trách:</span>{" "}
+                      <span className="font-bold text-slate-900">{p.responsible_dept}</span>
                     </p>
                   </div>
 
-                  <div className="pt-2 border-t flex items-center justify-between text-xs gap-1.5">
-                    <span className="text-muted-foreground">{p.checklist_count} lượt kiểm</span>
-                    <div className="flex items-center gap-1">
+                  <div className="pt-2 border-t border-slate-200 flex items-center justify-between text-xs gap-1.5">
+                    <span className="text-slate-800 font-bold">{p.checklist_count} lượt kiểm</span>
+                    <div className="flex items-center gap-1.5">
                       <Button
                         size="sm"
                         variant="outline"
                         onClick={() => handleOpenGmpDynamicForm(p)}
-                        className="text-xs h-7 border-sky-300 text-sky-700 hover:bg-sky-50"
+                        className="text-xs h-7.5 border-sky-400 bg-sky-50 text-sky-800 font-bold hover:bg-sky-600 hover:text-white hover:border-sky-600 transition-colors shadow-2xs"
                       >
-                        <Sliders className="h-3 w-3 mr-1" /> Form Động
+                        <Sliders className="h-3.5 w-3.5 mr-1" /> Form Động
                       </Button>
                       <Button
                         size="sm"
                         variant="outline"
                         onClick={() => handleOpenCreateChecklist(p)}
-                        className="text-xs h-7 border-emerald-300 text-emerald-700 hover:bg-emerald-50"
+                        className="text-xs h-7.5 border-emerald-500 bg-emerald-50 text-emerald-800 font-bold hover:bg-emerald-600 hover:text-white hover:border-emerald-600 transition-colors shadow-2xs"
                       >
-                        <Plus className="h-3 w-3 mr-1" /> Checklist
+                        <Plus className="h-3.5 w-3.5 mr-1" /> Checklist
                       </Button>
                     </div>
                   </div>
@@ -2189,7 +2306,7 @@ function PRPModule() {
                 variant="outline"
                 size="sm"
                 onClick={handlePrintAllergens}
-                className="gap-2 border-primary/30 text-primary hover:bg-primary/5 font-semibold"
+                className="gap-2 border border-slate-300 bg-white text-slate-800 hover:bg-slate-900 hover:text-white hover:border-slate-900 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700 text-xs font-semibold shadow-sm transition-all duration-150"
               >
                 <Printer className="h-4 w-4" />
                 In Danh Mục (BM01-CGDU)
@@ -2615,6 +2732,9 @@ function PRPModule() {
           )}
         </div>
       )}
+
+      {/* ==================== TAB 7: WATER, CHEMICALS & WASTE (SSOP) ==================== */}
+      {activeTab === "water_chemical" && <WaterChemicalWasteTab />}
 
       {/* ==================== MODAL: ADD / EDIT PROGRAM ==================== */}
       <Dialog open={showProgModal} onOpenChange={setShowProgModal}>

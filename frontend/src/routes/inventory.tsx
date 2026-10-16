@@ -899,9 +899,9 @@ export function InventoryPage() {
             variant="outline"
             size="sm"
             onClick={() => setShowGuide(true)}
-            className="gap-2 text-primary border-primary/30 hover:bg-primary/5"
+            className="gap-2 border border-emerald-400/80 text-emerald-800 bg-emerald-50 hover:bg-emerald-600 hover:text-white hover:border-emerald-600 font-bold text-xs shadow-sm transition-all duration-150"
           >
-            <BookOpen className="h-4 w-4" />
+            <BookOpen className="h-4 w-4 transition-colors" />
             Hướng Dẫn Nghiệp Vụ
           </Button>
           <Button
@@ -909,9 +909,9 @@ export function InventoryPage() {
             size="sm"
             onClick={fetchData}
             disabled={loading}
-            className="gap-2"
+            className="gap-2 border border-slate-300 bg-white text-slate-800 hover:bg-slate-900 hover:text-white hover:border-slate-900 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700 text-xs font-semibold shadow-sm transition-all duration-150"
           >
-            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+            <RefreshCw className={`h-4 w-4 transition-colors ${loading ? "animate-spin text-primary" : ""}`} />
             Làm mới
           </Button>
           <Link to="/traceability">
@@ -1040,79 +1040,161 @@ export function InventoryPage() {
         </div>
       </div>
 
-      {/* NAVIGATION TABS */}
-      <div className="flex items-center gap-2 border-b overflow-x-auto no-scrollbar pb-1">
-        <button
-          onClick={() => setActiveTab("stock")}
-          className={`flex items-center gap-2 px-4 py-2.5 text-xs sm:text-sm font-semibold border-b-2 transition-all whitespace-nowrap ${
-            activeTab === "stock"
-              ? "border-primary text-primary"
-              : "border-transparent text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          <Boxes className="h-4 w-4" />
-          1. Tồn Kho FEFO & Cảnh Báo ({stocks.length})
-        </button>
+      {/* MODERN CONSOLIDATED TABS NAVIGATION - NO HORIZONTAL CUT-OFF */}
+      <div className="space-y-3">
+        <div className="bg-slate-100/90 dark:bg-slate-900/90 p-1.5 rounded-2xl border border-slate-200/80 dark:border-slate-800 flex flex-wrap items-center gap-1.5 sm:gap-2 shadow-xs">
+          {/* Nhóm 1: Tồn Kho & Kệ/Bin */}
+          <button
+            onClick={() => {
+              if (activeTab !== "stock" && activeTab !== "bins") {
+                setActiveTab("stock");
+              }
+            }}
+            className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all ${
+              activeTab === "stock" || activeTab === "bins"
+                ? "bg-white dark:bg-slate-800 text-emerald-800 dark:text-emerald-400 shadow-sm border border-slate-200/80 dark:border-slate-700 font-black"
+                : "text-slate-700 dark:text-slate-300 hover:text-slate-900 hover:bg-white/60 dark:hover:bg-slate-800/60"
+            }`}
+          >
+            <Boxes className="h-4 w-4 shrink-0 text-emerald-600" />
+            <span>Tồn Kho & Vị Trí Kệ/Bin</span>
+            <span
+              className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${
+                activeTab === "stock" || activeTab === "bins"
+                  ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300"
+                  : "bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200"
+              }`}
+            >
+              {stocks.length}
+            </span>
+          </button>
 
-        <button
-          onClick={() => setActiveTab("bins")}
-          className={`flex items-center gap-2 px-4 py-2.5 text-xs sm:text-sm font-semibold border-b-2 transition-all whitespace-nowrap ${
-            activeTab === "bins"
-              ? "border-primary text-primary"
-              : "border-transparent text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          <MapPin className="h-4 w-4" />
-          2. Sơ Đồ Vị Trí Kệ & Bin Kho Lạnh
-        </button>
+          {/* Nhóm 2: Xuất Hàng & Vận Chuyển */}
+          <button
+            onClick={() => {
+              if (activeTab !== "production" && activeTab !== "vehicles") {
+                setActiveTab("production");
+              }
+            }}
+            className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all ${
+              activeTab === "production" || activeTab === "vehicles"
+                ? "bg-white dark:bg-slate-800 text-emerald-800 dark:text-emerald-400 shadow-sm border border-slate-200/80 dark:border-slate-700 font-black"
+                : "text-slate-700 dark:text-slate-300 hover:text-slate-900 hover:bg-white/60 dark:hover:bg-slate-800/60"
+            }`}
+          >
+            <Truck className="h-4 w-4 shrink-0 text-blue-600" />
+            <span>Xuất Hàng & Vận Chuyển</span>
+            <span
+              className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${
+                activeTab === "production" || activeTab === "vehicles"
+                  ? "bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300"
+                  : "bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200"
+              }`}
+            >
+              {batches.length + dispatches.length + vehicleInspections.length}
+            </span>
+          </button>
 
-        <button
-          onClick={() => setActiveTab("samples")}
-          className={`flex items-center gap-2 px-4 py-2.5 text-xs sm:text-sm font-semibold border-b-2 transition-all whitespace-nowrap ${
-            activeTab === "samples"
-              ? "border-primary text-primary"
-              : "border-transparent text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          <FlaskConical className="h-4 w-4" />
-          3. Mẫu Lưu Nghiệm Thức ({samples.length})
-        </button>
+          {/* Nhóm 3: Mẫu Lưu Nghiệm Thức */}
+          <button
+            onClick={() => setActiveTab("samples")}
+            className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all ${
+              activeTab === "samples"
+                ? "bg-white dark:bg-slate-800 text-emerald-800 dark:text-emerald-400 shadow-sm border border-slate-200/80 dark:border-slate-700 font-black"
+                : "text-slate-700 dark:text-slate-300 hover:text-slate-900 hover:bg-white/60 dark:hover:bg-slate-800/60"
+            }`}
+          >
+            <FlaskConical className="h-4 w-4 shrink-0 text-purple-600" />
+            <span>Mẫu Lưu Nghiệm Thức</span>
+            <span
+              className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${
+                activeTab === "samples"
+                  ? "bg-purple-100 text-purple-800 dark:bg-purple-950/60 dark:text-purple-300"
+                  : "bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200"
+              }`}
+            >
+              {samples.length}
+            </span>
+          </button>
 
-        <button
-          onClick={() => setActiveTab("production")}
-          className={`flex items-center gap-2 px-4 py-2.5 text-xs sm:text-sm font-semibold border-b-2 transition-all whitespace-nowrap ${
-            activeTab === "production"
-              ? "border-primary text-primary"
-              : "border-transparent text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          <Truck className="h-4 w-4" />
-          4. Mẻ Sản Xuất & Xuất Hàng ({batches.length + dispatches.length})
-        </button>
+          {/* Nhóm 4: Hủy Hàng Không Phù Hợp */}
+          <button
+            onClick={() => setActiveTab("disposal")}
+            className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all ${
+              activeTab === "disposal"
+                ? "bg-white dark:bg-slate-800 text-rose-800 dark:text-rose-400 shadow-sm border border-slate-200/80 dark:border-slate-700 font-black"
+                : "text-slate-700 dark:text-slate-300 hover:text-slate-900 hover:bg-white/60 dark:hover:bg-slate-800/60"
+            }`}
+          >
+            <Trash2 className="h-4 w-4 shrink-0 text-rose-600" />
+            <span>Hủy Hàng Không Phù Hợp (BM02)</span>
+            <span
+              className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${
+                activeTab === "disposal"
+                  ? "bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300"
+                  : "bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200"
+              }`}
+            >
+              {disposalRecords.length}
+            </span>
+          </button>
+        </div>
 
-        <button
-          onClick={() => setActiveTab("vehicles")}
-          className={`flex items-center gap-2 px-4 py-2.5 text-xs sm:text-sm font-semibold border-b-2 transition-all whitespace-nowrap ${
-            activeTab === "vehicles"
-              ? "border-primary text-primary"
-              : "border-transparent text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          <CheckSquare className="h-4 w-4" />
-          5. Kiểm Xe Xuất Hàng (BM01-PTVC) ({vehicleInspections.length})
-        </button>
+        {/* SUB-TABS: Khi đang ở Nhóm Tồn Kho & Kệ/Bin */}
+        {(activeTab === "stock" || activeTab === "bins") && (
+          <div className="flex flex-wrap items-center gap-1.5 p-1 bg-slate-50 dark:bg-slate-900/60 rounded-xl border border-slate-200/80 dark:border-slate-800 w-fit">
+            <button
+              onClick={() => setActiveTab("stock")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                activeTab === "stock"
+                  ? "bg-emerald-600 text-white shadow-xs"
+                  : "text-slate-700 hover:text-slate-900 hover:bg-white dark:text-slate-300 dark:hover:bg-slate-800"
+              }`}
+            >
+              <Boxes className="h-3.5 w-3.5" />
+              <span>1. Tồn Kho FEFO & Cảnh Báo Hạn Dùng ({stocks.length})</span>
+            </button>
+            <button
+              onClick={() => setActiveTab("bins")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                activeTab === "bins"
+                  ? "bg-emerald-600 text-white shadow-xs"
+                  : "text-slate-700 hover:text-slate-900 hover:bg-white dark:text-slate-300 dark:hover:bg-slate-800"
+              }`}
+            >
+              <MapPin className="h-3.5 w-3.5" />
+              <span>2. Sơ Đồ Vị Trí Kệ & Bin Kho Lạnh</span>
+            </button>
+          </div>
+        )}
 
-        <button
-          onClick={() => setActiveTab("disposal")}
-          className={`flex items-center gap-2 px-4 py-2.5 text-xs sm:text-sm font-semibold border-b-2 transition-all whitespace-nowrap ${
-            activeTab === "disposal"
-              ? "border-primary text-primary"
-              : "border-transparent text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          <Trash2 className="h-4 w-4" />
-          6. Hủy Hàng Không Phù Hợp (BM02) ({disposalRecords.length})
-        </button>
+        {/* SUB-TABS: Khi đang ở Nhóm Xuất Hàng & Vận Chuyển */}
+        {(activeTab === "production" || activeTab === "vehicles") && (
+          <div className="flex flex-wrap items-center gap-1.5 p-1 bg-slate-50 dark:bg-slate-900/60 rounded-xl border border-slate-200/80 dark:border-slate-800 w-fit">
+            <button
+              onClick={() => setActiveTab("production")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                activeTab === "production"
+                  ? "bg-blue-600 text-white shadow-xs"
+                  : "text-slate-700 hover:text-slate-900 hover:bg-white dark:text-slate-300 dark:hover:bg-slate-800"
+              }`}
+            >
+              <Truck className="h-3.5 w-3.5" />
+              <span>1. Mẻ Sản Xuất & Lệnh Xuất Hàng ({batches.length + dispatches.length})</span>
+            </button>
+            <button
+              onClick={() => setActiveTab("vehicles")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                activeTab === "vehicles"
+                  ? "bg-blue-600 text-white shadow-xs"
+                  : "text-slate-700 hover:text-slate-900 hover:bg-white dark:text-slate-300 dark:hover:bg-slate-800"
+              }`}
+            >
+              <CheckSquare className="h-3.5 w-3.5" />
+              <span>2. Kiểm Xe Xuất Hàng (BM01-PTVC) ({vehicleInspections.length})</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* ==========================================

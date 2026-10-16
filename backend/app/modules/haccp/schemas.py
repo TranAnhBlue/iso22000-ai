@@ -62,6 +62,7 @@ class ProcessStepResponse(ProcessStepBase):
     step_id: UUID
     hazard_count: int = 0
     plan_name: Optional[str] = None
+    plan_code: Optional[str] = None
     created_at: Optional[datetime] = None
 
     model_config = ConfigDict(from_attributes=True)
@@ -148,6 +149,8 @@ class CCPDefinitionUpdate(BaseModel):
 class CCPDefinitionResponse(CCPDefinitionBase):
     ccp_id: UUID
     step_name: Optional[str] = None
+    plan_id: Optional[UUID] = None
+    plan_code: Optional[str] = None
     last_measured_value: Optional[str] = None
     last_log_status: Optional[str] = "NORMAL"
     created_at: Optional[datetime] = None

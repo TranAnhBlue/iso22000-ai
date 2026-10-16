@@ -8,14 +8,14 @@
  * - BM05-KSTL: Kế hoạch & Báo cáo soát xét tài liệu định kỳ 3 năm
  */
 
-import {
+import type {
   DocumentItem,
   DocumentChangeRequest,
   DocumentDistribution,
   ExternalDocument,
   PeriodicReviewItem,
   RecordRetention,
-} from "@/routes/documents";
+} from "@/lib/documentConstants";
 
 const PRINT_CSS = `
   <style>

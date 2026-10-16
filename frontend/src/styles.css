@@ -54,26 +54,26 @@
   --radius: 0.75rem;
   /* Light, food-safety inspired palette: fresh green primary, teal accent */
   --background: oklch(0.99 0.005 150);
-  --foreground: oklch(0.2 0.03 200);
+  --foreground: oklch(0.18 0.025 200);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.2 0.03 200);
+  --card-foreground: oklch(0.18 0.025 200);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.2 0.03 200);
+  --popover-foreground: oklch(0.18 0.025 200);
   --primary: oklch(0.62 0.16 152);
   --primary-foreground: oklch(0.99 0 0);
   --secondary: oklch(0.96 0.02 170);
-  --secondary-foreground: oklch(0.3 0.05 180);
+  --secondary-foreground: oklch(0.22 0.04 180);
   --muted: oklch(0.96 0.01 170);
-  --muted-foreground: oklch(0.5 0.02 200);
-  --accent: oklch(0.65 0.12 190);
-  --accent-foreground: oklch(0.99 0 0);
+  --muted-foreground: oklch(0.35 0.025 200);
+  --accent: oklch(0.96 0.008 200);
+  --accent-foreground: oklch(0.18 0.025 200);
   --destructive: oklch(0.6 0.22 28);
   --destructive-foreground: oklch(0.99 0 0);
   --success: oklch(0.65 0.17 150);
   --warning: oklch(0.78 0.15 75);
   --info: oklch(0.65 0.13 220);
-  --border: oklch(0.92 0.01 170);
-  --input: oklch(0.94 0.01 170);
+  --border: oklch(0.85 0.015 200);
+  --input: oklch(0.85 0.015 200);
   --ring: oklch(0.62 0.16 152);
   --chart-1: oklch(0.62 0.16 152);
   --chart-2: oklch(0.65 0.12 190);
@@ -81,12 +81,12 @@
   --chart-4: oklch(0.65 0.13 220);
   --chart-5: oklch(0.6 0.22 28);
   --sidebar: oklch(0.985 0.005 160);
-  --sidebar-foreground: oklch(0.25 0.03 200);
+  --sidebar-foreground: oklch(0.2 0.025 200);
   --sidebar-primary: oklch(0.62 0.16 152);
   --sidebar-primary-foreground: oklch(0.99 0 0);
   --sidebar-accent: oklch(0.95 0.02 160);
-  --sidebar-accent-foreground: oklch(0.3 0.05 180);
-  --sidebar-border: oklch(0.92 0.01 170);
+  --sidebar-accent-foreground: oklch(0.2 0.04 180);
+  --sidebar-border: oklch(0.90 0.01 170);
   --sidebar-ring: oklch(0.62 0.16 152);
 }
 
@@ -105,6 +105,48 @@
       Roboto,
       sans-serif;
   }
+}
+
+/* Global contrast enhancements to eliminate faint/submerged text across all modules */
+.text-slate-400 {
+  color: #475569;
+}
+.text-slate-500 {
+  color: #334155;
+}
+.text-gray-400,
+.text-zinc-400,
+.text-neutral-400 {
+  color: #475569;
+}
+.text-gray-500,
+.text-zinc-500,
+.text-neutral-500 {
+  color: #334155;
+}
+
+/* Ensure text on dark containers/gradients remains crisp and high-contrast */
+.dark .text-slate-400,
+[class*="bg-slate-900"] .text-slate-400,
+[class*="bg-slate-800"] .text-slate-400,
+[class*="from-slate-900"] .text-slate-400,
+[class*="from-slate-800"] .text-slate-400,
+[class*="bg-emerald-900"] .text-slate-400 {
+  color: #e2e8f0 !important;
+}
+
+.dark .text-slate-500,
+[class*="bg-slate-900"] .text-slate-500,
+[class*="bg-slate-800"] .text-slate-500,
+[class*="from-slate-900"] .text-slate-500,
+[class*="from-slate-800"] .text-slate-500,
+[class*="bg-emerald-900"] .text-slate-500 {
+  color: #f1f5f9 !important;
+}
+
+::placeholder {
+  color: #475569 !important;
+  opacity: 0.9 !important;
 }
 
 @media print {

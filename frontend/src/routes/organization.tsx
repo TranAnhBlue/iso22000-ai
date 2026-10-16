@@ -29,6 +29,13 @@ import {
   Award,
   Phone,
   BookOpen,
+  Sparkles,
+  FileText,
+  Check,
+  TrendingUp,
+  Compass,
+  FileCheck,
+  Calendar,
 } from "lucide-react";
 import api from "@/lib/api";
 import { toast } from "sonner";
@@ -141,6 +148,23 @@ interface ContextRiskItem {
   residual_risk_score?: number;
 }
 
+interface QualityObjectiveItem {
+  id: number;
+  objective_code: string;
+  metric_name: string;
+  clause_reference?: string;
+  department?: string;
+  target_year: number;
+  target_value: number;
+  actual_value?: number;
+  unit?: string;
+  status: "ON_TRACK" | "ACHIEVED" | "AT_RISK" | "BEHIND" | string;
+  action_plan?: string;
+  responsible_person?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
 function getContextRiskBadge(score: number) {
   if (score >= 12) {
     return (
@@ -166,8 +190,15 @@ function getContextRiskBadge(score: number) {
 function Org() {
   const { canEdit } = useModuleAccess();
   const [activeTab, setActiveTab] = useState<
-    "users" | "depts" | "parties" | "risks" | "communications" | "food_safety_team"
-  >("users");
+    | "policy_objectives"
+    | "users"
+    | "depts"
+    | "parties"
+    | "risks"
+    | "communications"
+    | "food_safety_team"
+  >("policy_objectives");
+  const [objectives, setObjectives] = useState<QualityObjectiveItem[]>([]);
   const [depts, setDepts] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   const [parties, setParties] = useState<InterestedPartyItem[]>([]);
@@ -284,8 +315,8 @@ function Org() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [deptRes, userRes, partiesRes, risksRes, statsRes, commRes, fstRes] = await Promise.all(
-        [
+      const [deptRes, userRes, partiesRes, risksRes, statsRes, commRes, fstRes, objRes] =
+        await Promise.all([
           api.get("/organization/departments"),
           api.get("/organization/users"),
           api.get("/organization/interested-parties"),
@@ -293,14 +324,15 @@ function Org() {
           api.get("/organization/context-stats"),
           api.get("/organization/communications"),
           api.get("/organization/food-safety-team"),
-        ],
-      );
+          api.get("/dashboard/quality-objectives"),
+        ]);
       setDepts(deptRes.data);
       setUsers(userRes.data);
       setParties(partiesRes.data);
       setRisks(risksRes.data);
       setContextStats(statsRes.data);
       setCommunications(commRes.data);
+      setObjectives(objRes.data || []);
 
       const roleMap: Record<string, string> = {
         TEAM_LEADER: "Đội trưởng",
@@ -1148,6 +1180,116 @@ function Org() {
     printHtml(html);
   };
 
+  // IN CHÍNH SÁCH VÀ MỤC TIÊU ATTP (TÀI LIỆU 01-CS, 02-MT, 03-BM03, 04-PHẠM VI)
+  const handlePrintPolicy = () => {
+    const html = `
+      <div style="font-family: 'Times New Roman', Times, serif; color: #111; line-height: 1.5; padding: 25px 35px;">
+        <table style="width: 100%; border-collapse: collapse; text-align: center; margin-bottom: 20px;">
+          <tr>
+            <td style="width: 45%; vertical-align: top;">
+              <strong>CÔNG TY TNHH SẢN XUẤT THƯƠNG MẠI TIẾN ANH</strong><br/>
+              <span style="font-size: 11pt;">Số: 01/CS-ATTP-2026 & 02/MT-ATTP-2026</span>
+            </td>
+            <td style="width: 55%; vertical-align: top;">
+              <strong>CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</strong><br/>
+              <strong>Độc lập - Tự do - Hạnh phúc</strong><br/>
+              <div style="margin: 3px auto; width: 140px; border-bottom: 1px solid #111;"></div>
+              <span style="font-size: 10.5pt; font-style: italic;">TP. Long Xuyên, ngày 15 tháng 01 năm 2026</span>
+            </td>
+          </tr>
+        </table>
+
+        <div style="text-align: center; margin-bottom: 25px;">
+          <h2 style="font-size: 15pt; font-weight: bold; margin: 0 0 6px 0; text-transform: uppercase;">CHÍNH SÁCH VÀ MỤC TIÊU AN TOÀN THỰC PHẨM NĂM 2026</h2>
+          <p style="font-style: italic; font-size: 11pt; margin: 0;">(Ban hành kèm theo Hệ thống Quản lý ATTP TCVN ISO 22000:2018 - Điều khoản 5.2, 6.2 & 4.3)</p>
+        </div>
+
+        <div style="margin-bottom: 25px;">
+          <h3 style="font-size: 12.5pt; font-weight: bold; text-transform: uppercase; color: #065f46; border-bottom: 1.5px solid #065f46; padding-bottom: 4px; margin-bottom: 10px;">
+            PHẦN I: CHÍNH SÁCH AN TOÀN THỰC PHẨM (MÃ HIỆU: CS-ATTP)
+          </h3>
+          <p style="text-align: justify; font-size: 11pt; margin-bottom: 10px;">
+            Công ty TNHH Sản Xuất Thương Mại Tiến Anh nhận thức sâu sắc rằng an toàn thực phẩm là sự sống còn của doanh nghiệp, là uy tín thương hiệu và trách nhiệm cao nhất đối với sức khỏe của người tiêu dùng trong nước và quốc tế. Ban Lãnh đạo cam kết:
+          </p>
+          <div style="font-size: 11pt; padding-left: 10px;">
+            <p style="margin: 6px 0;"><strong>1. Tuân thủ luật định:</strong> Nghiêm chỉnh chấp hành Luật An toàn Thực phẩm số 55/2010/QH12, các Nghị định của Chính phủ, Thông tư hướng dẫn của Bộ Nông nghiệp & PTNT, Bộ Y tế và các quy định của thị trường nhập khẩu.</p>
+            <p style="margin: 6px 0;"><strong>2. Duy trì & Cải tiến hệ thống:</strong> Xây dựng, vận hành, kiểm soát chặt chẽ và không ngừng cải tiến liên tục Hệ thống quản lý an toàn thực phẩm theo tiêu chuẩn quốc tế <strong>ISO 22000:2018</strong>.</p>
+            <p style="margin: 6px 0;"><strong>3. Nâng cao năng lực nhân sự:</strong> 100% cán bộ công nhân viên được đào tạo định kỳ, am hiểu quy trình kỹ thuật, nắm vững các quy phạm thực hành chuẩn (PRP), chương trình tiên quyết thực hành (OPRP) và giám sát chặt chẽ các điểm kiểm soát tới hạn (CCP).</p>
+            <p style="margin: 6px 0;"><strong>4. Trao đổi thông tin hiệu quả:</strong> Thiết lập mối quan hệ hợp tác và kênh trao đổi thông tin 2 chiều minh bạch, kịp thời với khách hàng, nhà cung cấp, cơ quan thẩm quyền và đối tác trong toàn bộ chuỗi cung ứng thực phẩm.</p>
+            <p style="margin: 6px 0;"><strong>5. Đảm bảo nguồn lực toàn diện:</strong> Đầu tư cơ sở vật chất, hệ thống kho lạnh đạt chuẩn (-18°C đến -22°C), máy dò kim loại, trang thiết bị kiểm nghiệm và nguồn lực tài chính tối ưu nhất để đảm bảo an toàn tuyệt đối cho từng lô sản phẩm xuất xưởng.</p>
+          </div>
+          <div style="margin-top: 10px; background-color: #f8fafc; border: 1px dashed #94a3b8; padding: 10px; font-size: 10.5pt;">
+            <strong>* Phạm vi áp dụng (Tài liệu 04-Phạm vi):</strong> Sơ chế, cấp đông (IQF, cấp đông tiếp xúc), đóng gói, dán nhãn và bảo quản các sản phẩm cá tra/basa phi lê đông lạnh tại Nhà máy chế biến và hệ thống Kho lạnh 1 & 2 của Công ty TNHH SX TM Tiến Anh.
+          </div>
+        </div>
+
+        <div style="margin-bottom: 25px;">
+          <h3 style="font-size: 12.5pt; font-weight: bold; text-transform: uppercase; color: #065f46; border-bottom: 1.5px solid #065f46; padding-bottom: 4px; margin-bottom: 10px;">
+            PHẦN II: MỤC TIÊU VÀ KẾ HOẠCH THỰC HIỆN MỤC TIÊU ATTP NĂM 2026 (BIỂU MẪU BM 03)
+          </h3>
+          <p style="text-align: justify; font-size: 11pt; margin-bottom: 10px;">
+            Căn cứ Chính sách ATTP, Ban Giám đốc thiết lập và phân công theo dõi việc thực hiện 4 Mục tiêu đo lường được cho năm 2026 như sau:
+          </p>
+          <table style="width: 100%; border-collapse: collapse; font-size: 10pt;" border="1" cellpadding="6">
+            <thead>
+              <tr style="background-color: #f1f5f9; text-align: center; font-weight: bold;">
+                <th style="width: 6%;">STT</th>
+                <th style="width: 12%;">Mã mục tiêu</th>
+                <th style="width: 25%;">Chỉ tiêu mục tiêu</th>
+                <th style="width: 10%;">Kế hoạch</th>
+                <th style="width: 10%;">Hiện tại</th>
+                <th style="width: 15%;">Bộ phận phụ trách</th>
+                <th style="width: 12%;">Người chịu trách nhiệm</th>
+                <th style="width: 10%;">Đánh giá</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${objectives
+                .map(
+                  (obj, idx) => `
+                <tr>
+                  <td style="text-align: center;">${idx + 1}</td>
+                  <td style="text-align: center; font-weight: bold;">${obj.objective_code}</td>
+                  <td><strong>${obj.metric_name}</strong><br/><span style="font-size: 9pt; color: #475569;">Đ.Khoản: ${obj.clause_reference || "6.2"}</span></td>
+                  <td style="text-align: center; font-weight: bold;">${obj.target_value}${obj.unit ? " " + obj.unit : ""}</td>
+                  <td style="text-align: center; font-weight: bold; color: ${obj.status === "ACHIEVED" ? "#047857" : "#0284c7"};">${obj.actual_value !== undefined ? obj.actual_value : "-"}${obj.unit ? " " + obj.unit : ""}</td>
+                  <td>${obj.department || "Ban QLCL"}</td>
+                  <td>${obj.responsible_person || "Trưởng bộ phận"}</td>
+                  <td style="text-align: center; font-weight: bold;">${obj.status === "ACHIEVED" ? "ĐẠT" : obj.status === "ON_TRACK" ? "ĐÚNG TIẾN ĐỘ" : "CẦN LƯU Ý"}</td>
+                </tr>
+                <tr>
+                  <td colspan="8" style="background-color: #f8fafc; font-size: 9pt; padding: 4px 8px;">
+                    <strong>Biện pháp thực hiện & Cách đo lường:</strong> ${obj.action_plan || "Theo dõi định kỳ hàng tháng/quý"}
+                  </td>
+                </tr>
+              `,
+                )
+                .join("")}
+            </tbody>
+          </table>
+        </div>
+
+        <table style="width: 100%; border-collapse: collapse; margin-top: 30px; text-align: center;">
+          <tr>
+            <td style="width: 50%; vertical-align: top;">
+              <strong>ĐẠI DIỆN LÃNH ĐẠO VỀ FSMS</strong><br/>
+              <span style="font-size: 10pt; font-style: italic;">(Ký & ghi rõ họ tên)</span>
+              <div style="height: 60px;"></div>
+              <strong>ĐỘI TRƯỞNG ĐỘI ATTP</strong>
+            </td>
+            <td style="width: 50%; vertical-align: top;">
+              <strong>TỔNG GIÁM ĐỐC PHÊ DUYỆT</strong><br/>
+              <span style="font-size: 10pt; font-style: italic;">(Ký tên & đóng dấu)</span>
+              <div style="height: 60px;"></div>
+              <strong>VÕ VĂN TIẾN</strong>
+            </td>
+          </tr>
+        </table>
+      </div>
+    `;
+    printHtml(html);
+  };
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -1159,9 +1301,9 @@ function Org() {
               variant="outline"
               size="sm"
               onClick={() => setShowGuide(true)}
-              className="gap-2 border-emerald-300 text-emerald-700 hover:bg-emerald-50 bg-emerald-50/50"
+              className="gap-2 border border-emerald-400/80 text-emerald-800 bg-emerald-50 hover:bg-emerald-600 hover:text-white hover:border-emerald-600 font-bold text-xs shadow-sm transition-all duration-150"
             >
-              <BookOpen className="h-4 w-4" />
+              <BookOpen className="h-4 w-4 transition-colors" />
               Hướng Dẫn Nghiệp Vụ
             </Button>
             <Button
@@ -1169,18 +1311,28 @@ function Org() {
               size="sm"
               onClick={fetchData}
               disabled={loading}
-              className="gap-2"
+              className="gap-2 border border-slate-300 bg-white text-slate-800 hover:bg-slate-900 hover:text-white hover:border-slate-900 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700 text-xs font-semibold shadow-sm transition-all duration-150"
             >
-              <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+              <RefreshCw className={`h-4 w-4 transition-colors ${loading ? "animate-spin text-primary" : ""}`} />
               Làm mới
             </Button>
+            {activeTab === "policy_objectives" && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handlePrintPolicy}
+                className="gap-1.5 border border-slate-300 bg-white text-slate-800 hover:bg-slate-900 hover:text-white hover:border-slate-900 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700 text-xs font-semibold shadow-sm transition-all duration-150"
+              >
+                <Printer className="h-4 w-4" /> In Chính Sách & Mục Tiêu (01-CS & BM03)
+              </Button>
+            )}
             {activeTab === "food_safety_team" && (
               <>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={handlePrintFSTDecision}
-                  className="gap-1.5 text-slate-700"
+                  className="gap-1.5 border border-slate-300 bg-white text-slate-800 hover:bg-slate-900 hover:text-white hover:border-slate-900 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700 text-xs font-semibold shadow-sm transition-all duration-150"
                 >
                   <Printer className="h-4 w-4" /> In Quyết định Đội ATTP (BM-FST-01)
                 </Button>
@@ -1188,7 +1340,7 @@ function Org() {
                   <Button
                     size="sm"
                     onClick={openNewFst}
-                    className="gap-1.5 bg-emerald-600 hover:bg-emerald-700"
+                    className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm"
                   >
                     <Plus className="h-4 w-4" /> Thêm thành viên Đội ATTP
                   </Button>
@@ -1201,7 +1353,7 @@ function Org() {
                   variant="outline"
                   size="sm"
                   onClick={handlePrintCommunications}
-                  className="gap-1.5 text-slate-700"
+                  className="gap-1.5 border border-slate-300 bg-white text-slate-800 hover:bg-slate-900 hover:text-white hover:border-slate-900 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700 text-xs font-semibold shadow-sm transition-all duration-150"
                 >
                   <Printer className="h-4 w-4" /> In Sổ nhật ký (BM-COMM-01)
                 </Button>
@@ -1209,7 +1361,7 @@ function Org() {
                   <Button
                     size="sm"
                     onClick={openNewComm}
-                    className="gap-1.5 bg-emerald-600 hover:bg-emerald-700"
+                    className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm"
                   >
                     <Plus className="h-4 w-4" /> Thêm trao đổi thông tin
                   </Button>
@@ -1222,7 +1374,7 @@ function Org() {
                   variant="outline"
                   size="sm"
                   onClick={handlePrintParties}
-                  className="gap-1.5 text-slate-700"
+                  className="gap-1.5 border border-slate-300 bg-white text-slate-800 hover:bg-slate-900 hover:text-white hover:border-slate-900 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700 text-xs font-semibold shadow-sm transition-all duration-150"
                 >
                   <Printer className="h-4 w-4" /> In Phụ lục 1 (BM-01)
                 </Button>
@@ -1230,7 +1382,7 @@ function Org() {
                   <Button
                     size="sm"
                     onClick={openNewParty}
-                    className="gap-1.5 bg-emerald-600 hover:bg-emerald-700"
+                    className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm"
                   >
                     <Plus className="h-4 w-4" /> Thêm bên quan tâm
                   </Button>
@@ -1243,7 +1395,7 @@ function Org() {
                   variant="outline"
                   size="sm"
                   onClick={handlePrintRisks}
-                  className="gap-1.5 text-slate-700"
+                  className="gap-1.5 border border-slate-300 bg-white text-slate-800 hover:bg-slate-900 hover:text-white hover:border-slate-900 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700 text-xs font-semibold shadow-sm transition-all duration-150"
                 >
                   <Printer className="h-4 w-4" /> In Ma trận rủi ro (BM-02)
                 </Button>
@@ -1251,7 +1403,7 @@ function Org() {
                   <Button
                     size="sm"
                     onClick={openNewRisk}
-                    className="gap-1.5 bg-emerald-600 hover:bg-emerald-700"
+                    className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm"
                   >
                     <Plus className="h-4 w-4" /> Ghi nhận rủi ro bối cảnh
                   </Button>
@@ -1265,102 +1417,549 @@ function Org() {
       {/* KPI Overview */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <Kpi
-          icon={<Users className="h-5 w-5" />}
-          v={String(totalUsers)}
-          l="Nhân sự hệ thống"
-          sub={`${users.filter((u) => u.status === "Hoạt động").length} đang hoạt động`}
+          icon={<Award className="h-5 w-5 text-emerald-600" />}
+          v={String(objectives.length || 4)}
+          l="Mục tiêu ATTP 2026"
+          sub={`${objectives.filter((o) => o.status === "ACHIEVED").length} mục tiêu đạt chuẩn · BM 03`}
         />
         <Kpi
-          icon={<ShieldCheck className="h-5 w-5" />}
+          icon={<ShieldCheck className="h-5 w-5 text-blue-600" />}
           v={String(fstMembers.filter((m) => m.status === "ACTIVE").length)}
           l="Đội ATTP"
           sub={`QĐ 02/QĐ-ATTP-2026 · ${fstMembers.filter((m) => m.role === "Đội trưởng").length} Đội trưởng`}
         />
         <Kpi
-          icon={<Globe className="h-5 w-5" />}
+          icon={<Globe className="h-5 w-5 text-teal-600" />}
           v={String(contextStats.total_parties)}
           l="Các bên quan tâm"
           sub={`${contextStats.internal_parties} nội bộ · ${contextStats.external_parties} bên ngoài`}
         />
         <Kpi
-          icon={<MessageSquare className="h-5 w-5" />}
+          icon={<MessageSquare className="h-5 w-5 text-purple-600" />}
           v={String(communications.length)}
           l="Trao đổi thông tin"
           sub={`${communications.filter((c) => c.status === "OPEN").length} đang mở · ${communications.filter((c) => c.action_required).length} cần xử lý`}
         />
       </div>
 
-      {/* 6 Tabs chuyển đổi */}
-      <div className="border-b overflow-x-auto no-scrollbar">
-        <div className="flex space-x-1 sm:space-x-4 min-w-max pb-1">
+      {/* 4 Nhóm Tab Hiện Đại (Không bị che khuất, tự động xuống dòng responsive) */}
+      <div className="space-y-3">
+        {/* Nhóm danh mục chính (Category Pills) */}
+        <div className="flex flex-wrap items-center gap-2 p-1.5 bg-slate-100 dark:bg-slate-800/80 rounded-xl border border-slate-200/80 dark:border-slate-700/60 shadow-inner">
           <button
-            onClick={() => setActiveTab("users")}
-            className={`flex items-center gap-1.5 sm:gap-2 border-b-2 px-3 sm:px-5 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold transition whitespace-nowrap ${
-              activeTab === "users"
-                ? "border-emerald-600 text-emerald-600"
-                : "border-transparent text-muted-foreground hover:text-foreground"
+            type="button"
+            onClick={() => setActiveTab("policy_objectives")}
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all duration-150 ${
+              activeTab === "policy_objectives"
+                ? "bg-white dark:bg-slate-900 text-emerald-800 dark:text-emerald-400 shadow-sm border border-slate-200/60 dark:border-slate-700 font-bold"
+                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-white/50"
             }`}
           >
-            <Users className="h-4 w-4 shrink-0" />
-            Tài khoản & Phân quyền
+            <Award className="h-4 w-4 text-emerald-600 shrink-0" />
+            <span>Chính Sách & Mục Tiêu ATTP</span>
+            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-mono font-medium">
+              Điều 5.2 & 6.2
+            </span>
           </button>
+
           <button
-            onClick={() => setActiveTab("depts")}
-            className={`flex items-center gap-1.5 sm:gap-2 border-b-2 px-3 sm:px-5 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold transition whitespace-nowrap ${
-              activeTab === "depts"
-                ? "border-emerald-600 text-emerald-600"
-                : "border-transparent text-muted-foreground hover:text-foreground"
+            type="button"
+            onClick={() => {
+              if (activeTab !== "parties" && activeTab !== "risks") {
+                setActiveTab("parties");
+              }
+            }}
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all duration-150 ${
+              activeTab === "parties" || activeTab === "risks"
+                ? "bg-white dark:bg-slate-900 text-emerald-800 dark:text-emerald-400 shadow-sm border border-slate-200/60 dark:border-slate-700 font-bold"
+                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-white/50"
             }`}
           >
-            <Building2 className="h-4 w-4 shrink-0" />
-            Phòng ban & Cơ cấu
+            <Compass className="h-4 w-4 text-teal-600 shrink-0" />
+            <span>Bối Cảnh & Rủi Ro FSMS</span>
+            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-teal-100 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 font-mono font-medium">
+              Điều 4 & 6.1
+            </span>
           </button>
+
           <button
-            onClick={() => setActiveTab("food_safety_team")}
-            className={`flex items-center gap-1.5 sm:gap-2 border-b-2 px-3 sm:px-5 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold transition whitespace-nowrap ${
-              activeTab === "food_safety_team"
-                ? "border-emerald-600 text-emerald-600"
-                : "border-transparent text-muted-foreground hover:text-foreground"
+            type="button"
+            onClick={() => {
+              if (activeTab !== "food_safety_team" && activeTab !== "communications") {
+                setActiveTab("food_safety_team");
+              }
+            }}
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all duration-150 ${
+              activeTab === "food_safety_team" || activeTab === "communications"
+                ? "bg-white dark:bg-slate-900 text-emerald-800 dark:text-emerald-400 shadow-sm border border-slate-200/60 dark:border-slate-700 font-bold"
+                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-white/50"
             }`}
           >
-            <ShieldCheck className="h-4 w-4 shrink-0" />
-            Đội ATTP
+            <ShieldCheck className="h-4 w-4 text-blue-600 shrink-0" />
+            <span>Đội ATTP & Truyền Thông</span>
+            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 font-mono font-medium">
+              Điều 5.3 & 7.4
+            </span>
           </button>
+
           <button
-            onClick={() => setActiveTab("parties")}
-            className={`flex items-center gap-1.5 sm:gap-2 border-b-2 px-3 sm:px-5 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold transition whitespace-nowrap ${
-              activeTab === "parties"
-                ? "border-emerald-600 text-emerald-600"
-                : "border-transparent text-muted-foreground hover:text-foreground"
+            type="button"
+            onClick={() => {
+              if (activeTab !== "users" && activeTab !== "depts") {
+                setActiveTab("users");
+              }
+            }}
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all duration-150 ${
+              activeTab === "users" || activeTab === "depts"
+                ? "bg-white dark:bg-slate-900 text-emerald-800 dark:text-emerald-400 shadow-sm border border-slate-200/60 dark:border-slate-700 font-bold"
+                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-white/50"
             }`}
           >
-            <Globe className="h-4 w-4 shrink-0" />
-            Bên quan tâm
-          </button>
-          <button
-            onClick={() => setActiveTab("risks")}
-            className={`flex items-center gap-1.5 sm:gap-2 border-b-2 px-3 sm:px-5 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold transition whitespace-nowrap ${
-              activeTab === "risks"
-                ? "border-emerald-600 text-emerald-600"
-                : "border-transparent text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <Target className="h-4 w-4 shrink-0" />
-            Rủi ro bối cảnh
-          </button>
-          <button
-            onClick={() => setActiveTab("communications")}
-            className={`flex items-center gap-1.5 sm:gap-2 border-b-2 px-3 sm:px-5 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold transition whitespace-nowrap ${
-              activeTab === "communications"
-                ? "border-emerald-600 text-emerald-600"
-                : "border-transparent text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <MessageSquare className="h-4 w-4 shrink-0" />
-            Trao đổi thông tin
+            <Users className="h-4 w-4 text-purple-600 shrink-0" />
+            <span>Nhân Sự & Cơ Cấu</span>
+            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 font-mono font-medium">
+              Phân quyền & Sơ đồ
+            </span>
           </button>
         </div>
+
+        {/* Sub-tabs điều hướng chi tiết khi chọn nhóm */}
+        {(activeTab === "parties" || activeTab === "risks") && (
+          <div className="flex items-center gap-2 pl-1 border-b border-slate-200 dark:border-slate-700 pb-2">
+            <button
+              onClick={() => setActiveTab("parties")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition ${
+                activeTab === "parties"
+                  ? "bg-emerald-600 text-white shadow-sm"
+                  : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200"
+              }`}
+            >
+              <Globe className="h-3.5 w-3.5" />
+              Bên quan tâm (Phụ lục 1 / BM-01)
+              <span className="ml-1 text-[10px] px-1.5 py-0.2 rounded-full bg-black/15 font-mono">
+                {parties.length}
+              </span>
+            </button>
+            <button
+              onClick={() => setActiveTab("risks")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition ${
+                activeTab === "risks"
+                  ? "bg-emerald-600 text-white shadow-sm"
+                  : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200"
+              }`}
+            >
+              <Target className="h-3.5 w-3.5" />
+              Ma trận Rủi ro bối cảnh (BM-02)
+              <span className="ml-1 text-[10px] px-1.5 py-0.2 rounded-full bg-black/15 font-mono">
+                {risks.length}
+              </span>
+            </button>
+          </div>
+        )}
+
+        {(activeTab === "food_safety_team" || activeTab === "communications") && (
+          <div className="flex items-center gap-2 pl-1 border-b border-slate-200 dark:border-slate-700 pb-2">
+            <button
+              onClick={() => setActiveTab("food_safety_team")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition ${
+                activeTab === "food_safety_team"
+                  ? "bg-emerald-600 text-white shadow-sm"
+                  : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200"
+              }`}
+            >
+              <ShieldCheck className="h-3.5 w-3.5" />
+              Đội ATTP & Quyết định bổ nhiệm (QĐ 02)
+              <span className="ml-1 text-[10px] px-1.5 py-0.2 rounded-full bg-black/15 font-mono">
+                {fstMembers.length}
+              </span>
+            </button>
+            <button
+              onClick={() => setActiveTab("communications")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition ${
+                activeTab === "communications"
+                  ? "bg-emerald-600 text-white shadow-sm"
+                  : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200"
+              }`}
+            >
+              <MessageSquare className="h-3.5 w-3.5" />
+              Sổ nhật ký Trao đổi thông tin (BM-COMM-01)
+              <span className="ml-1 text-[10px] px-1.5 py-0.2 rounded-full bg-black/15 font-mono">
+                {communications.length}
+              </span>
+            </button>
+          </div>
+        )}
+
+        {(activeTab === "users" || activeTab === "depts") && (
+          <div className="flex items-center gap-2 pl-1 border-b border-slate-200 dark:border-slate-700 pb-2">
+            <button
+              onClick={() => setActiveTab("users")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition ${
+                activeTab === "users"
+                  ? "bg-emerald-600 text-white shadow-sm"
+                  : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200"
+              }`}
+            >
+              <Users className="h-3.5 w-3.5" />
+              Tài khoản & Phân quyền RBAC
+              <span className="ml-1 text-[10px] px-1.5 py-0.2 rounded-full bg-black/15 font-mono">
+                {users.length}
+              </span>
+            </button>
+            <button
+              onClick={() => setActiveTab("depts")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition ${
+                activeTab === "depts"
+                  ? "bg-emerald-600 text-white shadow-sm"
+                  : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200"
+              }`}
+            >
+              <Building2 className="h-3.5 w-3.5" />
+              Phòng ban & Cơ cấu tổ chức
+              <span className="ml-1 text-[10px] px-1.5 py-0.2 rounded-full bg-black/15 font-mono">
+                {depts.length}
+              </span>
+            </button>
+          </div>
+        )}
       </div>
+
+      {/* TAB: CHÍNH SÁCH & MỤC TIÊU ATTP (ISO 22000 ĐIỀU 5.2, 6.2 & 4.3) */}
+      {activeTab === "policy_objectives" && (
+        <div className="space-y-6">
+          {/* Header Card giới thiệu hệ thống */}
+          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-emerald-900 via-teal-900 to-slate-900 text-white p-6 sm:p-8 shadow-xl border border-emerald-700/50">
+            <div className="relative z-10 space-y-3 max-w-4xl">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 text-xs font-semibold uppercase tracking-wider backdrop-blur-sm">
+                <Sparkles className="h-3.5 w-3.5" />
+                Hệ Thống Quản Lý An Toàn Thực Phẩm ISO 22000:2018
+              </div>
+              <h2 className="text-xl sm:text-2xl lg:text-3xl font-extrabold tracking-tight">
+                Chính Sách & Mục Tiêu An Toàn Thực Phẩm Năm 2026
+              </h2>
+              <p className="text-slate-300 text-xs sm:text-sm leading-relaxed">
+                Thiết lập bởi Ban Giám đốc Công ty TNHH SX TM Tiến Anh theo yêu cầu của Điều khoản 5.2 (Chính sách ATTP), Điều khoản 6.2 (Mục tiêu ATTP & Kế hoạch BM03) và Điều khoản 4.3 (Phạm vi áp dụng FSMS). Toàn bộ cán bộ nhân viên có trách nhiệm thấu hiểu và thực thi nghiêm ngặt.
+              </p>
+              <div className="flex flex-wrap items-center gap-3 pt-2 text-xs">
+                <span className="inline-flex items-center gap-1.5 bg-white/10 px-3 py-1.5 rounded-lg border border-white/10 font-medium">
+                  <FileCheck className="h-4 w-4 text-emerald-400" />
+                  Mã hiệu: CS-ATTP & MT-ATTP-2026
+                </span>
+                <span className="inline-flex items-center gap-1.5 bg-white/10 px-3 py-1.5 rounded-lg border border-white/10 font-medium">
+                  <Calendar className="h-4 w-4 text-teal-400" />
+                  Hiệu lực từ: 15/01/2026
+                </span>
+                <span className="inline-flex items-center gap-1.5 bg-white/10 px-3 py-1.5 rounded-lg border border-white/10 font-medium">
+                  <UserCheck className="h-4 w-4 text-cyan-400" />
+                  Phê duyệt: Tổng Giám Đốc Võ Văn Tiến
+                </span>
+              </div>
+            </div>
+            {/* Background decoration */}
+            <div className="absolute -right-10 -bottom-10 w-80 h-80 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            {/* Cột 1: 5 Cam Kết Chính Sách ATTP (Clause 5.2) */}
+            <div className="lg:col-span-7 space-y-6">
+              <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm p-6 space-y-5">
+                <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+                  <div className="flex items-center gap-2.5">
+                    <div className="p-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
+                      <Shield className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base">
+                        5 Cam Kết Chính Sách ATTP (01- CS ATTP.doc)
+                      </h3>
+                      <p className="text-xs text-slate-500">
+                        Cam kết cao nhất của Tổng Giám Đốc đối với sự an toàn của người tiêu dùng
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handlePrintPolicy}
+                    className="gap-1.5 text-xs font-semibold"
+                  >
+                    <Printer className="h-3.5 w-3.5" /> In Chính Sách
+                  </Button>
+                </div>
+
+                <div className="space-y-3.5">
+                  {[
+                    {
+                      num: "01",
+                      title: "Tuân thủ nghiêm ngặt Luật Định & Khách Hàng",
+                      desc: "Chấp hành đầy đủ Luật ATTP số 55/2010/QH12, các Nghị định, Thông tư của Bộ Nông nghiệp & PTNT, Bộ Y tế và các yêu cầu kỹ thuật nghiêm ngặt thỏa thuận với khách hàng xuất khẩu.",
+                      tag: "Luật pháp & Quy chuẩn",
+                    },
+                    {
+                      num: "02",
+                      title: "Áp dụng & Cải tiến liên tục chuẩn ISO 22000:2018",
+                      desc: "Xây dựng, duy trì hiệu lực và cải tiến không ngừng hệ thống quản lý ATTP trên toàn bộ các công đoạn chế biến, cấp đông, đóng gói và bảo quản chuỗi lạnh.",
+                      tag: "Cải tiến liên tục",
+                    },
+                    {
+                      num: "03",
+                      title: "Nâng cao năng lực & Xây dựng văn hóa ATTP",
+                      desc: "100% cán bộ công nhân viên được đào tạo định kỳ, am hiểu quy trình kỹ thuật, nắm vững các quy phạm thực hành chuẩn (PRP), chương trình tiên quyết (OPRP) và kiểm soát điểm tới hạn (CCP).",
+                      tag: "Đào tạo & Nhân lực",
+                    },
+                    {
+                      num: "04",
+                      title: "Trao đổi thông tin minh bạch 2 chiều",
+                      desc: "Duy trì kênh trao đổi thông tin thông suốt, chính xác và kịp thời với khách hàng, nhà cung cấp, cơ quan chức năng và các đối tác liên quan trong toàn bộ chuỗi thực phẩm.",
+                      tag: "Truyền thông chuỗi",
+                    },
+                    {
+                      num: "05",
+                      title: "Bảo đảm đầy đủ nguồn lực tốt nhất",
+                      desc: "Đầu tư cơ sở hạ tầng, hệ thống kho lạnh chuẩn nhiệt độ (-18°C đến -22°C), máy dò kim loại, trang thiết bị kiểm nghiệm vi sinh và tài chính tối ưu nhất cho sự an toàn của sản phẩm.",
+                      tag: "Nguồn lực & Cơ sở",
+                    },
+                  ].map((item) => (
+                    <div
+                      key={item.num}
+                      className="group flex items-start gap-3.5 p-3.5 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 hover:bg-emerald-50/40 dark:hover:bg-emerald-950/20 hover:border-emerald-200 dark:hover:border-emerald-800/50 transition-all duration-200"
+                    >
+                      <span className="flex items-center justify-center h-7 w-7 rounded-lg bg-emerald-600 text-white text-xs font-black shrink-0 shadow-sm">
+                        {item.num}
+                      </span>
+                      <div className="space-y-1 flex-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 group-hover:text-emerald-700 dark:group-hover:text-emerald-400 transition-colors">
+                            {item.title}
+                          </h4>
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-200/70 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-medium shrink-0">
+                            {item.tag}
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                          {item.desc}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Scope Section (04- Phạm vi.doc) */}
+                <div className="mt-4 p-4 rounded-xl bg-teal-50/70 dark:bg-teal-950/30 border border-teal-200/80 dark:border-teal-800/60 space-y-2">
+                  <div className="flex items-center gap-2 text-teal-800 dark:text-teal-300 font-bold text-xs sm:text-sm">
+                    <Compass className="h-4 w-4" />
+                    Phạm Vi Áp Dụng Hệ Thống (Tài liệu 04- Phạm vi.doc)
+                  </div>
+                  <p className="text-xs text-teal-900/90 dark:text-teal-200/90 leading-relaxed">
+                    Hệ thống Quản lý An toàn Thực phẩm ISO 22000:2018 áp dụng cho:{" "}
+                    <strong>
+                      Sơ chế, cấp đông (IQF, cấp đông tiếp xúc), đóng gói, dán nhãn và lưu trữ bảo quản các mặt hàng thủy hải sản (cá tra/basa phi lê đông lạnh)
+                    </strong>{" "}
+                    tại Nhà máy chế biến và hệ thống Kho lạnh bảo quản 1 & 2 của Công ty TNHH SX TM Tiến Anh.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Cột 2: 4 Mục Tiêu Đo Lường Được 2026 (Clause 6.2 & BM03) */}
+            <div className="lg:col-span-5 space-y-6">
+              <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm p-6 space-y-5">
+                <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+                  <div className="flex items-center gap-2.5">
+                    <div className="p-2 rounded-lg bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-400 border border-teal-200 dark:border-teal-800">
+                      <Target className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base">
+                        Mục Tiêu ATTP 2026 (02- Mục tiêu.doc)
+                      </h3>
+                      <p className="text-xs text-slate-500">
+                        Chỉ tiêu định lượng & Kế hoạch thực hiện BM 03
+                      </p>
+                    </div>
+                  </div>
+                  <span className="text-xs px-2.5 py-1 rounded-full font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
+                    4/4 Đang Giám Sát
+                  </span>
+                </div>
+
+                <div className="space-y-4">
+                  {objectives.map((obj) => {
+                    const isPct = obj.unit === "%";
+                    const target = obj.target_value;
+                    const actual = obj.actual_value !== undefined ? obj.actual_value : 0;
+                    // Với chỉ tiêu khiếu nại (càng nhỏ càng tốt: < 2%)
+                    const isInverse = obj.objective_code === "OBJ-2026-02";
+                    const isZeroTarget = obj.objective_code === "OBJ-2026-04";
+                    let pctProgress = 100;
+                    if (isZeroTarget) {
+                      pctProgress = actual === 0 ? 100 : 0;
+                    } else if (isInverse) {
+                      pctProgress = actual <= target ? 100 : Math.max(0, Math.round((target / (actual || 1)) * 100));
+                    } else if (isPct) {
+                      pctProgress = Math.min(100, Math.round((actual / (target || 1)) * 100));
+                    }
+
+                    return (
+                      <div
+                        key={obj.id || obj.objective_code}
+                        className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800/40 space-y-3 shadow-xs hover:border-slate-300 transition-colors"
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="space-y-0.5">
+                            <div className="flex items-center gap-2">
+                              <span className="font-mono text-xs font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950 px-2 py-0.5 rounded border border-emerald-200 dark:border-emerald-800">
+                                {obj.objective_code}
+                              </span>
+                              <span className="text-[10px] text-slate-500">
+                                Điều khoản {obj.clause_reference || "6.2"}
+                              </span>
+                            </div>
+                            <h4 className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200">
+                              {obj.metric_name}
+                            </h4>
+                          </div>
+                          <span
+                            className={`text-[10px] px-2 py-0.5 rounded-full font-bold shrink-0 ${
+                              obj.status === "ACHIEVED"
+                                ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
+                                : obj.status === "ON_TRACK"
+                                ? "bg-blue-100 text-blue-800 border border-blue-300"
+                                : "bg-amber-100 text-amber-800 border border-amber-300"
+                            }`}
+                          >
+                            {obj.status === "ACHIEVED" ? "ĐẠT CHỈ TIÊU" : "ĐÚNG TIẾN ĐỘ"}
+                          </span>
+                        </div>
+
+                        {/* Progress Bar & Values */}
+                        <div className="space-y-1.5">
+                          <div className="flex justify-between items-center text-xs">
+                            <span className="text-slate-500">
+                              Kế hoạch: <strong className="text-slate-700 dark:text-slate-300">{isInverse ? "< " : ""}{target}{obj.unit ? " " + obj.unit : ""}</strong>
+                            </span>
+                            <span className="text-slate-500">
+                              Hiện tại:{" "}
+                              <strong className={obj.status === "ACHIEVED" ? "text-emerald-600 font-bold" : "text-blue-600 font-bold"}>
+                                {actual}{obj.unit ? " " + obj.unit : ""}
+                              </strong>
+                            </span>
+                          </div>
+                          <div className="w-full bg-slate-100 dark:bg-slate-700 h-2 rounded-full overflow-hidden">
+                            <div
+                              className={`h-full transition-all duration-500 ${
+                                pctProgress >= 100
+                                  ? "bg-emerald-500"
+                                  : pctProgress >= 80
+                                  ? "bg-blue-500"
+                                  : "bg-amber-500"
+                              }`}
+                              style={{ width: `${pctProgress}%` }}
+                            />
+                          </div>
+                        </div>
+
+                        {/* Phân công & Phương pháp tính */}
+                        <div className="pt-2 border-t border-slate-100 dark:border-slate-700/60 text-[11px] space-y-1 text-slate-600 dark:text-slate-400">
+                          <div className="flex justify-between">
+                            <span>Bộ phận: <strong>{obj.department}</strong></span>
+                            <span>Chịu trách nhiệm: <strong>{obj.responsible_person}</strong></span>
+                          </div>
+                          <div className="text-[10.5px] text-slate-500 italic bg-slate-50 dark:bg-slate-800 p-2 rounded border border-slate-100 dark:border-slate-700">
+                            <strong>Biện pháp:</strong> {obj.action_plan}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Biểu Mẫu BM 03 Chi Tiết: Kế Hoạch Thực Hiện Mục Tiêu ATTP */}
+          <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm p-6 space-y-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
+              <div className="space-y-0.5">
+                <div className="flex items-center gap-2">
+                  <FileSpreadsheet className="h-5 w-5 text-emerald-600" />
+                  <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base">
+                    Biểu Mẫu BM 03: Kế Hoạch & Ma Trận Thực Hiện Mục Tiêu ATTP 2026
+                  </h3>
+                </div>
+                <p className="text-xs text-slate-500">
+                  Đối chiếu theo tài liệu 03- Kế hoạch thực hiện Mục tiêu ATTP.docx
+                </p>
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handlePrintPolicy}
+                className="gap-1.5 text-xs font-semibold"
+              >
+                <Printer className="h-3.5 w-3.5" /> In Biểu Mẫu BM 03
+              </Button>
+            </div>
+
+            <div className="overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-800">
+              <table className="w-full text-xs text-left border-collapse">
+                <thead className="bg-slate-50 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 font-bold uppercase border-b border-slate-200 dark:border-slate-700">
+                  <tr>
+                    <th className="px-3 py-2.5 text-center w-12">STT</th>
+                    <th className="px-3 py-2.5 w-24">Mã số</th>
+                    <th className="px-4 py-2.5">Mục tiêu & Yêu cầu đo lường</th>
+                    <th className="px-3 py-2.5 text-center">Chỉ tiêu</th>
+                    <th className="px-3 py-2.5 text-center">Hiện tại</th>
+                    <th className="px-3 py-2.5">Phòng ban</th>
+                    <th className="px-3 py-2.5">Người phụ trách</th>
+                    <th className="px-4 py-2.5">Phương pháp tính & Kế hoạch hành động</th>
+                    <th className="px-3 py-2.5 text-center">Đánh giá</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                  {objectives.map((obj, idx) => (
+                    <tr
+                      key={obj.id || obj.objective_code}
+                      className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors"
+                    >
+                      <td className="px-3 py-3 text-center font-bold text-slate-500">{idx + 1}</td>
+                      <td className="px-3 py-3 font-mono font-bold text-emerald-700 dark:text-emerald-400">
+                        {obj.objective_code}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="font-semibold text-slate-800 dark:text-slate-200 block">
+                          {obj.metric_name}
+                        </span>
+                        <span className="text-[10px] text-slate-500">
+                          Điều khoản ISO: {obj.clause_reference || "6.2"}
+                        </span>
+                      </td>
+                      <td className="px-3 py-3 text-center font-bold text-slate-700 dark:text-slate-300">
+                        {obj.objective_code === "OBJ-2026-02" ? "< " : ""}{obj.target_value}{obj.unit ? " " + obj.unit : ""}
+                      </td>
+                      <td className="px-3 py-3 text-center font-bold text-emerald-600">
+                        {obj.actual_value !== undefined ? obj.actual_value : "-"}{obj.unit ? " " + obj.unit : ""}
+                      </td>
+                      <td className="px-3 py-3 text-slate-700 dark:text-slate-300">{obj.department}</td>
+                      <td className="px-3 py-3 text-slate-700 dark:text-slate-300 font-medium">
+                        {obj.responsible_person}
+                      </td>
+                      <td className="px-4 py-3 text-slate-600 dark:text-slate-400 text-[11px] leading-relaxed">
+                        {obj.action_plan}
+                      </td>
+                      <td className="px-3 py-3 text-center">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
+                          {obj.status === "ACHIEVED" ? "ĐẠT" : "ĐÚNG HẠN"}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* TAB 1: USERS */}
       {activeTab === "users" && (
@@ -1378,16 +1977,16 @@ function Org() {
 
           {/* Phân trang */}
           <div className="flex flex-col items-center justify-between gap-4 rounded-xl border bg-card p-3 sm:flex-row">
-            <div className="text-xs text-muted-foreground">
+            <div className="text-xs text-slate-700 font-medium">
               Hiển thị <b>{(currentPage - 1) * pageSize + 1}</b> -{" "}
               <b>{Math.min(currentPage * pageSize, users.length)}</b> trên <b>{users.length}</b> tài
               khoản
             </div>
 
             <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground">Số dòng/trang:</span>
+              <span className="text-xs text-slate-700 font-bold">Số dòng/trang:</span>
               <select
-                className="h-8 rounded-md border bg-background px-2 text-xs"
+                className="h-8 rounded-md border border-slate-300 bg-white text-slate-900 font-semibold px-2 text-xs shadow-2xs"
                 value={pageSize}
                 onChange={(e) => {
                   setPageSize(Number(e.target.value));

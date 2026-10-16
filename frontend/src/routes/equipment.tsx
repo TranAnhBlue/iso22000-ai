@@ -1126,7 +1126,7 @@ function EquipmentModule() {
           </tr>
           <tr>
             <td class="meta-title">Kết luận & Trạng thái:</td>
-            <td colspan="3"><b>${m.result_status === "IN_PROGRESS" ? "ĐANG BẢO TRÌ / SỬA CHỮA" : m.result_status === "NEED_FOLLOWUP" ? "CẦN THEO DÕI THÊM" : "HOÀN TẤT ĐẠT CHUẨN - BÀN GIAO SẢN XUẤT"}</b></td>
+            <td colspan="3"><b>${(m.result_status as string) === "IN_PROGRESS" ? "ĐANG BẢO TRÌ / SỬA CHỮA" : m.result_status === "NEED_FOLLOWUP" ? "CẦN THEO DÕI THÊM" : "HOÀN TẤT ĐẠT CHUẨN - BÀN GIAO SẢN XUẤT"}</b></td>
           </tr>
           <tr>
             <td class="meta-title">Ghi chú & Khuyến cáo:</td>
@@ -1177,9 +1177,9 @@ function EquipmentModule() {
             variant="outline"
             size="sm"
             onClick={() => setShowGuide(true)}
-            className="flex-1 sm:flex-initial gap-1.5 border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-bold text-xs h-9 sm:h-8"
+            className="flex-1 sm:flex-initial gap-1.5 border border-emerald-400/80 bg-emerald-50 text-emerald-800 hover:bg-emerald-600 hover:text-white hover:border-emerald-600 font-bold text-xs h-9 sm:h-8 shadow-sm transition-all duration-150"
           >
-            <BookOpen className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+            <BookOpen className="h-3.5 w-3.5 transition-colors shrink-0" />
             <span>Hướng Dẫn Nghiệp Vụ</span>
           </Button>
 
@@ -1188,9 +1188,9 @@ function EquipmentModule() {
             size="sm"
             onClick={fetchData}
             disabled={loading}
-            className="flex-1 sm:flex-initial gap-1.5 text-xs h-9 sm:h-8"
+            className="flex-1 sm:flex-initial gap-1.5 border border-slate-300 bg-white text-slate-800 hover:bg-slate-900 hover:text-white hover:border-slate-900 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700 text-xs h-9 sm:h-8 font-semibold shadow-sm transition-all duration-150"
           >
-            <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin text-primary" : ""}`} />
+            <RefreshCw className={`h-3.5 w-3.5 transition-colors ${loading ? "animate-spin text-primary" : ""}`} />
             <span>Làm mới</span>
           </Button>
 
@@ -1198,9 +1198,9 @@ function EquipmentModule() {
             variant="outline"
             size="sm"
             onClick={() => setActiveTab("ai")}
-            className="flex-1 sm:flex-initial gap-1.5 border-purple-500/30 bg-purple-500/5 text-xs text-purple-700 hover:bg-purple-500/10 dark:text-purple-300 h-9 sm:h-8"
+            className="flex-1 sm:flex-initial gap-1.5 border border-purple-400/80 bg-purple-50 text-purple-800 hover:bg-purple-600 hover:text-white hover:border-purple-600 dark:bg-purple-950/40 dark:text-purple-300 dark:hover:bg-purple-600 dark:hover:text-white text-xs font-bold h-9 sm:h-8 shadow-sm transition-all duration-150"
           >
-            <Sparkles className="h-3.5 w-3.5 text-purple-600 shrink-0" />
+            <Sparkles className="h-3.5 w-3.5 transition-colors shrink-0" />
             <span className="truncate">Trợ lý AI Bảo trì</span>
           </Button>
 
@@ -1316,19 +1316,19 @@ function EquipmentModule() {
         <div className="flex space-x-1.5 sm:space-x-2 min-w-max pb-2">
           <button
             onClick={() => setActiveTab("equipments")}
-            className={`flex items-center gap-1.5 sm:gap-2 rounded-lg px-3 py-2 text-xs sm:text-sm font-medium transition-all ${
+            className={`flex items-center gap-1.5 sm:gap-2 rounded-lg px-3 py-2 text-xs sm:text-sm font-bold transition-all ${
               activeTab === "equipments"
-                ? "bg-primary text-primary-foreground shadow-sm"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                ? "bg-emerald-600 text-white shadow-sm font-black"
+                : "text-slate-800 hover:bg-slate-100 hover:text-slate-900 border border-slate-200"
             }`}
           >
             <Wrench className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
             <span>Hồ sơ Lý lịch</span>
             <span
-              className={`ml-1 rounded-full px-1.5 py-0.2 text-[10px] sm:text-[11px] ${
+              className={`ml-1 rounded-full px-1.5 py-0.2 text-[10px] sm:text-[11px] font-bold ${
                 activeTab === "equipments"
                   ? "bg-white/20 text-white"
-                  : "bg-muted text-muted-foreground"
+                  : "bg-slate-200 text-slate-900"
               }`}
             >
               {equipments.length}
@@ -1337,19 +1337,19 @@ function EquipmentModule() {
 
           <button
             onClick={() => setActiveTab("calibration")}
-            className={`flex items-center gap-1.5 sm:gap-2 rounded-lg px-3 py-2 text-xs sm:text-sm font-medium transition-all ${
+            className={`flex items-center gap-1.5 sm:gap-2 rounded-lg px-3 py-2 text-xs sm:text-sm font-bold transition-all ${
               activeTab === "calibration"
-                ? "bg-primary text-primary-foreground shadow-sm"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                ? "bg-emerald-600 text-white shadow-sm font-black"
+                : "text-slate-800 hover:bg-slate-100 hover:text-slate-900 border border-slate-200"
             }`}
           >
             <Gauge className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
             <span>Nhật ký Hiệu chuẩn</span>
             <span
-              className={`ml-1 rounded-full px-1.5 py-0.2 text-[10px] sm:text-[11px] ${
+              className={`ml-1 rounded-full px-1.5 py-0.2 text-[10px] sm:text-[11px] font-bold ${
                 activeTab === "calibration"
                   ? "bg-white/20 text-white"
-                  : "bg-muted text-muted-foreground"
+                  : "bg-slate-200 text-slate-900"
               }`}
             >
               {calibrationLogs.length}
@@ -1358,19 +1358,19 @@ function EquipmentModule() {
 
           <button
             onClick={() => setActiveTab("maintenance")}
-            className={`flex items-center gap-1.5 sm:gap-2 rounded-lg px-3 py-2 text-xs sm:text-sm font-medium transition-all ${
+            className={`flex items-center gap-1.5 sm:gap-2 rounded-lg px-3 py-2 text-xs sm:text-sm font-bold transition-all ${
               activeTab === "maintenance"
-                ? "bg-primary text-primary-foreground shadow-sm"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                ? "bg-emerald-600 text-white shadow-sm font-black"
+                : "text-slate-800 hover:bg-slate-100 hover:text-slate-900 border border-slate-200"
             }`}
           >
             <Sliders className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
             <span>Kế hoạch Bảo trì (PM)</span>
             <span
-              className={`ml-1 rounded-full px-1.5 py-0.2 text-[10px] sm:text-[11px] ${
+              className={`ml-1 rounded-full px-1.5 py-0.2 text-[10px] sm:text-[11px] font-bold ${
                 activeTab === "maintenance"
                   ? "bg-white/20 text-white"
-                  : "bg-muted text-muted-foreground"
+                  : "bg-slate-200 text-slate-900"
               }`}
             >
               {maintenanceLogs.length}
@@ -1605,30 +1605,30 @@ function EquipmentModule() {
                             setSelectedPrintEq(eq);
                             setShowPrintProfileModal(true);
                           }}
-                          className="h-7 px-2 text-[11px] gap-1"
+                          className="h-7 px-2 text-[11px] gap-1 border border-slate-300 bg-white text-slate-800 hover:bg-slate-900 hover:text-white hover:border-slate-900 font-semibold shadow-sm transition-all duration-150 group"
                           title="Xem và In Phiếu Lý Lịch Thiết Bị (BM-TB-01)"
                         >
-                          <Printer className="h-3 w-3" />
+                          <Printer className="h-3 w-3 group-hover:text-white transition-colors" />
                           In BM-TB-01
                         </Button>
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => handleOpenCreateMaint(eq)}
-                          className="h-7 px-2 text-[11px] gap-1 text-purple-700 hover:bg-purple-50"
+                          className="h-7 px-2 text-[11px] gap-1 border border-purple-400/80 bg-purple-50 text-purple-800 hover:bg-purple-600 hover:text-white hover:border-purple-600 font-bold shadow-sm transition-all duration-150 group"
                           title="Lập phiếu bảo dưỡng máy"
                         >
-                          <Sliders className="h-3 w-3" />
+                          <Sliders className="h-3 w-3 group-hover:text-white transition-colors" />
                           Bảo trì
                         </Button>
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => handleOpenCreateCal(eq)}
-                          className="h-7 px-2 text-[11px] gap-1 text-blue-700 hover:bg-blue-50"
+                          className="h-7 px-2 text-[11px] gap-1 border border-blue-400/80 bg-blue-50 text-blue-800 hover:bg-blue-600 hover:text-white hover:border-blue-600 font-bold shadow-sm transition-all duration-150 group"
                           title="Ghi nhận tem hiệu chuẩn"
                         >
-                          <Gauge className="h-3 w-3" />
+                          <Gauge className="h-3 w-3 group-hover:text-white transition-colors" />
                           Hiệu chuẩn
                         </Button>
                       </div>
@@ -1788,9 +1788,9 @@ function EquipmentModule() {
                             setSelectedPrintCal(c);
                             setShowPrintCalModal(true);
                           }}
-                          className="h-7 px-2 text-[11px] gap-1"
+                          className="h-7 px-2 text-[11px] gap-1 border border-slate-300 bg-white text-slate-800 hover:bg-slate-900 hover:text-white hover:border-slate-900 font-semibold shadow-sm transition-all duration-150 group"
                         >
-                          <Printer className="h-3 w-3" />
+                          <Printer className="h-3 w-3 group-hover:text-white transition-colors" />
                           In
                         </Button>
                       </td>
@@ -1935,7 +1935,7 @@ function EquipmentModule() {
                         {m.performer_display_name || m.performer_name || "—"}
                       </td>
                       <td className="px-3.5 py-2.5 text-center">
-                        {m.result_status === "IN_PROGRESS" ? (
+                        {(m.result_status as string) === "IN_PROGRESS" ? (
                           <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2.5 py-0.5 text-[10px] font-bold text-amber-700 border border-amber-300">
                             <Wrench className="h-3 w-3 animate-spin" />
                             Đang bảo trì
@@ -1959,10 +1959,10 @@ function EquipmentModule() {
                           variant="outline"
                           size="sm"
                           onClick={() => triggerPrintMaintenanceLog(m)}
-                          className="h-7 px-2 text-[11px] gap-1 text-slate-700 hover:bg-slate-100"
+                          className="h-7 px-2 text-[11px] gap-1 border border-slate-300 bg-white text-slate-800 hover:bg-slate-900 hover:text-white hover:border-slate-900 font-semibold shadow-sm transition-all duration-150 group"
                           title="In Phiếu Bảo Trì Thiết Bị (BM-BT-01)"
                         >
-                          <Printer className="h-3 w-3" />
+                          <Printer className="h-3 w-3 group-hover:text-white transition-colors" />
                           In phiếu
                         </Button>
                       </td>

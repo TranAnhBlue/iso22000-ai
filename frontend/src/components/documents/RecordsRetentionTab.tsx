@@ -26,12 +26,12 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { printHtml } from "@/lib/print";
 import { toast } from "sonner";
 import api from "@/lib/api";
-import { printHtml } from "@/lib/print";
-import { RecordRetention } from "@/routes/documents";
+import type { RecordRetention } from "@/lib/documentConstants";
+import { DEPARTMENTS } from "@/lib/documentConstants";
 import { generateRecordRetentionMasterListHtml } from "./dmsPrintHelpers";
-import { DEPARTMENTS } from "@/routes/documents";
 
 interface RecordsRetentionTabProps {
   retentionRecords: RecordRetention[];
