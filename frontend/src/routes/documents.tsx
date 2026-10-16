@@ -61,6 +61,7 @@ import {
   FolderArchive,
 } from "lucide-react";
 import api from "@/lib/api";
+import { initCached, isCached } from "@/lib/apiCache";
 import { normalizeWorkflowForSave, workflowErrorMessage } from "@/lib/workflow";
 import logoImg from "@/assets/logo.png";
 import { WorkflowBuilder, type WorkflowTemplateData } from "@/components/builder/WorkflowBuilder";
@@ -247,8 +248,8 @@ Bao gồm 8 chuyên đề vệ sinh chuẩn hóa theo Codex và ISO 22000:2018.
 function DocumentsPage() {
   const { canEdit, isManagement, isAdmin } = useModuleAccess();
   const { departments } = useDepartments();
-  const [documents, setDocuments] = useState<DocumentItem[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [documents, setDocuments] = useState<DocumentItem[]>(() => initCached("/documents", []));
+  const [loading, setLoading] = useState(() => !isCached("/documents"));
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedType, setSelectedType] = useState<string>("ALL");
   const [selectedStatus, setSelectedStatus] = useState<string>("ALL");
@@ -267,20 +268,20 @@ function DocumentsPage() {
   const [activeTab, setActiveTab] = useState<DocumentSubTab>("INTERNAL_DOCS");
 
   // Dữ liệu cho các tab nghiệp vụ
-  const [changeRequests, setChangeRequests] = useState<DocumentChangeRequest[]>([]);
-  const [loadingCR, setLoadingCR] = useState(false);
+  const [changeRequests, setChangeRequests] = useState<DocumentChangeRequest[]>(() => initCached("/documents/change-requests", []));
+  const [loadingCR, setLoadingCR] = useState(() => !isCached("/documents/change-requests"));
 
-  const [distributions, setDistributions] = useState<DocumentDistribution[]>([]);
-  const [loadingDist, setLoadingDist] = useState(false);
+  const [distributions, setDistributions] = useState<DocumentDistribution[]>(() => initCached("/documents/distributions", []));
+  const [loadingDist, setLoadingDist] = useState(() => !isCached("/documents/distributions"));
 
-  const [externalDocs, setExternalDocs] = useState<ExternalDocument[]>([]);
-  const [loadingExt, setLoadingExt] = useState(false);
+  const [externalDocs, setExternalDocs] = useState<ExternalDocument[]>(() => initCached("/documents/external-documents", []));
+  const [loadingExt, setLoadingExt] = useState(() => !isCached("/documents/external-documents"));
 
-  const [periodicReviews, setPeriodicReviews] = useState<PeriodicReviewItem[]>([]);
-  const [loadingPR, setLoadingPR] = useState(false);
+  const [periodicReviews, setPeriodicReviews] = useState<PeriodicReviewItem[]>(() => initCached("/documents/periodic-reviews", []));
+  const [loadingPR, setLoadingPR] = useState(() => !isCached("/documents/periodic-reviews"));
 
-  const [retentionRecords, setRetentionRecords] = useState<RecordRetention[]>([]);
-  const [loadingRetention, setLoadingRetention] = useState(false);
+  const [retentionRecords, setRetentionRecords] = useState<RecordRetention[]>(() => initCached("/documents/retention", []));
+  const [loadingRetention, setLoadingRetention] = useState(() => !isCached("/documents/retention"));
 
   const fetchChangeRequests = async () => {
     setLoadingCR(true);
@@ -1514,7 +1515,7 @@ Quy định trình tự và các bước thao tác chuẩn cho: ${doc.doc_title}
                     </tr>
                   </thead>
                   <tbody className="divide-y">
-                    {loading ? (
+                    {loading && documents.length === 0 ? (
                       <tr>
                         <td colSpan={9} className="py-12 text-center text-muted-foreground">
                           <div className="inline-flex items-center gap-2">

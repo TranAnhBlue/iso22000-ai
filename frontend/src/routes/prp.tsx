@@ -49,6 +49,7 @@ import {
   ShieldAlert,
 } from "lucide-react";
 import api from "@/lib/api";
+import { initCached, isCached } from "@/lib/apiCache";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useDepartments } from "@/lib/departments";
@@ -215,13 +216,13 @@ function PRPModule() {
   >("programs");
 
   // Data states
-  const [programs, setPrograms] = useState<PRPProgram[]>([]);
-  const [checklists, setChecklists] = useState<PRPChecklistLog[]>([]);
-  const [pestLogs, setPestLogs] = useState<PestControlLog[]>([]);
-  const [allergens, setAllergens] = useState<AllergenControl[]>([]);
-  const [visitorDeclarations, setVisitorDeclarations] = useState<VisitorHealthDeclaration[]>([]);
-  const [firstAidLogs, setFirstAidLogs] = useState<FirstAidLog[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [programs, setPrograms] = useState<PRPProgram[]>(() => initCached("/haccp/prp-programs", []));
+  const [checklists, setChecklists] = useState<PRPChecklistLog[]>(() => initCached("/haccp/prp-checklists", []));
+  const [pestLogs, setPestLogs] = useState<PestControlLog[]>(() => initCached("/haccp/pest-control-logs", []));
+  const [allergens, setAllergens] = useState<AllergenControl[]>(() => initCached("/haccp/allergen-controls", []));
+  const [visitorDeclarations, setVisitorDeclarations] = useState<VisitorHealthDeclaration[]>(() => initCached("/haccp/visitor-health-declarations", []));
+  const [firstAidLogs, setFirstAidLogs] = useState<FirstAidLog[]>(() => initCached("/haccp/first-aid-logs", []));
+  const [loading, setLoading] = useState<boolean>(() => !isCached("/haccp/prp-programs"));
   const [showGuide, setShowGuide] = useState(false);
 
   // Filters
@@ -1879,6 +1880,7 @@ function PRPModule() {
       {activeTab === "programs" &&
         (programs.length === 0 ? (
           <EmptyState
+            loading={loading && programs.length === 0}
             icon={ShieldCheck}
             title="Chưa có chương trình tiên quyết (PRP / GMP / SSOP) nào"
             description="Khởi tạo thư viện các chương trình thực hành sản xuất tốt GMP, kiểm soát vệ sinh chuẩn SSOP và 5S cho nhà máy."
@@ -2011,6 +2013,7 @@ function PRPModule() {
       {activeTab === "checklists" &&
         (checklists.length === 0 ? (
           <EmptyState
+            loading={loading && checklists.length === 0}
             icon={ClipboardCheck}
             title="Chưa có nhật ký checklist giám sát ca nào"
             description="Thực hiện kiểm tra tuân thủ các quy định GMP, SSOP và 5S theo từng ca sản xuất trong ngày."
@@ -2171,6 +2174,7 @@ function PRPModule() {
 
           {filteredPestLogs.length === 0 ? (
             <EmptyState
+              loading={loading && filteredPestLogs.length === 0}
               icon={Bug}
               title="Chưa có nhật ký kiểm tra bẫy côn trùng / chuột nào"
               description="Theo quy trình kiểm soát sinh vật gây hại BM01-SVGH, định kỳ hàng tuần cần kiểm tra toàn bộ bẫy hộp bả, bẫy keo và đèn diệt ruồi."
@@ -2324,6 +2328,7 @@ function PRPModule() {
 
           {filteredAllergens.length === 0 ? (
             <EmptyState
+              loading={loading && filteredAllergens.length === 0}
               icon={ShieldAlert}
               title="Chưa có danh mục chất gây dị ứng nào"
               description="Theo quy trình kiểm soát chất gây dị ứng BM01-CGDU, nhà máy cần lập danh mục nhận diện các thành phần dị nguyên và quy chuẩn ngăn ngừa lây nhiễm chéo."
@@ -2457,6 +2462,7 @@ function PRPModule() {
 
           {filteredVisitors.length === 0 ? (
             <EmptyState
+              loading={loading && filteredVisitors.length === 0}
               icon={UserCheck}
               title="Chưa có phiếu kê khai y tế khách tham quan nào"
               description="Theo quy trình kiểm soát sức khỏe BM03-KSSK, mọi khách tham quan và nhà thầu trước khi vào xưởng sản xuất phải kê khai y tế để ngăn ngừa dịch bệnh truyền nhiễm."
@@ -2619,6 +2625,7 @@ function PRPModule() {
 
           {filteredFirstAid.length === 0 ? (
             <EmptyState
+              loading={loading && filteredFirstAid.length === 0}
               icon={HeartPulse}
               title="Chưa có bản ghi cấp phát tủ thuốc sơ cứu nào"
               description="Theo quy trình kiểm soát sức khỏe BM01-KSSK, mọi trường hợp cấp phát thuốc, bông băng cồn đỏ tại tủ thuốc hiện trường cần được ghi nhật ký đầy đủ."

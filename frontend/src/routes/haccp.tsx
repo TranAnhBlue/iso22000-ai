@@ -58,6 +58,7 @@ import {
   ClipboardCheck,
 } from "lucide-react";
 import api from "@/lib/api";
+import { initCached, isCached } from "@/lib/apiCache";
 import { normalizeWorkflowForSave, workflowErrorMessage } from "@/lib/workflow";
 import { toast } from "sonner";
 import logoImg from "@/assets/logo.png";
@@ -360,18 +361,18 @@ function HACCPModule() {
   const [showWfGuide, setShowWfGuide] = useState(false);
 
   // Data states
-  const [stats, setStats] = useState<HACCPStats | null>(null);
-  const [plans, setPlans] = useState<HACCPPlan[]>([]);
+  const [stats, setStats] = useState<HACCPStats | null>(() => initCached("/haccp/stats", null));
+  const [plans, setPlans] = useState<HACCPPlan[]>(() => initCached("/haccp/plans", []));
   const [selectedPlanId, setSelectedPlanId] = useState<string>("ALL");
-  const [steps, setSteps] = useState<ProcessStep[]>([]);
-  const [hazards, setHazards] = useState<HazardAnalysis[]>([]);
-  const [ccps, setCcps] = useState<CCPDefinition[]>([]);
-  const [logs, setLogs] = useState<CCPMonitoringLog[]>([]);
-  const [reviews, setReviews] = useState<HACCPPlanReview[]>([]);
-  const [changeRequests, setChangeRequests] = useState<any[]>([]);
-  const [metalDetectorLogs, setMetalDetectorLogs] = useState<MetalDetectorLog[]>([]);
-  const [inProcessLogs, setInProcessLogs] = useState<InProcessQCLog[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [steps, setSteps] = useState<ProcessStep[]>(() => initCached("/haccp/process-steps", []));
+  const [hazards, setHazards] = useState<HazardAnalysis[]>(() => initCached("/haccp/hazards", []));
+  const [ccps, setCcps] = useState<CCPDefinition[]>(() => initCached("/haccp/ccp-definitions", []));
+  const [logs, setLogs] = useState<CCPMonitoringLog[]>(() => initCached("/haccp/ccp-logs", []));
+  const [reviews, setReviews] = useState<HACCPPlanReview[]>(() => initCached("/haccp/reviews", []));
+  const [changeRequests, setChangeRequests] = useState<any[]>(() => initCached("/change-management/requests", []));
+  const [metalDetectorLogs, setMetalDetectorLogs] = useState<MetalDetectorLog[]>(() => initCached("/haccp/metal-detector-logs", []));
+  const [inProcessLogs, setInProcessLogs] = useState<InProcessQCLog[]>(() => initCached("/haccp/in-process-qc-logs", []));
+  const [loading, setLoading] = useState<boolean>(() => !isCached("/haccp/plans"));
 
   // IPQC Filters & Modals
   const [ipqcSubTab, setIpqcSubTab] = useState<"metal_detector" | "process_stages">(
@@ -3100,6 +3101,7 @@ function HACCPModule() {
               <div className="space-y-8 py-2">
                 {plans.length === 0 ? (
                   <EmptyState
+                    loading={loading && plans.length === 0}
                     icon={GitBranch}
                     title="Chưa có kế hoạch HACCP nào"
                     description="Hãy bắt đầu tạo kế hoạch HACCP và thiết lập các bước công nghệ trong dây chuyền sản xuất."
@@ -3361,6 +3363,7 @@ function HACCPModule() {
               /* Khi chọn 1 kế hoạch cụ thể */
               filteredSteps.length === 0 ? (
                 <EmptyState
+                  loading={loading && filteredSteps.length === 0}
                   icon={GitBranch}
                   title={`Kế hoạch [${currentPlan?.plan_code || ""}] chưa có công đoạn nào`}
                   description="Hãy bắt đầu thiết lập các bước công nghệ trong dây chuyền sản xuất từ khâu tiếp nhận nguyên liệu đến bảo quản thành phẩm."
@@ -3485,6 +3488,7 @@ function HACCPModule() {
 
           {filteredCCPs.length === 0 ? (
             <EmptyState
+              loading={loading && filteredCCPs.length === 0}
               icon={Flame}
               title="Chưa có điểm kiểm soát tới hạn CCP / oPRP"
               description="Dựa trên kết quả đánh giá cây quyết định phân tích mối nguy Codex, hãy thiết lập các điểm kiểm soát tới hạn CCP kèm giới hạn tới hạn cụ thể."
@@ -3640,6 +3644,7 @@ function HACCPModule() {
 
           {filteredHazards.length === 0 ? (
             <EmptyState
+              loading={loading && filteredHazards.length === 0}
               icon={ShieldAlert}
               title="Chưa có phân tích mối nguy nào"
               description="Thực hiện nhận diện các mối nguy sinh học, hóa học, vật lý và dị nguyên cho từng công đoạn kèm đánh giá cây quyết định Codex Q1-Q4."
@@ -3771,6 +3776,7 @@ function HACCPModule() {
 
           {filteredLogs.length === 0 ? (
             <EmptyState
+              loading={loading && filteredLogs.length === 0}
               icon={Thermometer}
               title="Chưa có nhật ký giám sát đo đạc CCP nào"
               description="Thực hiện ghi nhận định kỳ các thông số giám sát (nhiệt độ, áp suất, thời gian, kích thước lưới sàng...) để kiểm soát điểm tới hạn CCP."
@@ -4098,6 +4104,7 @@ function HACCPModule() {
           {/* Table */}
           {reviews.length === 0 ? (
             <EmptyState
+              loading={loading && reviews.length === 0}
               icon={ClipboardCheck}
               title="Chưa có đợt thẩm tra kế hoạch HACCP nào"
               description="Thực hiện đánh giá toàn diện định kỳ hoặc sau thay đổi đối với phân tích mối nguy, hồ sơ giám sát CCP/OPRP và hiệu lực CAPA."

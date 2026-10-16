@@ -1,5 +1,6 @@
 import axios from "axios";
 import { clearSession, getToken } from "./auth";
+import { setCachedApi, invalidateApiCache, clearApiCache } from "./apiCache";
 
 // Tự động chuẩn hóa Base URL nếu người dùng chỉ nhập domain trên Vercel
 function resolveBaseUrl(): string {
@@ -28,15 +29,32 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Tự động thử lại 1 lần nếu gặp lỗi mạng (máy chủ Render đang khởi động)
+// Tự động lưu cache GET và vô hiệu hóa cache khi có thao tác POST/PUT/DELETE/PATCH
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    const config = response.config;
+    const method = (config.method || "get").toLowerCase();
+    const url = config.url || "";
+
+    if (method === "get" && response.status === 200 && response.data !== undefined) {
+      // Lưu vào in-memory cache
+      setCachedApi(url, response.data, config.params);
+    } else if (["post", "put", "delete", "patch"].includes(method) && response.status >= 200 && response.status < 300) {
+      // Khi có mutation thành công, tự động xóa cache của module liên quan
+      const prefixMatch = url.match(/^\/([a-z0-9_-]+)/i);
+      if (prefixMatch) {
+        invalidateApiCache(`/${prefixMatch[1]}`);
+      }
+    }
+
+    return response;
+  },
   async (error) => {
     const config = error.config;
-    // Phiên hết hạn/không hợp lệ: xoá JWT cũ để các tác vụ nền (đặc biệt poll
-    // thông báo) không tiếp tục gửi request 401. Không áp dụng cho lỗi đăng nhập.
+    // Phiên hết hạn/không hợp lệ: xoá JWT cũ để các tác vụ nền không tiếp tục gửi request 401
     if (error.response?.status === 401 && !String(config?.url || "").includes("/auth/login")) {
       clearSession();
+      clearApiCache();
     }
     if (config && !config._isRetry && (error.code === "ERR_NETWORK" || !error.response)) {
       config._isRetry = true;
@@ -49,3 +67,4 @@ api.interceptors.response.use(
 );
 
 export default api;
+

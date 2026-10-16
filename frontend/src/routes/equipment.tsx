@@ -42,6 +42,7 @@ import {
   BookOpen,
 } from "lucide-react";
 import api from "@/lib/api";
+import { initCached, isCached } from "@/lib/apiCache";
 import { printHtml } from "@/lib/print";
 import logoImg from "@/assets/logo.png";
 import { toast } from "sonner";
@@ -251,17 +252,17 @@ function EquipmentModule() {
   const [activeTab, setActiveTab] = useState<"equipments" | "calibration" | "maintenance" | "ai">(
     "equipments",
   );
-  const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("ALL");
   const [criticalityFilter, setCriticalityFilter] = useState("ALL");
   const [selectedEqFilterForLogs, setSelectedEqFilterForLogs] = useState<string>("ALL");
 
   // Dữ liệu chính
-  const [stats, setStats] = useState<EquipmentStats | null>(null);
-  const [equipments, setEquipments] = useState<EquipmentItem[]>([]);
-  const [maintenanceLogs, setMaintenanceLogs] = useState<MaintenanceLogItem[]>([]);
-  const [calibrationLogs, setCalibrationLogs] = useState<CalibrationLogItem[]>([]);
+  const [stats, setStats] = useState<EquipmentStats | null>(() => initCached("/equipment/stats", null));
+  const [equipments, setEquipments] = useState<EquipmentItem[]>(() => initCached("/equipment/equipments", []));
+  const [maintenanceLogs, setMaintenanceLogs] = useState<MaintenanceLogItem[]>(() => initCached("/equipment/maintenance-logs", []));
+  const [calibrationLogs, setCalibrationLogs] = useState<CalibrationLogItem[]>(() => initCached("/equipment/calibration-logs", []));
+  const [loading, setLoading] = useState(() => !isCached("/equipment/equipments"));
   const [showGuide, setShowGuide] = useState(false);
 
   // Modals thao tác
@@ -1401,6 +1402,7 @@ function EquipmentModule() {
       {activeTab === "equipments" &&
         (equipments.length === 0 ? (
           <EmptyState
+            loading={loading && equipments.length === 0}
             icon={Wrench}
             title="Chưa có thiết bị hoặc phương tiện đo nào"
             description="Đăng ký hồ sơ máy móc, thiết bị chế biến, kho bảo quản và phương tiện đo lường kiểm soát điểm CCP/oPRP."
@@ -1669,6 +1671,7 @@ function EquipmentModule() {
       {activeTab === "calibration" &&
         (calibrationLogs.length === 0 ? (
           <EmptyState
+            loading={loading && calibrationLogs.length === 0}
             icon={ShieldCheck}
             title="Chưa có nhật ký hiệu chuẩn hoặc kiểm định đo lường"
             description="Ghi nhận hồ sơ kiểm định, số tem chứng nhận QUATEST/VILAS, sai số đo lường và theo dõi chu kỳ tái hiệu chuẩn."
@@ -1812,6 +1815,7 @@ function EquipmentModule() {
       {activeTab === "maintenance" &&
         (maintenanceLogs.length === 0 ? (
           <EmptyState
+            loading={loading && maintenanceLogs.length === 0}
             icon={Calendar}
             title="Chưa có nhật ký bảo trì thiết bị nào"
             description="Lập lịch bảo trì phòng ngừa (PM), ghi nhận vật tư mỡ bôi trơn an toàn thực phẩm NSF H1 và xác nhận vệ sinh sau bảo trì."

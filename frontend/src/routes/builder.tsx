@@ -49,6 +49,7 @@ import { useModuleAccess } from "@/lib/rbac";
 import { EmptyState } from "@/components/EmptyState";
 import { ModuleGuideModal } from "@/components/ModuleGuideModal";
 import { WorkflowGuideModal } from "@/components/WorkflowGuideModal";
+import { initCached, isCached } from "@/lib/apiCache";
 
 export const Route = createFileRoute("/builder")({
   component: BuilderManagementPage,
@@ -59,12 +60,14 @@ function BuilderManagementPage() {
   const [activeTab, setActiveTab] = useState<"FORMS" | "WORKFLOWS" | "SUBMISSIONS" | "INSTANCES">(
     "FORMS",
   );
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(() => !isCached("/builders/forms"));
   const [showGuide, setShowGuide] = useState(false);
   const [showWfGuide, setShowWfGuide] = useState(false);
 
-  // Forms state
-  const [forms, setForms] = useState<FormTemplateData[]>([]);
+  // Forms state (initialized synchronously from cache)
+  const [forms, setForms] = useState<FormTemplateData[]>(() =>
+    initCached("/builders/forms", [])
+  );
   const [selectedModule, setSelectedModule] = useState<string>("ALL");
   const [searchForm, setSearchForm] = useState<string>("");
   const [editingForm, setEditingForm] = useState<FormTemplateData | null>(null);
@@ -72,16 +75,22 @@ function BuilderManagementPage() {
   const [testingForm, setTestingForm] = useState<FormTemplateData | null>(null);
 
   // Workflows state
-  const [workflows, setWorkflows] = useState<WorkflowTemplateData[]>([]);
+  const [workflows, setWorkflows] = useState<WorkflowTemplateData[]>(() =>
+    initCached("/builders/workflows", [])
+  );
   const [selectedWfModule, setSelectedWfModule] = useState<string>("ALL");
   const [searchWf, setSearchWf] = useState<string>("");
   const [editingWf, setEditingWf] = useState<WorkflowTemplateData | null>(null);
   const [isCreatingWf, setIsCreatingWf] = useState(false);
 
   // Submissions state
-  const [submissions, setSubmissions] = useState<any[]>([]);
+  const [submissions, setSubmissions] = useState<any[]>(() =>
+    initCached("/builders/submissions", [])
+  );
   const [viewingSubmission, setViewingSubmission] = useState<any | null>(null);
-  const [instances, setInstances] = useState<any[]>([]);
+  const [instances, setInstances] = useState<any[]>(() =>
+    initCached("/builders/instances", [])
+  );
   const [pendingInstanceAction, setPendingInstanceAction] = useState<{
     instanceId: string;
     action: "ADVANCE" | "APPROVE" | "REJECT";
@@ -98,7 +107,7 @@ function BuilderManagementPage() {
 
   // Fetch Forms
   const fetchForms = async () => {
-    setLoading(true);
+    if (forms.length === 0) setLoading(true);
     try {
       const res = await api.get("/builders/forms");
       setForms(res.data);
@@ -112,7 +121,7 @@ function BuilderManagementPage() {
 
   // Fetch Workflows
   const fetchWorkflows = async () => {
-    setLoading(true);
+    if (workflows.length === 0) setLoading(true);
     try {
       const res = await api.get("/builders/workflows");
       setWorkflows(res.data);
@@ -126,7 +135,7 @@ function BuilderManagementPage() {
 
   // Fetch Submissions
   const fetchSubmissions = async () => {
-    setLoading(true);
+    if (submissions.length === 0) setLoading(true);
     try {
       const res = await api.get("/builders/submissions");
       setSubmissions(res.data);
@@ -544,6 +553,7 @@ function BuilderManagementPage() {
             {/* Forms Grid List */}
             {filteredForms.length === 0 ? (
               <EmptyState
+                loading={loading && forms.length === 0}
                 icon={FileText}
                 title="Chưa có biểu mẫu nào"
                 description="Hệ thống chưa có biểu mẫu tùy chỉnh nào. Bạn có thể tạo biểu mẫu mới để bắt đầu số hóa quy trình kiểm tra."
@@ -735,6 +745,7 @@ function BuilderManagementPage() {
             {/* Workflows Grid List */}
             {filteredWorkflows.length === 0 ? (
               <EmptyState
+                loading={loading && workflows.length === 0}
                 icon={Workflow}
                 title="Chưa có quy trình nào"
                 description="Hệ thống chưa có lưu đồ quy trình nào. Hãy tạo quy trình mới để thiết lập các công đoạn và điểm kiểm soát."
@@ -877,6 +888,7 @@ function BuilderManagementPage() {
 
             {submissions.length === 0 ? (
               <EmptyState
+                loading={loading && submissions.length === 0}
                 icon={FileText}
                 title="Chưa có bản ghi nộp dữ liệu"
                 description="Toàn bộ lịch sử checklist, phiếu kiểm tra và đo đạc CCP được nộp từ biểu mẫu động sẽ hiển thị tại đây."
@@ -967,6 +979,7 @@ function BuilderManagementPage() {
             </div>
             {instances.length === 0 ? (
               <EmptyState
+                loading={loading && instances.length === 0}
                 icon={Workflow}
                 title="Chưa có phiên thực thi"
                 description="Chọn một quy trình đã phê duyệt và bấm nút phát để khởi tạo."

@@ -35,6 +35,7 @@ import { toast } from "sonner";
 import { printHtml } from "@/lib/print";
 import { EmptyState } from "@/components/EmptyState";
 import { ModuleGuideModal } from "@/components/ModuleGuideModal";
+import { initCached, isCached } from "@/lib/apiCache";
 
 export const Route = createFileRoute("/change-management")({
   head: () => ({
@@ -143,16 +144,20 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: any }>
 };
 
 function ChangeManagementPage() {
-  const [requests, setRequests] = useState<ChangeRequestItem[]>([]);
-  const [stats, setStats] = useState<ChangeStats>({
-    total: 0,
-    draft: 0,
-    under_review: 0,
-    approved: 0,
-    implemented: 0,
-    high_impact: 0,
-  });
-  const [loading, setLoading] = useState(true);
+  const [requests, setRequests] = useState<ChangeRequestItem[]>(() =>
+    initCached("/change-management/requests", [])
+  );
+  const [stats, setStats] = useState<ChangeStats>(() =>
+    initCached("/change-management/stats", {
+      total: 0,
+      draft: 0,
+      under_review: 0,
+      approved: 0,
+      implemented: 0,
+      high_impact: 0,
+    })
+  );
+  const [loading, setLoading] = useState(() => !isCached("/change-management/requests"));
   const [showGuide, setShowGuide] = useState(false);
 
   // Filters
@@ -182,7 +187,9 @@ function ChangeManagementPage() {
 
   const fetchData = async () => {
     try {
-      setLoading(true);
+      if (requests.length === 0) {
+        setLoading(true);
+      }
       const [resReqs, resStats] = await Promise.all([
         api.get("/change-management/requests"),
         api.get("/change-management/stats"),
@@ -573,6 +580,7 @@ function ChangeManagementPage() {
       {/* TABLE */}
       {requests.length === 0 ? (
         <EmptyState
+          loading={loading && requests.length === 0}
           icon={GitCompare}
           title="Chưa có phiếu yêu cầu thay đổi nào"
           description="Thiết lập quy trình hoạch định sự thay đổi, đánh giá tác động tới kế hoạch HACCP, PRP và an toàn thực phẩm."

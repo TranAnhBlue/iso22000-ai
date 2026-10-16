@@ -13,6 +13,7 @@ import {
 import { ModuleAccessProvider } from "@/lib/rbac";
 import logoImg from "@/assets/logo.png";
 import api from "@/lib/api";
+import { warmFSMSCache } from "@/lib/apiCache";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -515,6 +516,7 @@ export function AppShell({ children, module }: { children: ReactNode; module?: M
     };
 
     fetchAlerts();
+    warmFSMSCache(api);
     const interval = setInterval(fetchAlerts, 45000); // Tự động làm mới mỗi 45s
     return () => clearInterval(interval);
   }, [session]);
@@ -694,6 +696,7 @@ export function AppShell({ children, module }: { children: ReactNode; module?: M
               <Link
                 key={item.to}
                 to={item.to}
+                preload="intent"
                 className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition ${
                   active
                     ? "bg-emerald-600 text-white shadow-sm font-bold"
@@ -791,6 +794,7 @@ export function AppShell({ children, module }: { children: ReactNode; module?: M
                   <Link
                     key={item.to}
                     to={item.to}
+                    preload="intent"
                     onClick={() => setMobileMenuOpen(false)}
                     className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition ${
                       active
@@ -1072,6 +1076,7 @@ export function AppShell({ children, module }: { children: ReactNode; module?: M
                       <Link
                         key={idx}
                         to={link.to}
+                        preload="intent"
                         onClick={() => setUserPopoverOpen(false)}
                         className="w-full flex items-start gap-2.5 p-2 rounded-xl text-slate-800 hover:bg-slate-100 hover:text-slate-900 transition text-left group border border-transparent hover:border-slate-200"
                       >

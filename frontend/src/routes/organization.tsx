@@ -38,6 +38,7 @@ import {
   Calendar,
 } from "lucide-react";
 import api from "@/lib/api";
+import { initCached, isCached, setCachedApi } from "@/lib/apiCache";
 import { toast } from "sonner";
 import { DEFAULT_DEPARTMENTS } from "@/lib/departments";
 import { useModuleAccess } from "@/lib/rbac";
@@ -198,22 +199,22 @@ function Org() {
     | "communications"
     | "food_safety_team"
   >("policy_objectives");
-  const [objectives, setObjectives] = useState<QualityObjectiveItem[]>([]);
-  const [depts, setDepts] = useState<any[]>([]);
-  const [users, setUsers] = useState<any[]>([]);
-  const [parties, setParties] = useState<InterestedPartyItem[]>([]);
-  const [risks, setRisks] = useState<ContextRiskItem[]>([]);
-  const [communications, setCommunications] = useState<CommunicationLogItem[]>([]);
-  const [fstMembers, setFstMembers] = useState<FoodSafetyTeamMemberItem[]>([]);
-  const [contextStats, setContextStats] = useState<any>({
+  const [objectives, setObjectives] = useState<QualityObjectiveItem[]>(() => initCached("/dashboard/quality-objectives", []));
+  const [depts, setDepts] = useState<any[]>(() => initCached("/organization/departments", []));
+  const [users, setUsers] = useState<any[]>(() => initCached("/organization/users", []));
+  const [parties, setParties] = useState<InterestedPartyItem[]>(() => initCached("/organization/interested-parties", []));
+  const [risks, setRisks] = useState<ContextRiskItem[]>(() => initCached("/organization/context-risks", []));
+  const [communications, setCommunications] = useState<CommunicationLogItem[]>(() => initCached("/organization/communications", []));
+  const [fstMembers, setFstMembers] = useState<FoodSafetyTeamMemberItem[]>(() => initCached("/organization/food-safety-team-normalized", []));
+  const [contextStats, setContextStats] = useState<any>(() => initCached("/organization/context-stats", {
     total_parties: 0,
     internal_parties: 0,
     external_parties: 0,
     total_risks: 0,
     high_risks: 0,
     controlled_risks: 0,
-  });
-  const [loading, setLoading] = useState(false);
+  }));
+  const [loading, setLoading] = useState(() => !isCached("/organization/departments"));
 
   // Search & Filter
   const [searchQuery, setSearchQuery] = useState("");
@@ -360,6 +361,7 @@ function Org() {
         };
       });
       setFstMembers(normalizedFst);
+      setCachedApi("/organization/food-safety-team-normalized", normalizedFst);
     } catch (err) {
       console.error("Lỗi tải dữ liệu tổ chức:", err);
       toast.error("Không thể tải toàn bộ dữ liệu tổ chức & bối cảnh");
@@ -2109,6 +2111,7 @@ function Org() {
 
           {fstMembers.length === 0 ? (
             <EmptyState
+              loading={loading && fstMembers.length === 0}
               icon={ShieldCheck}
               title="Chưa có thành viên Đội ATTP nào"
               description="Hệ thống chưa ghi nhận danh sách thành viên Đội An toàn thực phẩm theo Quyết định số 02. Hãy bắt đầu bổ nhiệm Đội trưởng và các thành viên phụ trách."
@@ -2264,6 +2267,7 @@ function Org() {
 
           {parties.length === 0 ? (
             <EmptyState
+              loading={loading && parties.length === 0}
               icon={Globe}
               title="Chưa có bên quan tâm nào"
               description="Chưa xác định danh sách các bên quan tâm nội bộ và bên ngoài (khách hàng, cơ quan nhà nước, nhà cung cấp) cùng kỳ vọng và luật định tương ứng."
@@ -2404,6 +2408,7 @@ function Org() {
 
           {risks.length === 0 ? (
             <EmptyState
+              loading={loading && risks.length === 0}
               icon={Target}
               title="Chưa có rủi ro & cơ hội bối cảnh nào"
               description="Chưa có bảng đánh giá rủi ro và cơ hội từ bối cảnh hoạt động. Hãy lập ma trận rủi ro L x S và kế hoạch hành động kiểm soát tương ứng."
@@ -2574,6 +2579,7 @@ function Org() {
 
           {communications.length === 0 ? (
             <EmptyState
+              loading={loading && communications.length === 0}
               icon={MessageSquare}
               title="Chưa có nhật ký trao đổi thông tin nào"
               description="Chưa ghi nhận nội dung trao đổi thông tin ATTP nội bộ hoặc bên ngoài. Hãy lập nhật ký lưu vết các thông tin trao đổi quan trọng."

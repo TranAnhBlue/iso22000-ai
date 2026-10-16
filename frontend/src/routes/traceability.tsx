@@ -40,6 +40,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { ModuleGuideModal } from "@/components/ModuleGuideModal";
 import { printHtml } from "@/lib/print";
 import { getSession } from "@/lib/auth";
+import { initCached, isCached } from "@/lib/apiCache";
 
 import { useModuleAccess } from "@/lib/rbac";
 
@@ -72,7 +73,6 @@ export function TraceabilityPage() {
   const [mode, setMode] = useState<"backward" | "forward">("backward");
   const [queryCode, setQueryCode] = useState("");
   const [forwardCode, setForwardCode] = useState("");
-  const [loading, setLoading] = useState(false);
   const [quarantining, setQuarantining] = useState(false);
   const [isQuarantinedSuccess, setIsQuarantinedSuccess] = useState(false);
   const [qrModalOpen, setQrModalOpen] = useState(false);
@@ -93,9 +93,14 @@ export function TraceabilityPage() {
     productName: "",
   });
 
-  // Results
-  const [backwardTree, setBackwardTree] = useState<any>(null);
+  // Results (initialized synchronously from RAM cache to prevent frame 1 flash)
+  const [backwardTree, setBackwardTree] = useState<any>(() =>
+    initCached("/traceability/backward?query_code=LOT-202608-B01", null)
+  );
   const [forwardRecall, setForwardRecall] = useState<any>(null);
+  const [loading, setLoading] = useState(
+    () => !isCached("/traceability/backward?query_code=LOT-202608-B01")
+  );
 
   const [quarantineTarget, setQuarantineTarget] = useState<string | null>(null);
 
@@ -103,7 +108,9 @@ export function TraceabilityPage() {
   const handleBackwardSearch = async (targetCode?: string) => {
     const code = (targetCode || queryCode).trim();
     if (!code) return;
-    setLoading(true);
+    if (!backwardTree) {
+      setLoading(true);
+    }
     try {
       const res = await api.get(`/traceability/backward?query_code=${encodeURIComponent(code)}`);
       setBackwardTree(res.data);
@@ -163,7 +170,9 @@ export function TraceabilityPage() {
 
   // Auto query initial demo on mount
   useEffect(() => {
-    handleBackwardSearch("LOT-202608-B01");
+    if (!backwardTree) {
+      handleBackwardSearch("LOT-202608-B01");
+    }
   }, []);
 
   const triggerPrint = () => {
@@ -382,6 +391,7 @@ export function TraceabilityPage() {
       ========================================================================= */}
       {mode === "backward" && !backwardTree && (
         <EmptyState
+          loading={loading}
           icon={Search}
           title="Chưa có kết quả truy xuất nguồn gốc ngược"
           description="Nhập mã số lô thành phẩm hoặc số phiếu xuất kho (PXK) vào ô tìm kiếm phía trên để tra cứu toàn bộ phả hệ chuỗi cung ứng 4 tầng."
@@ -922,6 +932,7 @@ export function TraceabilityPage() {
       ========================================================================= */}
       {mode === "forward" && !forwardRecall && (
         <EmptyState
+          loading={loading}
           icon={ShieldAlert}
           title="Chưa thực hiện truy xuất xuôi"
           description="Nhập mã lô nguyên liệu nghi ngờ bị sự cố để quét toàn bộ các mẻ sản xuất và khách hàng/đại lý cần kích hoạt thu hồi khẩn cấp."

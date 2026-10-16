@@ -31,6 +31,7 @@ import {
   BookOpen,
 } from "lucide-react";
 import api from "@/lib/api";
+import { initCached, isCached } from "@/lib/apiCache";
 import { normalizeWorkflowForSave, workflowErrorMessage } from "@/lib/workflow";
 import { toast } from "sonner";
 import { WorkflowBuilder, type WorkflowTemplateData } from "@/components/builder/WorkflowBuilder";
@@ -158,7 +159,7 @@ interface CAPAStats {
 function CAPAManagementPage() {
   const { departments } = useDepartments();
   const [activeTab, setActiveTab] = useState<"ncs" | "capas" | "ai_studio" | "verification">("ncs");
-  const [stats, setStats] = useState<CAPAStats>({
+  const [stats, setStats] = useState<CAPAStats>(() => initCached("/capa/stats", {
     total_ncs: 0,
     critical_ncs: 0,
     open_ncs: 0,
@@ -169,11 +170,11 @@ function CAPAManagementPage() {
     completed_capas: 0,
     overdue_capas: 0,
     effectiveness_rate: 100.0,
-  });
+  }));
 
-  const [ncs, setNcs] = useState<NonConformance[]>([]);
-  const [capas, setCapas] = useState<CAPARecord[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [ncs, setNcs] = useState<NonConformance[]>(() => initCached("/capa/ncs", []));
+  const [capas, setCapas] = useState<CAPARecord[]>(() => initCached("/capa/records", []));
+  const [loading, setLoading] = useState(() => !isCached("/capa/ncs"));
 
   // Filters
   const [searchQuery, setSearchQuery] = useState("");
@@ -1039,7 +1040,7 @@ function CAPAManagementPage() {
           </div>
 
           {/* NC Table */}
-          {loading ? (
+          {loading && ncs.length === 0 ? (
             <div className="text-center py-16 text-slate-500 text-sm font-medium">
               Đang tải danh sách sự không phù hợp...
             </div>
@@ -1220,6 +1221,7 @@ function CAPAManagementPage() {
 
           {capas.length === 0 ? (
             <EmptyState
+              loading={loading && capas.length === 0}
               icon={FileText}
               title="Chưa có hồ sơ kế hoạch CAPA"
               description="Sau khi nhận diện sự không phù hợp, hãy lập kế hoạch hành động khắc phục & phòng ngừa (CAPA) tương ứng để phân tích nguyên nhân gốc rễ và chỉ định nhân sự phụ trách."
@@ -1719,6 +1721,7 @@ function CAPAManagementPage() {
               c.status === "PENDING_VERIFICATION" || c.status === "COMPLETED",
           ).length === 0 ? (
             <EmptyState
+              loading={loading && capas.length === 0}
               icon={ShieldCheck}
               title="Chưa có hồ sơ CAPA chờ thẩm tra"
               description="Các hành động khắc phục sau khi triển khai hoàn tất và có bằng chứng sẽ được chuyển sang danh sách chờ thẩm tra hiệu lực trước khi chính thức đóng hồ sơ NC."

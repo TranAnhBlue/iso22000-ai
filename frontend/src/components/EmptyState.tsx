@@ -1,5 +1,5 @@
 import React from "react";
-import { LucideIcon, FolderOpen, Plus, BookOpen } from "lucide-react";
+import { LucideIcon, FolderOpen, Plus, BookOpen, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface EmptyStateProps {
@@ -13,6 +13,7 @@ interface EmptyStateProps {
   onOpenGuide?: () => void;
   compact?: boolean;
   className?: string;
+  loading?: boolean;
 }
 
 export function EmptyState({
@@ -26,7 +27,26 @@ export function EmptyState({
   onOpenGuide,
   compact = false,
   className = "",
+  loading = false,
 }: EmptyStateProps) {
+  if (loading) {
+    return (
+      <div
+        className={`flex flex-col items-center justify-center text-center rounded-2xl border-2 border-dashed border-border/50 bg-card/20 backdrop-blur-xs transition-all duration-300 ${
+          compact ? "p-6 sm:p-8" : "p-10 sm:p-14 my-4"
+        } ${className}`}
+      >
+        <div className="relative mb-3 flex items-center justify-center">
+          <div className="relative flex h-12 w-12 items-center justify-center rounded-2xl bg-muted/60 border border-border shadow-inner text-muted-foreground">
+            <RefreshCw className="h-6 w-6 text-primary animate-spin" />
+          </div>
+        </div>
+        <h3 className="text-base font-semibold tracking-tight text-foreground">Đang đồng bộ dữ liệu...</h3>
+        <p className="mt-1 text-xs text-muted-foreground">Vui lòng chờ trong giây lát</p>
+      </div>
+    );
+  }
+
   const handleGuide = onGuide || onOpenGuide;
   // The button already renders a Plus icon. Normalize older labels that
   // included a leading "+" so the action never displays it twice.

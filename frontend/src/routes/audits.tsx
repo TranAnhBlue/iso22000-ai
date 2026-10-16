@@ -54,6 +54,7 @@ import {
   HelpCircle,
 } from "lucide-react";
 import api from "@/lib/api";
+import { initCached, isCached, getCachedApi } from "@/lib/apiCache";
 import { normalizeWorkflowForSave, workflowErrorMessage } from "@/lib/workflow";
 import { toast } from "sonner";
 import logoImg from "/logo.png";
@@ -283,21 +284,27 @@ function AuditManagementPage() {
     today_suspended_count: 0,
   });
 
-  const [audits, setAudits] = useState<InternalAudit[]>([]);
-  const [selectedAudit, setSelectedAudit] = useState<InternalAudit | null>(null);
+  const [audits, setAudits] = useState<InternalAudit[]>(() => initCached("/audits/audits", []));
+  const [selectedAudit, setSelectedAudit] = useState<InternalAudit | null>(() => {
+    const cached = getCachedApi<InternalAudit[]>("/audits/audits");
+    return cached && cached.length > 0 ? cached[0] : null;
+  });
   const [findings, setFindings] = useState<AuditFinding[]>([]);
-  const [courses, setCourses] = useState<TrainingCourse[]>([]);
-  const [selectedCourse, setSelectedCourse] = useState<TrainingCourse | null>(null);
+  const [courses, setCourses] = useState<TrainingCourse[]>(() => initCached("/audits/training/courses", []));
+  const [selectedCourse, setSelectedCourse] = useState<TrainingCourse | null>(() => {
+    const cached = getCachedApi<TrainingCourse[]>("/audits/training/courses");
+    return cached && cached.length > 0 ? cached[0] : null;
+  });
   const [participants, setParticipants] = useState<TrainingParticipant[]>([]);
-  const [healthLogs, setHealthLogs] = useState<HealthDeclaration[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [healthLogs, setHealthLogs] = useState<HealthDeclaration[]>(() => initCached("/audits/health-declarations", []));
+  const [loading, setLoading] = useState(() => !isCached("/audits/audits"));
 
   // Training sub-tabs and records
   const [trainingSubTab, setTrainingSubTab] = useState<"courses" | "requests" | "evaluations">(
     "courses",
   );
-  const [trainingRequests, setTrainingRequests] = useState<TrainingRequest[]>([]);
-  const [trainingEvaluations, setTrainingEvaluations] = useState<TrainingEvaluation[]>([]);
+  const [trainingRequests, setTrainingRequests] = useState<TrainingRequest[]>(() => initCached("/audits/training/requests", []));
+  const [trainingEvaluations, setTrainingEvaluations] = useState<TrainingEvaluation[]>(() => initCached("/audits/training/evaluations", []));
 
   // Request Filters & Modal
   const [requestSearch, setRequestSearch] = useState("");
@@ -1941,6 +1948,7 @@ function AuditManagementPage() {
           {/* 2-Column Layout: Audit Campaigns List (Left) & Findings Checklist (Right) */}
           {audits.length === 0 ? (
             <EmptyState
+              loading={loading && audits.length === 0}
               icon={ClipboardCheck}
               title="Chưa có đợt đánh giá nội bộ nào"
               description="Lập kế hoạch đánh giá nội bộ định kỳ để kiểm tra sự tuân thủ các quy trình an toàn thực phẩm."
@@ -2294,6 +2302,7 @@ function AuditManagementPage() {
               {/* 2-Column Layout: Course Cards (Left) & Participants Table (Right) */}
               {courses.length === 0 ? (
                 <EmptyState
+                  loading={loading && courses.length === 0}
                   icon={GraduationCap}
                   title="Chưa có khóa đào tạo nào"
                   description="Xây dựng kế hoạch và tổ chức các khóa đào tạo ATTP, HACCP, GMP cho nhân sự định kỳ."
@@ -3046,6 +3055,7 @@ function AuditManagementPage() {
           {/* Health Declarations Table */}
           {healthLogs.length === 0 ? (
             <EmptyState
+              loading={loading && healthLogs.length === 0}
               icon={HeartPulse}
               title="Chưa có bản ghi khai báo sức khỏe nào"
               description="Thực hiện kiểm tra thân nhiệt, triệu chứng lâm sàng và vệ sinh cá nhân trước ca làm việc."

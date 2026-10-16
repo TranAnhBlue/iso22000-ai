@@ -35,6 +35,7 @@ import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/EmptyState";
 import { ModuleGuideModal } from "@/components/ModuleGuideModal";
 import api from "@/lib/api";
+import { initCached, isCached, getCachedApi } from "@/lib/apiCache";
 import { printHtml } from "@/lib/print";
 import { useDepartments } from "@/lib/departments";
 import { toast } from "sonner";
@@ -205,16 +206,19 @@ function ExecutiveDashboard() {
   const [activeTab, setActiveTab] = useState<"overview" | "objectives" | "reviews" | "ai_studio">(
     "overview",
   );
-  const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState<ExecutiveOverviewStats | null>(null);
+  const [stats, setStats] = useState<ExecutiveOverviewStats | null>(() => initCached("/dashboard/overview-stats", null));
   const [hoveredRadarPillar, setHoveredRadarPillar] = useState<{
     label: string;
     value: number;
   } | null>(null);
-  const [alerts, setAlerts] = useState<ExecutiveAlertItem[]>([]);
-  const [objectives, setObjectives] = useState<QualityObjective[]>([]);
-  const [reviews, setReviews] = useState<ManagementReview[]>([]);
-  const [selectedReview, setSelectedReview] = useState<ManagementReview | null>(null);
+  const [alerts, setAlerts] = useState<ExecutiveAlertItem[]>(() => initCached("/dashboard/executive-alerts", []));
+  const [objectives, setObjectives] = useState<QualityObjective[]>(() => initCached("/dashboard/quality-objectives", []));
+  const [reviews, setReviews] = useState<ManagementReview[]>(() => initCached("/dashboard/management-reviews", []));
+  const [selectedReview, setSelectedReview] = useState<ManagementReview | null>(() => {
+    const cached = getCachedApi<ManagementReview[]>("/dashboard/management-reviews");
+    return cached && cached.length > 0 ? cached[0] : null;
+  });
+  const [loading, setLoading] = useState(() => !isCached("/dashboard/overview-stats"));
 
   const radarValues = RADAR_PILLAR_META.map((pillar) => ({
     ...pillar,
@@ -1181,6 +1185,7 @@ function ExecutiveDashboard() {
 
           {objectives.length === 0 ? (
             <EmptyState
+              loading={loading && objectives.length === 0}
               icon={Target}
               title="Chưa có mục tiêu chất lượng & ATTP"
               description="Thiết lập các chỉ tiêu chất lượng định lượng, phân công phòng ban chịu trách nhiệm và định kỳ giám sát tiến độ thực hiện."
@@ -1284,6 +1289,7 @@ function ExecutiveDashboard() {
       {activeTab === "reviews" &&
         (reviews.length === 0 ? (
           <EmptyState
+            loading={loading && reviews.length === 0}
             icon={Calendar}
             title="Chưa có biên bản xem xét của lãnh đạo"
             description="Ban Giám Đốc chủ trì các cuộc họp định kỳ để đánh giá tính phù hợp, thỏa đáng và hiệu lực của hệ thống FSMS, đồng thời ban hành các nghị quyết chỉ đạo."

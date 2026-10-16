@@ -44,6 +44,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState, useMemo } from "react";
 import api from "@/lib/api";
+import { initCached, isCached } from "@/lib/apiCache";
 import { QRCodeModal } from "@/components/QRCodeModal";
 import { EmptyState } from "@/components/EmptyState";
 import { ModuleGuideModal } from "@/components/ModuleGuideModal";
@@ -204,21 +205,21 @@ export function InventoryPage() {
   const [showGuide, setShowGuide] = useState(false);
 
   // Data states
-  const [stocks, setStocks] = useState<StockItem[]>([]);
-  const [samples, setSamples] = useState<RetainedSampleItem[]>([]);
-  const [batches, setBatches] = useState<BatchItem[]>([]);
-  const [dispatches, setDispatches] = useState<DispatchItem[]>([]);
-  const [vehicleInspections, setVehicleInspections] = useState<VehicleInspectionItem[]>([]);
-  const [disposalRecords, setDisposalRecords] = useState<DisposalRecordItem[]>([]);
-  const [logisticsStats, setLogisticsStats] = useState({
+  const [stocks, setStocks] = useState<StockItem[]>(() => initCached("/inventory/stock", []));
+  const [samples, setSamples] = useState<RetainedSampleItem[]>(() => initCached("/inventory/samples", []));
+  const [batches, setBatches] = useState<BatchItem[]>(() => initCached("/inventory/batches", []));
+  const [dispatches, setDispatches] = useState<DispatchItem[]>(() => initCached("/inventory/dispatches", []));
+  const [vehicleInspections, setVehicleInspections] = useState<VehicleInspectionItem[]>(() => initCached("/inventory/vehicle-inspections", []));
+  const [disposalRecords, setDisposalRecords] = useState<DisposalRecordItem[]>(() => initCached("/inventory/disposal-records", []));
+  const [logisticsStats, setLogisticsStats] = useState(() => initCached("/inventory/logistics-stats", {
     total_vehicle_inspections: 0,
     passed_inspections: 0,
     failed_inspections: 0,
     total_disposal_records: 0,
     total_disposed_qty_kg: 0,
-  });
-  const [loading, setLoading] = useState(false);
-  const [kpi, setKpi] = useState({
+  }));
+  const [loading, setLoading] = useState(() => !isCached("/inventory/stock"));
+  const [kpi, setKpi] = useState(() => initCached("/inventory/kpi-stats", {
     total_stock_items: 0,
     total_stock_quantity: 0,
     expired_items: 0,
@@ -227,7 +228,7 @@ export function InventoryPage() {
     active_retained_samples: 0,
     total_production_batches: 0,
     total_order_dispatches: 0,
-  });
+  }));
 
   // Filters
   const [search, setSearch] = useState("");
@@ -1271,6 +1272,7 @@ export function InventoryPage() {
           {/* STOCK TABLE */}
           {filteredStocks.length === 0 ? (
             <EmptyState
+              loading={loading && filteredStocks.length === 0}
               icon={Boxes}
               title="Chưa có dữ liệu tồn kho"
               description="Nhập lô hàng nguyên vật liệu, phụ gia hoặc thành phẩm mới theo nguyên tắc kiểm soát FEFO và vị trí kho chuẩn ATTP."
@@ -1660,6 +1662,7 @@ export function InventoryPage() {
 
           {samples.length === 0 ? (
             <EmptyState
+              loading={loading && samples.length === 0}
               icon={FlaskConical}
               title="Chưa có mẫu lưu nghiệm thức nào"
               description="Hệ thống tủ lưu mẫu chưa ghi nhận mẫu sản phẩm hoặc lô kiểm nghiệm nào. Hãy bắt đầu lưu mẫu đối chứng kiểm nghiệm vi sinh/hóa lý."
@@ -1812,6 +1815,7 @@ export function InventoryPage() {
 
             {batches.length === 0 ? (
               <EmptyState
+                loading={loading && batches.length === 0}
                 icon={Boxes}
                 title="Chưa có mẻ sản xuất nào"
                 description="Hệ thống chưa ghi nhận lệnh sản xuất hoặc mẻ thành phẩm nào trong ca. Hãy hoàn tất sản xuất để ghi nhận sản lượng và nguyên liệu sử dụng."
@@ -1896,6 +1900,7 @@ export function InventoryPage() {
 
             {dispatches.length === 0 ? (
               <EmptyState
+                loading={loading && dispatches.length === 0}
                 icon={Truck}
                 title="Chưa có phiếu xuất kho nào"
                 description="Chưa có phiếu điều phối xuất kho hoặc đơn giao hàng thành phẩm nào được lập."
@@ -1996,6 +2001,7 @@ export function InventoryPage() {
 
           {vehicleInspections.length === 0 ? (
             <EmptyState
+              loading={loading && vehicleInspections.length === 0}
               icon={Truck}
               title="Chưa có phiếu kiểm xe vận chuyển nào"
               description="Theo quy trình an toàn vệ sinh vận chuyển thực phẩm, mọi phương tiện cần được kiểm định 5 tiêu chuẩn trước khi xếp hàng."
@@ -2206,6 +2212,7 @@ export function InventoryPage() {
 
           {disposalRecords.length === 0 ? (
             <EmptyState
+              loading={loading && disposalRecords.length === 0}
               icon={Trash2}
               title="Chưa có biên bản hủy hàng nào"
               description="Chưa có sản phẩm hoặc lô hàng không phù hợp nào cần lập biên bản xử lý tiêu hủy. Mọi thao tác hủy hàng sẽ được lưu vết và lập biên bản BM02 với hội đồng 3 bên."

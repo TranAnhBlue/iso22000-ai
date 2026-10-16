@@ -51,6 +51,7 @@ import {
   BookOpen,
 } from "lucide-react";
 import api from "@/lib/api";
+import { initCached, isCached } from "@/lib/apiCache";
 import { normalizeWorkflowForSave, workflowErrorMessage } from "@/lib/workflow";
 import { toast } from "sonner";
 import logoImg from "@/assets/logo.png";
@@ -358,14 +359,14 @@ function PurchasingPage() {
   >("suppliers");
 
   // Data States
-  const [stats, setStats] = useState<PurchasingStats | null>(null);
-  const [suppliers, setSuppliers] = useState<SupplierItem[]>([]);
-  const [lots, setLots] = useState<MaterialLotItem[]>([]);
-  const [inspections, setInspections] = useState<IQCInspectionItem[]>([]);
-  const [evaluationPlans, setEvaluationPlans] = useState<SupplierEvaluationPlanItem[]>([]);
-  const [evaluations, setEvaluations] = useState<SupplierEvaluationItem[]>([]);
-  const [criteriaTemplates, setCriteriaTemplates] = useState<any>(null);
-  const [loading, setLoading] = useState(false);
+  const [stats, setStats] = useState<PurchasingStats | null>(() => initCached("/purchasing/stats", null));
+  const [suppliers, setSuppliers] = useState<SupplierItem[]>(() => initCached("/purchasing/suppliers", []));
+  const [lots, setLots] = useState<MaterialLotItem[]>(() => initCached("/purchasing/lots", []));
+  const [inspections, setInspections] = useState<IQCInspectionItem[]>(() => initCached("/purchasing/inspections", []));
+  const [evaluationPlans, setEvaluationPlans] = useState<SupplierEvaluationPlanItem[]>(() => initCached("/purchasing/evaluation-plans", []));
+  const [evaluations, setEvaluations] = useState<SupplierEvaluationItem[]>(() => initCached("/purchasing/evaluations", []));
+  const [criteriaTemplates, setCriteriaTemplates] = useState<any>(() => initCached("/purchasing/evaluation-criteria-templates", null));
+  const [loading, setLoading] = useState(() => !isCached("/purchasing/suppliers"));
   const [showGuide, setShowGuide] = useState(false);
 
   // Filters
@@ -2244,6 +2245,7 @@ function PurchasingPage() {
       {activeTab === "suppliers" &&
         (suppliers.length === 0 ? (
           <EmptyState
+            loading={loading && suppliers.length === 0}
             icon={Building2}
             title="Chưa có nhà cung cấp nào trong danh mục ASL"
             description="Thiết lập danh mục nhà cung cấp được phê duyệt (Approved Supplier List - ASL), quản lý chứng chỉ ATTP và đánh giá định kỳ."
@@ -2431,6 +2433,7 @@ function PurchasingPage() {
       {activeTab === "lots" &&
         (lots.length === 0 ? (
           <EmptyState
+            loading={loading && lots.length === 0}
             icon={Package}
             title="Chưa có lô nguyên liệu nào được tiếp nhận"
             description="Ghi nhận thông tin lô hàng tiếp nhận, số lượng, hạn sử dụng FEFO và hồ sơ kiểm soát nhiệt độ xe vận chuyển."
@@ -2606,6 +2609,7 @@ function PurchasingPage() {
       {activeTab === "inspections" &&
         (inspections.length === 0 ? (
           <EmptyState
+            loading={loading && inspections.length === 0}
             icon={ShieldCheck}
             title="Chưa có biên bản kiểm định tiếp nhận IQC nào"
             description="Thực hiện kiểm tra cảm quan, bao bì, nhiệt độ và thẩm định COA của nguyên liệu trước khi nhập kho."
@@ -2973,6 +2977,7 @@ function PurchasingPage() {
       {activeTab === "eval_plans" &&
         (evaluationPlans.length === 0 ? (
           <EmptyState
+            loading={loading && evaluationPlans.length === 0}
             icon={Calendar}
             title="Chưa có kế hoạch đánh giá nhà cung cấp nào"
             description="Lập kế hoạch định kỳ và đột xuất để đánh giá năng lực các nhà cung ứng trong chuỗi cung ứng thực phẩm."
@@ -3126,6 +3131,7 @@ function PurchasingPage() {
       {activeTab === "evaluations" &&
         (evaluations.length === 0 ? (
           <EmptyState
+            loading={loading && evaluations.length === 0}
             icon={Award}
             title="Chưa có hồ sơ đánh giá nhà cung cấp nào"
             description="Thực hiện chấm điểm năng lực nhà cung cấp theo các bộ tiêu chí Nông sản tươi, Thủy hải sản hoặc Khô/Bao bì."

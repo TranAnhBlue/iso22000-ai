@@ -39,6 +39,7 @@ import {
 } from "lucide-react";
 import { EmptyState } from "@/components/EmptyState";
 import { ModuleGuideModal } from "@/components/ModuleGuideModal";
+import { initCached, isCached } from "@/lib/apiCache";
 
 export const Route = createFileRoute("/emergency")({
   head: () => ({
@@ -200,23 +201,67 @@ function getRiskBadge(score: number) {
 function EmergencyPage() {
   const { canEdit } = useModuleAccess();
   const [activeTab, setActiveTab] = useState<"contacts" | "procedures" | "drills">("contacts");
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(() => !isCached("/emergency/contacts"));
 
   // Stats
-  const [stats, setStats] = useState<any>({
-    total_contacts: 0,
-    internal_contacts: 0,
-    external_contacts: 0,
-    total_procedures: 0,
-    high_risk_scenarios: 0,
-    total_drills_this_year: 0,
-    last_drill_date: null,
-  });
+  const [stats, setStats] = useState<any>(() =>
+    initCached("/emergency/stats", {
+      total_contacts: 0,
+      internal_contacts: 0,
+      external_contacts: 0,
+      total_procedures: 0,
+      high_risk_scenarios: 0,
+      total_drills_this_year: 0,
+      last_drill_date: null,
+    }),
+  );
 
-  // Data collections
-  const [contacts, setContacts] = useState<EmergencyContactItem[]>([]);
-  const [procedures, setProcedures] = useState<EmergencyProcedureItem[]>([]);
-  const [drills, setDrills] = useState<EmergencyDrillItem[]>([]);
+  // Data collections (initialized synchronously from cache)
+  const [contacts, setContacts] = useState<EmergencyContactItem[]>(() => {
+    const raw = initCached<any[]>("/emergency/contacts", []);
+    return raw.map((c: any) => ({
+      ...c,
+      id: c.contact_id || c.id,
+      contact_id: c.contact_id || c.id,
+      role_title: c.organization_or_role || c.role_title || "",
+      organization_or_role: c.organization_or_role || c.role_title || "",
+      phone_primary: c.phone || c.phone_primary || "",
+      phone: c.phone || c.phone_primary || "",
+      phone_secondary: c.phone_alt || c.phone_secondary || "",
+      phone_alt: c.phone_alt || c.phone_secondary || "",
+      location: c.address || c.location || "",
+      address: c.address || c.location || "",
+      priority_level: c.priority_order ?? c.priority_level ?? 1,
+      priority_order: c.priority_order ?? c.priority_level ?? 1,
+    }));
+  });
+  const [procedures, setProcedures] = useState<EmergencyProcedureItem[]>(() => {
+    const raw = initCached<any[]>("/emergency/procedures", []);
+    return raw.map((p: any) => ({
+      ...p,
+      id: p.procedure_id || p.id,
+      procedure_id: p.procedure_id || p.id,
+      code: p.procedure_code || p.code || "",
+      procedure_code: p.procedure_code || p.code || "",
+      responsible_role: p.responsible_team || p.responsible_role || "",
+      responsible_team: p.responsible_team || p.responsible_role || "",
+    }));
+  });
+  const [drills, setDrills] = useState<EmergencyDrillItem[]>(() => {
+    const raw = initCached<any[]>("/emergency/drills", []);
+    return raw.map((d: any) => ({
+      ...d,
+      id: d.drill_id || d.id,
+      drill_id: d.drill_id || d.id,
+      drill_type:
+        d.record_type === "PLANNED_DRILL" ? "DRILL" : d.record_type || d.drill_type || "DRILL",
+      lead_evaluator: d.drill_leader || d.lead_evaluator || "",
+      drill_leader: d.drill_leader || d.lead_evaluator || "",
+      corrective_actions: d.corrective_actions_needed || d.corrective_actions || "",
+      corrective_actions_needed: d.corrective_actions_needed || d.corrective_actions || "",
+      duration_minutes: d.duration_minutes || 30,
+    }));
+  });
 
   // Search & Filters
   const [contactFilter, setContactFilter] = useState<"ALL" | "INTERNAL" | "EXTERNAL">("ALL");
@@ -282,7 +327,9 @@ function EmergencyPage() {
 
   // Fetch all initial data
   const fetchData = async () => {
-    setLoading(true);
+    if (contacts.length === 0 && procedures.length === 0) {
+      setLoading(true);
+    }
     try {
       const [statsRes, contactsRes, proceduresRes, drillsRes] = await Promise.all([
         api.get("/emergency/stats"),
@@ -1016,6 +1063,7 @@ function EmergencyPage() {
 
           {filteredContacts.length === 0 ? (
             <EmptyState
+              loading={loading && contacts.length === 0}
               icon={PhoneCall}
               title="Chưa có đầu mối liên hệ khẩn cấp"
               description="Thiết lập danh bạ liên lạc đội ứng phó nội bộ nhà máy và các cơ quan cứu trợ ngoại viện (PCCC, cấp cứu 115, công an, bệnh viện)."
@@ -1128,6 +1176,7 @@ function EmergencyPage() {
 
           {filteredProcedures.length === 0 ? (
             <EmptyState
+              loading={loading && procedures.length === 0}
               icon={ShieldAlert}
               title="Chưa có kịch bản ứng phó sự cố"
               description="Soạn thảo các quy trình thao tác chuẩn SOP ứng phó 7 nhóm sự cố ATTP và 2 nhóm rủi ro an ninh sinh học."
@@ -1321,6 +1370,7 @@ function EmergencyPage() {
 
           {filteredDrills.length === 0 ? (
             <EmptyState
+              loading={loading && drills.length === 0}
               icon={FileCheck2}
               title="Chưa có nhật ký diễn tập hoặc sự cố"
               description="Ghi nhận hồ sơ diễn tập phòng ngừa định kỳ hoặc báo cáo điều tra sự cố thực tế theo biểu mẫu BM-EMERGENCY-01."
