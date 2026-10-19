@@ -55,6 +55,15 @@ from app.modules.documents.schemas import (
 
 router = APIRouter(prefix="/documents", tags=["Documents & SOPs"])
 
+
+def _calculate_review_days(review_frequency: Any) -> int:
+    """Tính số ngày chu kỳ soát xét định kỳ tài liệu (mặc định 3 năm = 1095 ngày theo ISO 22000)."""
+    try:
+        years = int(review_frequency) if review_frequency is not None else 3
+    except (ValueError, TypeError):
+        years = 3
+    return 365 * (years or 3)
+
 SEED_DOCUMENTS = [
     {
         "doc_code": "POL-FSMS-01",
@@ -231,7 +240,7 @@ def create_document(
         file_url=doc_in.file_url,
         approved_by=approved_by_id,
         effective_date=effective_date_val,
-        review_due_date=doc_in.review_due_date or ((effective_date_val + timedelta(days=int(365 * (doc_in.review_frequency_years or 3)))) if effective_date_val else None),
+        review_due_date=doc_in.review_due_date or ((effective_date_val + timedelta(days=_calculate_review_days(doc_in.review_frequency_years))) if effective_date_val else None),
         last_reviewed_date=doc_in.last_reviewed_date or effective_date_val,
         review_frequency_years=doc_in.review_frequency_years or 3,
         drafter_name=doc_in.drafter_name or current_user.full_name or current_user.username,
@@ -958,7 +967,7 @@ def get_periodic_review_schedule(db: Session = Depends(get_db)):
     for d in docs:
         due_date = d.review_due_date
         if not due_date and d.effective_date:
-            due_date = d.effective_date + timedelta(days=int(365 * (d.review_frequency_years or 3)))
+            due_date = d.effective_date + timedelta(days=_calculate_review_days(d.review_frequency_years))
 
         review_status = "VALID"
         days_remaining = None
@@ -1505,7 +1514,7 @@ def update_document(
                 doc.approved_by = current_user.user_id
                 eff = doc_in.effective_date or date.today()
                 doc.effective_date = eff
-                doc.review_due_date = eff + timedelta(days=int(365 * (doc.review_frequency_years or 3)))
+                doc.review_due_date = eff + timedelta(days=_calculate_review_days(doc.review_frequency_years))
                 doc.last_reviewed_date = eff
                 action_type = "APPROVED"
         else:
@@ -1580,7 +1589,7 @@ def approve_document(
     doc.approved_by = current_user.user_id
     eff = payload.effective_date or date.today()
     doc.effective_date = eff
-    doc.review_due_date = eff + timedelta(days=int(365 * (doc.review_frequency_years or 3)))
+    doc.review_due_date = eff + timedelta(days=_calculate_review_days(doc.review_frequency_years))
     doc.last_reviewed_date = eff
 
     approval_rec = DocumentApproval(
@@ -1633,7 +1642,7 @@ def confirm_unaltered_periodic_review(
         raise HTTPException(status_code=404, detail="Không tìm thấy tài liệu")
     today = date.today()
     doc.last_reviewed_date = today
-    doc.review_due_date = today + timedelta(days=int(365 * (doc.review_frequency_years or 3)))
+    doc.review_due_date = today + timedelta(days=_calculate_review_days(doc.review_frequency_years))
 
     approval_rec = DocumentApproval(
         document_id=doc.document_id,
@@ -1991,7 +2000,7 @@ def approve_document_revision(
     doc.status = "APPROVED"
     doc.effective_date = eff_date
     doc.last_reviewed_date = date.today()
-    doc.review_due_date = date.today() + timedelta(days=int(365 * (doc.review_frequency_years or 3)))
+    doc.review_due_date = date.today() + timedelta(days=_calculate_review_days(doc.review_frequency_years))
     doc.drafter_name = rev.drafter_name
     doc.reviewer_name = rev.reviewer_name
     doc.approved_by = current_user.user_id
