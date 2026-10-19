@@ -20,6 +20,7 @@ import {
   FileText,
   Plus,
   Printer,
+  FileDown,
   RefreshCw,
   Search,
   Sparkles,
@@ -59,8 +60,9 @@ import { normalizeWorkflowForSave, workflowErrorMessage } from "@/lib/workflow";
 import { toast } from "sonner";
 import logoImg from "/logo.png";
 import { printHtml } from "@/lib/print";
+import { LOGO_BASE64 } from "@/assets/logoBase64";
 import { WorkflowBuilder, type WorkflowTemplateData } from "@/components/builder/WorkflowBuilder";
-import { useDepartments } from "@/lib/departments";
+import { useOrgData } from "@/lib/departments";
 import { EmptyState } from "@/components/EmptyState";
 import { ModuleGuideModal } from "@/components/ModuleGuideModal";
 
@@ -260,7 +262,7 @@ interface AuditStats {
 
 // ==================== MAIN COMPONENT ====================
 function AuditManagementPage() {
-  const { departments } = useDepartments();
+  const { departments, users, userNames } = useOrgData();
   const [activeTab, setActiveTab] = useState<"audits" | "training" | "health" | "ai_studio">(
     "audits",
   );
@@ -290,21 +292,29 @@ function AuditManagementPage() {
     return cached && cached.length > 0 ? cached[0] : null;
   });
   const [findings, setFindings] = useState<AuditFinding[]>([]);
-  const [courses, setCourses] = useState<TrainingCourse[]>(() => initCached("/audits/training/courses", []));
+  const [courses, setCourses] = useState<TrainingCourse[]>(() =>
+    initCached("/audits/training/courses", []),
+  );
   const [selectedCourse, setSelectedCourse] = useState<TrainingCourse | null>(() => {
     const cached = getCachedApi<TrainingCourse[]>("/audits/training/courses");
     return cached && cached.length > 0 ? cached[0] : null;
   });
   const [participants, setParticipants] = useState<TrainingParticipant[]>([]);
-  const [healthLogs, setHealthLogs] = useState<HealthDeclaration[]>(() => initCached("/audits/health-declarations", []));
+  const [healthLogs, setHealthLogs] = useState<HealthDeclaration[]>(() =>
+    initCached("/audits/health-declarations", []),
+  );
   const [loading, setLoading] = useState(() => !isCached("/audits/audits"));
 
   // Training sub-tabs and records
   const [trainingSubTab, setTrainingSubTab] = useState<"courses" | "requests" | "evaluations">(
     "courses",
   );
-  const [trainingRequests, setTrainingRequests] = useState<TrainingRequest[]>(() => initCached("/audits/training/requests", []));
-  const [trainingEvaluations, setTrainingEvaluations] = useState<TrainingEvaluation[]>(() => initCached("/audits/training/evaluations", []));
+  const [trainingRequests, setTrainingRequests] = useState<TrainingRequest[]>(() =>
+    initCached("/audits/training/requests", []),
+  );
+  const [trainingEvaluations, setTrainingEvaluations] = useState<TrainingEvaluation[]>(() =>
+    initCached("/audits/training/evaluations", []),
+  );
 
   // Request Filters & Modal
   const [requestSearch, setRequestSearch] = useState("");
@@ -806,7 +816,7 @@ function AuditManagementPage() {
         <table class="header-table">
           <tr>
             <td class="logo-box">
-              <img src="${origin}/logo.png" style="height: 48px; width: auto; object-contain; margin-bottom: 2px;" /><br/>
+              <img src="${LOGO_BASE64}" style="height: 48px; width: auto; object-fit: contain; margin-bottom: 2px;" /><br/>
               <span class="logo-title">WCERT FSMS</span><br/>
               <span class="logo-sub">Food Safety Management</span>
             </td>
@@ -950,7 +960,7 @@ function AuditManagementPage() {
         <table class="header-table">
           <tr>
             <td class="logo-box">
-              <img src="${origin}/logo.png" style="height: 48px; width: auto; object-contain; margin-bottom: 2px;" /><br/>
+              <img src="${LOGO_BASE64}" style="height: 48px; width: auto; object-fit: contain; margin-bottom: 2px;" /><br/>
               <span class="logo-title">WCERT FSMS</span><br/>
               <span class="logo-sub">Human Resource & Training</span>
             </td>
@@ -2084,7 +2094,8 @@ function AuditManagementPage() {
                           onClick={() => setShowPrintAuditModal(true)}
                           className="text-xs font-bold border-slate-300 text-slate-700 hover:bg-slate-100"
                         >
-                          <Printer className="h-4 w-4 mr-1.5 text-slate-600" /> In BM-AUDIT-01
+                          <FileDown className="h-4 w-4 mr-1.5 text-slate-600" /> Xuất PDF
+                          (BM-AUDIT-01)
                         </Button>
                         <Button
                           size="sm"
@@ -2423,7 +2434,8 @@ function AuditManagementPage() {
                               onClick={() => setShowPrintTrainModal(true)}
                               className="text-xs font-bold border-slate-300 text-slate-700 hover:bg-slate-100"
                             >
-                              <Printer className="h-4 w-4 mr-1.5 text-slate-600" /> In BM-TRAIN-02
+                              <FileDown className="h-4 w-4 mr-1.5 text-slate-600" /> Xuất PDF
+                              (BM-TRAIN-02)
                             </Button>
                             <Button
                               size="sm"
@@ -2754,11 +2766,11 @@ function AuditManagementPage() {
                                   </>
                                 )}
                                 <button
-                                  title="In biểu mẫu BM01-QTĐT"
+                                  title="Xuất PDF biểu mẫu BM01-QTĐT"
                                   onClick={() => triggerPrintTrainingRequest(req)}
                                   className="p-1 rounded text-blue-600 hover:bg-blue-50 border border-blue-200"
                                 >
-                                  <Printer className="w-3.5 h-3.5" />
+                                  <FileDown className="w-3.5 h-3.5" />
                                 </button>
                                 <button
                                   title="Chỉnh sửa"
@@ -2981,11 +2993,11 @@ function AuditManagementPage() {
                             <td className="py-3 px-4 text-right">
                               <div className="flex items-center justify-end gap-1">
                                 <button
-                                  title="In biểu mẫu BM04-QTĐT"
+                                  title="Xuất PDF biểu mẫu BM04-QTĐT"
                                   onClick={() => triggerPrintTrainingEvaluation(ev)}
                                   className="p-1 rounded text-blue-600 hover:bg-blue-50 border border-blue-200"
                                 >
-                                  <Printer className="w-3.5 h-3.5" />
+                                  <FileDown className="w-3.5 h-3.5" />
                                 </button>
                                 <button
                                   title="Chỉnh sửa"
@@ -3047,7 +3059,7 @@ function AuditManagementPage() {
                 onClick={() => setShowPrintHealthModal(true)}
                 className="text-xs font-bold border-slate-300 text-slate-700 hover:bg-slate-100"
               >
-                <Printer className="h-4 w-4 mr-1.5 text-slate-600" /> In BM-HEALTH-03
+                <FileDown className="h-4 w-4 mr-1.5 text-slate-600" /> Xuất PDF (BM-HEALTH-03)
               </Button>
             </div>
           </div>
@@ -3575,13 +3587,31 @@ function AuditManagementPage() {
               </div>
               <div className="space-y-1">
                 <Label className="text-xs">Trưởng đoàn đánh giá *</Label>
-                <Input
+                <select
                   required
+                  className="w-full border rounded-md px-3 py-2 text-xs bg-background font-semibold"
                   value={auditForm.lead_auditor_name}
                   onChange={(e) =>
                     setAuditForm({ ...auditForm, lead_auditor_name: e.target.value })
                   }
-                />
+                >
+                  <option value="">-- Chọn trưởng đoàn đánh giá --</option>
+                  {users.map((u) => (
+                    <option key={u.id} value={`${u.name} (${u.role})`}>
+                      {u.name} — {u.role} [{u.dept}]
+                    </option>
+                  ))}
+                  {auditForm.lead_auditor_name &&
+                    !users.some(
+                      (u) =>
+                        `${u.name} (${u.role})` === auditForm.lead_auditor_name ||
+                        u.name === auditForm.lead_auditor_name,
+                    ) && (
+                      <option value={auditForm.lead_auditor_name}>
+                        {auditForm.lead_auditor_name}
+                      </option>
+                    )}
+                </select>
               </div>
             </div>
 
@@ -3789,11 +3819,34 @@ function AuditManagementPage() {
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <Label className="text-xs">Giảng viên phụ trách *</Label>
-                <Input
+                <select
                   required
+                  className="w-full border rounded-md px-3 py-2 text-xs bg-background font-semibold"
                   value={courseForm.trainer_name}
                   onChange={(e) => setCourseForm({ ...courseForm, trainer_name: e.target.value })}
-                />
+                >
+                  <option value="">-- Chọn giảng viên / chuyên gia --</option>
+                  <optgroup label="Cán bộ nội bộ">
+                    {users.map((u) => (
+                      <option key={u.id} value={`${u.name} (${u.role})`}>
+                        {u.name} — {u.role} [{u.dept}]
+                      </option>
+                    ))}
+                  </optgroup>
+                  <optgroup label="Chuyên gia / Đơn vị ngoài">
+                    <option value="ThS. Nguyễn Văn An (Chuyên gia Lead Auditor)">
+                      ThS. Nguyễn Văn An (Chuyên gia Lead Auditor)
+                    </option>
+                    <option value="Viện Đào Tạo Tiêu Chuẩn Chất Lượng">
+                      Viện Đào Tạo Tiêu Chuẩn Chất Lượng
+                    </option>
+                    <option value="Tổ chức Chứng nhận Quốc tế">Tổ chức Chứng nhận Quốc tế</option>
+                  </optgroup>
+                  {courseForm.trainer_name &&
+                    !users.some((u) => `${u.name} (${u.role})` === courseForm.trainer_name) && (
+                      <option value={courseForm.trainer_name}>{courseForm.trainer_name}</option>
+                    )}
+                </select>
               </div>
               <div className="space-y-1">
                 <Label className="text-xs">Đối tượng tham gia</Label>
@@ -4098,13 +4151,39 @@ function AuditManagementPage() {
               </div>
               <div className="space-y-1">
                 <Label className="text-xs">Đơn vị / Giảng viên dự kiến</Label>
-                <Input
-                  placeholder="VD: Đội trưởng HACCP"
+                <select
+                  className="w-full border rounded-md px-3 py-2 text-xs bg-background font-semibold"
                   value={requestForm.proposed_trainer}
                   onChange={(e) =>
                     setRequestForm({ ...requestForm, proposed_trainer: e.target.value })
                   }
-                />
+                >
+                  <option value="">-- Chọn giảng viên dự kiến --</option>
+                  <optgroup label="Cán bộ nội bộ">
+                    {users.map((u) => (
+                      <option key={u.id} value={`${u.name} (${u.role})`}>
+                        {u.name} — {u.role} [{u.dept}]
+                      </option>
+                    ))}
+                  </optgroup>
+                  <optgroup label="Chuyên gia / Đơn vị ngoài">
+                    <option value="Viện Đào Tạo Tiêu Chuẩn Chất Lượng">
+                      Viện Đào Tạo Tiêu Chuẩn Chất Lượng
+                    </option>
+                    <option value="Chuyên gia Đánh giá Trưởng Lead Auditor">
+                      Chuyên gia Đánh giá Trưởng Lead Auditor
+                    </option>
+                    <option value="Tổ chức Chứng nhận Quốc tế">Tổ chức Chứng nhận Quốc tế</option>
+                  </optgroup>
+                  {requestForm.proposed_trainer &&
+                    !users.some(
+                      (u) => `${u.name} (${u.role})` === requestForm.proposed_trainer,
+                    ) && (
+                      <option value={requestForm.proposed_trainer}>
+                        {requestForm.proposed_trainer}
+                      </option>
+                    )}
+                </select>
               </div>
               <div className="space-y-1">
                 <Label className="text-xs">Dự toán chi phí (VNĐ)</Label>
@@ -4706,7 +4785,7 @@ function AuditManagementPage() {
               onClick={() => selectedAudit && triggerPrintAuditReport(selectedAudit, findings)}
               className="bg-primary text-primary-foreground font-bold"
             >
-              <Printer className="h-4 w-4 mr-1.5" /> In Biểu Mẫu (A4 PDF)
+              <FileDown className="h-4 w-4 mr-1.5" /> Xuất File PDF (BM-AUDIT-01)
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -4863,7 +4942,7 @@ function AuditManagementPage() {
               }
               className="bg-primary text-primary-foreground font-bold"
             >
-              <Printer className="h-4 w-4 mr-1.5" /> In Biểu Mẫu (A4 PDF)
+              <FileDown className="h-4 w-4 mr-1.5" /> Xuất File PDF (BM-TRAIN-02)
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -5020,7 +5099,7 @@ function AuditManagementPage() {
               onClick={() => triggerPrintHealthLog(healthLogs)}
               className="bg-primary text-primary-foreground font-bold"
             >
-              <Printer className="h-4 w-4 mr-1.5" /> In Biểu Mẫu (A4 PDF)
+              <FileDown className="h-4 w-4 mr-1.5" /> Xuất File PDF (BM-HEALTH-03)
             </Button>
           </DialogFooter>
         </DialogContent>

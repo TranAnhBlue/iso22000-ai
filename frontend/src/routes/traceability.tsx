@@ -12,7 +12,7 @@ import {
   CheckCircle2,
   AlertTriangle,
   Clock,
-  Printer,
+  FileDown,
   ShieldCheck,
   Building2,
   Boxes,
@@ -31,7 +31,7 @@ import {
   ShieldAlert,
   BookOpen,
 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import api from "@/lib/api";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -40,7 +40,6 @@ import { EmptyState } from "@/components/EmptyState";
 import { ModuleGuideModal } from "@/components/ModuleGuideModal";
 import { printHtml } from "@/lib/print";
 import { getSession } from "@/lib/auth";
-import { initCached, isCached } from "@/lib/apiCache";
 
 import { useModuleAccess } from "@/lib/rbac";
 
@@ -93,14 +92,10 @@ export function TraceabilityPage() {
     productName: "",
   });
 
-  // Results (initialized synchronously from RAM cache to prevent frame 1 flash)
-  const [backwardTree, setBackwardTree] = useState<any>(() =>
-    initCached("/traceability/backward?query_code=LOT-202608-B01", null)
-  );
+  // Chỉ hiển thị kết quả sau khi người dùng nhập hoặc quét mã lô thực tế.
+  const [backwardTree, setBackwardTree] = useState<any>(null);
   const [forwardRecall, setForwardRecall] = useState<any>(null);
-  const [loading, setLoading] = useState(
-    () => !isCached("/traceability/backward?query_code=LOT-202608-B01")
-  );
+  const [loading, setLoading] = useState(false);
 
   const [quarantineTarget, setQuarantineTarget] = useState<string | null>(null);
 
@@ -168,53 +163,17 @@ export function TraceabilityPage() {
     setQuarantineTarget(batchNumber);
   };
 
-  // Auto query initial demo on mount
-  useEffect(() => {
-    if (!backwardTree) {
-      handleBackwardSearch("LOT-202608-B01");
-    }
-  }, []);
-
   const triggerPrint = () => {
     const el = document.getElementById("printable-bm-tx-01");
     if (el) {
-      printHtml(el.innerHTML);
-    } else {
-      document.body.classList.add("printing-bm-tx");
-      window.print();
-      setTimeout(() => {
-        document.body.classList.remove("printing-bm-tx");
-      }, 1200);
+      printHtml(el, `BM-TX-01_Truy_Xuat_${backwardTree?.lot_number || "Lot"}.pdf`);
     }
   };
 
   return (
     <div className="space-y-6">
-      {/* PRINT STYLES FOR BM-TX-01 */}
-      <style>{`
-        @media print {
-          body.printing-bm-tx * {
-            visibility: hidden !important;
-          }
-          body.printing-bm-tx #printable-bm-tx-01,
-          body.printing-bm-tx #printable-bm-tx-01 * {
-            visibility: visible !important;
-          }
-          body.printing-bm-tx #printable-bm-tx-01 {
-            position: absolute !important;
-            left: 0 !important;
-            top: 0 !important;
-            width: 100% !important;
-            margin: 0 !important;
-            padding: 24px !important;
-            border: none !important;
-            background: #ffffff !important;
-            color: #0f172a !important;
-          }
-        }
-      `}</style>
-      {/* HEADER (HIDE IN PRINT) */}
-      <div className="print:hidden flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      {/* HEADER */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="flex items-center gap-2 mb-1">
             <Link
@@ -243,10 +202,10 @@ export function TraceabilityPage() {
             <Button
               size="sm"
               onClick={triggerPrint}
-              className="gap-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold"
+              className="gap-2 bg-emerald-700 hover:bg-emerald-800 text-white font-semibold shadow-sm"
             >
-              <Printer className="h-4 w-4" />
-              In Biên Bản BM-TX-01
+              <FileDown className="h-4 w-4" />
+              Xuất PDF (BM-TX-01)
             </Button>
           )}
         </div>
@@ -975,9 +934,7 @@ export function TraceabilityPage() {
                   </span>
                 ) : (
                   <Button
-                    onClick={() =>
-                      handleQuarantine(forwardRecall.affected_batches[0])
-                    }
+                    onClick={() => handleQuarantine(forwardRecall.affected_batches[0])}
                     disabled={quarantining || forwardRecall.affected_batches.length === 0}
                     className="gap-2 bg-rose-600 hover:bg-rose-700 text-white font-bold shadow-sm"
                     size="sm"
@@ -1006,7 +963,10 @@ export function TraceabilityPage() {
               <div className="bg-white/80 p-2.5 rounded-lg border border-rose-100">
                 <span className="text-muted-foreground">Thời lượng truy xuất:</span>
                 <div className="text-base font-bold text-emerald-700 flex items-center gap-1">
-                  <Clock className="h-4 w-4" /> {forwardRecall.iso_recall_time_est_minutes != null ? `${forwardRecall.iso_recall_time_est_minutes} phút` : "Chưa ghi nhận"}
+                  <Clock className="h-4 w-4" />{" "}
+                  {forwardRecall.iso_recall_time_est_minutes != null
+                    ? `${forwardRecall.iso_recall_time_est_minutes} phút`
+                    : "Chưa ghi nhận"}
                 </div>
               </div>
               <div className="bg-white/80 p-2.5 rounded-lg border border-rose-100">

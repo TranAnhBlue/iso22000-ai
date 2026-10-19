@@ -12,6 +12,8 @@ def role_codes(user: Any, *, include_department: bool = True) -> set[str]:
         for role in (getattr(user, "roles", None) or [])
         if getattr(role, "role_code", None)
     }
+    if getattr(user, "role", None):
+        codes.add(str(user.role).lower().strip())
     if include_department and getattr(user, "department", None):
         codes.add(str(user.department).lower().strip())
     return codes
@@ -29,7 +31,7 @@ def has_any_role(
     if "admin" in actual_roles:
         return True
 
-    allowed = {str(role).lower().strip() for role in allowed_roles if str(role).strip()}
+    allowed = {role.lower().strip() for role in allowed_roles if role.strip()}
     if fuzzy_match:
         return any(
             actual == expected or actual in expected or expected in actual

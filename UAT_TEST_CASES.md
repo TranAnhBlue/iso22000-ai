@@ -36,6 +36,7 @@ Thực hiện trên môi trường UAT có dữ liệu mẫu hoặc dữ liệu 
 | DMS-03 | Phân phối | Document Controller | Phân phối SOP cho một người nhận, xác nhận nhận và thu hồi bản cũ. | Ghi nhận đúng người nhận, thời điểm xác nhận và trạng thái thu hồi. |
 | DMS-04 | Lưu giữ hồ sơ | QA | Tạo danh mục hồ sơ; thử đặt thẳng `DISPOSED`; sau đó tiêu hủy bằng hội đồng, mã biên bản và xác nhận hết hạn. | Chuyển thẳng bị chặn; luồng tiêu hủy hợp lệ mới thành công. |
 | DMS-05 | Tài liệu An Giang | QA | Mở một tài liệu mã `AG-*`, kiểm tra link file và trạng thái. | File nguồn tải được; trạng thái ban đầu `PENDING_APPROVAL`, không tự được xem là hiệu lực. |
+| DMS-06 | Kiểm soát sửa đổi tài liệu (Cl. 7.5) | QA/Lãnh đạo | Tạo bản sửa đổi độc lập (DRAFT); thử duyệt trực tiếp hoặc tự duyệt; trình duyệt (UNDER_REVIEW); lãnh đạo phê duyệt bản sửa đổi. | Bản DRAFT bị chặn duyệt trực tiếp; người soạn thảo bị chặn tự duyệt (Maker-Checker); khi được duyệt, bản sửa đổi thành EFFECTIVE, bản cũ thành SUPERSEDED, tài liệu gốc cập nhật phiên bản/nội dung mới và tự động sinh thông báo phân phối BM02-KSTL. |
 | CHANGE-01 | Thay đổi 4M | QA | Tạo thay đổi thiết bị/công thức, nêu ảnh hưởng HACCP và biện pháp. | Phiếu lưu được; không thể đánh dấu hoàn tất khi thiếu thông tin bắt buộc. |
 | CHANGE-02 | Hiệu lực thay đổi | QA/Lãnh đạo | Duyệt, triển khai và thực hiện verify effectiveness. | Trạng thái/biên bản hiệu lực được lưu; thay đổi không hiệu lực còn hành động mở. |
 | PUR-01 | NCC | Mua hàng | Tạo NCC, nhập chứng nhận và rủi ro; duyệt NCC. | NCC được lưu, trạng thái hiển thị đúng. |

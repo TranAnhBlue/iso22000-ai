@@ -24,6 +24,7 @@ import {
   RefreshCw,
   Sparkles,
   Printer,
+  FileDown,
   Pencil,
   Trash2,
   ShieldCheck,
@@ -44,11 +45,13 @@ import {
 import api from "@/lib/api";
 import { initCached, isCached } from "@/lib/apiCache";
 import { printHtml } from "@/lib/print";
+import { LOGO_BASE64 } from "@/assets/logoBase64";
 import logoImg from "@/assets/logo.png";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { EmptyState } from "@/components/EmptyState";
 import { ModuleGuideModal } from "@/components/ModuleGuideModal";
+import { useOrgData } from "@/lib/departments";
 
 export const Route = createFileRoute("/equipment")({
   head: () => ({
@@ -249,6 +252,7 @@ const CALIBRATION_STATUS_MAP: Record<string, { label: string; tone: string }> = 
 
 // ==================== MAIN COMPONENT ====================
 function EquipmentModule() {
+  const { departments, users, userNames } = useOrgData();
   const [activeTab, setActiveTab] = useState<"equipments" | "calibration" | "maintenance" | "ai">(
     "equipments",
   );
@@ -258,10 +262,18 @@ function EquipmentModule() {
   const [selectedEqFilterForLogs, setSelectedEqFilterForLogs] = useState<string>("ALL");
 
   // Dữ liệu chính
-  const [stats, setStats] = useState<EquipmentStats | null>(() => initCached("/equipment/stats", null));
-  const [equipments, setEquipments] = useState<EquipmentItem[]>(() => initCached("/equipment/equipments", []));
-  const [maintenanceLogs, setMaintenanceLogs] = useState<MaintenanceLogItem[]>(() => initCached("/equipment/maintenance-logs", []));
-  const [calibrationLogs, setCalibrationLogs] = useState<CalibrationLogItem[]>(() => initCached("/equipment/calibration-logs", []));
+  const [stats, setStats] = useState<EquipmentStats | null>(() =>
+    initCached("/equipment/stats", null),
+  );
+  const [equipments, setEquipments] = useState<EquipmentItem[]>(() =>
+    initCached("/equipment/equipments", []),
+  );
+  const [maintenanceLogs, setMaintenanceLogs] = useState<MaintenanceLogItem[]>(() =>
+    initCached("/equipment/maintenance-logs", []),
+  );
+  const [calibrationLogs, setCalibrationLogs] = useState<CalibrationLogItem[]>(() =>
+    initCached("/equipment/calibration-logs", []),
+  );
   const [loading, setLoading] = useState(() => !isCached("/equipment/equipments"));
   const [showGuide, setShowGuide] = useState(false);
 
@@ -820,7 +832,7 @@ function EquipmentModule() {
         <table class="header-table">
           <tr>
             <td class="logo-box">
-              <img src="${origin}/logo.png" alt="Logo" style="max-height: 42px; width: auto; object-fit: contain; margin: 0 auto 4px; display: block;" onerror="this.style.display='none'" />
+              <img src="${LOGO_BASE64}" alt="Logo" style="max-height: 42px; width: auto; object-fit: contain; margin: 0 auto 4px; display: block;" />
               <div class="logo-title">WCERT FSMS</div>
               <div class="logo-sub">ISO 22000:2018</div>
             </td>
@@ -948,7 +960,7 @@ function EquipmentModule() {
         <table class="header-table">
           <tr>
             <td class="logo-box">
-              <img src="${origin}/logo.png" alt="Logo" style="max-height: 42px; width: auto; object-fit: contain; margin: 0 auto 4px; display: block;" onerror="this.style.display='none'" />
+              <img src="${LOGO_BASE64}" alt="Logo" style="max-height: 42px; width: auto; object-fit: contain; margin: 0 auto 4px; display: block;" />
               <div class="logo-title">WCERT FSMS</div>
               <div class="logo-sub">ISO 22000:2018</div>
             </td>
@@ -1072,7 +1084,7 @@ function EquipmentModule() {
         <table class="header-table">
           <tr>
             <td class="logo-box">
-              <img src="${origin}/logo.png" alt="Logo" style="max-height: 42px; width: auto; object-fit: contain; margin: 0 auto 4px; display: block;" onerror="this.style.display='none'" />
+              <img src="${LOGO_BASE64}" alt="Logo" style="max-height: 42px; width: auto; object-fit: contain; margin: 0 auto 4px; display: block;" />
               <div class="logo-title">WCERT FSMS</div>
               <div class="logo-sub">ISO 22000:2018</div>
             </td>
@@ -1191,7 +1203,9 @@ function EquipmentModule() {
             disabled={loading}
             className="flex-1 sm:flex-initial gap-1.5 border border-slate-300 bg-white text-slate-800 hover:bg-slate-900 hover:text-white hover:border-slate-900 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700 text-xs h-9 sm:h-8 font-semibold shadow-sm transition-all duration-150"
           >
-            <RefreshCw className={`h-3.5 w-3.5 transition-colors ${loading ? "animate-spin text-primary" : ""}`} />
+            <RefreshCw
+              className={`h-3.5 w-3.5 transition-colors ${loading ? "animate-spin text-primary" : ""}`}
+            />
             <span>Làm mới</span>
           </Button>
 
@@ -1608,10 +1622,10 @@ function EquipmentModule() {
                             setShowPrintProfileModal(true);
                           }}
                           className="h-7 px-2 text-[11px] gap-1 border border-slate-300 bg-white text-slate-800 hover:bg-slate-900 hover:text-white hover:border-slate-900 font-semibold shadow-sm transition-all duration-150 group"
-                          title="Xem và In Phiếu Lý Lịch Thiết Bị (BM-TB-01)"
+                          title="Xuất PDF Phiếu Lý Lịch Thiết Bị (BM-TB-01)"
                         >
-                          <Printer className="h-3 w-3 group-hover:text-white transition-colors" />
-                          In BM-TB-01
+                          <FileDown className="h-3 w-3 group-hover:text-white transition-colors" />
+                          Xuất PDF BM-TB-01
                         </Button>
                         <Button
                           variant="outline"
@@ -1793,8 +1807,8 @@ function EquipmentModule() {
                           }}
                           className="h-7 px-2 text-[11px] gap-1 border border-slate-300 bg-white text-slate-800 hover:bg-slate-900 hover:text-white hover:border-slate-900 font-semibold shadow-sm transition-all duration-150 group"
                         >
-                          <Printer className="h-3 w-3 group-hover:text-white transition-colors" />
-                          In
+                          <FileDown className="h-3 w-3 group-hover:text-white transition-colors" />
+                          Xuất PDF
                         </Button>
                       </td>
                     </tr>
@@ -1964,10 +1978,10 @@ function EquipmentModule() {
                           size="sm"
                           onClick={() => triggerPrintMaintenanceLog(m)}
                           className="h-7 px-2 text-[11px] gap-1 border border-slate-300 bg-white text-slate-800 hover:bg-slate-900 hover:text-white hover:border-slate-900 font-semibold shadow-sm transition-all duration-150 group"
-                          title="In Phiếu Bảo Trì Thiết Bị (BM-BT-01)"
+                          title="Xuất PDF Phiếu Bảo Trì Thiết Bị (BM-BT-01)"
                         >
-                          <Printer className="h-3 w-3 group-hover:text-white transition-colors" />
-                          In phiếu
+                          <FileDown className="h-3 w-3 group-hover:text-white transition-colors" />
+                          Xuất PDF
                         </Button>
                       </td>
                     </tr>
@@ -2648,12 +2662,27 @@ function EquipmentModule() {
               </div>
               <div>
                 <Label className="text-xs font-semibold">Người thực hiện (*):</Label>
-                <Input
+                <select
                   required
                   value={maintForm.performer_name}
                   onChange={(e) => setMaintForm({ ...maintForm, performer_name: e.target.value })}
-                  className="mt-1 h-9 text-xs font-medium"
-                />
+                  className="mt-1 h-9 w-full rounded-md border border-input bg-background px-3 text-xs font-medium"
+                >
+                  <option value="">-- Chọn cán bộ kỹ thuật từ CSDL --</option>
+                  {users.map((u) => (
+                    <option key={u.id} value={`${u.name} (${u.role})`}>
+                      {u.name} — {u.role} [{u.dept}]
+                    </option>
+                  ))}
+                  {maintForm.performer_name &&
+                    !users.some(
+                      (u) =>
+                        `${u.name} (${u.role})` === maintForm.performer_name ||
+                        u.name === maintForm.performer_name,
+                    ) && (
+                      <option value={maintForm.performer_name}>{maintForm.performer_name}</option>
+                    )}
+                </select>
               </div>
             </div>
 
@@ -2890,12 +2919,32 @@ function EquipmentModule() {
               </div>
               <div>
                 <Label className="text-xs text-muted-foreground">Kiểm định viên / Ghi chú:</Label>
-                <Input
+                <select
                   value={calForm.calibrator_name}
                   onChange={(e) => setCalForm({ ...calForm, calibrator_name: e.target.value })}
-                  placeholder="KTV Kiểm định viên..."
-                  className="mt-1 h-9 text-xs"
-                />
+                  className="mt-1 h-9 w-full rounded-md border border-input bg-background px-3 text-xs"
+                >
+                  <option value="">-- Chọn cán bộ kiểm định / KTV --</option>
+                  <optgroup label="Cán bộ nội bộ">
+                    {users.map((u) => (
+                      <option key={u.id} value={`${u.name} (${u.role})`}>
+                        {u.name} — {u.role} [{u.dept}]
+                      </option>
+                    ))}
+                  </optgroup>
+                  <optgroup label="Đơn vị ngoài">
+                    <option value="KTV Kiểm định QUATEST 3">KTV Kiểm định QUATEST 3</option>
+                    <option value="Chuyên viên Hiệu chuẩn Trung tâm Đo lường">
+                      Chuyên viên Hiệu chuẩn Trung tâm Đo lường
+                    </option>
+                  </optgroup>
+                  {calForm.calibrator_name &&
+                    !users.some(
+                      (u) =>
+                        `${u.name} (${u.role})` === calForm.calibrator_name ||
+                        u.name === calForm.calibrator_name,
+                    ) && <option value={calForm.calibrator_name}>{calForm.calibrator_name}</option>}
+                </select>
               </div>
             </div>
 
@@ -3121,8 +3170,8 @@ function EquipmentModule() {
               onClick={() => selectedPrintEq && triggerPrintEquipmentProfile(selectedPrintEq)}
               className="bg-primary text-primary-foreground gap-1.5 w-full sm:w-auto"
             >
-              <Printer className="h-4 w-4" />
-              In Biểu Mẫu / Lưu PDF
+              <FileDown className="h-4 w-4" />
+              Xuất File PDF (BM-TB-01)
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -3317,8 +3366,8 @@ function EquipmentModule() {
               onClick={() => selectedPrintCal && triggerPrintCalibrationCert(selectedPrintCal)}
               className="bg-primary text-primary-foreground gap-1.5 w-full sm:w-auto"
             >
-              <Printer className="h-4 w-4" />
-              In Biểu Mẫu / Lưu PDF
+              <FileDown className="h-4 w-4" />
+              Xuất File PDF (BM-HC-02)
             </Button>
           </DialogFooter>
         </DialogContent>

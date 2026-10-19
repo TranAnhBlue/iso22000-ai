@@ -5,6 +5,7 @@ import {
   Trash2,
   Plus,
   Printer,
+  FileDown,
   Search,
   CheckCircle2,
   XCircle,
@@ -159,7 +160,8 @@ export function WaterChemicalWasteTab() {
     storage_location: "Kho hóa chất riêng biệt có khóa, thoáng khí",
     approval_status: "APPROVED",
     current_stock_kg: 50.0,
-    safety_instructions: "Mang găng tay cao su, kính bảo hộ và khẩu trang than hoạt tính khi pha chế",
+    safety_instructions:
+      "Mang găng tay cao su, kính bảo hộ và khẩu trang than hoạt tính khi pha chế",
     approved_by: "Trưởng ban ATTP / QA",
   });
 
@@ -191,7 +193,10 @@ export function WaterChemicalWasteTab() {
       if (wasteRes.status === "fulfilled") setWasteLogs(wasteRes.value.data || []);
     } catch (err: any) {
       console.error(err);
-      toast.error("Không thể tải dữ liệu Môi trường & Hóa chất: " + (err.response?.data?.detail || err.message));
+      toast.error(
+        "Không thể tải dữ liệu Môi trường & Hóa chất: " +
+          (err.response?.data?.detail || err.message),
+      );
     } finally {
       setLoading(false);
     }
@@ -257,7 +262,9 @@ export function WaterChemicalWasteTab() {
   const handleCreateWaterLog = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!activeWaterLimit) {
-      toast.error("Chưa có bộ ngưỡng nước ACTIVE. Vui lòng kích hoạt bộ ngưỡng trước khi lập phiếu!");
+      toast.error(
+        "Chưa có bộ ngưỡng nước ACTIVE. Vui lòng kích hoạt bộ ngưỡng trước khi lập phiếu!",
+      );
       setShowLimitModal(true);
       return;
     }
@@ -512,13 +519,17 @@ export function WaterChemicalWasteTab() {
               <span className="text-[11px] font-black uppercase tracking-wider bg-cyan-400/20 text-cyan-300 px-2.5 py-0.5 rounded-full border border-cyan-400/30">
                 SSOP ISO 22000:2018
               </span>
-              <span className="text-[11px] font-bold text-slate-300">QCVN 01-1:2018/BYT & Hồ sơ An Giang</span>
+              <span className="text-[11px] font-bold text-slate-300">
+                QCVN 01-1:2018/BYT & Hồ sơ An Giang
+              </span>
             </div>
             <h2 className="text-xl font-black text-white mt-1">
               Kiểm Soát Nguồn Nước, Hóa Chất & Môi Trường
             </h2>
             <p className="text-xs text-cyan-100/90 mt-1 max-w-2xl leading-relaxed">
-              Quản lý toàn diện quy chuẩn an toàn nguồn nước chế biến, danh mục hóa chất tẩy rửa CIP được duyệt kèm phiếu an toàn MSDS, và nhật ký thu gom xử lý rác thải / phụ phẩm khép kín.
+              Quản lý toàn diện quy chuẩn an toàn nguồn nước chế biến, danh mục hóa chất tẩy rửa CIP
+              được duyệt kèm phiếu an toàn MSDS, và nhật ký thu gom xử lý rác thải / phụ phẩm khép
+              kín.
             </p>
           </div>
         </div>
@@ -538,8 +549,8 @@ export function WaterChemicalWasteTab() {
                 onClick={handlePrintWater}
                 className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-white/10 hover:bg-white/20 text-white border border-white/20 transition-all shadow-sm"
               >
-                <Printer className="w-3.5 h-3.5" />
-                <span>In Sổ Nước (BM01)</span>
+                <FileDown className="w-3.5 h-3.5" />
+                <span>Xuất PDF Sổ Nước (BM01)</span>
               </button>
               <button
                 onClick={() => setShowWaterModal(true)}
@@ -557,8 +568,8 @@ export function WaterChemicalWasteTab() {
                 onClick={handlePrintChemicals}
                 className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-white/10 hover:bg-white/20 text-white border border-white/20 transition-all shadow-sm"
               >
-                <Printer className="w-3.5 h-3.5" />
-                <span>In Danh Mục Hóa Chất</span>
+                <FileDown className="w-3.5 h-3.5" />
+                <span>Xuất PDF Danh Mục Hóa Chất</span>
               </button>
               <button
                 onClick={() => setShowChemicalModal(true)}
@@ -695,7 +706,10 @@ export function WaterChemicalWasteTab() {
         {subTab === "water" && activeWaterLimit && (
           <div className="flex items-center gap-2 text-xs font-semibold text-cyan-800 dark:text-cyan-400 bg-cyan-50 dark:bg-cyan-950/60 px-3.5 py-2 rounded-xl border border-cyan-200/80 dark:border-cyan-800/60">
             <ShieldCheck className="w-4 h-4 shrink-0 text-cyan-600" />
-            <span>Ngưỡng ACTIVE: pH ({activeWaterLimit.ph_min} - {activeWaterLimit.ph_max}) | Clo ({activeWaterLimit.chlorine_min_ppm} - {activeWaterLimit.chlorine_max_ppm} mg/L)</span>
+            <span>
+              Ngưỡng ACTIVE: pH ({activeWaterLimit.ph_min} - {activeWaterLimit.ph_max}) | Clo (
+              {activeWaterLimit.chlorine_min_ppm} - {activeWaterLimit.chlorine_max_ppm} mg/L)
+            </span>
           </div>
         )}
       </div>
@@ -737,7 +751,10 @@ export function WaterChemicalWasteTab() {
                       </tr>
                     ) : (
                       filteredWaterLogs.map((log) => (
-                        <tr key={log.record_id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors">
+                        <tr
+                          key={log.record_id}
+                          className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors"
+                        >
                           <td className="p-3.5">
                             <div className="font-mono font-bold text-slate-900 dark:text-white">
                               {log.record_code}
@@ -747,24 +764,32 @@ export function WaterChemicalWasteTab() {
                             </div>
                           </td>
                           <td className="p-3.5">
-                            <div className="font-semibold text-slate-800 dark:text-slate-200">{log.sampling_date}</div>
-                            <div className="text-[11px] text-slate-500 font-mono">{log.sampling_time}</div>
+                            <div className="font-semibold text-slate-800 dark:text-slate-200">
+                              {log.sampling_date}
+                            </div>
+                            <div className="text-[11px] text-slate-500 font-mono">
+                              {log.sampling_time}
+                            </div>
                           </td>
                           <td className="p-3.5 text-center">
-                            <span className={`px-2.5 py-1 rounded-lg font-bold font-mono ${
-                              log.ph_level >= 6.5 && log.ph_level <= 8.5
-                                ? "bg-emerald-50 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300"
-                                : "bg-rose-50 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300"
-                            }`}>
+                            <span
+                              className={`px-2.5 py-1 rounded-lg font-bold font-mono ${
+                                log.ph_level >= 6.5 && log.ph_level <= 8.5
+                                  ? "bg-emerald-50 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300"
+                                  : "bg-rose-50 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300"
+                              }`}
+                            >
                               {log.ph_level}
                             </span>
                           </td>
                           <td className="p-3.5 text-center">
-                            <span className={`px-2.5 py-1 rounded-lg font-bold font-mono ${
-                              log.chlorine_ppm >= 0.3 && log.chlorine_ppm <= 1.0
-                                ? "bg-emerald-50 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300"
-                                : "bg-rose-50 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300"
-                            }`}>
+                            <span
+                              className={`px-2.5 py-1 rounded-lg font-bold font-mono ${
+                                log.chlorine_ppm >= 0.3 && log.chlorine_ppm <= 1.0
+                                  ? "bg-emerald-50 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300"
+                                  : "bg-rose-50 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300"
+                              }`}
+                            >
                               {log.chlorine_ppm} mg/L
                             </span>
                           </td>
@@ -772,7 +797,10 @@ export function WaterChemicalWasteTab() {
                             {log.turbidity_ntu} NTU
                           </td>
                           <td className="p-3.5 max-w-[200px]">
-                            <p className="truncate text-slate-700 dark:text-slate-300" title={log.sensory_result}>
+                            <p
+                              className="truncate text-slate-700 dark:text-slate-300"
+                              title={log.sensory_result}
+                            >
                               {log.sensory_result}
                             </p>
                           </td>
@@ -780,11 +808,13 @@ export function WaterChemicalWasteTab() {
                             {log.coliform_cfu} / {log.e_coli_cfu} CFU
                           </td>
                           <td className="p-3.5 text-center">
-                            <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-black ${
-                              log.overall_status === "PASS"
-                                ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
-                                : "bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300"
-                            }`}>
+                            <span
+                              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-black ${
+                                log.overall_status === "PASS"
+                                  ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
+                                  : "bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300"
+                              }`}
+                            >
                               {log.overall_status === "PASS" ? (
                                 <>
                                   <Check className="w-3.5 h-3.5" />
@@ -799,9 +829,13 @@ export function WaterChemicalWasteTab() {
                             </span>
                           </td>
                           <td className="p-3.5">
-                            <div className="font-semibold text-slate-800 dark:text-slate-200">{log.tested_by_name}</div>
+                            <div className="font-semibold text-slate-800 dark:text-slate-200">
+                              {log.tested_by_name}
+                            </div>
                             {log.verified_by_name && (
-                              <div className="text-[10px] text-slate-500">Duyệt: {log.verified_by_name}</div>
+                              <div className="text-[10px] text-slate-500">
+                                Duyệt: {log.verified_by_name}
+                              </div>
                             )}
                           </td>
                         </tr>
@@ -851,7 +885,10 @@ export function WaterChemicalWasteTab() {
                       </tr>
                     ) : (
                       filteredChemicals.map((chem) => (
-                        <tr key={chem.chemical_id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors">
+                        <tr
+                          key={chem.chemical_id}
+                          className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors"
+                        >
                           <td className="p-3.5">
                             <div className="font-mono font-bold text-slate-900 dark:text-white">
                               {chem.chemical_code}
@@ -866,11 +903,13 @@ export function WaterChemicalWasteTab() {
                             </p>
                           </td>
                           <td className="p-3.5 text-center">
-                            <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold ${
-                              chem.is_food_grade
-                                ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
-                                : "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300"
-                            }`}>
+                            <span
+                              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold ${
+                                chem.is_food_grade
+                                  ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
+                                  : "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300"
+                              }`}
+                            >
                               {chem.is_food_grade ? "Food-Grade" : "Non Food-Grade"}
                             </span>
                           </td>
@@ -887,12 +926,16 @@ export function WaterChemicalWasteTab() {
                             {chem.current_stock_kg} kg
                           </td>
                           <td className="p-3.5 text-center">
-                            <span className={`px-2.5 py-1 rounded-full text-[11px] font-black ${
-                              chem.approval_status === "APPROVED"
-                                ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
-                                : "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300"
-                            }`}>
-                              {chem.approval_status === "APPROVED" ? "ĐÃ DUYỆT" : chem.approval_status}
+                            <span
+                              className={`px-2.5 py-1 rounded-full text-[11px] font-black ${
+                                chem.approval_status === "APPROVED"
+                                  ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
+                                  : "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300"
+                              }`}
+                            >
+                              {chem.approval_status === "APPROVED"
+                                ? "ĐÃ DUYỆT"
+                                : chem.approval_status}
                             </span>
                           </td>
                         </tr>
@@ -942,7 +985,10 @@ export function WaterChemicalWasteTab() {
                       </tr>
                     ) : (
                       filteredWasteLogs.map((w) => (
-                        <tr key={w.waste_id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors">
+                        <tr
+                          key={w.waste_id}
+                          className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors"
+                        >
                           <td className="p-3.5">
                             <div className="font-mono font-bold text-slate-900 dark:text-white">
                               {w.log_code}
@@ -953,7 +999,9 @@ export function WaterChemicalWasteTab() {
                           </td>
                           <td className="p-3.5">
                             <span className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200">
-                              {w.waste_type === "ORGANIC_BYPRODUCT" ? "Phụ phẩm chế biến" : w.waste_type}
+                              {w.waste_type === "ORGANIC_BYPRODUCT"
+                                ? "Phụ phẩm chế biến"
+                                : w.waste_type}
                             </span>
                           </td>
                           <td className="p-3.5 max-w-[220px]">
@@ -1002,7 +1050,9 @@ export function WaterChemicalWasteTab() {
                   <h3 className="text-base font-black text-slate-900 dark:text-white">
                     Phiếu Kiểm Tra Nguồn Nước Sản Xuất
                   </h3>
-                  <p className="text-xs text-slate-500">Tiêu chuẩn QCVN 01-1:2018/BYT & SSOP Nguồn Nước</p>
+                  <p className="text-xs text-slate-500">
+                    Tiêu chuẩn QCVN 01-1:2018/BYT & SSOP Nguồn Nước
+                  </p>
                 </div>
               </div>
               <button
@@ -1065,7 +1115,9 @@ export function WaterChemicalWasteTab() {
                     step="0.1"
                     required
                     value={waterForm.ph_level}
-                    onChange={(e) => setWaterForm({ ...waterForm, ph_level: parseFloat(e.target.value) || 0 })}
+                    onChange={(e) =>
+                      setWaterForm({ ...waterForm, ph_level: parseFloat(e.target.value) || 0 })
+                    }
                     className="w-full px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-900 dark:text-white"
                   />
                 </div>
@@ -1078,7 +1130,9 @@ export function WaterChemicalWasteTab() {
                     step="0.05"
                     required
                     value={waterForm.chlorine_ppm}
-                    onChange={(e) => setWaterForm({ ...waterForm, chlorine_ppm: parseFloat(e.target.value) || 0 })}
+                    onChange={(e) =>
+                      setWaterForm({ ...waterForm, chlorine_ppm: parseFloat(e.target.value) || 0 })
+                    }
                     className="w-full px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-900 dark:text-white"
                   />
                 </div>
@@ -1091,7 +1145,9 @@ export function WaterChemicalWasteTab() {
                     step="0.1"
                     required
                     value={waterForm.turbidity_ntu}
-                    onChange={(e) => setWaterForm({ ...waterForm, turbidity_ntu: parseFloat(e.target.value) || 0 })}
+                    onChange={(e) =>
+                      setWaterForm({ ...waterForm, turbidity_ntu: parseFloat(e.target.value) || 0 })
+                    }
                     className="w-full px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-900 dark:text-white"
                   />
                 </div>
@@ -1130,7 +1186,9 @@ export function WaterChemicalWasteTab() {
                   <input
                     type="text"
                     value={waterForm.verified_by_name}
-                    onChange={(e) => setWaterForm({ ...waterForm, verified_by_name: e.target.value })}
+                    onChange={(e) =>
+                      setWaterForm({ ...waterForm, verified_by_name: e.target.value })
+                    }
                     className="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium text-slate-900 dark:text-white"
                   />
                 </div>
@@ -1169,7 +1227,9 @@ export function WaterChemicalWasteTab() {
                   <h3 className="text-base font-black text-slate-900 dark:text-white">
                     Cấu Hình Ngưỡng Nước Chuẩn QCVN
                   </h3>
-                  <p className="text-xs text-slate-500">Phê duyệt ngưỡng kỹ thuật cho toàn nhà máy</p>
+                  <p className="text-xs text-slate-500">
+                    Phê duyệt ngưỡng kỹ thuật cho toàn nhà máy
+                  </p>
                 </div>
               </div>
               <button
@@ -1217,7 +1277,9 @@ export function WaterChemicalWasteTab() {
                     step="0.1"
                     required
                     value={limitForm.ph_min}
-                    onChange={(e) => setLimitForm({ ...limitForm, ph_min: parseFloat(e.target.value) || 0 })}
+                    onChange={(e) =>
+                      setLimitForm({ ...limitForm, ph_min: parseFloat(e.target.value) || 0 })
+                    }
                     className="w-full px-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 rounded-xl text-xs font-bold"
                   />
                 </div>
@@ -1230,7 +1292,9 @@ export function WaterChemicalWasteTab() {
                     step="0.1"
                     required
                     value={limitForm.ph_max}
-                    onChange={(e) => setLimitForm({ ...limitForm, ph_max: parseFloat(e.target.value) || 0 })}
+                    onChange={(e) =>
+                      setLimitForm({ ...limitForm, ph_max: parseFloat(e.target.value) || 0 })
+                    }
                     className="w-full px-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 rounded-xl text-xs font-bold"
                   />
                 </div>
@@ -1246,7 +1310,12 @@ export function WaterChemicalWasteTab() {
                     step="0.05"
                     required
                     value={limitForm.chlorine_min_ppm}
-                    onChange={(e) => setLimitForm({ ...limitForm, chlorine_min_ppm: parseFloat(e.target.value) || 0 })}
+                    onChange={(e) =>
+                      setLimitForm({
+                        ...limitForm,
+                        chlorine_min_ppm: parseFloat(e.target.value) || 0,
+                      })
+                    }
                     className="w-full px-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 rounded-xl text-xs font-bold"
                   />
                 </div>
@@ -1259,7 +1328,12 @@ export function WaterChemicalWasteTab() {
                     step="0.05"
                     required
                     value={limitForm.chlorine_max_ppm}
-                    onChange={(e) => setLimitForm({ ...limitForm, chlorine_max_ppm: parseFloat(e.target.value) || 0 })}
+                    onChange={(e) =>
+                      setLimitForm({
+                        ...limitForm,
+                        chlorine_max_ppm: parseFloat(e.target.value) || 0,
+                      })
+                    }
                     className="w-full px-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 rounded-xl text-xs font-bold"
                   />
                 </div>
@@ -1319,7 +1393,9 @@ export function WaterChemicalWasteTab() {
                     type="text"
                     required
                     value={chemicalForm.chemical_code}
-                    onChange={(e) => setChemicalForm({ ...chemicalForm, chemical_code: e.target.value })}
+                    onChange={(e) =>
+                      setChemicalForm({ ...chemicalForm, chemical_code: e.target.value })
+                    }
                     placeholder="CLO-01, CIP-01..."
                     className="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 rounded-xl text-xs font-mono font-bold"
                   />
@@ -1333,7 +1409,12 @@ export function WaterChemicalWasteTab() {
                     step="1"
                     required
                     value={chemicalForm.current_stock_kg}
-                    onChange={(e) => setChemicalForm({ ...chemicalForm, current_stock_kg: parseFloat(e.target.value) || 0 })}
+                    onChange={(e) =>
+                      setChemicalForm({
+                        ...chemicalForm,
+                        current_stock_kg: parseFloat(e.target.value) || 0,
+                      })
+                    }
                     className="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 rounded-xl text-xs font-bold"
                   />
                 </div>
@@ -1347,7 +1428,9 @@ export function WaterChemicalWasteTab() {
                   type="text"
                   required
                   value={chemicalForm.chemical_name}
-                  onChange={(e) => setChemicalForm({ ...chemicalForm, chemical_name: e.target.value })}
+                  onChange={(e) =>
+                    setChemicalForm({ ...chemicalForm, chemical_name: e.target.value })
+                  }
                   placeholder="Ví dụ: Clorin Nippon 70% (Nhật Bản)..."
                   className="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 rounded-xl text-xs font-bold"
                 />
@@ -1376,7 +1459,9 @@ export function WaterChemicalWasteTab() {
                     type="text"
                     required
                     value={chemicalForm.supplier_name}
-                    onChange={(e) => setChemicalForm({ ...chemicalForm, supplier_name: e.target.value })}
+                    onChange={(e) =>
+                      setChemicalForm({ ...chemicalForm, supplier_name: e.target.value })
+                    }
                     className="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 rounded-xl text-xs font-medium"
                   />
                 </div>
@@ -1386,7 +1471,9 @@ export function WaterChemicalWasteTab() {
                   </label>
                   <select
                     value={chemicalForm.is_food_grade ? "TRUE" : "FALSE"}
-                    onChange={(e) => setChemicalForm({ ...chemicalForm, is_food_grade: e.target.value === "TRUE" })}
+                    onChange={(e) =>
+                      setChemicalForm({ ...chemicalForm, is_food_grade: e.target.value === "TRUE" })
+                    }
                     className="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 rounded-xl text-xs font-bold"
                   >
                     <option value="TRUE">✓ Đạt chuẩn Food-Grade</option>
@@ -1403,7 +1490,9 @@ export function WaterChemicalWasteTab() {
                   type="text"
                   required
                   value={chemicalForm.dilution_ratio}
-                  onChange={(e) => setChemicalForm({ ...chemicalForm, dilution_ratio: e.target.value })}
+                  onChange={(e) =>
+                    setChemicalForm({ ...chemicalForm, dilution_ratio: e.target.value })
+                  }
                   className="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 rounded-xl text-xs font-mono font-medium"
                 />
               </div>
@@ -1466,7 +1555,9 @@ export function WaterChemicalWasteTab() {
                     <option value="ORGANIC_BYPRODUCT">Phụ phẩm cá tra (Xương, đầu, da)</option>
                     <option value="DOMESTIC_ORGANIC">Rác hữu cơ sinh hoạt / Nhà ăn</option>
                     <option value="INORGANIC_RECYCLABLE">Bao bì nilon / Thùng carton</option>
-                    <option value="HAZARDOUS_WASTE">Rác thải nguy hại (Bóng đèn, pin, vỏ hóa chất)</option>
+                    <option value="HAZARDOUS_WASTE">
+                      Rác thải nguy hại (Bóng đèn, pin, vỏ hóa chất)
+                    </option>
                   </select>
                 </div>
                 <div>
@@ -1478,7 +1569,9 @@ export function WaterChemicalWasteTab() {
                     step="0.5"
                     required
                     value={wasteForm.quantity_kg}
-                    onChange={(e) => setWasteForm({ ...wasteForm, quantity_kg: parseFloat(e.target.value) || 0 })}
+                    onChange={(e) =>
+                      setWasteForm({ ...wasteForm, quantity_kg: parseFloat(e.target.value) || 0 })
+                    }
                     className="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 rounded-xl text-xs font-bold"
                   />
                 </div>
@@ -1505,7 +1598,9 @@ export function WaterChemicalWasteTab() {
                   type="text"
                   required
                   value={wasteForm.disposal_contractor}
-                  onChange={(e) => setWasteForm({ ...wasteForm, disposal_contractor: e.target.value })}
+                  onChange={(e) =>
+                    setWasteForm({ ...wasteForm, disposal_contractor: e.target.value })
+                  }
                   className="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 rounded-xl text-xs font-medium"
                 />
               </div>
@@ -1531,7 +1626,9 @@ export function WaterChemicalWasteTab() {
                     type="text"
                     required
                     value={wasteForm.handled_by_name}
-                    onChange={(e) => setWasteForm({ ...wasteForm, handled_by_name: e.target.value })}
+                    onChange={(e) =>
+                      setWasteForm({ ...wasteForm, handled_by_name: e.target.value })
+                    }
                     className="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 rounded-xl text-xs font-medium"
                   />
                 </div>

@@ -5,6 +5,7 @@ import {
   Search,
   RefreshCw,
   Printer,
+  FileDown,
   Trash2,
   Edit,
   ExternalLink,
@@ -43,7 +44,7 @@ const DOC_TYPES: Record<string, string> = {
   LAW: "Luật / Đạo luật",
   DECREE: "Nghị định Chính phủ",
   CIRCULAR: "Thông tư Bộ ngành",
-  STANDARD_QCVN: "Quy chuẩn QCVN / TCVN / Codex",
+  STANDARD_QCVN: "Quy chuẩn QCVN / TCVN / Tiêu chuẩn",
   CUSTOMER_REQ: "Yêu cầu Khách hàng",
   OTHER: "Tài liệu / Cẩm nang bên ngoài khác",
 };
@@ -82,8 +83,13 @@ export function ExternalDocumentsTab({
   // KPIs
   const stats = useMemo(() => {
     const total = externalDocs.length;
-    const active = externalDocs.filter((d) => d.status === "ACTIVE" || d.status === "EFFECTIVE").length;
-    const qcvn = externalDocs.filter((d) => (d.doc_type || d.category) === "STANDARD_QCVN" || (d.category || "").includes("STANDARD")).length;
+    const active = externalDocs.filter(
+      (d) => d.status === "ACTIVE" || d.status === "EFFECTIVE",
+    ).length;
+    const qcvn = externalDocs.filter(
+      (d) =>
+        (d.doc_type || d.category) === "STANDARD_QCVN" || (d.category || "").includes("STANDARD"),
+    ).length;
     const laws = externalDocs.filter((d) =>
       ["LAW", "DECREE", "CIRCULAR", "LAW_REGULATION"].includes(d.doc_type || d.category || ""),
     ).length;
@@ -215,8 +221,8 @@ export function ExternalDocumentsTab({
             onClick={handlePrintMasterList}
             className="gap-1.5 text-xs"
           >
-            <Printer className="h-3.5 w-3.5" />
-            In Sổ BM04-KSTL
+            <FileDown className="h-3.5 w-3.5" />
+            Xuất PDF BM04-KSTL
           </Button>
 
           <Button
@@ -268,7 +274,7 @@ export function ExternalDocumentsTab({
             Tiêu chuẩn & Quy chuẩn Kỹ thuật
           </div>
           <div className="mt-1.5 text-2xl font-bold text-purple-700">{stats.qcvn}</div>
-          <div className="text-[11px] text-purple-600/80">QCVN, TCVN, CODEX Quốc tế</div>
+          <div className="text-[11px] text-purple-600/80">QCVN, TCVN, Tiêu chuẩn Quốc tế</div>
         </div>
       </div>
 
@@ -378,7 +384,11 @@ export function ExternalDocumentsTab({
                     <td className="px-3 py-3 font-medium text-foreground">{doc.issuing_body}</td>
                     <td className="px-3 py-3">
                       <span className="inline-block rounded px-2 py-0.5 text-[10px] font-medium border bg-muted/50 text-muted-foreground">
-                        {(doc.doc_type && DOC_TYPES[doc.doc_type]) || doc.doc_type || (doc.category && DOC_TYPES[doc.category]) || doc.category || "---"}
+                        {(doc.doc_type && DOC_TYPES[doc.doc_type]) ||
+                          doc.doc_type ||
+                          (doc.category && DOC_TYPES[doc.category]) ||
+                          doc.category ||
+                          "---"}
                       </span>
                     </td>
                     <td className="px-3 py-3 text-center text-muted-foreground">
@@ -472,7 +482,7 @@ export function ExternalDocumentsTab({
                 <Input
                   value={formData.issuing_body}
                   onChange={(e) => setFormData({ ...formData, issuing_body: e.target.value })}
-                  placeholder="Ví dụ: Quốc Hội, Bộ Y tế, Ban Codex..."
+                  placeholder="Ví dụ: Quốc Hội, Bộ Y tế, Ban Tiêu Chuẩn..."
                   required
                   className="text-xs"
                 />

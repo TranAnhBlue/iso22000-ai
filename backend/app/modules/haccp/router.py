@@ -612,7 +612,7 @@ def seed_haccp_data_if_empty(db: Session):
         control_measure="Kiểm soát nhiệt độ tiếp nhận ≤ -18°C (hàng đông) hoặc 0-4°C (hàng tươi), test nhanh Histamine ≤ 50 ppm",
         q1="YES", q2="NO", q3="YES", q4="NO",
         classification="CCP",
-        notes="Quy định nghiêm ngặt theo FDA & Codex STAN 119",
+        notes="Quy định nghiêm ngặt theo FDA & TCVN",
     )
     h2 = HazardAnalysis(
         step_id=step1.step_id,
@@ -2240,7 +2240,7 @@ def suggest_hazards_with_ai(payload: AIHazardSuggestRequest):
 
     rationale = (
         f"AI đã phân tích công đoạn '{payload.step_name}' trên dây chuyền '{payload.product_line}' "
-        f"dựa theo 7 Nguyên tắc HACCP và Cây quyết định Codex (Decision Tree). Đã phát hiện {len(items)} mối nguy chính."
+        f"dựa theo 7 Nguyên tắc HACCP và Cây quyết định theo tiêu chuẩn ISO 22000 (Decision Tree). Đã phát hiện {len(items)} mối nguy chính."
     )
 
     return AIHazardSuggestResponse(

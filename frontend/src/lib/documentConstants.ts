@@ -89,6 +89,9 @@ export interface DocumentDistribution {
   retrieval_date?: string | null;
   notes?: string | null;
   created_at?: string | null;
+  superseded_action?: string | null;
+  recipient_name?: string | null;
+  received_date?: string | null;
 }
 
 // BM04-KSTL: Danh Mục Tài Liệu Nguồn Gốc Bên Ngoài
@@ -157,7 +160,7 @@ export const DEPARTMENTS = DEFAULT_DEPARTMENTS;
 // Danh sách tiêu chuẩn ATTP
 export const STANDARDS = [
   "ISO 22000:2018",
-  "HACCP Codex",
+  "HACCP",
   "PRP / SSOP",
   "FSSC 22000",
   "ISO 9001:2015",
@@ -241,5 +244,72 @@ export const STATUS_CONFIG: Record<
     color: "text-rose-700 dark:text-rose-300",
     bg: "bg-rose-500/10 border-rose-200 dark:border-rose-800",
     icon: AlertTriangle,
+  },
+};
+
+// ==================== BẢN SỬA ĐỔI TÀI LIỆU (DOCUMENT REVISION - ISO 22000 ĐIỀU KHOẢN 7.5) ====================
+export interface DocumentRevision {
+  revision_id: string;
+  document_id: string;
+  change_request_id?: string | null;
+  revision_code: string;
+  version: string;
+  change_description: string;
+  content?: string | null;
+  file_url?: string | null;
+  status: "DRAFT" | "UNDER_REVIEW" | "APPROVED" | "REJECTED" | "EFFECTIVE" | "SUPERSEDED";
+  drafter_id?: string | null;
+  drafter_name: string;
+  reviewer_name?: string | null;
+  approver_id?: string | null;
+  approver_name?: string | null;
+  approval_date?: string | null;
+  approval_notes?: string | null;
+  effective_date?: string | null;
+  superseded_date?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+}
+
+export const REVISION_STATUS_CONFIG: Record<
+  string,
+  { label: string; color: string; bg: string; badge: string }
+> = {
+  DRAFT: {
+    label: "Bản thảo sửa đổi",
+    color: "text-slate-700 dark:text-slate-300",
+    bg: "bg-slate-500/10 border-slate-200 dark:border-slate-800",
+    badge: "bg-slate-100 text-slate-700 border-slate-300 dark:bg-slate-800 dark:text-slate-300",
+  },
+  UNDER_REVIEW: {
+    label: "Đang soát xét",
+    color: "text-amber-700 dark:text-amber-300",
+    bg: "bg-amber-500/10 border-amber-200 dark:border-amber-800",
+    badge: "bg-amber-50 text-amber-700 border-amber-300 dark:bg-amber-900/30 dark:text-amber-300",
+  },
+  APPROVED: {
+    label: "Đã phê duyệt",
+    color: "text-emerald-700 dark:text-emerald-300",
+    bg: "bg-emerald-500/10 border-emerald-200 dark:border-emerald-800",
+    badge:
+      "bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-900/30 dark:text-emerald-300",
+  },
+  EFFECTIVE: {
+    label: "Hiệu lực hiện hành",
+    color: "text-emerald-700 dark:text-emerald-300",
+    bg: "bg-emerald-500/10 border-emerald-200 dark:border-emerald-800",
+    badge: "bg-emerald-600 text-white border-emerald-700 font-bold",
+  },
+  SUPERSEDED: {
+    label: "Đã bị thay thế",
+    color: "text-muted-foreground",
+    bg: "bg-muted/50 border-border",
+    badge: "bg-muted text-muted-foreground border-border line-through",
+  },
+  REJECTED: {
+    label: "Từ chối duyệt",
+    color: "text-rose-700 dark:text-rose-300",
+    bg: "bg-rose-500/10 border-rose-200 dark:border-rose-800",
+    badge: "bg-rose-50 text-rose-700 border-rose-300 dark:bg-rose-900/30 dark:text-rose-300",
   },
 };

@@ -16,7 +16,7 @@ class Supplier(Base):
     supplier_name: Mapped[str] = mapped_column(String(255), nullable=False)
     contact_info: Mapped[Optional[Any]] = mapped_column(JSONB, nullable=True)  # phone, email, address, contact_person, tax_code
     category: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)  # Nguyên liệu tươi sống, Phụ gia & Gia vị, Bao bì trực tiếp...
-    certifications: Mapped[Optional[Any]] = mapped_column(JSONB, nullable=True)  # ["ISO 22000:2018", "HACCP Codex", "VietGAP", "Halal"]
+    certifications: Mapped[Optional[Any]] = mapped_column(JSONB, nullable=True)  # ["ISO 22000:2018", "HACCP", "VietGAP", "Halal"]
     rating_score: Mapped[float] = mapped_column(Numeric(5, 2), default=100.0, nullable=False)
     status: Mapped[str] = mapped_column(String(30), default="APPROVED", nullable=False)  # APPROVED, WARNING, SUSPENDED, PENDING_EVALUATION
     risk_level: Mapped[Optional[str]] = mapped_column(String(30), default="LOW", nullable=True)  # LOW, MEDIUM, HIGH

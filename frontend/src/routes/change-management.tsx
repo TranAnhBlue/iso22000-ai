@@ -11,7 +11,7 @@ import {
   Plus,
   Search,
   Filter,
-  Printer,
+  FileDown,
   CheckCircle2,
   Clock,
   AlertTriangle,
@@ -33,9 +33,11 @@ import {
 import api from "@/lib/api";
 import { toast } from "sonner";
 import { printHtml } from "@/lib/print";
+import { LOGO_BASE64 } from "@/assets/logoBase64";
 import { EmptyState } from "@/components/EmptyState";
 import { ModuleGuideModal } from "@/components/ModuleGuideModal";
 import { initCached, isCached } from "@/lib/apiCache";
+import { useOrgData } from "@/lib/departments";
 
 export const Route = createFileRoute("/change-management")({
   head: () => ({
@@ -144,8 +146,9 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: any }>
 };
 
 function ChangeManagementPage() {
+  const { departments, users, userNames } = useOrgData();
   const [requests, setRequests] = useState<ChangeRequestItem[]>(() =>
-    initCached("/change-management/requests", [])
+    initCached("/change-management/requests", []),
   );
   const [stats, setStats] = useState<ChangeStats>(() =>
     initCached("/change-management/stats", {
@@ -155,7 +158,7 @@ function ChangeManagementPage() {
       approved: 0,
       implemented: 0,
       high_impact: 0,
-    })
+    }),
   );
   const [loading, setLoading] = useState(() => !isCached("/change-management/requests"));
   const [showGuide, setShowGuide] = useState(false);
@@ -307,18 +310,23 @@ function ChangeManagementPage() {
       <div style="font-family: 'Times New Roman', serif; font-size: 11pt; line-height: 1.4; color: #111; max-width: 800px; margin: 0 auto; padding: 20px;">
         <table style="width: 100%; border-collapse: collapse; margin-bottom: 16px;">
           <tr>
-            <td style="width: 25%; text-align: center; border: 1px solid #333; padding: 8px;">
-              <strong style="font-size: 13pt; color: #047857;">WCERT FOOD</strong><br/>
-              <span style="font-size: 9pt;">HỆ THỐNG FSMS ISO 22000</span>
+            <td style="width: 28%; text-align: left; border: 1px solid #333; padding: 6px 10px;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <img src="${LOGO_BASE64}" style="height: 42px; width: auto; object-fit: contain;" alt="Logo" />
+                <div>
+                  <div style="font-weight: 800; font-size: 10.5px; text-transform: uppercase; color: #0f172a; line-height: 1.25;">CÔNG TY CP CHẾ BIẾN THỰC PHẨM WCERT</div>
+                  <div style="font-size: 8pt; color: #475569; margin-top: 2px;">Ban Đổi mới & Quản trị Thay đổi (FSMS)</div>
+                </div>
+              </div>
             </td>
-            <td style="width: 50%; text-align: center; border: 1px solid #333; padding: 8px;">
-              <strong style="font-size: 13pt; text-transform: uppercase;">PHIẾU YÊU CẦU & ĐÁNH GIÁ SỰ THAY ĐỔI</strong><br/>
-              <span style="font-size: 10pt; font-weight: bold;">Tiêu chuẩn ISO 22000:2018</span>
+            <td style="width: 48%; text-align: center; border: 1px solid #333; padding: 8px;">
+              <strong style="font-size: 12.5pt; text-transform: uppercase;">PHIẾU YÊU CẦU & ĐÁNH GIÁ SỰ THAY ĐỔI</strong><br/>
+              <span style="font-size: 9.5pt; font-weight: bold; color: #475569;">Tiêu chuẩn ISO 22000:2018 (Điều 6.3)</span>
             </td>
-            <td style="width: 25%; border: 1px solid #333; padding: 8px; font-size: 9.5pt;">
+            <td style="width: 24%; border: 1px solid #333; padding: 8px; font-size: 8.5pt;">
               Biểu mẫu: <strong>BM-CHANGE-01</strong><br/>
               Mã phiếu: <strong>${r.change_code}</strong><br/>
-              Ngày lập: <strong>${r.proposed_date}</strong>
+              Lần ban hành: <strong>02/2026</strong>
             </td>
           </tr>
         </table>
@@ -359,7 +367,7 @@ function ChangeManagementPage() {
             <tr>
               <td style="padding: 6px; width: 35%; background-color: #f8fafc;">Ảnh hưởng Kế hoạch HACCP / CCP:</td>
               <td style="padding: 6px; font-weight: bold; color: ${r.impact_assessment?.affects_haccp_plan ? "#b91c1c" : "#047857"};">
-                ${r.impact_assessment?.affects_haccp_plan ? "CÓ (Bắt buộc rà soát lại mối nguy và Cây quyết định Codex)" : "KHÔNG"}
+                ${r.impact_assessment?.affects_haccp_plan ? "CÓ (Bắt buộc rà soát lại mối nguy và Cây quyết định ISO 22000)" : "KHÔNG"}
               </td>
             </tr>
             <tr>
@@ -441,7 +449,7 @@ function ChangeManagementPage() {
         </table>
       </div>
     `;
-    printHtml(html);
+    printHtml(html, `BM-CHANGE-01_${r.change_code || "Change"}.pdf`);
   };
 
   return (
@@ -476,9 +484,7 @@ function ChangeManagementPage() {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div className="rounded-xl border border-slate-300 bg-white p-4 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-700">
-              Tổng Số Phiếu Thay Đổi
-            </span>
+            <span className="text-xs font-bold text-slate-700">Tổng Số Phiếu Thay Đổi</span>
             <div className="rounded-lg bg-emerald-100 p-2 text-emerald-800">
               <GitCompare className="h-4 w-4" />
             </div>
@@ -700,9 +706,9 @@ function ChangeManagementPage() {
                             size="sm"
                             onClick={() => handlePrint(r)}
                             className="h-8 w-8 p-0 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
-                            title="In biểu mẫu BM-CHANGE-01"
+                            title="Xuất PDF biểu mẫu BM-CHANGE-01"
                           >
-                            <Printer className="h-3.5 w-3.5" />
+                            <FileDown className="h-3.5 w-3.5" />
                           </Button>
                           <Button
                             variant="ghost"
@@ -860,12 +866,29 @@ function ChangeManagementPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <Label>Người đề xuất *</Label>
-                  <Input
+                  <select
                     required
                     value={formData.proposed_by_name}
                     onChange={(e) => setFormData({ ...formData, proposed_by_name: e.target.value })}
-                    className="text-xs"
-                  />
+                    className="w-full h-9 rounded-md border border-input bg-background px-3 text-xs font-medium"
+                  >
+                    <option value="">-- Chọn nhân sự đề xuất từ CSDL --</option>
+                    {users.map((u) => (
+                      <option key={u.id} value={`${u.name} (${u.role})`}>
+                        {u.name} — {u.role} [{u.dept}]
+                      </option>
+                    ))}
+                    {formData.proposed_by_name &&
+                      !users.some(
+                        (u) =>
+                          `${u.name} (${u.role})` === formData.proposed_by_name ||
+                          u.name === formData.proposed_by_name,
+                      ) && (
+                        <option value={formData.proposed_by_name}>
+                          {formData.proposed_by_name}
+                        </option>
+                      )}
+                  </select>
                 </div>
                 <div className="space-y-1.5">
                   <Label>Ngày đề xuất *</Label>
@@ -1068,8 +1091,8 @@ function ChangeManagementPage() {
                     onClick={() => handlePrint(selectedCR)}
                     className="text-xs"
                   >
-                    <Printer className="h-3.5 w-3.5 mr-1" />
-                    In Phiếu BM-CHANGE-01
+                    <FileDown className="h-3.5 w-3.5 mr-1" />
+                    Xuất PDF BM-CHANGE-01
                   </Button>
                 </div>
               </div>

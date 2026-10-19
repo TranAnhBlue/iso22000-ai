@@ -737,7 +737,7 @@ def get_competency_matrix():
             "experience_years": 3,
             "mandatory_certifications": [
                 "Chứng chỉ Trưởng ban / Đánh giá viên trưởng ISO 22000:2018",
-                "Chứng chỉ Chuyên sâu HACCP Codex & Đánh giá mối nguy",
+                "Chứng chỉ Chuyên sâu HACCP & Đánh giá mối nguy",
                 "Giấy xác nhận tập huấn kiến thức ATTP của Chi cục ATVSTP"
             ],
             "key_competencies": [
@@ -756,7 +756,7 @@ def get_competency_matrix():
             "experience_years": 1,
             "mandatory_certifications": [
                 "Chứng chỉ Nhận thức & Đánh giá nội bộ ISO 22000:2018",
-                "Chứng chỉ 7 nguyên tắc HACCP Codex"
+                "Chứng chỉ 7 nguyên tắc HACCP"
             ],
             "key_competencies": [
                 "Nhận diện mối nguy thực tế tại khu vực phụ trách",

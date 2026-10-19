@@ -142,6 +142,38 @@ CREATE TABLE IF NOT EXISTS document_change_requests (
 	FOREIGN KEY(requested_by) REFERENCES users (user_id) ON DELETE SET NULL
 );
 
+-- Bảng: document_revisions (Bản sửa đổi tài liệu độc lập - ISO 22000 Điều khoản 7.5)
+CREATE TABLE IF NOT EXISTS document_revisions (
+	revision_id UUID DEFAULT gen_random_uuid() NOT NULL,
+	document_id UUID NOT NULL,
+	change_request_id UUID,
+	revision_code VARCHAR(50) NOT NULL,
+	version VARCHAR(20) NOT NULL,
+	change_description TEXT NOT NULL,
+	content TEXT,
+	file_url TEXT,
+	status VARCHAR(30) DEFAULT 'DRAFT' NOT NULL,
+	drafter_id UUID,
+	drafter_name VARCHAR(150) NOT NULL,
+	reviewer_name VARCHAR(150),
+	approver_id UUID,
+	approver_name VARCHAR(150),
+	approval_date DATE,
+	approval_notes TEXT,
+	effective_date DATE,
+	superseded_date DATE,
+	created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+	updated_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+	PRIMARY KEY (revision_id),
+	UNIQUE (revision_code),
+	FOREIGN KEY(document_id) REFERENCES documents (document_id) ON DELETE CASCADE,
+	FOREIGN KEY(change_request_id) REFERENCES document_change_requests (request_id) ON DELETE SET NULL,
+	FOREIGN KEY(drafter_id) REFERENCES users (user_id) ON DELETE SET NULL,
+	FOREIGN KEY(approver_id) REFERENCES users (user_id) ON DELETE SET NULL
+);
+CREATE INDEX IF NOT EXISTS idx_doc_rev_doc_id ON document_revisions (document_id);
+CREATE INDEX IF NOT EXISTS idx_doc_rev_status ON document_revisions (status);
+
 -- Bảng: document_distributions (BM02-KSTL: Sổ phân phối & Thu hồi tài liệu)
 CREATE TABLE IF NOT EXISTS document_distributions (
 	distribution_id UUID DEFAULT gen_random_uuid() NOT NULL,

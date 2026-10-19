@@ -12,6 +12,7 @@ import {
   FileText,
   Plus,
   Printer,
+  FileDown,
   RefreshCw,
   Search,
   Sparkles,
@@ -35,10 +36,11 @@ import { initCached, isCached } from "@/lib/apiCache";
 import { normalizeWorkflowForSave, workflowErrorMessage } from "@/lib/workflow";
 import { toast } from "sonner";
 import { WorkflowBuilder, type WorkflowTemplateData } from "@/components/builder/WorkflowBuilder";
-import { useDepartments } from "@/lib/departments";
+import { useOrgData } from "@/lib/departments";
 import { EmptyState } from "@/components/EmptyState";
 import { ModuleGuideModal } from "@/components/ModuleGuideModal";
 import { printHtml } from "@/lib/print";
+import { LOGO_BASE64 } from "@/assets/logoBase64";
 
 export const Route = createFileRoute("/capa")({
   head: () => ({
@@ -157,20 +159,22 @@ interface CAPAStats {
 
 // ==================== MAIN COMPONENT ====================
 function CAPAManagementPage() {
-  const { departments } = useDepartments();
+  const { departments, users, userNames } = useOrgData();
   const [activeTab, setActiveTab] = useState<"ncs" | "capas" | "ai_studio" | "verification">("ncs");
-  const [stats, setStats] = useState<CAPAStats>(() => initCached("/capa/stats", {
-    total_ncs: 0,
-    critical_ncs: 0,
-    open_ncs: 0,
-    closed_ncs: 0,
-    total_capas: 0,
-    in_progress_capas: 0,
-    pending_verify_capas: 0,
-    completed_capas: 0,
-    overdue_capas: 0,
-    effectiveness_rate: 100.0,
-  }));
+  const [stats, setStats] = useState<CAPAStats>(() =>
+    initCached("/capa/stats", {
+      total_ncs: 0,
+      critical_ncs: 0,
+      open_ncs: 0,
+      closed_ncs: 0,
+      total_capas: 0,
+      in_progress_capas: 0,
+      pending_verify_capas: 0,
+      completed_capas: 0,
+      overdue_capas: 0,
+      effectiveness_rate: 100.0,
+    }),
+  );
 
   const [ncs, setNcs] = useState<NonConformance[]>(() => initCached("/capa/ncs", []));
   const [capas, setCapas] = useState<CAPARecord[]>(() => initCached("/capa/records", []));
@@ -279,18 +283,24 @@ function CAPAManagementPage() {
         <div class="hdr-box">
           <table class="hdr-tbl">
             <tr>
-              <td style="width: 25%;">
-                <strong style="font-size: 11pt; color: #047857;">WCERT FSMS</strong><br/>
-                <span style="font-size: 8.5pt;">ISO 22000:2018 Standard</span>
+              <td style="width: 28%; text-align: left; padding: 6px 10px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <img src="${LOGO_BASE64}" style="height: 44px; width: auto; object-fit: contain;" alt="Logo" />
+                  <div>
+                    <div style="font-weight: 800; font-size: 11px; text-transform: uppercase; color: #0f172a; line-height: 1.25;">CÔNG TY CP CHẾ BIẾN THỰC PHẨM WCERT</div>
+                    <div style="font-size: 8.5pt; color: #475569; margin-top: 2px;">Ban Quản lý CL & ATTP (FSMS)</div>
+                  </div>
+                </div>
               </td>
-              <td style="width: 50%;">
+              <td style="width: 48%; text-align: center;">
                 <div class="title">PHIẾU XỬ LÝ SỰ KHÔNG PHÙ HỢP & CAPA</div>
                 <div class="sub">(Hệ Thống Quản Lý An Toàn Thực Phẩm - ISO 22000:2018)</div>
               </td>
-              <td style="width: 25%; font-size: 8.5pt; text-align: left; padding-left: 10px;">
+              <td style="width: 24%; font-size: 8.5pt; text-align: left; padding-left: 10px;">
                 <div><b>Mã BM:</b> BM-CAPA-01</div>
+                <div><b>Tiêu chuẩn:</b> ISO 22000:2018</div>
                 <div><b>Lần BH:</b> 02/2026</div>
-                <div><b>Mã Phiếu:</b> <strong>${capa.capa_number}</strong></div>
+                <div><b>Mã Phiếu:</b> <strong style="color: #b91c1c;">${capa.capa_number}</strong></div>
               </td>
             </tr>
           </table>
@@ -632,7 +642,11 @@ function CAPAManagementPage() {
           approved: type === "approve",
           comments: capaActionComments,
         });
-        toast.success(type === "approve" ? "CAPA đã được phê duyệt để triển khai." : "CAPA đã bị từ chối và trả về dự thảo.");
+        toast.success(
+          type === "approve"
+            ? "CAPA đã được phê duyệt để triển khai."
+            : "CAPA đã bị từ chối và trả về dự thảo.",
+        );
       }
       setCapaAction(null);
       setCapaActionComments("");
@@ -655,7 +669,10 @@ function CAPAManagementPage() {
   const saveEvidence = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!evidenceCAPA) return;
-    const evidence_urls = evidenceText.split(/\r?\n/).map((url) => url.trim()).filter(Boolean);
+    const evidence_urls = evidenceText
+      .split(/\r?\n/)
+      .map((url) => url.trim())
+      .filter(Boolean);
     if (!evidence_urls.length) {
       toast.error("Nhập ít nhất một liên kết bằng chứng.");
       return;
@@ -1331,7 +1348,7 @@ function CAPAManagementPage() {
                     </div>
 
                     <div className="flex items-center gap-2">
-                      {(["DRAFT", "REJECTED"].includes(c.review_status || "DRAFT")) && (
+                      {["DRAFT", "REJECTED"].includes(c.review_status || "DRAFT") && (
                         <Button
                           size="sm"
                           onClick={() => submitForReview(c)}
@@ -1343,7 +1360,10 @@ function CAPAManagementPage() {
                       {c.review_status === "PENDING_REVIEW" && (
                         <Button
                           size="sm"
-                          onClick={() => { setCapaAction({ capa: c, type: "review" }); setCapaActionComments(""); }}
+                          onClick={() => {
+                            setCapaAction({ capa: c, type: "review" });
+                            setCapaActionComments("");
+                          }}
                           className="h-8 text-xs px-3 bg-amber-600 hover:bg-amber-700 text-white font-bold"
                         >
                           Xem xét kế hoạch
@@ -1351,14 +1371,49 @@ function CAPAManagementPage() {
                       )}
                       {c.review_status === "REVIEWED" && (
                         <>
-                          <Button size="sm" onClick={() => { setCapaAction({ capa: c, type: "approve" }); setCapaActionComments(""); }} className="h-8 text-xs px-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold">Phê duyệt</Button>
-                          <Button variant="outline" size="sm" onClick={() => { setCapaAction({ capa: c, type: "reject" }); setCapaActionComments(""); }} className="h-8 text-xs px-3 text-rose-700 border border-rose-300 bg-white hover:bg-rose-600 hover:text-white hover:border-rose-600 font-bold transition-all duration-150">Từ chối</Button>
+                          <Button
+                            size="sm"
+                            onClick={() => {
+                              setCapaAction({ capa: c, type: "approve" });
+                              setCapaActionComments("");
+                            }}
+                            className="h-8 text-xs px-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold"
+                          >
+                            Phê duyệt
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setCapaAction({ capa: c, type: "reject" });
+                              setCapaActionComments("");
+                            }}
+                            className="h-8 text-xs px-3 text-rose-700 border border-rose-300 bg-white hover:bg-rose-600 hover:text-white hover:border-rose-600 font-bold transition-all duration-150"
+                          >
+                            Từ chối
+                          </Button>
                         </>
                       )}
                       {c.review_status === "APPROVED" && c.status === "IN_PROGRESS" && (
                         <>
-                          <Button variant="outline" size="sm" onClick={() => { setEvidenceCAPA(c); setEvidenceText((c.evidence_urls || []).join("\n")); }} className="h-8 text-xs px-3 border border-slate-300 bg-white text-slate-800 hover:bg-slate-900 hover:text-white hover:border-slate-900 font-semibold transition-all duration-150">Bằng chứng</Button>
-                          <Button size="sm" onClick={() => submitForVerification(c)} className="h-8 text-xs px-3 bg-purple-600 hover:bg-purple-700 text-white font-bold">Gửi thẩm tra</Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setEvidenceCAPA(c);
+                              setEvidenceText((c.evidence_urls || []).join("\n"));
+                            }}
+                            className="h-8 text-xs px-3 border border-slate-300 bg-white text-slate-800 hover:bg-slate-900 hover:text-white hover:border-slate-900 font-semibold transition-all duration-150"
+                          >
+                            Bằng chứng
+                          </Button>
+                          <Button
+                            size="sm"
+                            onClick={() => submitForVerification(c)}
+                            className="h-8 text-xs px-3 bg-purple-600 hover:bg-purple-700 text-white font-bold"
+                          >
+                            Gửi thẩm tra
+                          </Button>
                         </>
                       )}
                       <Button
@@ -1370,21 +1425,23 @@ function CAPAManagementPage() {
                         }}
                         className="h-8 text-xs px-3 border border-slate-300 bg-white text-slate-800 hover:bg-slate-900 hover:text-white hover:border-slate-900 font-bold flex items-center gap-1.5 shadow-sm transition-all duration-150 group"
                       >
-                        <Printer className="h-3.5 w-3.5 text-slate-500 group-hover:text-white transition-colors" />
-                        <span>In BM-CAPA-01</span>
+                        <FileDown className="h-3.5 w-3.5 text-slate-500 group-hover:text-white transition-colors" />
+                        <span>Xuất PDF BM-CAPA-01</span>
                       </Button>
 
-                      {(["DRAFT", "REJECTED"].includes(c.review_status || "DRAFT")) && <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setEditingCAPA(c);
-                          setShowCAPAModal(true);
-                        }}
-                        className="h-8 text-xs px-3 border border-slate-300 bg-white text-slate-800 hover:bg-slate-900 hover:text-white hover:border-slate-900 font-medium transition-all duration-150"
-                      >
-                        Sửa
-                      </Button>}
+                      {["DRAFT", "REJECTED"].includes(c.review_status || "DRAFT") && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setEditingCAPA(c);
+                            setShowCAPAModal(true);
+                          }}
+                          className="h-8 text-xs px-3 border border-slate-300 bg-white text-slate-800 hover:bg-slate-900 hover:text-white hover:border-slate-900 font-medium transition-all duration-150"
+                        >
+                          Sửa
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1716,10 +1773,8 @@ function CAPAManagementPage() {
             </div>
           </div>
 
-          {capas.filter(
-            (c) =>
-              c.status === "PENDING_VERIFICATION" || c.status === "COMPLETED",
-          ).length === 0 ? (
+          {capas.filter((c) => c.status === "PENDING_VERIFICATION" || c.status === "COMPLETED")
+            .length === 0 ? (
             <EmptyState
               loading={loading && capas.length === 0}
               icon={ShieldCheck}
@@ -1736,10 +1791,7 @@ function CAPAManagementPage() {
           ) : (
             <div className="space-y-3.5">
               {capas
-                .filter(
-                  (c) =>
-                    c.status === "PENDING_VERIFICATION" || c.status === "COMPLETED",
-                )
+                .filter((c) => c.status === "PENDING_VERIFICATION" || c.status === "COMPLETED")
                 .map((c) => (
                   <div
                     key={c.capa_id}
@@ -1806,25 +1858,62 @@ function CAPAManagementPage() {
 
       {capaAction && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <form onSubmit={handleCAPAAction} className="w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden">
+          <form
+            onSubmit={handleCAPAAction}
+            className="w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden"
+          >
             <div className="p-5 border-b border-slate-100 flex items-start justify-between gap-4">
               <div>
                 <h3 className="font-bold text-slate-900">
-                  {capaAction.type === "review" ? "Xem xét kế hoạch CAPA" : capaAction.type === "approve" ? "Phê duyệt kế hoạch CAPA" : "Từ chối kế hoạch CAPA"}
+                  {capaAction.type === "review"
+                    ? "Xem xét kế hoạch CAPA"
+                    : capaAction.type === "approve"
+                      ? "Phê duyệt kế hoạch CAPA"
+                      : "Từ chối kế hoạch CAPA"}
                 </h3>
-                <p className="text-xs text-slate-500 mt-1">{capaAction.capa.capa_number} — {capaAction.capa.title}</p>
+                <p className="text-xs text-slate-500 mt-1">
+                  {capaAction.capa.capa_number} — {capaAction.capa.title}
+                </p>
               </div>
-              <button type="button" onClick={() => setCapaAction(null)} className="text-slate-400 hover:text-slate-700"><X className="h-5 w-5" /></button>
+              <button
+                type="button"
+                onClick={() => setCapaAction(null)}
+                className="text-slate-400 hover:text-slate-700"
+              >
+                <X className="h-5 w-5" />
+              </button>
             </div>
             <div className="p-5 space-y-3">
               <label className="block text-sm font-semibold text-slate-700">Ý kiến *</label>
-              <Textarea value={capaActionComments} onChange={(e) => setCapaActionComments(e.target.value)} rows={4} required minLength={3} placeholder="Ghi rõ nhận xét, điều kiện phê duyệt hoặc lý do từ chối..." />
-              <p className="text-xs text-slate-500">Ý kiến được lưu trong lịch sử CAPA để phục vụ truy xuất và đánh giá.</p>
+              <Textarea
+                value={capaActionComments}
+                onChange={(e) => setCapaActionComments(e.target.value)}
+                rows={4}
+                required
+                minLength={3}
+                placeholder="Ghi rõ nhận xét, điều kiện phê duyệt hoặc lý do từ chối..."
+              />
+              <p className="text-xs text-slate-500">
+                Ý kiến được lưu trong lịch sử CAPA để phục vụ truy xuất và đánh giá.
+              </p>
             </div>
             <div className="p-4 bg-slate-50 flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={() => setCapaAction(null)}>Hủy</Button>
-              <Button type="submit" className={capaAction.type === "reject" ? "bg-rose-600 hover:bg-rose-700" : "bg-emerald-600 hover:bg-emerald-700"}>
-                {capaAction.type === "review" ? "Xác nhận xem xét" : capaAction.type === "approve" ? "Xác nhận phê duyệt" : "Xác nhận từ chối"}
+              <Button type="button" variant="outline" onClick={() => setCapaAction(null)}>
+                Hủy
+              </Button>
+              <Button
+                type="submit"
+                className={
+                  capaAction.type === "reject"
+                    ? "bg-rose-600 hover:bg-rose-700"
+                    : "bg-emerald-600 hover:bg-emerald-700"
+                }
+              >
+                {capaAction.type === "review"
+                  ? "Xác nhận xem xét"
+                  : capaAction.type === "approve"
+                    ? "Xác nhận phê duyệt"
+                    : "Xác nhận từ chối"}
               </Button>
             </div>
           </form>
@@ -1833,16 +1922,43 @@ function CAPAManagementPage() {
 
       {evidenceCAPA && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <form onSubmit={saveEvidence} className="w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden">
+          <form
+            onSubmit={saveEvidence}
+            className="w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden"
+          >
             <div className="p-5 border-b border-slate-100 flex items-start justify-between gap-4">
-              <div><h3 className="font-bold text-slate-900">Cập nhật bằng chứng thực hiện</h3><p className="text-xs text-slate-500 mt-1">{evidenceCAPA.capa_number}</p></div>
-              <button type="button" onClick={() => setEvidenceCAPA(null)} className="text-slate-400 hover:text-slate-700"><X className="h-5 w-5" /></button>
+              <div>
+                <h3 className="font-bold text-slate-900">Cập nhật bằng chứng thực hiện</h3>
+                <p className="text-xs text-slate-500 mt-1">{evidenceCAPA.capa_number}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEvidenceCAPA(null)}
+                className="text-slate-400 hover:text-slate-700"
+              >
+                <X className="h-5 w-5" />
+              </button>
             </div>
             <div className="p-5 space-y-3">
-              <label className="block text-sm font-semibold text-slate-700">Liên kết bằng chứng (mỗi dòng một liên kết) *</label>
-              <Textarea value={evidenceText} onChange={(e) => setEvidenceText(e.target.value)} rows={5} required placeholder="https://.../bien-ban-thuc-hien.pdf" />
+              <label className="block text-sm font-semibold text-slate-700">
+                Liên kết bằng chứng (mỗi dòng một liên kết) *
+              </label>
+              <Textarea
+                value={evidenceText}
+                onChange={(e) => setEvidenceText(e.target.value)}
+                rows={5}
+                required
+                placeholder="https://.../bien-ban-thuc-hien.pdf"
+              />
             </div>
-            <div className="p-4 bg-slate-50 flex justify-end gap-2"><Button type="button" variant="outline" onClick={() => setEvidenceCAPA(null)}>Hủy</Button><Button type="submit" className="bg-emerald-600 hover:bg-emerald-700">Lưu bằng chứng</Button></div>
+            <div className="p-4 bg-slate-50 flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => setEvidenceCAPA(null)}>
+                Hủy
+              </Button>
+              <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700">
+                Lưu bằng chứng
+              </Button>
+            </div>
           </form>
         </div>
       )}
@@ -2009,15 +2125,28 @@ function CAPAManagementPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block font-semibold text-slate-700 mb-1">
-                    Người Báo Cáo / KCS
+                    Người Báo Cáo / KCS *
                   </label>
-                  <Input
+                  <select
                     name="reported_by_name"
-                    defaultValue={
-                      editingNC?.reported_by_name || "Nguyễn Văn An (Trưởng ca Sản xuất & QC)"
-                    }
-                    className="text-xs h-9"
-                  />
+                    defaultValue={editingNC?.reported_by_name || ""}
+                    className="w-full text-xs h-9 bg-white border border-slate-200 rounded-lg px-2.5 font-medium focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                  >
+                    <option value="">-- Chọn nhân sự từ CSDL --</option>
+                    {users.map((u) => (
+                      <option key={u.id} value={`${u.name} (${u.role})`}>
+                        {u.name} — {u.role} [{u.dept}]
+                      </option>
+                    ))}
+                    {editingNC?.reported_by_name &&
+                      !users.some(
+                        (u) => `${u.name} (${u.role})` === editingNC.reported_by_name,
+                      ) && (
+                        <option value={editingNC.reported_by_name}>
+                          {editingNC.reported_by_name}
+                        </option>
+                      )}
+                  </select>
                 </div>
 
                 <div>
@@ -2200,14 +2329,28 @@ function CAPAManagementPage() {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <label className="block font-semibold text-slate-700 mb-1">
-                    Người Chịu Trách Nhiệm
+                    Người Chịu Trách Nhiệm *
                   </label>
-                  <Input
+                  <select
                     name="assigned_to_name"
                     defaultValue={editingCAPA?.assigned_to_name || ""}
-                    placeholder="Nhập người chịu trách nhiệm"
-                    className="text-xs h-9"
-                  />
+                    className="w-full text-xs h-9 bg-white border border-slate-200 rounded-lg px-2.5 font-medium focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                  >
+                    <option value="">-- Chọn nhân sự từ CSDL --</option>
+                    {users.map((u) => (
+                      <option key={u.id} value={`${u.name} (${u.role})`}>
+                        {u.name} — {u.role} [{u.dept}]
+                      </option>
+                    ))}
+                    {editingCAPA?.assigned_to_name &&
+                      !users.some(
+                        (u) => `${u.name} (${u.role})` === editingCAPA.assigned_to_name,
+                      ) && (
+                        <option value={editingCAPA.assigned_to_name}>
+                          {editingCAPA.assigned_to_name}
+                        </option>
+                      )}
+                  </select>
                 </div>
 
                 <div>
@@ -2226,7 +2369,6 @@ function CAPAManagementPage() {
                     ))}
                   </select>
                 </div>
-
               </div>
 
               <div>
@@ -2240,7 +2382,9 @@ function CAPAManagementPage() {
                   placeholder="https://.../bien-ban-thuc-hien.pdf"
                   className="text-xs"
                 />
-                <p className="text-[11px] text-slate-500 mt-1">Bằng chứng là bắt buộc trước khi gửi thẩm tra hiệu lực.</p>
+                <p className="text-[11px] text-slate-500 mt-1">
+                  Bằng chứng là bắt buộc trước khi gửi thẩm tra hiệu lực.
+                </p>
               </div>
 
               <div className="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-2 -mx-6 -mb-6">
@@ -2296,14 +2440,29 @@ function CAPAManagementPage() {
                 <label className="block font-bold text-slate-800 mb-1">
                   Đánh Giá Viên / Người Thẩm Tra *
                 </label>
-                <Input
+                <select
                   value={verificationForm.verified_by_name}
                   onChange={(e) =>
                     setVerificationForm({ ...verificationForm, verified_by_name: e.target.value })
                   }
                   required
-                  className="text-xs h-9 font-medium"
-                />
+                  className="w-full text-xs h-9 bg-white border border-slate-200 rounded-lg px-2.5 font-medium focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                >
+                  <option value="">-- Chọn đánh giá viên từ CSDL --</option>
+                  {users.map((u) => (
+                    <option key={u.id} value={`${u.name} (${u.role})`}>
+                      {u.name} — {u.role} [{u.dept}]
+                    </option>
+                  ))}
+                  {verificationForm.verified_by_name &&
+                    !users.some(
+                      (u) => `${u.name} (${u.role})` === verificationForm.verified_by_name,
+                    ) && (
+                      <option value={verificationForm.verified_by_name}>
+                        {verificationForm.verified_by_name}
+                      </option>
+                    )}
+                </select>
               </div>
 
               <div>
@@ -2377,7 +2536,7 @@ function CAPAManagementPage() {
             {/* Modal Header */}
             <div className="p-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
               <div className="flex items-center gap-2">
-                <Printer className="h-5 w-5 text-emerald-600" />
+                <FileDown className="h-5 w-5 text-emerald-600" />
                 <h3 className="font-bold text-slate-900 text-sm">
                   Xem Trước Biểu Mẫu Chuẩn ISO: BM-CAPA-01 ({printingCAPA.capa_number})
                 </h3>
@@ -2388,8 +2547,8 @@ function CAPAManagementPage() {
                   onClick={() => printingCAPA && handlePrintCAPA(printingCAPA)}
                   className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 h-8 px-3"
                 >
-                  <Printer className="h-3.5 w-3.5" />
-                  <span>In Biểu Mẫu</span>
+                  <FileDown className="h-3.5 w-3.5" />
+                  <span>Xuất File PDF</span>
                 </Button>
                 <button
                   onClick={() => setShowPrintModal(false)}
@@ -2512,11 +2671,11 @@ function CAPAManagementPage() {
                   <div className="text-[11px] space-y-1.5">
                     <div className="flex items-center justify-between">
                       <div>
-                        <b>Người thẩm tra:</b>{" "}
-                        {printingCAPA.verified_by_name || "Chưa xác định"}
+                        <b>Người thẩm tra:</b> {printingCAPA.verified_by_name || "Chưa xác định"}
                       </div>
                       <div>
-                        <b>Ngày thẩm tra:</b> {printingCAPA.verification_date || "Theo kế hoạch thẩm tra"}
+                        <b>Ngày thẩm tra:</b>{" "}
+                        {printingCAPA.verification_date || "Theo kế hoạch thẩm tra"}
                       </div>
                     </div>
                     <div>
@@ -2528,8 +2687,7 @@ function CAPAManagementPage() {
                       </span>
                     </div>
                     <p className="p-2 bg-slate-50 border border-slate-200 rounded text-slate-800 leading-relaxed font-medium">
-                      {printingCAPA.verification_result ||
-                        "Chưa có kết luận thẩm tra hiệu lực."}
+                      {printingCAPA.verification_result || "Chưa có kết luận thẩm tra hiệu lực."}
                     </p>
                   </div>
                 </div>

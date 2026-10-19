@@ -25,6 +25,7 @@ import {
   RefreshCw,
   Sparkles,
   Printer,
+  FileDown,
   FileSpreadsheet,
   Layers,
   FileText,
@@ -62,6 +63,7 @@ import { initCached, isCached } from "@/lib/apiCache";
 import { normalizeWorkflowForSave, workflowErrorMessage } from "@/lib/workflow";
 import { toast } from "sonner";
 import logoImg from "@/assets/logo.png";
+import { LOGO_BASE64 } from "@/assets/logoBase64";
 import { WorkflowBuilder, type WorkflowTemplateData } from "@/components/builder/WorkflowBuilder";
 import { DynamicFormRenderer } from "@/components/builder/DynamicFormRenderer";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -70,6 +72,7 @@ import { printHtml } from "@/lib/print";
 import { EmptyState } from "@/components/EmptyState";
 import { ModuleGuideModal } from "@/components/ModuleGuideModal";
 import { WorkflowGuideModal } from "@/components/WorkflowGuideModal";
+import { useOrgData } from "@/lib/departments";
 
 export const Route = createFileRoute("/haccp")({
   head: () => ({
@@ -140,6 +143,7 @@ interface ProcessStep {
   step_name: string;
   product_line: string;
   description?: string;
+  role?: string;
   is_ccp_or_oprp: boolean;
   hazard_count: number;
   plan_name?: string;
@@ -359,6 +363,7 @@ function HACCPModule() {
   >("flowchart");
   const [showGuide, setShowGuide] = useState(false);
   const [showWfGuide, setShowWfGuide] = useState(false);
+  const { departments, users, userNames, productLines } = useOrgData();
 
   // Data states
   const [stats, setStats] = useState<HACCPStats | null>(() => initCached("/haccp/stats", null));
@@ -369,9 +374,15 @@ function HACCPModule() {
   const [ccps, setCcps] = useState<CCPDefinition[]>(() => initCached("/haccp/ccp-definitions", []));
   const [logs, setLogs] = useState<CCPMonitoringLog[]>(() => initCached("/haccp/ccp-logs", []));
   const [reviews, setReviews] = useState<HACCPPlanReview[]>(() => initCached("/haccp/reviews", []));
-  const [changeRequests, setChangeRequests] = useState<any[]>(() => initCached("/change-management/requests", []));
-  const [metalDetectorLogs, setMetalDetectorLogs] = useState<MetalDetectorLog[]>(() => initCached("/haccp/metal-detector-logs", []));
-  const [inProcessLogs, setInProcessLogs] = useState<InProcessQCLog[]>(() => initCached("/haccp/in-process-qc-logs", []));
+  const [changeRequests, setChangeRequests] = useState<any[]>(() =>
+    initCached("/change-management/requests", []),
+  );
+  const [metalDetectorLogs, setMetalDetectorLogs] = useState<MetalDetectorLog[]>(() =>
+    initCached("/haccp/metal-detector-logs", []),
+  );
+  const [inProcessLogs, setInProcessLogs] = useState<InProcessQCLog[]>(() =>
+    initCached("/haccp/in-process-qc-logs", []),
+  );
   const [loading, setLoading] = useState<boolean>(() => !isCached("/haccp/plans"));
 
   // IPQC Filters & Modals
@@ -496,6 +507,7 @@ function HACCPModule() {
     step_name: "",
     product_line: "Chế biến Thủy hải sản",
     description: "",
+    role: "",
     is_ccp_or_oprp: false,
   });
 
@@ -563,6 +575,11 @@ function HACCPModule() {
 
   const [showPrintPlanModal, setShowPrintPlanModal] = useState(false);
   const [showPrintLogModal, setShowPrintLogModal] = useState(false);
+  const [selectedPrintPlan, setSelectedPrintPlan] = useState<HACCPPlan | null>(null);
+  const [printPlanType, setPrintPlanType] = useState<"MASTER_SUMMARY" | "SINGLE_PLAN">(
+    "MASTER_SUMMARY",
+  );
+  const [logFilterPlanId, setLogFilterPlanId] = useState<string>("ALL");
 
   // Deleting Confirmation States
   const [deletingPlan, setDeletingPlan] = useState<HACCPPlan | null>(null);
@@ -882,120 +899,368 @@ function HACCPModule() {
   };
 
   const handlePrintHaccpPlan = () => {
-    const p = currentPlan;
-    const html = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>HACCP Plan - ${p?.plan_code || "BM-HACCP-01"}</title>
-        <meta charset="utf-8" />
-        <style>
-          @page { size: A4 landscape; margin: 10mm 12mm; }
-          body { font-family: "Times New Roman", Times, serif; font-size: 10pt; line-height: 1.35; color: #000; background: #fff; margin: 0; padding: 10px; }
-          .header-tbl { width: 100%; border-collapse: collapse; margin-bottom: 12px; border: 1.5px solid #000; }
-          .header-tbl td { padding: 6px 10px; vertical-align: middle; border: 1px solid #000; }
-          .title { text-align: center; font-size: 13pt; font-weight: bold; text-transform: uppercase; margin: 0; }
-          .sub { text-align: center; font-size: 9pt; font-style: italic; margin-top: 2px; }
-          .meta-tbl { width: 100%; border-collapse: collapse; margin-bottom: 12px; font-size: 9.5pt; border: 1px solid #000; }
-          .meta-tbl td { padding: 5px 8px; border: 1px solid #000; }
-          .plan-tbl { width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 9.5pt; }
-          .plan-tbl th, .plan-tbl td { border: 1px solid #000; padding: 6px; }
-          .plan-tbl th { background-color: #f1f5f9; text-align: center; font-weight: bold; }
-          .sig-tbl { width: 100%; border-collapse: collapse; margin-top: 25px; text-align: center; font-size: 10pt; page-break-inside: avoid; }
-          .sig-tbl td { width: 50%; vertical-align: top; }
-          .footer-note { margin-top: 20px; font-size: 8pt; text-align: center; color: #64748b; border-top: 1px solid #cbd5e1; padding-top: 6px; }
-        </style>
-      </head>
-      <body>
-        <table class="header-tbl">
-          <tr>
-            <td style="width: 25%; text-align: center;">
-              <strong style="font-size: 11pt; color: #047857;">WCERT FSMS</strong><br/>
-              <span style="font-size: 8pt;">ISO 22000:2018 Standard</span>
-            </td>
-            <td style="width: 50%; text-align: center;">
-              <h2 class="title">BẢNG KẾ HOẠCH KIỂM SOÁT MỐI NGUY & ĐIỂM CCP</h2>
-              <div class="sub">(HACCP PLAN - ĐIỀU KHOẢN 8.5.4)</div>
-            </td>
-            <td style="width: 25%; font-size: 8.5pt;">
-              Biểu mẫu: <strong>BM-HACCP-01</strong><br/>
-              Mã kế hoạch: <strong>${p?.plan_code || "HACCP-2026-01"}</strong><br/>
-              Phiên bản: <strong>Ver ${p?.version || "2.1"}</strong>
-            </td>
-          </tr>
-        </table>
-
-        <table class="meta-tbl">
-          <tr>
-            <td style="width: 50%;"><strong>Tên Kế hoạch / Sản phẩm:</strong> ${p?.plan_name || "Chế biến Cá Ngừ"}</td>
-            <td style="width: 50%;"><strong>Phạm vi áp dụng:</strong> Toàn bộ dây chuyền sản xuất & đóng gói</td>
-          </tr>
-          <tr>
-            <td><strong>Đội trưởng Đội HACCP:</strong> ${p?.team_leader || "Nguyễn Văn An"}</td>
-            <td><strong>Lãnh đạo Phê duyệt:</strong> ${p?.approved_by || "Lê Hoàng Quân (Giám đốc)"}</td>
-          </tr>
-        </table>
-
-        <table class="plan-tbl">
-          <thead>
+    if (printPlanType === "MASTER_SUMMARY") {
+      // BÁO CÁO TỔNG HỢP TOÀN NHÀ MÁY (BM-HACCP-MASTER-01)
+      const reportDate = new Date().toLocaleDateString("vi-VN");
+      const html = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Báo Cáo Tổng Hợp Kế Hoạch HACCP - BM-HACCP-MASTER-01</title>
+          <meta charset="utf-8" />
+          <style>
+            @page { size: A4 landscape; margin: 10mm 12mm; }
+            * { box-sizing: border-box; }
+            body { font-family: "Times New Roman", Times, serif; font-size: 10pt; line-height: 1.35; color: #0f172a; background: #fff; margin: 0; padding: 10px; }
+            .header-tbl { width: 100%; border-collapse: collapse; margin-bottom: 12px; border: 1.5px solid #1e293b; }
+            .header-tbl td { padding: 6px 10px; vertical-align: middle; border: 1px solid #1e293b; }
+            .title { text-align: center; font-size: 13.5pt; font-weight: 900; text-transform: uppercase; margin: 0; color: #0f172a; }
+            .sub { text-align: center; font-size: 8.5pt; font-style: italic; margin-top: 2px; color: #475569; }
+            .meta-tbl { width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size: 9pt; border: 1px solid #1e293b; }
+            .meta-tbl td { padding: 5px 8px; border: 1px solid #cbd5e1; }
+            .plan-tbl { width: 100%; max-width: 100%; table-layout: fixed; border-collapse: collapse; margin-bottom: 14px; font-size: 8.5pt; }
+            .plan-tbl th, .plan-tbl td { border: 1px solid #334155; padding: 5px 6px; word-break: break-word; overflow-wrap: break-word; }
+            .plan-tbl th { background-color: #f1f5f9; text-align: center; font-weight: bold; color: #0f172a; }
+            .sig-tbl { width: 100%; border-collapse: collapse; margin-top: 20px; text-align: center; font-size: 9.5pt; page-break-inside: avoid; }
+            .sig-tbl td { width: 50%; vertical-align: top; padding: 6px 12px; }
+            .footer-note { margin-top: 15px; font-size: 8pt; text-align: center; color: #64748b; border-top: 1px solid #cbd5e1; padding-top: 6px; }
+          </style>
+        </head>
+        <body>
+          <table class="header-tbl">
             <tr>
-              <th style="width: 8%;">Mã CCP</th>
-              <th style="width: 14%;">Công đoạn</th>
-              <th style="width: 18%;">Mối nguy kiểm soát</th>
-              <th style="width: 16%;">Giới hạn tới hạn (CL)</th>
-              <th style="width: 18%;">Thủ tục Giám sát</th>
-              <th style="width: 16%;">Hành động Khắc phục</th>
-              <th style="width: 10%;">Trách nhiệm</th>
+              <td style="width: 28%; text-align: left; padding: 6px 10px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <img src="${LOGO_BASE64}" style="height: 46px; width: auto; object-fit: contain;" alt="Logo" />
+                  <div>
+                    <div style="font-weight: 800; font-size: 11px; text-transform: uppercase; color: #0f172a; line-height: 1.25;">CÔNG TY CP CHẾ BIẾN THỰC PHẨM WCERT</div>
+                    <div style="font-size: 8.5pt; color: #475569; margin-top: 2px;">Ban Quản lý CL & ATTP (FSMS)</div>
+                  </div>
+                </div>
+              </td>
+              <td style="width: 48%; text-align: center;">
+                <h1 class="title">BÁO CÁO TỔNG HỢP DANH MỤC KẾ HOẠCH HACCP & TÌNH TRẠNG KIỂM SOÁT</h1>
+                <div class="sub">(HACCP MASTER PLAN SUMMARY - ĐIỀU KHOẢN 8.5.4 & 9.3)</div>
+              </td>
+              <td style="width: 24%; font-size: 8.5pt;">
+                Biểu mẫu: <strong>BM-HACCP-MASTER-01</strong><br/>
+                Tiêu chuẩn: <strong>ISO 22000:2018</strong><br/>
+                Ngày xuất: <strong>${reportDate}</strong><br/>
+                Tổng số: <strong>${plans.length} kế hoạch</strong>
+              </td>
             </tr>
-          </thead>
-          <tbody>
-            ${ccps
-              .map(
-                (c) => `
+          </table>
+
+          <table class="meta-tbl">
+            <tr>
+              <td style="width: 50%;"><strong>Đơn vị báo cáo:</strong> Ban An Toàn Thực Phẩm Nhà Máy WCERT</td>
+              <td style="width: 50%;"><strong>Phạm vi:</strong> Toàn bộ các phân xưởng và dây chuyền chế biến</td>
+            </tr>
+            <tr>
+              <td><strong>Hệ thống quản lý:</strong> ISO 22000:2018 / HACCP</td>
+              <td><strong>Tổng quy mô kiểm soát:</strong> ${steps.length} công đoạn tuần tự • ${steps.filter((s) => s.is_ccp_or_oprp).length + ccps.length} điểm CCP/oPRP</td>
+            </tr>
+          </table>
+
+          <!-- Bảng kế hoạch: các cột cộng lại đúng 100% (4+13+25+15+13+12+6+6+6 = 100%) -->
+          <table class="plan-tbl">
+            <thead>
               <tr>
-                <td style="text-align: center; font-weight: bold; color: #b91c1c;">${c.ccp_code}</td>
-                <td><strong>${c.step_name}</strong></td>
-                <td>${c.hazard_description}</td>
-                <td><strong>${c.critical_limit?.condition_text || "Đạt chuẩn"}</strong></td>
-                <td>${c.monitoring_frequency || "Liên tục"} (${c.monitoring_method || "Đo đạc kiểm tra"})</td>
-                <td>${c.corrective_action_plan || "Cô lập lô, điều chỉnh thiết bị"}</td>
-                <td style="text-align: center;">${c.responsible_role || "KCS / QC Ca"}</td>
+                <th style="width: 4%;">STT</th>
+                <th style="width: 13%;">Mã Kế Hoạch</th>
+                <th style="width: 25%;">Tên Kế Hoạch / Sản Phẩm</th>
+                <th style="width: 15%;">Dây Chuyền Sản Xuất</th>
+                <th style="width: 13%;">Trưởng Ban HACCP</th>
+                <th style="width: 12%;">Quy Mô Kiểm Soát</th>
+                <th style="width: 6%;">Phiên Bản</th>
+                <th style="width: 6%;">Ngày BH</th>
+                <th style="width: 6%;">Trạng Thái</th>
               </tr>
-            `,
-              )
-              .join("")}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              ${
+                plans.length === 0
+                  ? `
+                <tr>
+                  <td colspan="9" style="text-align: center; padding: 18px; color: #64748b; font-style: italic; background: #f8fafc;">
+                    Chưa có kế hoạch HACCP nào được tạo trong hệ thống.
+                  </td>
+                </tr>
+              `
+                  : plans
+                      .map((p, idx) => {
+                        const pSteps = steps.filter((s) => s.plan_id === p.plan_id);
+                        const pCcps = pSteps.filter(
+                          (s) =>
+                            s.is_ccp_or_oprp ||
+                            ccps.some(
+                              (c) => c.process_step_id === s.step_id || c.plan_id === p.plan_id,
+                            ),
+                        );
+                        return `
+                  <tr>
+                    <td style="text-align: center;">${idx + 1}</td>
+                    <td style="font-family: monospace; font-weight: bold; color: #047857; text-align: center;">${p.plan_code}</td>
+                    <td><strong>${p.plan_name}</strong><br/><span style="font-size: 7.5pt; color: #64748b;">${p.scope_description || "Kiểm soát an toàn thực phẩm"}</span></td>
+                    <td>${p.product_line}</td>
+                    <td>${p.team_leader}</td>
+                    <td style="text-align: center; font-weight: bold;">${pSteps.length} công đoạn • <span style="color: #b91c1c;">${pCcps.length} CCP</span></td>
+                    <td style="text-align: center;">Ver ${p.version}</td>
+                    <td style="text-align: center;">${p.effective_date || "15/01/2026"}</td>
+                    <td style="text-align: center; font-weight: bold; color: ${p.status === "APPROVED" || p.status === "ACTIVE" ? "#047857" : "#d97706"};">${p.status}</td>
+                  </tr>
+                `;
+                      })
+                      .join("")
+              }
+            </tbody>
+          </table>
 
-        <div style="border: 1px dashed #047857; background: #f0fdf4; padding: 8px 12px; border-radius: 4px; font-size: 9pt; color: #166534; margin-bottom: 15px;">
-          <strong>✓ THẨM ĐỊNH KHOA HỌC (VALIDATION STUDY):</strong> Giới hạn tới hạn và các biện pháp kiểm soát trên đã được thẩm định dựa trên nghiên cứu khoa học, quy chuẩn kỹ thuật quốc gia QCVN và Codex CAC/RCP 1-1969 trước khi áp dụng vào thực tế sản xuất.
-        </div>
+          <div style="border: 1px solid #047857; background: #f0fdf4; padding: 7px 12px; border-radius: 4px; font-size: 8.5pt; color: #166534; margin-bottom: 12px;">
+            <strong>✓ CAM KẾT VẬN HÀNH:</strong> Tất cả các kế hoạch HACCP trên đã được phê duyệt và thẩm tra hiệu lực định kỳ theo quy trình kiểm soát mối nguy ISO 22000:2018 Điều khoản 8.5.4.
+          </div>
 
-        <table class="sig-tbl">
-          <tr>
-            <td>
-              <strong>ĐỘI TRƯỞNG HACCP</strong><br/>
-              <i>(Ký và ghi rõ họ tên)</i><br/><br/><br/><br/>
-              <strong>${p?.team_leader || "Nguyễn Văn An"}</strong>
-            </td>
-            <td>
-              <strong>GIÁM ĐỐC NHÀ MÁY PHÊ DUYỆT</strong><br/>
-              <i>(Ký tên & đóng dấu)</i><br/><br/><br/><br/>
-              <strong>${p?.approved_by || "Lê Hoàng Quân"}</strong>
-            </td>
-          </tr>
-        </table>
+          <table class="sig-tbl">
+            <tr>
+              <td>
+                <strong>ĐỘI TRƯỞNG ĐỘI HACCP</strong><br/>
+                <i>(Ký và ghi rõ họ tên)</i><br/><br/><br/><br/>
+                <strong>${plans[0]?.team_leader || "Trưởng Ban ATTP"}</strong>
+              </td>
+              <td>
+                <strong>GIÁM ĐỐC NHÀ MÁY PHÊ DUYỆT</strong><br/>
+                <i>(Ký tên & đóng dấu)</i><br/><br/><br/><br/>
+                <strong>${plans[0]?.approved_by || "Lê Hoàng Quân"}</strong>
+              </td>
+            </tr>
+          </table>
 
-        <div class="footer-note">
-          WCERT FSMS • HỆ THỐNG QUẢN LÝ AN TOÀN THỰC PHẨM THEO TIÊU CHUẨN QUỐC TẾ ISO 22000:2018
-        </div>
-      </body>
-      </html>
-    `;
-    printHtml(html);
+          <div class="footer-note">
+            WCERT FSMS • HỆ THỐNG QUẢN LÝ AN TOÀN THỰC PHẨM THEO TIÊU CHUẨN QUỐC TẾ ISO 22000:2018 (BM-HACCP-MASTER-01)
+          </div>
+        </body>
+        </html>
+      `;
+      printHtml(html, `Bao_Cao_Tong_Hop_Ke_Hoach_HACCP_Master.pdf`, "landscape");
+    } else {
+      // KẾ HOẠCH CHI TIẾT TỪNG DÂY CHUYỀN (BM-HACCP-01)
+      const p = selectedPrintPlan || currentPlan || plans[0];
+      if (!p) {
+        toast.error("Vui lòng chọn một kế hoạch HACCP cụ thể để xuất file");
+        return;
+      }
+      const planSteps = steps
+        .filter((s) => s.plan_id === p.plan_id)
+        .sort((a, b) => a.step_number - b.step_number);
+
+      const html = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Kế Hoạch HACCP - ${p.plan_code}</title>
+          <meta charset="utf-8" />
+          <style>
+            @page { size: A4 landscape; margin: 10mm 12mm; }
+            * { box-sizing: border-box; }
+            body { font-family: "Times New Roman", Times, serif; font-size: 9.5pt; line-height: 1.35; color: #0f172a; background: #fff; margin: 0; padding: 10px; }
+            .header-tbl { width: 100%; border-collapse: collapse; margin-bottom: 12px; border: 1.5px solid #1e293b; }
+            .header-tbl td { padding: 6px 10px; vertical-align: middle; border: 1px solid #1e293b; }
+            .title { text-align: center; font-size: 13.5pt; font-weight: 900; text-transform: uppercase; margin: 0; color: #0f172a; }
+            .sub { text-align: center; font-size: 8.5pt; font-style: italic; margin-top: 2px; color: #475569; }
+            .meta-tbl { width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size: 9pt; border: 1px solid #1e293b; }
+            .meta-tbl td { padding: 5px 8px; border: 1px solid #cbd5e1; }
+            .plan-tbl { width: 100%; max-width: 100%; table-layout: fixed; border-collapse: collapse; margin-bottom: 12px; font-size: 8.5pt; }
+            .plan-tbl th, .plan-tbl td { border: 1px solid #334155; padding: 5px 6px; word-break: break-word; overflow-wrap: break-word; }
+            .plan-tbl th { background-color: #f1f5f9; text-align: center; font-weight: bold; color: #0f172a; }
+            .badge-ccp { display: inline-block; padding: 2px 6px; font-weight: bold; border-radius: 3px; background-color: #fee2e2; color: #991b1b; border: 1px solid #f87171; font-size: 7.5pt; }
+            .badge-prp { display: inline-block; padding: 2px 6px; font-weight: bold; border-radius: 3px; background-color: #ecfdf5; color: #065f46; border: 1px solid #6ee7b7; font-size: 7.5pt; }
+            .sig-tbl { width: 100%; border-collapse: collapse; margin-top: 20px; text-align: center; font-size: 9.5pt; page-break-inside: avoid; }
+            .sig-tbl td { width: 50%; vertical-align: top; padding: 6px 12px; }
+            .validation-box { border: 1px solid #0f766e; background: #f0fdf4; padding: 7px 12px; border-radius: 4px; font-size: 8.5pt; color: #115e59; margin-bottom: 12px; }
+            .footer-note { margin-top: 15px; font-size: 8pt; text-align: center; color: #64748b; border-top: 1px solid #cbd5e1; padding-top: 6px; }
+          </style>
+        </head>
+        <body>
+          <table class="header-tbl">
+            <tr>
+              <td style="width: 28%; text-align: left; padding: 6px 10px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <img src="${LOGO_BASE64}" style="height: 46px; width: auto; object-fit: contain;" alt="Logo" />
+                  <div>
+                    <div style="font-weight: 800; font-size: 11px; text-transform: uppercase; color: #0f172a; line-height: 1.25;">CÔNG TY CP CHẾ BIẾN THỰC PHẨM WCERT</div>
+                    <div style="font-size: 8.5pt; color: #475569; margin-top: 2px;">Ban Quản lý CL & ATTP (FSMS)</div>
+                  </div>
+                </div>
+              </td>
+              <td style="width: 48%; text-align: center;">
+                <h1 class="title">BẢNG KẾ HOẠCH KIỂM SOÁT MỐI NGUY & ĐIỂM CCP</h1>
+                <div class="sub">(HACCP PLAN - ĐIỀU KHOẢN 8.5.4)</div>
+              </td>
+              <td style="width: 24%; font-size: 8.5pt;">
+                Biểu mẫu: <strong>BM-HACCP-01</strong><br/>
+                Mã kế hoạch: <strong>${p.plan_code}</strong><br/>
+                Phiên bản: <strong>Ver ${p.version}</strong>
+              </td>
+            </tr>
+          </table>
+
+          <table class="meta-tbl">
+            <tr>
+              <td style="width: 50%;"><strong>Tên Kế hoạch / Sản phẩm:</strong> ${p.plan_name}</td>
+              <td style="width: 50%;"><strong>Dây chuyền áp dụng:</strong> ${p.product_line}</td>
+            </tr>
+            <tr>
+              <td><strong>Đội trưởng Đội HACCP:</strong> ${p.team_leader}</td>
+              <td><strong>Lãnh đạo Phê duyệt:</strong> ${p.approved_by || "Lê Hoàng Quân (Giám đốc)"}</td>
+            </tr>
+            <tr>
+              <td><strong>Ngày ban hành / Hiệu lực:</strong> ${p.effective_date || "15/01/2026"}</td>
+              <td><strong>Phạm vi kiểm soát:</strong> ${p.scope_description || "Toàn bộ dây chuyền sản xuất từ tiếp nhận nguyên liệu đến thành phẩm đóng gói"}</td>
+            </tr>
+          </table>
+
+          <!-- Bảng chi tiết: các cột cộng lại đúng 100% (8+15+6+18+17+15+13+8 = 100%) -->
+          <table class="plan-tbl">
+            <thead>
+              <tr>
+                <th style="width: 8%;">Mã CCP</th>
+                <th style="width: 15%;">Công đoạn Lưu đồ</th>
+                <th style="width: 6%;">Phân loại</th>
+                <th style="width: 18%;">Mối nguy kiểm soát</th>
+                <th style="width: 17%;">Giới hạn kiểm soát (CL)</th>
+                <th style="width: 15%;">Thủ tục Giám sát</th>
+                <th style="width: 13%;">Hành động Khắc phục</th>
+                <th style="width: 8%;">Trách nhiệm</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${
+                planSteps.length === 0
+                  ? `
+                <tr>
+                  <td colspan="8" style="text-align: center; padding: 22px; color: #475569; background: #f8fafc; font-size: 9.5pt;">
+                    <strong>Kế hoạch [${p.plan_code}] chưa có công đoạn nào được thiết lập trong lưu đồ.</strong><br/>
+                    <span style="font-size: 8.5pt; color: #64748b;">(Vui lòng thêm các công đoạn sản xuất vào lưu đồ quy trình để hệ thống tự động đồng bộ sang bảng kiểm soát mối nguy chi tiết).</span>
+                  </td>
+                </tr>
+              `
+                  : planSteps
+                      .map((s) => {
+                        const ccpDef = ccps.find(
+                          (c) =>
+                            c.process_step_id === s.step_id ||
+                            (c.plan_id === p.plan_id &&
+                              c.name?.toLowerCase().includes(s.step_name.toLowerCase())),
+                        );
+                        const stepHazards = hazards.filter((h) => h.step_id === s.step_id);
+                        const isCCP = s.is_ccp_or_oprp || !!ccpDef;
+                        const classification = isCCP
+                          ? "CCP"
+                          : stepHazards.some((h) => h.classification === "OPRP")
+                            ? "oPRP"
+                            : "PRP";
+                        const code = ccpDef
+                          ? ccpDef.ccp_code
+                          : isCCP
+                            ? `CCP-${String(s.step_number).padStart(2, "0")}`
+                            : `PRP-${String(s.step_number).padStart(2, "0")}`;
+                        const hazardText =
+                          stepHazards.length > 0
+                            ? stepHazards
+                                .map((h) => `[${h.hazard_type || "Mối nguy"}] ${h.hazard_name}`)
+                                .join("<br/>")
+                            : isCCP
+                              ? "Mối nguy sinh học / Vi sinh vật gây bệnh / Dị vật kim loại"
+                              : "Mối nguy tạp nhiễm chéo từ môi trường & vệ sinh cá nhân";
+                        const limitText =
+                          ccpDef?.critical_limit?.condition_text ||
+                          (isCCP
+                            ? s.description || "Tuân thủ giới hạn an toàn kỹ thuật theo QCVN/TCVN"
+                            : "Tuân thủ quy trình SOP & Chương trình tiên quyết ISO/TS 22002-1");
+                        const monitoringText = ccpDef?.monitoring_frequency
+                          ? `${ccpDef.monitoring_frequency} • ${ccpDef.monitoring_method}`
+                          : isCCP
+                            ? "Mỗi mẻ / Giám sát liên tục bằng thiết bị đo kiểm"
+                            : "Kiểm tra cảm quan & checklist định kỳ";
+                        const correctiveText =
+                          ccpDef?.corrective_action_plan ||
+                          (isCCP
+                            ? "Cô lập lô hàng nghi ngờ, hiệu chỉnh thiết bị và báo cáo Trưởng ban HACCP"
+                            : "Dừng thao tác, tái vệ sinh khu vực");
+                        const responsibleText =
+                          ccpDef?.responsible_role ||
+                          s.role ||
+                          (isCCP ? "QC & Trưởng ca" : "Vận hành & Tổ trưởng");
+
+                        return `
+                  <tr style="${isCCP ? "background-color: #fff1f2;" : ""}">
+                    <td style="text-align: center; font-weight: bold; font-family: monospace; color: ${isCCP ? "#b91c1c" : "#047857"};">${code}</td>
+                    <td><strong>Bước ${s.step_number}: ${s.step_name}</strong></td>
+                    <td style="text-align: center;"><span class="${isCCP ? "badge-ccp" : "badge-prp"}">${classification}</span></td>
+                    <td>${hazardText}</td>
+                    <td><strong>${limitText}</strong></td>
+                    <td>${monitoringText}</td>
+                    <td>${correctiveText}</td>
+                    <td style="text-align: center;">${responsibleText}</td>
+                  </tr>
+                `;
+                      })
+                      .join("")
+              }
+            </tbody>
+          </table>
+
+          <div class="validation-box">
+            <strong>✓ THẨM ĐỊNH KHOA HỌC (VALIDATION STUDY):</strong> Giới hạn tới hạn và các biện pháp kiểm soát trên đã được thẩm định dựa trên nghiên cứu khoa học, quy chuẩn kỹ thuật quốc gia QCVN và tiêu chuẩn ISO 22000 trước khi áp dụng vào thực tế sản xuất.
+          </div>
+
+          <table class="sig-tbl">
+            <tr>
+              <td>
+                <strong>ĐỘI TRƯỞNG HACCP</strong><br/>
+                <i>(Ký và ghi rõ họ tên)</i><br/><br/><br/><br/>
+                <strong>${p.team_leader}</strong>
+              </td>
+              <td>
+                <strong>GIÁM ĐỐC NHÀ MÁY PHÊ DUYỆT</strong><br/>
+                <i>(Ký tên & đóng dấu)</i><br/><br/><br/><br/>
+                <strong>${p.approved_by || "Lê Hoàng Quân"}</strong>
+              </td>
+            </tr>
+          </table>
+
+          <div class="footer-note">
+            WCERT FSMS • HỆ THỐNG QUẢN LÝ AN TOÀN THỰC PHẨM THEO TIÊU CHUẨN QUỐC TẾ ISO 22000:2018 (BM-HACCP-01)
+          </div>
+        </body>
+        </html>
+      `;
+      printHtml(html, `Ke_Hoach_HACCP_${p.plan_code}.pdf`, "landscape");
+    }
   };
 
   const handlePrintCCPLogs = () => {
+    let targetLogs = logs;
+    let scopeText = "Toàn bộ dây chuyền sản xuất nhà máy";
+    if (logFilterPlanId !== "ALL") {
+      const p = plans.find((x) => x.plan_id === logFilterPlanId);
+      if (p) {
+        scopeText = `Kế hoạch [${p.plan_code}] ${p.plan_name} (${p.product_line})`;
+        const pStepIds = new Set(
+          steps.filter((s) => s.plan_id === p.plan_id).map((s) => s.step_id),
+        );
+        const pCcpCodes = new Set(
+          ccps
+            .filter(
+              (c) =>
+                c.plan_id === p.plan_id || (c.process_step_id && pStepIds.has(c.process_step_id)),
+            )
+            .map((c) => c.ccp_code),
+        );
+        targetLogs = logs.filter((l) => Boolean(l.ccp_code && pCcpCodes.has(l.ccp_code)));
+      }
+    }
+
     const html = `
       <!DOCTYPE html>
       <html>
@@ -1004,38 +1269,50 @@ function HACCPModule() {
         <meta charset="utf-8" />
         <style>
           @page { size: A4 landscape; margin: 10mm 12mm; }
-          body { font-family: "Times New Roman", Times, serif; font-size: 10pt; line-height: 1.35; color: #000; background: #fff; margin: 0; padding: 10px; }
-          .header-tbl { width: 100%; border-collapse: collapse; margin-bottom: 12px; border: 1.5px solid #000; }
-          .header-tbl td { padding: 6px 10px; vertical-align: middle; border: 1px solid #000; }
-          .title { text-align: center; font-size: 13pt; font-weight: bold; text-transform: uppercase; margin: 0; }
-          .sub { text-align: center; font-size: 9pt; font-style: italic; margin-top: 2px; }
-          .log-tbl { width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 9.5pt; }
-          .log-tbl th, .log-tbl td { border: 1px solid #000; padding: 6px; }
-          .log-tbl th { background-color: #f1f5f9; text-align: center; font-weight: bold; }
-          .sig-tbl { width: 100%; border-collapse: collapse; margin-top: 25px; text-align: center; font-size: 10pt; page-break-inside: avoid; }
-          .sig-tbl td { width: 50%; vertical-align: top; }
-          .footer-note { margin-top: 20px; font-size: 8pt; text-align: center; color: #64748b; border-top: 1px solid #cbd5e1; padding-top: 6px; }
+          * { box-sizing: border-box; }
+          body { font-family: "Times New Roman", Times, serif; font-size: 10pt; line-height: 1.35; color: #0f172a; background: #fff; margin: 0; padding: 10px; }
+          .header-tbl { width: 100%; border-collapse: collapse; margin-bottom: 12px; border: 1.5px solid #1e293b; }
+          .header-tbl td { padding: 6px 10px; vertical-align: middle; border: 1px solid #1e293b; }
+          .title { text-align: center; font-size: 13.5pt; font-weight: 900; text-transform: uppercase; margin: 0; color: #0f172a; }
+          .sub { text-align: center; font-size: 8.5pt; font-style: italic; margin-top: 2px; color: #475569; }
+          .log-tbl { width: 100%; max-width: 100%; table-layout: fixed; border-collapse: collapse; margin-bottom: 14px; font-size: 9pt; }
+          .log-tbl th, .log-tbl td { border: 1px solid #334155; padding: 5px 6px; word-break: break-word; overflow-wrap: break-word; }
+          .log-tbl th { background-color: #f1f5f9; text-align: center; font-weight: bold; color: #0f172a; }
+          .sig-tbl { width: 100%; border-collapse: collapse; margin-top: 20px; text-align: center; font-size: 9.5pt; page-break-inside: avoid; }
+          .sig-tbl td { width: 50%; vertical-align: top; padding: 6px 12px; }
+          .footer-note { margin-top: 15px; font-size: 8pt; text-align: center; color: #64748b; border-top: 1px solid #cbd5e1; padding-top: 6px; }
         </style>
       </head>
       <body>
         <table class="header-tbl">
           <tr>
-            <td style="width: 25%; text-align: center;">
-              <strong style="font-size: 11pt; color: #047857;">WCERT FSMS</strong><br/>
-              <span style="font-size: 8pt;">ISO 22000:2018 Standard</span>
+            <td style="width: 28%; text-align: left; padding: 6px 10px;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <img src="${LOGO_BASE64}" style="height: 46px; width: auto; object-fit: contain;" alt="Logo" />
+                <div>
+                  <div style="font-weight: 800; font-size: 11px; text-transform: uppercase; color: #0f172a; line-height: 1.25;">CÔNG TY CP CHẾ BIẾN THỰC PHẨM WCERT</div>
+                  <div style="font-size: 8.5pt; color: #475569; margin-top: 2px;">Ban Quản lý CL & ATTP (FSMS)</div>
+                </div>
+              </div>
             </td>
-            <td style="width: 50%; text-align: center;">
-              <h2 class="title">NHẬT KÝ GIÁM SÁT ĐIỂM KIỂM SOÁT TỚI HẠN CCP</h2>
+            <td style="width: 48%; text-align: center;">
+              <h1 class="title">NHẬT KÝ THEO DÕI ĐO ĐẠC ĐIỂM KIỂM SOÁT TỚI HẠN CCP</h1>
               <div class="sub">(THEO DÕI THÔNG SỐ ĐO ĐẠC THEO CA VẬN HÀNH)</div>
             </td>
-            <td style="width: 25%; font-size: 8.5pt;">
+            <td style="width: 24%; font-size: 8.5pt;">
               Biểu mẫu: <strong>BM-CCP-LOG-01</strong><br/>
-              Ngày in: <strong>${new Date().toLocaleDateString("vi-VN")}</strong><br/>
-              Số bản ghi: <strong>${logs.length} bản ghi</strong>
+              Tiêu chuẩn: <strong>ISO 22000:2018</strong><br/>
+              Ngày xuất: <strong>${new Date().toLocaleDateString("vi-VN")}</strong><br/>
+              Số bản ghi: <strong>${targetLogs.length} bản ghi</strong>
             </td>
           </tr>
         </table>
 
+        <div style="margin-bottom: 10px; font-size: 9.5pt;">
+          <strong>Phạm vi giám sát:</strong> ${scopeText}
+        </div>
+
+        <!-- Bảng nhật ký: các cột cộng lại đúng 100% (10+15+15+15+18+12+15 = 100%) -->
         <table class="log-tbl">
           <thead>
             <tr>
@@ -1049,23 +1326,34 @@ function HACCPModule() {
             </tr>
           </thead>
           <tbody>
-            ${logs
-              .map(
-                (l) => `
+            ${
+              targetLogs.length === 0
+                ? `
+              <tr>
+                <td colspan="7" style="text-align: center; padding: 22px; color: #475569; background: #f8fafc; font-size: 9.5pt;">
+                  <strong>Chưa có bản ghi giám sát đo đạc CCP nào được ghi nhận trong kỳ báo cáo này.</strong><br/>
+                  <span style="font-size: 8.5pt; color: #64748b;">(Nhân viên QC/KCS ghi nhận thông số giám sát nhiệt độ, thời gian, kích thước mẫu thử... theo từng mẻ sản xuất bằng nút "Ghi Nhận Đo Đạc CCP" tại màn hình chính).</span>
+                </td>
+              </tr>
+            `
+                : targetLogs
+                    .map(
+                      (l) => `
               <tr>
                 <td style="text-align: center; font-weight: bold; color: #b91c1c;">${l.ccp_code}</td>
                 <td style="font-family: monospace; font-weight: bold;">${l.batch_number}</td>
                 <td style="text-align: center;">${l.test_time || "Hôm nay"}</td>
                 <td style="text-align: center; font-weight: bold;">${l.measured_value} ${l.unit}</td>
                 <td>${l.critical_limit_text || "Tiêu chuẩn"}</td>
-                <td style="text-align: center; font-weight: bold; color: ${l.status === "PASS" || l.status === "PASSED" ? "#047857" : "#b91c1c"};">
-                  ${l.status === "PASS" || l.status === "PASSED" ? "✓ ĐẠT" : "✕ KHÔNG ĐẠT"}
+                <td style="text-align: center; font-weight: bold; color: ${l.status === "PASS" || l.status === "PASSED" || l.status === "NORMAL" ? "#047857" : "#b91c1c"};">
+                  ${l.status === "PASS" || l.status === "PASSED" || l.status === "NORMAL" ? "✓ ĐẠT" : "✕ KHÔNG ĐẠT"}
                 </td>
                 <td>${l.inspector_name || "QC Ca"}</td>
               </tr>
             `,
-              )
-              .join("")}
+                    )
+                    .join("")
+            }
           </tbody>
         </table>
 
@@ -1079,18 +1367,18 @@ function HACCPModule() {
             <td>
               <strong>TRƯỞNG BAN HACCP / QUẢN ĐỐC XƯỞNG</strong><br/>
               <i>(Ký duyệt kiểm tra cuối ca)</i><br/><br/><br/><br/>
-              <strong>${currentPlan?.team_leader || "Đội Trưởng HACCP"}</strong>
+              <strong>${plans[0]?.team_leader || "Đội Trưởng HACCP"}</strong>
             </td>
           </tr>
         </table>
 
         <div class="footer-note">
-          WCERT FSMS • HỆ THỐNG QUẢN LÝ AN TOÀN THỰC PHẨM THEO TIÊU CHUẨN QUỐC TẾ ISO 22000:2018
+          WCERT FSMS • HỆ THỐNG QUẢN LÝ AN TOÀN THỰC PHẨM THEO TIÊU CHUẨN QUỐC TẾ ISO 22000:2018 (BM-CCP-LOG-01)
         </div>
       </body>
       </html>
     `;
-    printHtml(html);
+    printHtml(html, "Nhat_Ky_Do_Dac_CCP_BM-CCP-LOG-01.pdf", "landscape");
   };
 
   useEffect(() => {
@@ -1113,7 +1401,8 @@ function HACCPModule() {
 
   // Filtered steps by selected plan
   const filteredSteps = useMemo(() => {
-    const list = selectedPlanId === "ALL" ? steps : steps.filter((s) => s.plan_id === selectedPlanId);
+    const list =
+      selectedPlanId === "ALL" ? steps : steps.filter((s) => s.plan_id === selectedPlanId);
     return [...list].sort((a, b) => (a.step_number || 0) - (b.step_number || 0));
   }, [steps, selectedPlanId]);
 
@@ -1717,8 +2006,7 @@ function HACCPModule() {
   const handleOpenCreateStep = (targetPlanId?: string) => {
     setEditingStep(null);
     const chosenPlanId =
-      targetPlanId ||
-      (selectedPlanId !== "ALL" ? selectedPlanId : plans[0]?.plan_id || "");
+      targetPlanId || (selectedPlanId !== "ALL" ? selectedPlanId : plans[0]?.plan_id || "");
     const targetPlan = plans.find((p) => p.plan_id === chosenPlanId) || plans[0] || null;
     const planSteps = steps.filter((s) => s.plan_id === chosenPlanId);
 
@@ -1728,6 +2016,7 @@ function HACCPModule() {
       step_name: "",
       product_line: targetPlan?.product_line || "Chế biến Thủy hải sản",
       description: "",
+      role: "",
       is_ccp_or_oprp: false,
     });
     setShowStepModal(true);
@@ -1741,6 +2030,7 @@ function HACCPModule() {
       step_name: step.step_name,
       product_line: step.product_line,
       description: step.description || "",
+      role: step.role || "",
       is_ccp_or_oprp: step.is_ccp_or_oprp,
     });
     setShowStepModal(true);
@@ -2276,7 +2566,7 @@ function HACCPModule() {
       {/* Page Header */}
       <PageHeader
         title="Quản Lý Kế Hoạch HACCP, Mối Nguy & Giám Sát CCP"
-        description="Hệ thống xây dựng Kế hoạch HACCP, lưu đồ công đoạn tuần tự, ma trận phân tích mối nguy Codex Q1-Q4 và giám sát đo đạc thời gian thực."
+        description="Hệ thống xây dựng Kế hoạch HACCP, lưu đồ công đoạn tuần tự, ma trận phân tích mối nguy Q1-Q4 và giám sát đo đạc thời gian thực."
         actions={
           <div className="flex flex-wrap items-center gap-2">
             <Button
@@ -2290,18 +2580,33 @@ function HACCPModule() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setShowPrintPlanModal(true)}
+              onClick={() => {
+                if (selectedPlanId !== "ALL") {
+                  setSelectedPrintPlan(currentPlan);
+                  setPrintPlanType("SINGLE_PLAN");
+                } else {
+                  setSelectedPrintPlan(plans[0] || null);
+                  setPrintPlanType("MASTER_SUMMARY");
+                }
+                setShowPrintPlanModal(true);
+              }}
               className="text-xs border border-slate-300 bg-white text-slate-800 hover:bg-slate-900 hover:text-white hover:border-slate-900 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700 font-semibold shadow-sm transition-all duration-150"
             >
-              <Printer className="h-3.5 w-3.5 mr-1.5 transition-colors" /> In Kế Hoạch HACCP
+              <FileDown className="h-3.5 w-3.5 mr-1.5 transition-colors" />{" "}
+              {selectedPlanId !== "ALL"
+                ? `Xuất PDF Kế Hoạch (${currentPlan?.plan_code || "BM-01"})`
+                : "Xuất PDF Kế Hoạch HACCP"}
             </Button>
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setShowPrintLogModal(true)}
+              onClick={() => {
+                setLogFilterPlanId(selectedPlanId !== "ALL" ? selectedPlanId : "ALL");
+                setShowPrintLogModal(true);
+              }}
               className="text-xs border border-slate-300 bg-white text-slate-800 hover:bg-slate-900 hover:text-white hover:border-slate-900 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700 font-semibold shadow-sm transition-all duration-150"
             >
-              <Printer className="h-3.5 w-3.5 mr-1.5 transition-colors" /> In Nhật Ký Đo Đạc
+              <FileDown className="h-3.5 w-3.5 mr-1.5 transition-colors" /> Xuất PDF Nhật Ký Đo Đạc
             </Button>
             <Button
               size="sm"
@@ -2332,7 +2637,9 @@ function HACCPModule() {
               {stats?.active_ccps ?? 4} Hoạt động 100%
             </span>
           </div>
-          <p className="mt-1 text-xs text-slate-700 font-medium">Bao quát toàn bộ lưu đồ chế biến</p>
+          <p className="mt-1 text-xs text-slate-700 font-medium">
+            Bao quát toàn bộ lưu đồ chế biến
+          </p>
         </div>
 
         {/* Card 2 */}
@@ -2409,7 +2716,11 @@ function HACCPModule() {
           {/* Nhóm 1: Kế Hoạch & Thiết Kế HACCP */}
           <button
             onClick={() => {
-              if (activeTab !== "flowchart" && activeTab !== "ccp_plan" && activeTab !== "hazards") {
+              if (
+                activeTab !== "flowchart" &&
+                activeTab !== "ccp_plan" &&
+                activeTab !== "hazards"
+              ) {
                 setActiveTab("flowchart");
               }
             }}
@@ -2491,7 +2802,9 @@ function HACCPModule() {
           >
             <Sparkles className="h-4 w-4 shrink-0" />
             <span>Trợ Lý AI HACCP</span>
-            <span className={`px-2 py-0.5 rounded-full text-[10px] uppercase font-extrabold ${activeTab === "ai" ? "bg-white/20 text-white" : "bg-purple-100 text-purple-800 dark:bg-purple-900/60 dark:text-purple-300"}`}>
+            <span
+              className={`px-2 py-0.5 rounded-full text-[10px] uppercase font-extrabold ${activeTab === "ai" ? "bg-white/20 text-white" : "bg-purple-100 text-purple-800 dark:bg-purple-900/60 dark:text-purple-300"}`}
+            >
               AI Pro
             </span>
           </button>
@@ -2559,7 +2872,10 @@ function HACCPModule() {
               }`}
             >
               <ScanLine className="h-3.5 w-3.5" />
-              <span>2. Kiểm Soát Quá Trình (IPQC) & Máy Dò ({metalDetectorLogs.length + inProcessLogs.length})</span>
+              <span>
+                2. Kiểm Soát Quá Trình (IPQC) & Máy Dò (
+                {metalDetectorLogs.length + inProcessLogs.length})
+              </span>
             </button>
           </div>
         )}
@@ -2617,8 +2933,8 @@ function HACCPModule() {
                       onClick={handlePrintHaccpPlan}
                       className="border border-slate-300 bg-white text-slate-800 hover:bg-slate-900 hover:text-white hover:border-slate-900 text-xs font-semibold flex items-center gap-1.5 shadow-sm transition-all duration-150 group"
                     >
-                      <Printer className="w-3.5 h-3.5 text-slate-500 group-hover:text-white transition-colors" />
-                      In Kế Hoạch
+                      <FileDown className="w-3.5 h-3.5 text-slate-500 group-hover:text-white transition-colors" />
+                      Xuất PDF Kế Hoạch
                     </Button>
                     <Button
                       size="sm"
@@ -2749,8 +3065,8 @@ function HACCPModule() {
                                       p.status === "APPROVED"
                                         ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
                                         : p.status === "ACTIVE"
-                                        ? "bg-blue-100 text-blue-800 border border-blue-300"
-                                        : "bg-amber-100 text-amber-800 border border-amber-300"
+                                          ? "bg-blue-100 text-blue-800 border border-blue-300"
+                                          : "bg-amber-100 text-amber-800 border border-amber-300"
                                     }`}
                                   >
                                     {p.status}
@@ -2785,25 +3101,33 @@ function HACCPModule() {
 
                             <div className="grid grid-cols-2 gap-2 text-[11px] bg-slate-100/70 p-2.5 rounded-lg border border-slate-200 mt-3">
                               <div>
-                                <span className="text-slate-700 font-bold block text-[11px]">Dây chuyền:</span>
+                                <span className="text-slate-700 font-bold block text-[11px]">
+                                  Dây chuyền:
+                                </span>
                                 <span className="font-black text-slate-900 truncate block">
                                   {p.product_line}
                                 </span>
                               </div>
                               <div>
-                                <span className="text-slate-700 font-bold block text-[11px]">Trưởng ban HACCP:</span>
+                                <span className="text-slate-700 font-bold block text-[11px]">
+                                  Trưởng ban HACCP:
+                                </span>
                                 <span className="font-black text-slate-900 truncate block">
                                   {p.team_leader}
                                 </span>
                               </div>
                               <div>
-                                <span className="text-slate-700 font-bold block text-[11px]">Ngày ban hành:</span>
+                                <span className="text-slate-700 font-bold block text-[11px]">
+                                  Ngày ban hành:
+                                </span>
                                 <span className="font-bold text-slate-900 block">
                                   {p.effective_date || "15/01/2026"}
                                 </span>
                               </div>
                               <div>
-                                <span className="text-slate-700 font-bold block text-[11px]">Quy mô kiểm soát:</span>
+                                <span className="text-slate-700 font-bold block text-[11px]">
+                                  Quy mô kiểm soát:
+                                </span>
                                 <span className="font-black text-emerald-800 block">
                                   {pSteps.length} công đoạn • {pCcps.length} CCP
                                 </span>
@@ -2816,6 +3140,20 @@ function HACCPModule() {
                               {p.scope_description || "Kế hoạch kiểm soát HACCP chuẩn"}
                             </span>
                             <div className="flex items-center gap-1.5 shrink-0">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  setSelectedPrintPlan(p);
+                                  setPrintPlanType("SINGLE_PLAN");
+                                  setShowPrintPlanModal(true);
+                                }}
+                                className="h-7 px-2 text-[11px] border-emerald-400 bg-emerald-50 text-emerald-800 hover:bg-emerald-600 hover:text-white font-bold flex items-center gap-1 shadow-xs transition-colors"
+                                title="Xuất file PDF Kế hoạch HACCP (BM-HACCP-01) cho dây chuyền này"
+                              >
+                                <FileDown className="w-3 h-3" />
+                                Xuất PDF
+                              </Button>
                               <Button
                                 size="sm"
                                 variant="outline"
@@ -2860,8 +3198,12 @@ function HACCPModule() {
                           return (
                             <tr key={p.plan_id} className="hover:bg-slate-50/90 transition-colors">
                               <td className="py-3 px-3">
-                                <div className="font-mono font-black text-emerald-800">{p.plan_code}</div>
-                                <div className="text-[11px] text-slate-600 font-bold">Ver {p.version}</div>
+                                <div className="font-mono font-black text-emerald-800">
+                                  {p.plan_code}
+                                </div>
+                                <div className="text-[11px] text-slate-600 font-bold">
+                                  Ver {p.version}
+                                </div>
                               </td>
                               <td className="py-3 px-3">
                                 <div className="font-black text-slate-900">{p.plan_name}</div>
@@ -2869,8 +3211,12 @@ function HACCPModule() {
                                   {p.scope_description || "Kế hoạch kiểm soát an toàn"}
                                 </div>
                               </td>
-                              <td className="py-3 px-3 font-bold text-slate-900">{p.product_line}</td>
-                              <td className="py-3 px-3 text-slate-800 font-medium">{p.team_leader}</td>
+                              <td className="py-3 px-3 font-bold text-slate-900">
+                                {p.product_line}
+                              </td>
+                              <td className="py-3 px-3 text-slate-800 font-medium">
+                                {p.team_leader}
+                              </td>
                               <td className="py-3 px-3 text-center">
                                 <span className="inline-block px-2.5 py-0.5 rounded bg-emerald-50 text-emerald-900 font-black text-[11px] border border-emerald-300">
                                   {pSteps.length} bước • {pCcps.length} CCP
@@ -2882,8 +3228,8 @@ function HACCPModule() {
                                     p.status === "APPROVED"
                                       ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
                                       : p.status === "ACTIVE"
-                                      ? "bg-blue-100 text-blue-800 border border-blue-300"
-                                      : "bg-amber-100 text-amber-800 border border-amber-300"
+                                        ? "bg-blue-100 text-blue-800 border border-blue-300"
+                                        : "bg-amber-100 text-amber-800 border border-amber-300"
                                   }`}
                                 >
                                   {p.status}
@@ -2891,6 +3237,20 @@ function HACCPModule() {
                               </td>
                               <td className="py-3 px-3 text-right">
                                 <div className="flex items-center justify-end gap-1.5">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => {
+                                      setSelectedPrintPlan(p);
+                                      setPrintPlanType("SINGLE_PLAN");
+                                      setShowPrintPlanModal(true);
+                                    }}
+                                    className="h-7 px-2 text-[11px] border-emerald-400 bg-emerald-50 text-emerald-800 hover:bg-emerald-600 hover:text-white font-bold flex items-center gap-1 shadow-xs transition-colors"
+                                    title="Xuất file PDF Kế hoạch HACCP (BM-HACCP-01)"
+                                  >
+                                    <FileDown className="w-3 h-3 mr-0.5" />
+                                    PDF
+                                  </Button>
                                   <Button
                                     size="sm"
                                     variant="outline"
@@ -2949,14 +3309,29 @@ function HACCPModule() {
                       {currentPlan.plan_code} - {currentPlan.plan_name}
                     </span>
                   </div>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => setSelectedPlanId("ALL")}
-                    className="text-xs text-slate-700 hover:text-slate-900 font-bold flex items-center gap-1 h-7 px-2"
-                  >
-                    ← Quay lại xem tất cả kế hoạch
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        setSelectedPrintPlan(currentPlan);
+                        setPrintPlanType("SINGLE_PLAN");
+                        setShowPrintPlanModal(true);
+                      }}
+                      className="text-xs bg-emerald-700 hover:bg-emerald-800 text-white font-bold flex items-center gap-1.5 h-7 px-2.5 shadow-xs"
+                      title="Xuất file PDF Kế hoạch HACCP (BM-HACCP-01) của kế hoạch này"
+                    >
+                      <FileDown className="w-3.5 h-3.5" />
+                      Xuất PDF Kế Hoạch Này
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setSelectedPlanId("ALL")}
+                      className="text-xs text-slate-700 hover:text-slate-900 font-bold flex items-center gap-1 h-7 px-2"
+                    >
+                      ← Quay lại xem tất cả kế hoạch
+                    </Button>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800">
@@ -2968,11 +3343,15 @@ function HACCPModule() {
                   </div>
                   <div>
                     <span className="text-slate-700 font-bold">Dây chuyền áp dụng:</span>
-                    <div className="font-black text-slate-900 mt-0.5">{currentPlan.product_line}</div>
+                    <div className="font-black text-slate-900 mt-0.5">
+                      {currentPlan.product_line}
+                    </div>
                   </div>
                   <div>
                     <span className="text-slate-700 font-bold">Trưởng ban HACCP:</span>
-                    <div className="font-black text-slate-900 mt-0.5">{currentPlan.team_leader}</div>
+                    <div className="font-black text-slate-900 mt-0.5">
+                      {currentPlan.team_leader}
+                    </div>
                   </div>
                   <div>
                     <span className="text-slate-700 font-bold">Ngày ban hành & Phiên bản:</span>
@@ -3067,7 +3446,9 @@ function HACCPModule() {
                       <span className="font-mono font-black text-[11px] bg-emerald-100 text-emerald-900 px-1.5 py-0.2 rounded border border-emerald-300">
                         {p.plan_code}
                       </span>
-                      <span className="truncate max-w-[150px] font-bold text-slate-900">{p.plan_name}</span>
+                      <span className="truncate max-w-[150px] font-bold text-slate-900">
+                        {p.plan_name}
+                      </span>
                       <span className="text-[11px] text-emerald-900 font-black bg-emerald-50 border border-emerald-200 px-1.5 py-0.2 rounded-full">
                         {pSteps.length}
                       </span>
@@ -3082,9 +3463,12 @@ function HACCPModule() {
               <div className="flex items-center gap-2.5">
                 <Sparkles className="w-4 h-4 text-blue-700 shrink-0" />
                 <span>
-                  <strong className="font-black text-blue-900">Hướng Dẫn Chuẩn Hóa Lưu Đồ Công Đoạn:</strong> Đảm bảo tính tuần tự liên
-                  tục từ tiếp nhận đến xuất kho, xác định đầy đủ thông số kỹ thuật (nhiệt độ, thời
-                  gian, thiết bị) và đánh dấu nổi bật các điểm kiểm soát tới hạn CCP/oPRP.
+                  <strong className="font-black text-blue-900">
+                    Hướng Dẫn Chuẩn Hóa Lưu Đồ Công Đoạn:
+                  </strong>{" "}
+                  Đảm bảo tính tuần tự liên tục từ tiếp nhận đến xuất kho, xác định đầy đủ thông số
+                  kỹ thuật (nhiệt độ, thời gian, thiết bị) và đánh dấu nổi bật các điểm kiểm soát
+                  tới hạn CCP/oPRP.
                 </span>
               </div>
               <button
@@ -3143,9 +3527,7 @@ function HACCPModule() {
                                   {planSteps.length} công đoạn
                                 </span>
                                 <span>•</span>
-                                <span className="text-rose-700">
-                                  {planCcps.length} CCP/oPRP
-                                </span>
+                                <span className="text-rose-700">{planCcps.length} CCP/oPRP</span>
                                 <span>•</span>
                                 <span>Ver {plan.version}</span>
                               </div>
@@ -3199,7 +3581,11 @@ function HACCPModule() {
                           >
                             <ChevronDown className="w-3.5 h-3.5 text-slate-600 group-hover:text-emerald-700 transition" />
                             <span>
-                              Đang thu gọn lưu đồ ({planSteps.length} công đoạn, {planCcps.length} CCP) — <strong className="underline text-emerald-800">Nhấp để mở rộng sơ đồ chi tiết</strong>
+                              Đang thu gọn lưu đồ ({planSteps.length} công đoạn, {planCcps.length}{" "}
+                              CCP) —{" "}
+                              <strong className="underline text-emerald-800">
+                                Nhấp để mở rộng sơ đồ chi tiết
+                              </strong>
                             </span>
                           </div>
                         ) : planSteps.length === 0 ? (
@@ -3209,7 +3595,8 @@ function HACCPModule() {
                               Kế hoạch [{plan.plan_code}] chưa có công đoạn lưu đồ nào
                             </div>
                             <p className="text-xs text-slate-600 max-w-md mx-auto">
-                              Bổ sung các bước công nghệ cho dây chuyền "{plan.product_line}" để hoàn thiện lưu đồ quy trình sản xuất.
+                              Bổ sung các bước công nghệ cho dây chuyền "{plan.product_line}" để
+                              hoàn thiện lưu đồ quy trình sản xuất.
                             </p>
                             <Button
                               size="sm"
@@ -3249,7 +3636,8 @@ function HACCPModule() {
                                         </h4>
                                         {step.is_ccp_or_oprp && (
                                           <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-rose-600 text-white flex items-center gap-1 animate-pulse">
-                                            <Flame className="w-3 h-3" /> ★ ĐIỂM KIỂM SOÁT TỚI HẠN (CCP)
+                                            <Flame className="w-3 h-3" /> ★ ĐIỂM KIỂM SOÁT TỚI HẠN
+                                            (CCP)
                                           </span>
                                         )}
                                         <span className="text-[10px] px-2 py-0.5 rounded bg-slate-200/90 text-slate-900 font-black border border-slate-300">
@@ -3307,7 +3695,7 @@ function HACCPModule() {
                 {/* Kiểm tra có công đoạn mồ côi (không thuộc kế hoạch nào) */}
                 {(() => {
                   const orphanSteps = steps.filter(
-                    (s) => !plans.some((p) => p.plan_id === s.plan_id)
+                    (s) => !plans.some((p) => p.plan_id === s.plan_id),
                   );
                   if (orphanSteps.length === 0) return null;
                   return (
@@ -3331,9 +3719,13 @@ function HACCPModule() {
                                   {step.step_number}
                                 </div>
                                 <div>
-                                  <h4 className="text-sm font-bold text-slate-900">{step.step_name}</h4>
+                                  <h4 className="text-sm font-bold text-slate-900">
+                                    {step.step_name}
+                                  </h4>
                                   {step.description && (
-                                    <p className="text-xs text-slate-600 mt-1">{step.description}</p>
+                                    <p className="text-xs text-slate-600 mt-1">
+                                      {step.description}
+                                    </p>
                                   )}
                                 </div>
                               </div>
@@ -3359,95 +3751,93 @@ function HACCPModule() {
                   );
                 })()}
               </div>
+            ) : /* Khi chọn 1 kế hoạch cụ thể */
+            filteredSteps.length === 0 ? (
+              <EmptyState
+                loading={loading && filteredSteps.length === 0}
+                icon={GitBranch}
+                title={`Kế hoạch [${currentPlan?.plan_code || ""}] chưa có công đoạn nào`}
+                description="Hãy bắt đầu thiết lập các bước công nghệ trong dây chuyền sản xuất từ khâu tiếp nhận nguyên liệu đến bảo quản thành phẩm."
+                actionLabel="+ Thêm Công Đoạn Đầu Tiên"
+                onAction={() => handleOpenCreateStep(currentPlan?.plan_id)}
+                onGuide={() => setShowGuide(true)}
+              />
             ) : (
-              /* Khi chọn 1 kế hoạch cụ thể */
-              filteredSteps.length === 0 ? (
-                <EmptyState
-                  loading={loading && filteredSteps.length === 0}
-                  icon={GitBranch}
-                  title={`Kế hoạch [${currentPlan?.plan_code || ""}] chưa có công đoạn nào`}
-                  description="Hãy bắt đầu thiết lập các bước công nghệ trong dây chuyền sản xuất từ khâu tiếp nhận nguyên liệu đến bảo quản thành phẩm."
-                  actionLabel="+ Thêm Công Đoạn Đầu Tiên"
-                  onAction={() => handleOpenCreateStep(currentPlan?.plan_id)}
-                  onGuide={() => setShowGuide(true)}
-                />
-              ) : (
-                <div className="max-w-2xl mx-auto space-y-3 py-2">
-                  {filteredSteps.map((step, idx) => (
-                    <React.Fragment key={step.step_id}>
-                      {/* Step Card */}
-                      <div
-                        className={`p-4 rounded-2xl border transition-all flex items-start justify-between gap-4 ${
-                          step.is_ccp_or_oprp
-                            ? "bg-rose-50 border-rose-300 shadow-sm hover:border-rose-400"
-                            : "bg-white border-slate-200 hover:border-slate-300 shadow-sm"
-                        }`}
-                      >
-                        <div className="flex items-start gap-3.5">
-                          <div
-                            className={`w-8 h-8 rounded-xl flex items-center justify-center font-black text-sm shrink-0 ${
-                              step.is_ccp_or_oprp
-                                ? "bg-rose-600 text-white"
-                                : "bg-emerald-600 text-white"
-                            }`}
-                          >
-                            {step.step_number}
-                          </div>
-
-                          <div>
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <h4 className="text-sm font-black text-slate-900">{step.step_name}</h4>
-                              {step.is_ccp_or_oprp && (
-                                <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-rose-600 text-white flex items-center gap-1 animate-pulse">
-                                  <Flame className="w-3 h-3" /> ★ ĐIỂM KIỂM SOÁT TỚI HẠN (CCP)
-                                </span>
-                              )}
-                              <span className="text-[10px] px-2 py-0.5 rounded bg-slate-200/90 text-slate-900 font-black border border-slate-300">
-                                {step.hazard_count} mối nguy
-                              </span>
-                            </div>
-
-                            {step.description && (
-                              <p className="text-xs text-slate-800 font-medium mt-1.5 leading-relaxed bg-slate-100/80 p-2.5 rounded-lg border border-slate-300">
-                                {step.description}
-                              </p>
-                            )}
-                          </div>
+              <div className="max-w-2xl mx-auto space-y-3 py-2">
+                {filteredSteps.map((step, idx) => (
+                  <React.Fragment key={step.step_id}>
+                    {/* Step Card */}
+                    <div
+                      className={`p-4 rounded-2xl border transition-all flex items-start justify-between gap-4 ${
+                        step.is_ccp_or_oprp
+                          ? "bg-rose-50 border-rose-300 shadow-sm hover:border-rose-400"
+                          : "bg-white border-slate-200 hover:border-slate-300 shadow-sm"
+                      }`}
+                    >
+                      <div className="flex items-start gap-3.5">
+                        <div
+                          className={`w-8 h-8 rounded-xl flex items-center justify-center font-black text-sm shrink-0 ${
+                            step.is_ccp_or_oprp
+                              ? "bg-rose-600 text-white"
+                              : "bg-emerald-600 text-white"
+                          }`}
+                        >
+                          {step.step_number}
                         </div>
 
-                        <div className="flex items-center gap-1.5 shrink-0">
-                          <button
-                            onClick={() => handleOpenEditStep(step)}
-                            className="p-1.5 rounded-lg bg-slate-100 text-slate-600 hover:text-slate-900 hover:bg-slate-200 transition-colors"
-                            title="Chỉnh sửa công đoạn"
-                          >
-                            <Pencil className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            onClick={() => setDeletingStep(step)}
-                            className="p-1.5 rounded-lg bg-rose-50 text-rose-600 hover:text-rose-800 hover:bg-rose-100 transition-colors"
-                            title="Xóa công đoạn"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                        <div>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h4 className="text-sm font-black text-slate-900">{step.step_name}</h4>
+                            {step.is_ccp_or_oprp && (
+                              <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-rose-600 text-white flex items-center gap-1 animate-pulse">
+                                <Flame className="w-3 h-3" /> ★ ĐIỂM KIỂM SOÁT TỚI HẠN (CCP)
+                              </span>
+                            )}
+                            <span className="text-[10px] px-2 py-0.5 rounded bg-slate-200/90 text-slate-900 font-black border border-slate-300">
+                              {step.hazard_count} mối nguy
+                            </span>
+                          </div>
+
+                          {step.description && (
+                            <p className="text-xs text-slate-800 font-medium mt-1.5 leading-relaxed bg-slate-100/80 p-2.5 rounded-lg border border-slate-300">
+                              {step.description}
+                            </p>
+                          )}
                         </div>
                       </div>
 
-                      {/* Flow Arrow */}
-                      {idx < filteredSteps.length - 1 && (
-                        <div className="flex flex-col items-center my-0.5">
-                          <div className="w-0.5 h-3 bg-slate-300" />
-                          <div className="px-3 py-0.5 rounded-full bg-white border border-slate-300 text-[10px] font-black text-slate-800 flex items-center gap-1 font-mono shadow-xs">
-                            <ChevronDown className="w-3 h-3 text-slate-600" />
-                            <span>{step.is_ccp_or_oprp ? "Kiểm soát CCP Đạt" : "Chuyển tiếp"}</span>
-                          </div>
-                          <div className="w-0.5 h-3 bg-slate-300" />
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <button
+                          onClick={() => handleOpenEditStep(step)}
+                          className="p-1.5 rounded-lg bg-slate-100 text-slate-600 hover:text-slate-900 hover:bg-slate-200 transition-colors"
+                          title="Chỉnh sửa công đoạn"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => setDeletingStep(step)}
+                          className="p-1.5 rounded-lg bg-rose-50 text-rose-600 hover:text-rose-800 hover:bg-rose-100 transition-colors"
+                          title="Xóa công đoạn"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Flow Arrow */}
+                    {idx < filteredSteps.length - 1 && (
+                      <div className="flex flex-col items-center my-0.5">
+                        <div className="w-0.5 h-3 bg-slate-300" />
+                        <div className="px-3 py-0.5 rounded-full bg-white border border-slate-300 text-[10px] font-black text-slate-800 flex items-center gap-1 font-mono shadow-xs">
+                          <ChevronDown className="w-3 h-3 text-slate-600" />
+                          <span>{step.is_ccp_or_oprp ? "Kiểm soát CCP Đạt" : "Chuyển tiếp"}</span>
                         </div>
-                      )}
-                    </React.Fragment>
-                  ))}
-                </div>
-              )
+                        <div className="w-0.5 h-3 bg-slate-300" />
+                      </div>
+                    )}
+                  </React.Fragment>
+                ))}
+              </div>
             )}
           </div>
         </div>
@@ -3491,7 +3881,7 @@ function HACCPModule() {
               loading={loading && filteredCCPs.length === 0}
               icon={Flame}
               title="Chưa có điểm kiểm soát tới hạn CCP / oPRP"
-              description="Dựa trên kết quả đánh giá cây quyết định phân tích mối nguy Codex, hãy thiết lập các điểm kiểm soát tới hạn CCP kèm giới hạn tới hạn cụ thể."
+              description="Dựa trên kết quả đánh giá cây quyết định phân tích mối nguy, hãy thiết lập các điểm kiểm soát tới hạn CCP kèm giới hạn tới hạn cụ thể."
               actionLabel="+ Thêm Điểm CCP Mới"
               onAction={handleOpenCreateCCP}
               onGuide={() => setShowGuide(true)}
@@ -3592,8 +3982,8 @@ function HACCPModule() {
                         onClick={() => handleOpenCreateLog(ccp)}
                         className="w-full bg-emerald-50 hover:bg-emerald-600 hover:text-white text-emerald-800 hover:border-emerald-600 border border-emerald-300 text-xs font-bold py-1.5 shadow-none group transition-all"
                       >
-                        <Thermometer className="h-3.5 w-3.5 mr-1.5 text-emerald-600 group-hover:text-white transition-colors" /> Ghi Nhật Ký
-                        Đo Đạc Cho {ccp.ccp_code}
+                        <Thermometer className="h-3.5 w-3.5 mr-1.5 text-emerald-600 group-hover:text-white transition-colors" />{" "}
+                        Ghi Nhật Ký Đo Đạc Cho {ccp.ccp_code}
                       </Button>
                     </div>
                   </div>
@@ -3647,7 +4037,7 @@ function HACCPModule() {
               loading={loading && filteredHazards.length === 0}
               icon={ShieldAlert}
               title="Chưa có phân tích mối nguy nào"
-              description="Thực hiện nhận diện các mối nguy sinh học, hóa học, vật lý và dị nguyên cho từng công đoạn kèm đánh giá cây quyết định Codex Q1-Q4."
+              description="Thực hiện nhận diện các mối nguy sinh học, hóa học, vật lý và dị nguyên cho từng công đoạn kèm đánh giá cây quyết định Q1-Q4 theo ISO 22000."
               actionLabel="+ Thêm Mối Nguy Mới"
               onAction={handleOpenCreateHazard}
               onGuide={() => setShowGuide(true)}
@@ -3663,7 +4053,7 @@ function HACCPModule() {
                       <th className="p-3.5">Loại</th>
                       <th className="p-3.5 text-center">Ma trận rủi ro</th>
                       <th className="p-3.5">Biện pháp kiểm soát</th>
-                      <th className="p-3.5 text-center">Codex Q1-Q4</th>
+                      <th className="p-3.5 text-center">Cây QĐ Q1-Q4</th>
                       <th className="p-3.5 text-center">Phân loại</th>
                       <th className="p-3.5 text-right">Thao tác</th>
                     </tr>
@@ -3850,7 +4240,7 @@ function HACCPModule() {
                   Trợ Lý AI Gợi Ý Mối Nguy Theo Công Đoạn
                 </h3>
                 <p className="text-xs text-slate-500">
-                  Tự động phân tích tác nhân vi sinh, hóa học và phân loại CCP/oPRP theo Codex.
+                  Tự động phân tích tác nhân vi sinh, hóa học và phân loại CCP/oPRP theo ISO 22000.
                 </p>
               </div>
             </div>
@@ -4271,10 +4661,10 @@ function HACCPModule() {
                                   size="sm"
                                   variant="outline"
                                   onClick={() => handlePrintHACCPReview(rev)}
-                                  title="In biên bản thẩm tra HACCP (BM-HACCP-REV-01)"
+                                  title="Xuất PDF biên bản thẩm tra HACCP (BM-HACCP-REV-01)"
                                   className="h-7 w-7 p-0 text-slate-600 hover:text-emerald-700 hover:bg-emerald-50"
                                 >
-                                  <Printer className="w-3.5 h-3.5" />
+                                  <FileDown className="w-3.5 h-3.5" />
                                 </Button>
                                 <Button
                                   size="sm"
@@ -4524,10 +4914,10 @@ function HACCPModule() {
                                   size="sm"
                                   variant="outline"
                                   onClick={() => handlePrintMDLog(log)}
-                                  title="In nhật ký BM06-KSQT"
+                                  title="Xuất PDF nhật ký BM06-KSQT"
                                   className="h-7 w-7 p-0 text-slate-600 hover:text-indigo-700 hover:bg-indigo-50"
                                 >
-                                  <Printer className="w-3.5 h-3.5" />
+                                  <FileDown className="w-3.5 h-3.5" />
                                 </Button>
                                 <Button
                                   size="sm"
@@ -4704,10 +5094,10 @@ function HACCPModule() {
                                   size="sm"
                                   variant="outline"
                                   onClick={() => handlePrintStageLog(log)}
-                                  title="In phiếu kiểm soát công đoạn"
+                                  title="Xuất PDF phiếu kiểm soát công đoạn"
                                   className="h-7 w-7 p-0 text-slate-600 hover:text-blue-700 hover:bg-blue-50"
                                 >
-                                  <Printer className="w-3.5 h-3.5" />
+                                  <FileDown className="w-3.5 h-3.5" />
                                 </Button>
                                 <Button
                                   size="sm"
@@ -5342,9 +5732,33 @@ function HACCPModule() {
                 />
               </div>
               <div>
-                <Label className="text-slate-700 font-bold">
-                  Thành Phần Đoàn / Người Thẩm Tra *
-                </Label>
+                <div className="flex items-center justify-between">
+                  <Label className="text-slate-700 font-bold">
+                    Thành Phần Đoàn / Người Thẩm Tra *
+                  </Label>
+                  <select
+                    onChange={(e) => {
+                      if (!e.target.value) return;
+                      const current = reviewForm.reviewers ? reviewForm.reviewers.trim() : "";
+                      const toAdd = e.target.value;
+                      if (!current.includes(toAdd)) {
+                        setReviewForm({
+                          ...reviewForm,
+                          reviewers: current ? `${current}; ${toAdd}` : toAdd,
+                        });
+                      }
+                      e.target.value = "";
+                    }}
+                    className="text-[10px] bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded px-1.5 py-0.5 text-slate-700 font-medium cursor-pointer"
+                  >
+                    <option value="">+ Chọn nhân sự từ CSDL</option>
+                    {users.map((u) => (
+                      <option key={u.id} value={`${u.name} (${u.role})`}>
+                        {u.name} — {u.role}
+                      </option>
+                    ))}
+                  </select>
+                </div>
                 <textarea
                   rows={2}
                   value={reviewForm.reviewers}
@@ -5482,13 +5896,23 @@ function HACCPModule() {
                 </select>
               </div>
               <div>
-                <Label className="text-slate-700 font-semibold">Người Phê Duyệt</Label>
-                <Input
+                <Label className="text-slate-700 font-semibold">Người Phê Duyệt *</Label>
+                <select
                   value={reviewForm.approved_by || ""}
                   onChange={(e) => setReviewForm({ ...reviewForm, approved_by: e.target.value })}
-                  placeholder="Lê Hoàng Quân (Giám đốc)"
-                  className="mt-1 text-xs bg-white border-slate-300"
-                />
+                  className="w-full mt-1 h-9 px-3 py-1 bg-white border border-slate-300 rounded-md text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                >
+                  <option value="">-- Chọn lãnh đạo duyệt từ CSDL --</option>
+                  {users.map((u) => (
+                    <option key={u.id} value={`${u.name} (${u.role})`}>
+                      {u.name} — {u.role}
+                    </option>
+                  ))}
+                  {reviewForm.approved_by &&
+                    !users.some((u) => `${u.name} (${u.role})` === reviewForm.approved_by) && (
+                      <option value={reviewForm.approved_by}>{reviewForm.approved_by}</option>
+                    )}
+                </select>
               </div>
               <div>
                 <Label className="text-slate-700 font-semibold">Ngày Phê Duyệt</Label>
@@ -5573,12 +5997,21 @@ function HACCPModule() {
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <Label className="text-slate-700 font-semibold">Dây chuyền sản phẩm</Label>
-                <Input
+                <Label className="text-slate-700 font-semibold">Dây chuyền sản phẩm *</Label>
+                <select
                   value={planForm.product_line}
                   onChange={(e) => setPlanForm({ ...planForm, product_line: e.target.value })}
-                  className="mt-1 text-xs bg-white border-slate-300 text-slate-900"
-                />
+                  className="w-full mt-1 bg-white border border-slate-300 rounded-lg p-2 text-xs text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                >
+                  {productLines.map((pl) => (
+                    <option key={pl} value={pl}>
+                      {pl}
+                    </option>
+                  ))}
+                  {planForm.product_line && !productLines.includes(planForm.product_line) && (
+                    <option value={planForm.product_line}>{planForm.product_line}</option>
+                  )}
+                </select>
               </div>
               <div>
                 <Label className="text-slate-700 font-semibold">Phiên bản</Label>
@@ -5589,13 +6022,45 @@ function HACCPModule() {
                 />
               </div>
             </div>
-            <div>
-              <Label className="text-slate-700 font-semibold">Trưởng ban HACCP / QA</Label>
-              <Input
-                value={planForm.team_leader}
-                onChange={(e) => setPlanForm({ ...planForm, team_leader: e.target.value })}
-                className="mt-1 text-xs bg-white border-slate-300 text-slate-900 font-medium"
-              />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div>
+                <Label className="text-slate-700 font-semibold">Trưởng ban HACCP / QA *</Label>
+                <select
+                  value={planForm.team_leader}
+                  onChange={(e) => setPlanForm({ ...planForm, team_leader: e.target.value })}
+                  className="w-full mt-1 bg-white border border-slate-300 rounded-lg p-2 text-xs text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                >
+                  <option value="">-- Chọn nhân sự từ CSDL --</option>
+                  {users.map((u) => (
+                    <option key={u.id} value={`${u.name} (${u.role})`}>
+                      {u.name} — {u.role}
+                    </option>
+                  ))}
+                  {planForm.team_leader &&
+                    !users.some((u) => `${u.name} (${u.role})` === planForm.team_leader) && (
+                      <option value={planForm.team_leader}>{planForm.team_leader}</option>
+                    )}
+                </select>
+              </div>
+              <div>
+                <Label className="text-slate-700 font-semibold">Lãnh đạo phê duyệt *</Label>
+                <select
+                  value={planForm.approved_by}
+                  onChange={(e) => setPlanForm({ ...planForm, approved_by: e.target.value })}
+                  className="w-full mt-1 bg-white border border-slate-300 rounded-lg p-2 text-xs text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                >
+                  <option value="">-- Chọn lãnh đạo từ CSDL --</option>
+                  {users.map((u) => (
+                    <option key={u.id} value={`${u.name} (${u.role})`}>
+                      {u.name} — {u.role}
+                    </option>
+                  ))}
+                  {planForm.approved_by &&
+                    !users.some((u) => `${u.name} (${u.role})` === planForm.approved_by) && (
+                      <option value={planForm.approved_by}>{planForm.approved_by}</option>
+                    )}
+                </select>
+              </div>
             </div>
             <div>
               <Label className="text-slate-700 font-semibold">Mô tả phạm vi áp dụng</Label>
@@ -5699,6 +6164,38 @@ function HACCPModule() {
                 onChange={(e) => setStepForm({ ...stepForm, is_ccp_or_oprp: e.target.checked })}
                 className="w-4 h-4 rounded border-rose-300 text-rose-600 focus:ring-rose-500"
               />
+            </div>
+
+            <div>
+              <Label className="text-slate-700 font-semibold">
+                Bộ phận / Nhân sự phụ trách công đoạn
+              </Label>
+              <select
+                value={stepForm.role}
+                onChange={(e) => setStepForm({ ...stepForm, role: e.target.value })}
+                className="w-full mt-1 bg-white border border-slate-300 rounded-lg p-2 text-xs text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              >
+                <option value="">-- Mặc định (Tổ vận hành SX & QC) --</option>
+                <optgroup label="Phòng ban / Bộ phận">
+                  {departments.map((d) => (
+                    <option key={d} value={d}>
+                      {d}
+                    </option>
+                  ))}
+                </optgroup>
+                <optgroup label="Nhân sự">
+                  {users.map((u) => (
+                    <option key={u.id} value={`${u.name} (${u.role})`}>
+                      {u.name} — {u.role}
+                    </option>
+                  ))}
+                </optgroup>
+                {stepForm.role &&
+                  !departments.includes(stepForm.role) &&
+                  !users.some((u) => `${u.name} (${u.role})` === stepForm.role) && (
+                    <option value={stepForm.role}>{stepForm.role}</option>
+                  )}
+              </select>
             </div>
 
             <div>
@@ -5912,13 +6409,33 @@ function HACCPModule() {
                 />
               </div>
               <div>
-                <Label className="text-slate-700 font-semibold">Người phụ trách</Label>
-                <Input
+                <Label className="text-slate-700 font-semibold">Người phụ trách / Bộ phận *</Label>
+                <select
                   value={ccpForm.responsible_role}
                   onChange={(e) => setCcpForm({ ...ccpForm, responsible_role: e.target.value })}
-                  placeholder="QC Công đoạn"
-                  className="mt-1 text-xs bg-white border-slate-300 text-slate-900"
-                />
+                  className="w-full mt-1 bg-white border border-slate-300 rounded-lg p-2 text-xs text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-rose-500"
+                >
+                  <option value="">-- Chọn nhân sự / bộ phận từ CSDL --</option>
+                  <optgroup label="Nhân sự phụ trách">
+                    {users.map((u) => (
+                      <option key={u.id} value={`${u.name} (${u.role})`}>
+                        {u.name} — {u.role}
+                      </option>
+                    ))}
+                  </optgroup>
+                  <optgroup label="Bộ phận phụ trách">
+                    {departments.map((d) => (
+                      <option key={d} value={d}>
+                        {d}
+                      </option>
+                    ))}
+                  </optgroup>
+                  {ccpForm.responsible_role &&
+                    !users.some((u) => `${u.name} (${u.role})` === ccpForm.responsible_role) &&
+                    !departments.includes(ccpForm.responsible_role) && (
+                      <option value={ccpForm.responsible_role}>{ccpForm.responsible_role}</option>
+                    )}
+                </select>
               </div>
             </div>
 
@@ -6306,175 +6823,647 @@ function HACCPModule() {
       )}
 
       {/* ==================== PRINT MODALS ==================== */}
-      {showPrintPlanModal && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="w-full max-w-4xl bg-white text-slate-900 p-8 rounded-2xl shadow-2xl space-y-6 max-h-[90vh] overflow-y-auto border border-slate-200">
-            <div className="flex items-center justify-between border-b pb-4">
-              <div className="flex items-center gap-3">
-                <img src={logoImg} alt="Logo" className="h-12 w-auto" />
-                <div>
-                  <h2 className="text-lg font-black uppercase text-slate-900">
-                    BẢNG KẾ HOẠCH KIỂM SOÁT MỐI NGUY & ĐIỂM CCP (HACCP PLAN)
-                  </h2>
-                  <p className="text-xs text-slate-500">
-                    Tiêu chuẩn ISO 22000:2018 Điều khoản 8.5.4 • Mã hồ sơ: BM-HACCP-01
-                  </p>
+      {showPrintPlanModal &&
+        (() => {
+          const activePlan = selectedPrintPlan || currentPlan || plans[0] || null;
+          const planSteps = activePlan
+            ? steps
+                .filter((s) => s.plan_id === activePlan.plan_id)
+                .sort((a, b) => a.step_number - b.step_number)
+            : [];
+
+          return (
+            <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+              <div className="w-full max-w-5xl bg-white text-slate-900 p-6 sm:p-8 rounded-2xl shadow-2xl space-y-5 max-h-[92vh] overflow-y-auto border border-slate-200">
+                {/* Header with Logo & Action */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b pb-4">
+                  <div className="flex items-center gap-3">
+                    <img src={logoImg} alt="Logo" className="h-10 sm:h-12 w-auto" />
+                    <div>
+                      <h2 className="text-base sm:text-lg font-black uppercase text-slate-900">
+                        {printPlanType === "MASTER_SUMMARY"
+                          ? "BÁO CÁO TỔNG HỢP KẾ HOẠCH HACCP & KIỂM SOÁT ATTP"
+                          : "BẢNG KẾ HOẠCH KIỂM SOÁT MỐI NGUY & ĐIỂM CCP (HACCP PLAN)"}
+                      </h2>
+                      <p className="text-xs text-slate-600 font-medium">
+                        {printPlanType === "MASTER_SUMMARY"
+                          ? "Tiêu chuẩn ISO 22000:2018 Điều khoản 8.5.4 & 9.3 • Biểu mẫu: BM-HACCP-MASTER-01"
+                          : `Tiêu chuẩn ISO 22000:2018 Điều khoản 8.5.4 • Mã hồ sơ: BM-HACCP-01 [${activePlan?.plan_code || "HACCP"}]`}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      onClick={handlePrintHaccpPlan}
+                      className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold gap-1.5 shadow-sm"
+                    >
+                      <FileDown className="w-3.5 h-3.5" /> Xuất File PDF
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowPrintPlanModal(false)}
+                      className="text-xs border-slate-300 text-slate-700"
+                    >
+                      Đóng
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Mode Selector & Plan Switcher */}
+                <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
+                  <div>
+                    <span className="text-xs font-bold text-slate-700 block mb-1.5 uppercase tracking-wider">
+                      Hình thức tài liệu xuất:
+                    </span>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setPrintPlanType("MASTER_SUMMARY")}
+                        className={`p-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 border ${
+                          printPlanType === "MASTER_SUMMARY"
+                            ? "bg-emerald-700 text-white border-emerald-800 shadow-sm"
+                            : "bg-white text-slate-700 border-slate-300 hover:bg-slate-100"
+                        }`}
+                      >
+                        <FileSpreadsheet className="w-4 h-4 shrink-0" />
+                        <span>📋 Báo Cáo Tổng Hợp Toàn Nhà Máy ({plans.length} Kế Hoạch)</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPrintPlanType("SINGLE_PLAN")}
+                        className={`p-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 border ${
+                          printPlanType === "SINGLE_PLAN"
+                            ? "bg-emerald-700 text-white border-emerald-800 shadow-sm"
+                            : "bg-white text-slate-700 border-slate-300 hover:bg-slate-100"
+                        }`}
+                      >
+                        <FileText className="w-4 h-4 shrink-0" />
+                        <span>📑 Kế Hoạch Chi Tiết 1 Dây Chuyền (BM-HACCP-01)</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {printPlanType === "SINGLE_PLAN" && plans.length > 0 && (
+                    <div className="pt-2.5 border-t border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <label className="text-xs font-bold text-slate-800 shrink-0">
+                        Chọn Kế hoạch HACCP cần xuất:
+                      </label>
+                      <select
+                        value={activePlan?.plan_id || ""}
+                        onChange={(e) => {
+                          const target = plans.find((p) => p.plan_id === e.target.value);
+                          if (target) setSelectedPrintPlan(target);
+                        }}
+                        className="w-full sm:w-auto min-w-[340px] bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-xs font-bold text-slate-900 shadow-xs focus:ring-2 focus:ring-emerald-500 cursor-pointer"
+                      >
+                        {plans.map((p) => (
+                          <option key={p.plan_id} value={p.plan_id}>
+                            [{p.plan_code}] {p.plan_name} — {p.product_line}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                </div>
+
+                {/* MODE 1: BÁO CÁO TỔNG HỢP TOÀN NHÀ MÁY (MASTER SUMMARY) */}
+                {printPlanType === "MASTER_SUMMARY" && (
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs">
+                      <div className="bg-white p-2.5 rounded-lg border border-slate-200 shadow-2xs">
+                        <span className="text-slate-600 block text-[10px] uppercase font-bold">
+                          Đơn vị ban hành:
+                        </span>
+                        <strong className="text-slate-900 mt-0.5 block">
+                          Ban ATTP Nhà Máy WCERT
+                        </strong>
+                      </div>
+                      <div className="bg-white p-2.5 rounded-lg border border-slate-200 shadow-2xs">
+                        <span className="text-slate-600 block text-[10px] uppercase font-bold">
+                          Tiêu chuẩn áp dụng:
+                        </span>
+                        <strong className="text-emerald-800 mt-0.5 block">ISO 22000:2018</strong>
+                      </div>
+                      <div className="bg-white p-2.5 rounded-lg border border-slate-200 shadow-2xs">
+                        <span className="text-slate-600 block text-[10px] uppercase font-bold">
+                          Tổng số kế hoạch:
+                        </span>
+                        <strong className="text-slate-900 mt-0.5 block">
+                          {plans.length} dây chuyền / sản phẩm
+                        </strong>
+                      </div>
+                      <div className="bg-white p-2.5 rounded-lg border border-slate-200 shadow-2xs">
+                        <span className="text-slate-600 block text-[10px] uppercase font-bold">
+                          Quy mô kiểm soát:
+                        </span>
+                        <strong className="text-slate-900 mt-0.5 block">
+                          {steps.length} công đoạn •{" "}
+                          {steps.filter((s) => s.is_ccp_or_oprp).length + ccps.length} CCP
+                        </strong>
+                      </div>
+                    </div>
+
+                    <div className="border border-slate-300 rounded-xl overflow-hidden">
+                      <table className="w-full text-left text-xs border-collapse">
+                        <thead className="bg-slate-100 font-bold border-b border-slate-300 text-slate-900">
+                          <tr>
+                            <th className="p-2.5 border-r border-slate-300 text-center w-10">
+                              STT
+                            </th>
+                            <th className="p-2.5 border-r border-slate-300">Mã Kế Hoạch</th>
+                            <th className="p-2.5 border-r border-slate-300">
+                              Tên Kế Hoạch / Sản Phẩm
+                            </th>
+                            <th className="p-2.5 border-r border-slate-300">Dây Chuyền</th>
+                            <th className="p-2.5 border-r border-slate-300">Trưởng Ban HACCP</th>
+                            <th className="p-2.5 border-r border-slate-300 text-center">Quy Mô</th>
+                            <th className="p-2.5 border-r border-slate-300 text-center">
+                              Phiên Bản
+                            </th>
+                            <th className="p-2.5 border-r border-slate-300 text-center">
+                              Ngày Hiệu Lực
+                            </th>
+                            <th className="p-2.5 text-center">Trạng Thái</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-200 text-slate-800">
+                          {plans.length === 0 ? (
+                            <tr>
+                              <td
+                                colSpan={9}
+                                className="text-center py-8 text-slate-500 italic bg-slate-50"
+                              >
+                                Chưa có kế hoạch HACCP nào được tạo trong hệ thống.
+                              </td>
+                            </tr>
+                          ) : (
+                            plans.map((p, idx) => {
+                              const pSteps = steps.filter((s) => s.plan_id === p.plan_id);
+                              const pCcps = pSteps.filter(
+                                (s) =>
+                                  s.is_ccp_or_oprp ||
+                                  ccps.some(
+                                    (c) =>
+                                      c.process_step_id === s.step_id || c.plan_id === p.plan_id,
+                                  ),
+                              );
+                              return (
+                                <tr key={p.plan_id} className="hover:bg-slate-50/80 transition">
+                                  <td className="p-2.5 border-r border-slate-300 text-center">
+                                    {idx + 1}
+                                  </td>
+                                  <td className="p-2.5 border-r border-slate-300 font-mono font-black text-emerald-800">
+                                    {p.plan_code}
+                                  </td>
+                                  <td className="p-2.5 border-r border-slate-300">
+                                    <strong className="text-slate-900">{p.plan_name}</strong>
+                                  </td>
+                                  <td className="p-2.5 border-r border-slate-300">
+                                    {p.product_line}
+                                  </td>
+                                  <td className="p-2.5 border-r border-slate-300">
+                                    {p.team_leader}
+                                  </td>
+                                  <td className="p-2.5 border-r border-slate-300 text-center font-bold">
+                                    {pSteps.length} bước •{" "}
+                                    <span className="text-rose-700 font-black">
+                                      {pCcps.length} CCP
+                                    </span>
+                                  </td>
+                                  <td className="p-2.5 border-r border-slate-300 text-center font-bold">
+                                    Ver {p.version}
+                                  </td>
+                                  <td className="p-2.5 border-r border-slate-300 text-center">
+                                    {p.effective_date || "15/01/2026"}
+                                  </td>
+                                  <td className="p-2.5 text-center font-bold">
+                                    <span
+                                      className={`px-2 py-0.5 rounded text-[10px] font-black ${
+                                        p.status === "APPROVED" || p.status === "ACTIVE"
+                                          ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
+                                          : "bg-amber-100 text-amber-800 border border-amber-300"
+                                      }`}
+                                    >
+                                      {p.status}
+                                    </span>
+                                  </td>
+                                </tr>
+                              );
+                            })
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {/* MODE 2: KẾ HOẠCH CHI TIẾT 1 DÂY CHUYỀN (BM-HACCP-01) */}
+                {printPlanType === "SINGLE_PLAN" && (
+                  <div className="space-y-4">
+                    {activePlan ? (
+                      <>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs">
+                          <div className="bg-white p-2.5 rounded-lg border border-slate-200 shadow-2xs">
+                            <span className="text-slate-500 text-[10px] uppercase font-bold block">
+                              Tên Kế hoạch:
+                            </span>
+                            <strong className="text-slate-900 block truncate font-black mt-0.5">
+                              {activePlan.plan_name}
+                            </strong>
+                          </div>
+                          <div className="bg-white p-2.5 rounded-lg border border-slate-200 shadow-2xs">
+                            <span className="text-slate-500 text-[10px] uppercase font-bold block">
+                              Mã hiệu & Phiên bản:
+                            </span>
+                            <strong className="text-emerald-800 font-mono block mt-0.5">
+                              {activePlan.plan_code} (Ver {activePlan.version})
+                            </strong>
+                          </div>
+                          <div className="bg-white p-2.5 rounded-lg border border-slate-200 shadow-2xs">
+                            <span className="text-slate-500 text-[10px] uppercase font-bold block">
+                              Dây chuyền áp dụng:
+                            </span>
+                            <strong className="text-slate-900 block truncate mt-0.5">
+                              {activePlan.product_line}
+                            </strong>
+                          </div>
+                          <div className="bg-white p-2.5 rounded-lg border border-slate-200 shadow-2xs">
+                            <span className="text-slate-500 text-[10px] uppercase font-bold block">
+                              Trưởng ban HACCP:
+                            </span>
+                            <strong className="text-slate-900 block truncate mt-0.5">
+                              {activePlan.team_leader}
+                            </strong>
+                          </div>
+                          <div className="bg-white p-2.5 rounded-lg border border-slate-200 shadow-2xs">
+                            <span className="text-slate-500 text-[10px] uppercase font-bold block">
+                              Lãnh đạo phê duyệt:
+                            </span>
+                            <strong className="text-slate-900 block truncate mt-0.5">
+                              {activePlan.approved_by || "Lê Hoàng Quân (Giám đốc)"}
+                            </strong>
+                          </div>
+                          <div className="bg-white p-2.5 rounded-lg border border-slate-200 shadow-2xs">
+                            <span className="text-slate-500 text-[10px] uppercase font-bold block">
+                              Ngày ban hành:
+                            </span>
+                            <strong className="text-slate-900 block mt-0.5">
+                              {activePlan.effective_date || "15/01/2026"}
+                            </strong>
+                          </div>
+                          <div className="bg-white p-2.5 rounded-lg border border-slate-200 shadow-2xs sm:col-span-2">
+                            <span className="text-slate-500 text-[10px] uppercase font-bold block">
+                              Phạm vi kiểm soát:
+                            </span>
+                            <span className="text-slate-700 block text-[11px] truncate mt-0.5">
+                              {activePlan.scope_description ||
+                                "Toàn bộ dây chuyền sản xuất từ tiếp nhận đến thành phẩm"}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="border border-slate-300 rounded-xl overflow-hidden">
+                          <table className="w-full text-left text-xs border-collapse">
+                            <thead className="bg-slate-100 font-bold border-b border-slate-300 text-slate-800">
+                              <tr>
+                                <th className="p-2 border-r border-slate-300 text-center w-20">
+                                  Mã Kiểm Soát
+                                </th>
+                                <th className="p-2 border-r border-slate-300">Công đoạn Lưu đồ</th>
+                                <th className="p-2 border-r border-slate-300 text-center w-16">
+                                  Phân loại
+                                </th>
+                                <th className="p-2 border-r border-slate-300">
+                                  Mối nguy cần kiểm soát
+                                </th>
+                                <th className="p-2 border-r border-slate-300">
+                                  Giới hạn kiểm soát / Tới hạn (CL)
+                                </th>
+                                <th className="p-2 border-r border-slate-300">Giám sát</th>
+                                <th className="p-2 border-r border-slate-300">
+                                  Hành động khắc phục
+                                </th>
+                                <th className="p-2 text-center w-28">Phụ trách</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-200">
+                              {planSteps.length === 0 ? (
+                                <tr>
+                                  <td
+                                    colSpan={8}
+                                    className="text-center py-8 px-4 text-slate-600 bg-slate-50"
+                                  >
+                                    <div className="font-bold text-slate-800 text-xs">
+                                      Kế hoạch [{activePlan.plan_code}] chưa có công đoạn nào được
+                                      thiết lập trong lưu đồ.
+                                    </div>
+                                    <p className="text-[11px] text-slate-500 mt-1 max-w-lg mx-auto">
+                                      Vui lòng thêm các bước công đoạn sản xuất vào lưu đồ quy trình
+                                      để hệ thống tự động kết xuất bảng kế hoạch kiểm soát mối nguy
+                                      chi tiết.
+                                    </p>
+                                  </td>
+                                </tr>
+                              ) : (
+                                planSteps.map((s) => {
+                                  const ccpDef = ccps.find(
+                                    (c) =>
+                                      c.process_step_id === s.step_id ||
+                                      (c.plan_id === activePlan.plan_id &&
+                                        c.name?.toLowerCase().includes(s.step_name.toLowerCase())),
+                                  );
+                                  const stepHazards = hazards.filter(
+                                    (h) => h.step_id === s.step_id,
+                                  );
+                                  const isCCP = s.is_ccp_or_oprp || !!ccpDef;
+                                  const classification = isCCP
+                                    ? "CCP"
+                                    : stepHazards.some((h) => h.classification === "OPRP")
+                                      ? "oPRP"
+                                      : "PRP";
+                                  const code = ccpDef
+                                    ? ccpDef.ccp_code
+                                    : isCCP
+                                      ? `CCP-${String(s.step_number).padStart(2, "0")}`
+                                      : `PRP-${String(s.step_number).padStart(2, "0")}`;
+                                  const hazardText =
+                                    stepHazards.length > 0
+                                      ? stepHazards
+                                          .map(
+                                            (h) =>
+                                              `[${h.hazard_type || "Mối nguy"}] ${h.hazard_name}`,
+                                          )
+                                          .join("; ")
+                                      : isCCP
+                                        ? "Mối nguy sinh học / Vi sinh vật gây bệnh / Dị vật kim loại"
+                                        : "Mối nguy tạp nhiễm chéo từ môi trường & vệ sinh cá nhân";
+                                  const limitText =
+                                    ccpDef?.critical_limit?.condition_text ||
+                                    (isCCP
+                                      ? s.description ||
+                                        "Tuân thủ giới hạn an toàn kỹ thuật theo QCVN/TCVN"
+                                      : "Tuân thủ quy trình SOP & Chương trình tiên quyết ISO/TS 22002-1");
+                                  const monitoringText = ccpDef?.monitoring_frequency
+                                    ? `${ccpDef.monitoring_frequency} (${ccpDef.monitoring_method})`
+                                    : isCCP
+                                      ? "Mỗi mẻ / Giám sát liên tục bằng thiết bị đo kiểm"
+                                      : "Kiểm tra cảm quan & checklist vệ sinh định kỳ mỗi ca";
+                                  const correctiveText =
+                                    ccpDef?.corrective_action_plan ||
+                                    (isCCP
+                                      ? "Cô lập lô hàng nghi ngờ, hiệu chỉnh thiết bị và báo cáo Trưởng ban HACCP"
+                                      : "Dừng thao tác, tái vệ sinh khu vực và báo cáo tổ trưởng");
+                                  const responsibleText =
+                                    ccpDef?.responsible_role ||
+                                    s.role ||
+                                    (isCCP
+                                      ? "QC Công đoạn & Trưởng ca"
+                                      : "Công nhân vận hành & Tổ trưởng");
+
+                                  return (
+                                    <tr
+                                      key={s.step_id}
+                                      className={`hover:bg-slate-50 transition ${isCCP ? "bg-rose-50/50" : ""}`}
+                                    >
+                                      <td className="p-2 font-mono font-black border-r border-slate-300 text-center">
+                                        <span
+                                          className={isCCP ? "text-rose-700" : "text-emerald-700"}
+                                        >
+                                          {code}
+                                        </span>
+                                      </td>
+                                      <td className="p-2 border-r border-slate-300 font-bold text-slate-900">
+                                        Bước {s.step_number}: {s.step_name}
+                                      </td>
+                                      <td className="p-2 border-r border-slate-300 text-center">
+                                        <span
+                                          className={`px-2 py-0.5 rounded text-[10px] font-black border ${
+                                            isCCP
+                                              ? "bg-rose-100 text-rose-800 border-rose-300"
+                                              : classification === "oPRP"
+                                                ? "bg-amber-100 text-amber-800 border-amber-300"
+                                                : "bg-emerald-100 text-emerald-800 border-emerald-300"
+                                          }`}
+                                        >
+                                          {classification}
+                                        </span>
+                                      </td>
+                                      <td className="p-2 border-r border-slate-300 text-slate-700">
+                                        {hazardText}
+                                      </td>
+                                      <td className="p-2 font-bold border-r border-slate-300 text-slate-900">
+                                        {limitText}
+                                      </td>
+                                      <td className="p-2 border-r border-slate-300 text-slate-700">
+                                        {monitoringText}
+                                      </td>
+                                      <td className="p-2 border-r border-slate-300 text-slate-700">
+                                        {correctiveText}
+                                      </td>
+                                      <td className="p-2 font-semibold text-center text-slate-800">
+                                        {responsibleText}
+                                      </td>
+                                    </tr>
+                                  );
+                                })
+                              )}
+                            </tbody>
+                          </table>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="p-8 text-center text-slate-500 text-xs border border-dashed rounded-xl">
+                        Chưa có kế hoạch HACCP nào để hiển thị.
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <div className="flex justify-end pt-2 border-t border-slate-100">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowPrintPlanModal(false)}
+                    className="text-xs border-slate-300 text-slate-700 font-semibold"
+                  >
+                    Đóng Hộp Thoại
+                  </Button>
                 </div>
               </div>
-              <Button
-                size="sm"
-                onClick={handlePrintHaccpPlan}
-                className="bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold"
-              >
-                <Printer className="w-3.5 h-3.5 mr-1" /> In Bản Cứng
-              </Button>
             </div>
+          );
+        })()}
 
-            <div className="grid grid-cols-2 gap-4 text-xs">
-              <div>
-                Kế hoạch:{" "}
-                <strong className="text-slate-900">
-                  {currentPlan?.plan_name || "Chế biến Cá Ngừ"}
-                </strong>
-              </div>
-              <div>
-                Mã hiệu:{" "}
-                <strong className="text-slate-900">
-                  {currentPlan?.plan_code || "HACCP-2026-01"} (Ver {currentPlan?.version || "2.1"})
-                </strong>
-              </div>
-              <div>
-                Trưởng ban HACCP:{" "}
-                <strong className="text-slate-900">
-                  {currentPlan?.team_leader || "Nguyễn Văn An"}
-                </strong>
-              </div>
-              <div>
-                Người phê duyệt:{" "}
-                <strong className="text-slate-900">
-                  {currentPlan?.approved_by || "Lê Hoàng Quân (Giám đốc)"}
-                </strong>
+      {showPrintLogModal &&
+        (() => {
+          let targetLogs = logs;
+          let scopeLogText = "Toàn bộ dây chuyền sản xuất nhà máy";
+          if (logFilterPlanId !== "ALL") {
+            const p = plans.find((x) => x.plan_id === logFilterPlanId);
+            if (p) {
+              scopeLogText = `Kế hoạch [${p.plan_code}] ${p.plan_name} (${p.product_line})`;
+              const pStepIds = new Set(
+                steps.filter((s) => s.plan_id === p.plan_id).map((s) => s.step_id),
+              );
+              const pCcpCodes = new Set(
+                ccps
+                  .filter(
+                    (c) =>
+                      c.plan_id === p.plan_id ||
+                      (c.process_step_id && pStepIds.has(c.process_step_id)),
+                  )
+                  .map((c) => c.ccp_code),
+              );
+              targetLogs = logs.filter((l) => Boolean(l.ccp_code && pCcpCodes.has(l.ccp_code)));
+            }
+          }
+
+          return (
+            <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+              <div className="w-full max-w-4xl bg-white text-slate-900 p-6 sm:p-8 rounded-2xl shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto border border-slate-200">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b pb-4">
+                  <div>
+                    <h2 className="text-base sm:text-lg font-black uppercase text-slate-900">
+                      NHẬT KÝ THEO DÕI ĐO ĐẠC ĐIỂM KIỂM SOÁT TỚI HẠN CCP
+                    </h2>
+                    <p className="text-xs text-slate-600 font-medium">
+                      Biểu mẫu BM-CCP-LOG-01 • Nhà máy WCERT
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      onClick={handlePrintCCPLogs}
+                      className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold gap-1.5 shadow-sm"
+                    >
+                      <FileDown className="w-3.5 h-3.5" /> Xuất File PDF
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowPrintLogModal(false)}
+                      className="text-xs border-slate-300 text-slate-700"
+                    >
+                      Đóng
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Filter bar */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-slate-700">Lọc theo kế hoạch:</span>
+                    <select
+                      value={logFilterPlanId}
+                      onChange={(e) => setLogFilterPlanId(e.target.value)}
+                      className="bg-white border border-slate-300 rounded-lg px-2.5 py-1 text-xs font-bold text-slate-900"
+                    >
+                      <option value="ALL">Toàn bộ kế hoạch ({logs.length} bản ghi)</option>
+                      {plans.map((p) => (
+                        <option key={p.plan_id} value={p.plan_id}>
+                          {p.plan_code} - {p.plan_name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="text-slate-600 font-medium">
+                    Phạm vi: <strong className="text-slate-900">{scopeLogText}</strong>
+                  </div>
+                </div>
+
+                <div className="border border-slate-300 rounded-xl overflow-hidden">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead className="bg-slate-100 font-bold border-b border-slate-300 text-slate-800">
+                      <tr>
+                        <th className="p-2 border-r border-slate-300">Mã CCP</th>
+                        <th className="p-2 border-r border-slate-300">Lô Hàng</th>
+                        <th className="p-2 border-r border-slate-300">Thời Gian</th>
+                        <th className="p-2 border-r border-slate-300">Giá Trị Đo</th>
+                        <th className="p-2 border-r border-slate-300">Giới Hạn Tới Hạn</th>
+                        <th className="p-2 border-r border-slate-300">Kết Luận</th>
+                        <th className="p-2">Người Giám Sát</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-200">
+                      {targetLogs.length === 0 ? (
+                        <tr>
+                          <td
+                            colSpan={7}
+                            className="text-center py-8 px-4 text-slate-600 bg-slate-50"
+                          >
+                            <div className="font-bold text-slate-800 text-xs">
+                              Chưa có bản ghi giám sát đo đạc CCP nào được ghi nhận trong kỳ báo cáo
+                              này.
+                            </div>
+                            <p className="text-[11px] text-slate-600 mt-1 max-w-lg mx-auto">
+                              (Nhân viên QC/KCS ghi nhận thông số giám sát nhiệt độ, thời gian, kích
+                              thước mẫu thử... theo từng mẻ sản xuất bằng nút "+ Ghi Nhận Đo Đạc
+                              CCP" tại màn hình chính).
+                            </p>
+                          </td>
+                        </tr>
+                      ) : (
+                        targetLogs.map((l) => (
+                          <tr key={l.log_id}>
+                            <td className="p-2 font-bold border-r border-slate-300 text-rose-700">
+                              {l.ccp_code}
+                            </td>
+                            <td className="p-2 font-mono font-bold border-r border-slate-300 text-slate-900">
+                              {l.batch_number}
+                            </td>
+                            <td className="p-2 border-r border-slate-300 text-slate-600">
+                              {l.test_time || "Hôm nay"}
+                            </td>
+                            <td className="p-2 font-bold border-r border-slate-300 text-slate-900">
+                              {l.measured_value} {l.unit}
+                            </td>
+                            <td className="p-2 border-r border-slate-300">
+                              {l.critical_limit_text || "Tiêu chuẩn"}
+                            </td>
+                            <td className="p-2 font-bold border-r border-slate-300">
+                              <span
+                                className={`px-2 py-0.5 rounded text-[10px] font-black ${
+                                  l.status === "PASS" ||
+                                  l.status === "PASSED" ||
+                                  l.status === "NORMAL"
+                                    ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
+                                    : "bg-rose-100 text-rose-800 border border-rose-300"
+                                }`}
+                              >
+                                {l.status === "PASS" ||
+                                l.status === "PASSED" ||
+                                l.status === "NORMAL"
+                                  ? "✓ ĐẠT"
+                                  : "✕ KHÔNG ĐẠT"}
+                              </span>
+                            </td>
+                            <td className="p-2 font-medium text-slate-800">
+                              {l.inspector_name || "QC Ca"}
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="flex justify-end pt-2 border-t border-slate-100">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowPrintLogModal(false)}
+                    className="text-xs border-slate-300 text-slate-700 font-semibold"
+                  >
+                    Đóng Hộp Thoại
+                  </Button>
+                </div>
               </div>
             </div>
-
-            <table className="w-full text-left text-xs border border-slate-300">
-              <thead className="bg-slate-100 font-bold border-b border-slate-300 text-slate-800">
-                <tr>
-                  <th className="p-2 border-r border-slate-300">Mã CCP</th>
-                  <th className="p-2 border-r border-slate-300">Công đoạn</th>
-                  <th className="p-2 border-r border-slate-300">Mối nguy cần kiểm soát</th>
-                  <th className="p-2 border-r border-slate-300">Giới hạn tới hạn</th>
-                  <th className="p-2 border-r border-slate-300">Giám sát</th>
-                  <th className="p-2 border-r border-slate-300">Hành động khắc phục</th>
-                  <th className="p-2">Phụ trách</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-200">
-                {ccps.map((c) => (
-                  <tr key={c.ccp_id}>
-                    <td className="p-2 font-bold border-r border-slate-300 text-rose-700">
-                      {c.ccp_code}
-                    </td>
-                    <td className="p-2 border-r border-slate-300">{c.step_name}</td>
-                    <td className="p-2 border-r border-slate-300">{c.hazard_description}</td>
-                    <td className="p-2 font-bold border-r border-slate-300 text-slate-900">
-                      {c.critical_limit?.condition_text || "Đạt chuẩn"}
-                    </td>
-                    <td className="p-2 border-r border-slate-300">
-                      {c.monitoring_frequency} ({c.monitoring_method})
-                    </td>
-                    <td className="p-2 border-r border-slate-300">{c.corrective_action_plan}</td>
-                    <td className="p-2 font-semibold text-emerald-700">{c.responsible_role}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-
-            <div className="flex justify-end pt-4">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowPrintPlanModal(false)}
-                className="text-xs border-slate-300 text-slate-700"
-              >
-                Đóng
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showPrintLogModal && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="w-full max-w-4xl bg-white text-slate-900 p-8 rounded-2xl shadow-2xl space-y-6 max-h-[90vh] overflow-y-auto border border-slate-200">
-            <div className="flex items-center justify-between border-b pb-4">
-              <div>
-                <h2 className="text-lg font-black uppercase text-slate-900">
-                  NHẬT KÝ THEO DÕI ĐO ĐẠC ĐIỂM KIỂM SOÁT TỚI HẠN CCP
-                </h2>
-                <p className="text-xs text-slate-500">Biểu mẫu BM-CCP-LOG-01 • Nhà máy WCERT</p>
-              </div>
-              <Button
-                size="sm"
-                onClick={handlePrintCCPLogs}
-                className="bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold"
-              >
-                <Printer className="w-3.5 h-3.5 mr-1" /> In Nhật Ký
-              </Button>
-            </div>
-
-            <table className="w-full text-left text-xs border border-slate-300">
-              <thead className="bg-slate-100 font-bold border-b border-slate-300 text-slate-800">
-                <tr>
-                  <th className="p-2 border-r border-slate-300">Mã CCP</th>
-                  <th className="p-2 border-r border-slate-300">Lô Hàng</th>
-                  <th className="p-2 border-r border-slate-300">Thời Gian</th>
-                  <th className="p-2 border-r border-slate-300">Giá Trị Đo</th>
-                  <th className="p-2 border-r border-slate-300">Giới Hạn Tới Hạn</th>
-                  <th className="p-2 border-r border-slate-300">Kết Luận</th>
-                  <th className="p-2">Người Giám Sát</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-200">
-                {logs.map((l) => (
-                  <tr key={l.log_id}>
-                    <td className="p-2 font-bold border-r border-slate-300 text-rose-700">
-                      {l.ccp_code}
-                    </td>
-                    <td className="p-2 font-mono font-bold border-r border-slate-300 text-slate-900">
-                      {l.batch_number}
-                    </td>
-                    <td className="p-2 border-r border-slate-300 text-slate-600">
-                      {l.test_time || "Hôm nay"}
-                    </td>
-                    <td className="p-2 font-bold border-r border-slate-300 text-slate-900">
-                      {l.measured_value} {l.unit}
-                    </td>
-                    <td className="p-2 border-r border-slate-300">
-                      {l.critical_limit_text || "Tiêu chuẩn"}
-                    </td>
-                    <td className="p-2 font-bold border-r border-slate-300">{l.status}</td>
-                    <td className="p-2 font-medium text-slate-800">
-                      {l.inspector_name || "QC Ca"}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-
-            <div className="flex justify-end pt-4">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowPrintLogModal(false)}
-                className="text-xs border-slate-300 text-slate-700"
-              >
-                Đóng
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+          );
+        })()}
 
       {/* Modal Xác Nhận Xóa Kế Hoạch HACCP */}
       <ConfirmDialog

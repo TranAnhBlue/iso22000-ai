@@ -8,6 +8,7 @@ import {
   Clock,
   AlertTriangle,
   Printer,
+  FileDown,
   Trash2,
   Check,
   Building2,
@@ -15,6 +16,7 @@ import {
   Send,
   XCircle,
   FileCheck2,
+  GitFork,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,6 +42,7 @@ interface ChangeRequestsTabProps {
   internalDocs: DocumentItem[];
   canEdit: boolean;
   isManagement: boolean;
+  onOpenRevision?: (cr: DocumentChangeRequest) => void;
 }
 
 export function ChangeRequestsTab({
@@ -49,6 +52,7 @@ export function ChangeRequestsTab({
   internalDocs,
   canEdit,
   isManagement,
+  onOpenRevision,
 }: ChangeRequestsTabProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("ALL");
@@ -554,10 +558,10 @@ export function ChangeRequestsTab({
                         <div className="flex items-center justify-end gap-1">
                           <button
                             onClick={() => handlePrintCR(cr)}
-                            title="In Phiếu BM01-KSTL"
+                            title="Xuất PDF Phiếu BM01-KSTL"
                             className="rounded p-1.5 text-muted-foreground hover:bg-primary/10 hover:text-primary transition"
                           >
-                            <Printer className="h-3.5 w-3.5" />
+                            <FileDown className="h-3.5 w-3.5" />
                           </button>
 
                           <button
@@ -599,6 +603,19 @@ export function ChangeRequestsTab({
                               className="h-7 text-[10px] px-2 border-emerald-300 text-emerald-700 hover:bg-emerald-50 font-bold"
                             >
                               BGĐ Duyệt
+                            </Button>
+                          )}
+
+                          {cr.status === "APPROVED" && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => onOpenRevision?.(cr)}
+                              className="h-7 text-[10px] px-2 border-primary/40 text-primary hover:bg-primary/10 font-semibold gap-1"
+                              title="Soạn bản sửa đổi (Revision theo ISO 7.5) cho tài liệu này"
+                            >
+                              <GitFork className="h-3 w-3" />
+                              Soạn Revision
                             </Button>
                           )}
 
@@ -944,8 +961,8 @@ export function ChangeRequestsTab({
                   onClick={() => handlePrintCR(viewingCR)}
                   className="gap-1.5 text-xs"
                 >
-                  <Printer className="h-3.5 w-3.5" />
-                  In biểu mẫu BM01
+                  <FileDown className="h-3.5 w-3.5" />
+                  Xuất PDF BM01
                 </Button>
               </div>
             </DialogHeader>
@@ -1040,8 +1057,24 @@ export function ChangeRequestsTab({
               </div>
             </div>
 
-            <DialogFooter>
-              <Button size="sm" onClick={() => setViewingCR(null)}>
+            <DialogFooter className="flex items-center justify-between sm:justify-between w-full">
+              {viewingCR.status === "APPROVED" && onOpenRevision ? (
+                <Button
+                  size="sm"
+                  className="bg-primary text-primary-foreground font-semibold gap-1.5 text-xs"
+                  onClick={() => {
+                    const cr = viewingCR;
+                    setViewingCR(null);
+                    onOpenRevision(cr);
+                  }}
+                >
+                  <GitFork className="h-3.5 w-3.5" />
+                  Soạn Bản Sửa Đổi (Revision theo ISO 7.5)
+                </Button>
+              ) : (
+                <div />
+              )}
+              <Button size="sm" variant="outline" onClick={() => setViewingCR(null)}>
                 Đóng
               </Button>
             </DialogFooter>

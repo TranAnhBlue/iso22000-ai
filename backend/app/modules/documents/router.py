@@ -11,7 +11,15 @@ from app.core.database import get_db
 from app.core.dependencies import get_current_user, require_roles
 from app.core.supabase_storage import download_private_file, upload_private_file
 from app.core.authorization import has_any_role, role_codes
-from app.modules.documents.models import Document, DocumentApproval, DocumentChangeRequest, DocumentDistribution, ExternalDocument, RecordRetention
+from app.modules.documents.models import (
+    Document,
+    DocumentApproval,
+    DocumentChangeRequest,
+    DocumentDistribution,
+    ExternalDocument,
+    RecordRetention,
+    DocumentRevision,
+)
 from app.modules.auth.models import User
 from app.modules.documents.schemas import (
     DocumentCreate,
@@ -37,6 +45,12 @@ from app.modules.documents.schemas import (
     RecordRetentionUpdate,
     RecordRetentionDispose,
     RecordRetentionResponse,
+    DocumentRevisionCreate,
+    DocumentRevisionUpdate,
+    DocumentRevisionSubmit,
+    DocumentRevisionApprove,
+    DocumentRevisionReject,
+    DocumentRevisionResponse,
 )
 
 router = APIRouter(prefix="/documents", tags=["Documents & SOPs"])
@@ -217,7 +231,7 @@ def create_document(
         file_url=doc_in.file_url,
         approved_by=approved_by_id,
         effective_date=effective_date_val,
-        review_due_date=doc_in.review_due_date or ((effective_date_val + timedelta(days=365 * (doc_in.review_frequency_years or 3))) if effective_date_val else None),
+        review_due_date=doc_in.review_due_date or ((effective_date_val + timedelta(days=int(365 * (doc_in.review_frequency_years or 3)))) if effective_date_val else None),
         last_reviewed_date=doc_in.last_reviewed_date or effective_date_val,
         review_frequency_years=doc_in.review_frequency_years or 3,
         drafter_name=doc_in.drafter_name or current_user.full_name or current_user.username,
@@ -388,17 +402,17 @@ def get_iso_clauses_matrix(
 
     results = []
     for item in ISO_22000_CLAUSES_MATRIX:
-        matched_docs = []
+        matched_docs: List[Dict[str, Any]] = []
         for code in item["doc_codes"]:
             clean_code = code.split(" ")[0].strip()
             found = doc_map.get(clean_code)
             if found:
                 matched_docs.append({
                     "doc_id": str(found.document_id),
-                    "doc_code": found.doc_code,
-                    "doc_title": found.doc_title,
-                    "status": found.status,
-                    "version": found.current_version,
+                    "doc_code": str(found.doc_code),
+                    "doc_title": str(found.doc_title),
+                    "status": str(found.status),
+                    "version": str(found.current_version),
                 })
             else:
                 matched_docs.append({
@@ -409,16 +423,16 @@ def get_iso_clauses_matrix(
                     "version": "1.0",
                 })
 
-        matched_forms = []
+        matched_forms: List[Dict[str, Any]] = []
         for fcode in item["forms"]:
             clean_fcode = fcode.split(" ")[0].strip()
             found_ret = ret_map.get(clean_fcode)
             if found_ret:
                 matched_forms.append({
                     "retention_id": str(found_ret.retention_id),
-                    "record_code": found_ret.record_code,
-                    "record_name": found_ret.record_name,
-                    "status": found_ret.status,
+                    "record_code": str(found_ret.record_code),
+                    "record_name": str(found_ret.record_name),
+                    "status": str(found_ret.status),
                 })
             else:
                 matched_forms.append({
@@ -632,12 +646,13 @@ def dept_head_review(
 ):
     """Bước 1 (BM01-KSTL): Trưởng đơn vị xem xét yêu cầu soạn thảo/sửa đổi"""
     req = db.query(DocumentChangeRequest).filter(DocumentChangeRequest.request_id == request_id).first()
-    if not req:
+    if req is None:
         raise HTTPException(status_code=404, detail="Không tìm thấy phiếu yêu cầu")
-    if req.status != "SUBMITTED":
+    req_status = str(req.status)
+    if req_status != "SUBMITTED":
         raise HTTPException(
             status_code=400,
-            detail=f"Phiếu yêu cầu đang ở trạng thái '{req.status}'. Chỉ phiếu ở trạng thái 'SUBMITTED' (Chờ đơn vị xem xét) mới có thể thực hiện xem xét của Trưởng đơn vị theo BM01-KSTL."
+            detail=f"Phiếu yêu cầu đang ở trạng thái '{req_status}'. Chỉ phiếu ở trạng thái 'SUBMITTED' (Chờ đơn vị xem xét) mới có thể thực hiện xem xét của Trưởng đơn vị theo BM01-KSTL."
         )
     req.dept_head_opinion = payload.opinion.upper()
     req.dept_head_comment = payload.comment
@@ -661,12 +676,13 @@ def qa_head_review(
 ):
     """Bước 2 (BM01-KSTL): Trưởng ban QLCL & ATTP xem xét tính phù hợp theo tiêu chuẩn ISO 22000"""
     req = db.query(DocumentChangeRequest).filter(DocumentChangeRequest.request_id == request_id).first()
-    if not req:
+    if req is None:
         raise HTTPException(status_code=404, detail="Không tìm thấy phiếu yêu cầu")
-    if req.status != "DEPT_REVIEWED":
+    req_status = str(req.status)
+    if req_status != "DEPT_REVIEWED":
         raise HTTPException(
             status_code=400,
-            detail=f"Phiếu yêu cầu đang ở trạng thái '{req.status}'. Phiếu phải được Trưởng đơn vị xem xét ('DEPT_REVIEWED') trước khi QA xem xét theo BM01-KSTL."
+            detail=f"Phiếu yêu cầu đang ở trạng thái '{req_status}'. Phiếu phải được Trưởng đơn vị xem xét ('DEPT_REVIEWED') trước khi QA xem xét theo BM01-KSTL."
         )
     req.qa_head_opinion = payload.opinion.upper()
     req.qa_head_comment = payload.comment
@@ -690,12 +706,13 @@ def director_approve(
 ):
     """Bước 3 (BM01-KSTL): Ban Giám Đốc phê duyệt phiếu yêu cầu"""
     req = db.query(DocumentChangeRequest).filter(DocumentChangeRequest.request_id == request_id).first()
-    if not req:
+    if req is None:
         raise HTTPException(status_code=404, detail="Không tìm thấy phiếu yêu cầu")
-    if req.status != "QA_REVIEWED":
+    req_status = str(req.status)
+    if req_status != "QA_REVIEWED":
         raise HTTPException(
             status_code=400,
-            detail=f"Phiếu yêu cầu đang ở trạng thái '{req.status}'. Phiếu phải qua QA xem xét ('QA_REVIEWED') trước khi Ban Giám Đốc phê duyệt theo BM01-KSTL."
+            detail=f"Phiếu yêu cầu đang ở trạng thái '{req_status}'. Phiếu phải qua QA xem xét ('QA_REVIEWED') trước khi Ban Giám Đốc phê duyệt theo BM01-KSTL."
         )
     req.director_approval = payload.approval.upper()
     req.director_comment = payload.comment
@@ -941,7 +958,7 @@ def get_periodic_review_schedule(db: Session = Depends(get_db)):
     for d in docs:
         due_date = d.review_due_date
         if not due_date and d.effective_date:
-            due_date = d.effective_date + timedelta(days=365 * (d.review_frequency_years or 3))
+            due_date = d.effective_date + timedelta(days=int(365 * (d.review_frequency_years or 3)))
 
         review_status = "VALID"
         days_remaining = None
@@ -1077,7 +1094,7 @@ SEED_RETENTION_RECORDS = [
 ]
 
 
-def calculate_retention_expiry(creation_date: Optional[date], period_str: Optional[str]) -> Optional[date]:
+def calculate_retention_expiry(creation_date: Any, period_str: Any) -> Optional[date]:
     """
     Tự động tính ngày hết hạn lưu trữ theo ngày phát sinh hồ sơ (BM01-KSHS):
     '01 năm' -> +1 năm
@@ -1090,7 +1107,7 @@ def calculate_retention_expiry(creation_date: Optional[date], period_str: Option
         creation_date = date.today()
     if not period_str:
         return None
-    p = period_str.lower().strip()
+    p = str(period_str).lower().strip()
     if "vĩnh viễn" in p or "permanent" in p:
         return None
 
@@ -1117,14 +1134,14 @@ def format_retention_record(r: RecordRetention) -> RecordRetentionResponse:
     c_date = getattr(r, "creation_date", None) or (r.created_at.date() if r.created_at else date.today())
     exp_date = getattr(r, "retention_expiry_date", None)
     if not exp_date and c_date and r.retention_period:
-        exp_date = calculate_retention_expiry(c_date, r.retention_period)
+        exp_date = calculate_retention_expiry(c_date, str(r.retention_period))
 
     today = date.today()
     is_expiring_soon = False
     is_expired = False
     days_remaining = None
 
-    if exp_date and r.status != "DISPOSED":
+    if exp_date and str(r.status) != "DISPOSED":
         delta = (exp_date - today).days
         days_remaining = delta
         if delta < 0:
@@ -1132,29 +1149,13 @@ def format_retention_record(r: RecordRetention) -> RecordRetentionResponse:
         elif delta <= 30:
             is_expiring_soon = True
 
-    return RecordRetentionResponse(
-        retention_id=r.retention_id,
-        record_code=r.record_code,
-        record_name=r.record_name,
-        department=r.department,
-        storage_location=r.storage_location,
-        creation_date=c_date,
-        retention_period=r.retention_period,
-        retention_expiry_date=exp_date,
-        disposal_method=r.disposal_method,
-        responsible_person=r.responsible_person,
-        status=r.status,
-        disposal_date=r.disposal_date,
-        disposal_council=r.disposal_council,
-        disposal_minutes_code=r.disposal_minutes_code,
-        notes=r.notes,
-        is_deleted=r.is_deleted,
-        is_expiring_soon=is_expiring_soon,
-        is_expired=is_expired,
-        days_remaining=days_remaining,
-        created_at=r.created_at,
-        updated_at=r.updated_at,
-    )
+    res = RecordRetentionResponse.model_validate(r)
+    res.creation_date = c_date
+    res.retention_expiry_date = exp_date
+    res.is_expiring_soon = is_expiring_soon
+    res.is_expired = is_expired
+    res.days_remaining = days_remaining
+    return res
 
 
 @router.get("/retention/expiring-soon", response_model=List[RecordRetentionResponse])
@@ -1198,7 +1199,7 @@ def get_retention_records(
         for seed in SEED_RETENTION_RECORDS:
             item = RecordRetention(**seed)
             if not getattr(item, "retention_expiry_date", None):
-                item.retention_expiry_date = calculate_retention_expiry(date.today(), item.retention_period)
+                item.retention_expiry_date = calculate_retention_expiry(date.today(), str(item.retention_period) if item.retention_period else None)
             db.add(item)
         db.commit()
 
@@ -1320,7 +1321,7 @@ def update_retention_record(
 
     # Tự động tính lại ngày hết hạn nếu không truyền trực tiếp
     if "retention_expiry_date" not in item_in.model_dump(exclude_unset=True):
-        record.retention_expiry_date = calculate_retention_expiry(record.creation_date, record.retention_period)
+        record.retention_expiry_date = calculate_retention_expiry(record.creation_date, str(record.retention_period) if record.retention_period else None)
 
     record.updated_at = datetime.now(timezone.utc)
     db.commit()
@@ -1504,7 +1505,7 @@ def update_document(
                 doc.approved_by = current_user.user_id
                 eff = doc_in.effective_date or date.today()
                 doc.effective_date = eff
-                doc.review_due_date = eff + timedelta(days=365 * (doc.review_frequency_years or 3))
+                doc.review_due_date = eff + timedelta(days=int(365 * (doc.review_frequency_years or 3)))
                 doc.last_reviewed_date = eff
                 action_type = "APPROVED"
         else:
@@ -1579,7 +1580,7 @@ def approve_document(
     doc.approved_by = current_user.user_id
     eff = payload.effective_date or date.today()
     doc.effective_date = eff
-    doc.review_due_date = eff + timedelta(days=365 * (doc.review_frequency_years or 3))
+    doc.review_due_date = eff + timedelta(days=int(365 * (doc.review_frequency_years or 3)))
     doc.last_reviewed_date = eff
 
     approval_rec = DocumentApproval(
@@ -1632,7 +1633,7 @@ def confirm_unaltered_periodic_review(
         raise HTTPException(status_code=404, detail="Không tìm thấy tài liệu")
     today = date.today()
     doc.last_reviewed_date = today
-    doc.review_due_date = today + timedelta(days=365 * (doc.review_frequency_years or 3))
+    doc.review_due_date = today + timedelta(days=int(365 * (doc.review_frequency_years or 3)))
 
     approval_rec = DocumentApproval(
         document_id=doc.document_id,
@@ -1662,3 +1663,442 @@ def delete_document(
     db.delete(doc)
     db.commit()
     return {"message": f"Đã xoá tài liệu '{doc.doc_code}' thành công"}
+
+
+# =========================================================================
+# DOCUMENT REVISION WORKFLOW (ISO 22000 Cl. 7.5 & Quy trình 02 KSTL An Giang)
+# =========================================================================
+
+@router.get("/{document_id}/revisions", response_model=List[DocumentRevisionResponse])
+def get_document_revisions(
+    document_id: UUID,
+    db: Session = Depends(get_db),
+    _current_user: User = Depends(get_current_user),
+):
+    """
+    Lấy toàn bộ danh sách các bản sửa đổi (Revisions) của tài liệu.
+    Bao gồm các bản nháp (DRAFT), đang thẩm định (UNDER_REVIEW), bản hiệu lực (EFFECTIVE) và bản cũ (SUPERSEDED).
+    """
+    doc = db.query(Document).filter(Document.document_id == document_id).first()
+    if not doc:
+        raise HTTPException(status_code=404, detail="Không tìm thấy tài liệu")
+
+    revisions = (
+        db.query(DocumentRevision)
+        .filter(DocumentRevision.document_id == document_id)
+        .order_by(desc(DocumentRevision.created_at))
+        .all()
+    )
+    return [DocumentRevisionResponse.model_validate(r) for r in revisions]
+
+
+@router.post("/{document_id}/revisions", response_model=DocumentRevisionResponse, status_code=status.HTTP_201_CREATED)
+def create_document_revision(
+    document_id: UUID,
+    payload: DocumentRevisionCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "fst_leader", "doc_controller", "manager", "management", "staff", "editor")),
+):
+    """
+    Tạo bản sửa đổi mới độc lập (Draft Revision).
+    NGUYÊN TẮC ISO: Bản hiệu lực hiện tại (EFFECTIVE) của tài liệu vẫn được giữ nguyên vẹn
+    để vận hành sản xuất không bị gián đoạn. Bản mới được khởi tạo ở trạng thái DRAFT.
+    """
+    doc = db.query(Document).filter(Document.document_id == document_id).first()
+    if not doc:
+        raise HTTPException(status_code=404, detail="Không tìm thấy tài liệu")
+
+    # Kiểm tra xem tài liệu đã có bản nháp chưa hoàn tất hay không (tránh xung đột phiên bản)
+    active_draft = (
+        db.query(DocumentRevision)
+        .filter(
+            DocumentRevision.document_id == document_id,
+            DocumentRevision.status.in_(["DRAFT", "UNDER_REVIEW"])
+        )
+        .first()
+    )
+    if active_draft:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Tài liệu '{doc.doc_code}' đang có bản sửa đổi v{active_draft.version} ở trạng thái {active_draft.status}. Vui lòng hoàn tất hoặc hủy bản sửa đổi này trước khi tạo bản mới."
+        )
+
+    # Tính toán phiên bản tiếp theo nếu người dùng không chỉ định
+    target_version = payload.version
+    if not target_version or not target_version.strip():
+        try:
+            parts = doc.current_version.split(".")
+            if len(parts) >= 2:
+                target_version = f"{parts[0]}.{int(parts[1]) + 1}"
+            else:
+                target_version = f"{int(parts[0]) + 1}.0"
+        except Exception:
+            target_version = f"{doc.current_version}.1"
+    else:
+        target_version = target_version.strip()
+
+    # Kiểm tra không được trùng với các phiên bản revision đã có của tài liệu này
+    existing_rev = (
+        db.query(DocumentRevision)
+        .filter(
+            DocumentRevision.document_id == document_id,
+            DocumentRevision.version == target_version
+        )
+        .first()
+    )
+    if existing_rev:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Phiên bản '{target_version}' đã tồn tại trong lịch sử sửa đổi của tài liệu này."
+        )
+
+    # Kiểm tra mã yêu cầu thay đổi (nếu có)
+    if payload.change_request_id:
+        cr = db.query(DocumentChangeRequest).filter(DocumentChangeRequest.request_id == payload.change_request_id).first()
+        if not cr:
+            raise HTTPException(status_code=404, detail="Không tìm thấy phiếu yêu cầu thay đổi liên kết.")
+        if cr.document_id and cr.document_id != document_id:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Phiếu yêu cầu thay đổi '{cr.request_code}' thuộc tài liệu khác, không khớp với tài liệu hiện tại."
+            )
+        if str(cr.status) != "APPROVED":
+            raise HTTPException(
+                status_code=400,
+                detail=f"Phiếu yêu cầu thay đổi '{cr.request_code}' đang ở trạng thái '{cr.status}'. Phiếu phải được Ban Giám Đốc phê duyệt ('APPROVED') trước khi khởi tạo bản sửa đổi."
+            )
+
+    import uuid
+    revision_code = f"REV-{doc.doc_code}-v{target_version.replace('.', '_')}-{uuid.uuid4().hex[:4].upper()}"
+
+    new_revision = DocumentRevision(
+        document_id=doc.document_id,
+        change_request_id=payload.change_request_id,
+        revision_code=revision_code,
+        version=target_version,
+        change_description=payload.change_description,
+        content=payload.content if payload.content is not None else doc.content,
+        file_url=payload.file_url if payload.file_url is not None else doc.file_url,
+        status="DRAFT",
+        drafter_id=current_user.user_id,
+        drafter_name=payload.drafter_name or current_user.full_name or current_user.username,
+        reviewer_name=payload.reviewer_name or doc.reviewer_name,
+    )
+
+    db.add(new_revision)
+
+    # Ghi nhận lịch sử luồng phê duyệt
+    approval_rec = DocumentApproval(
+        document_id=doc.document_id,
+        version=target_version,
+        action="CREATED_REVISION",
+        previous_status=doc.current_version,
+        new_status="DRAFT_REVISION",
+        performed_by=current_user.user_id,
+        performed_by_name=current_user.full_name or current_user.username,
+        comments=f"Khởi tạo bản sửa đổi v{target_version}. Lý do: {payload.change_description}",
+    )
+    db.add(approval_rec)
+
+    db.commit()
+    db.refresh(new_revision)
+    return DocumentRevisionResponse.model_validate(new_revision)
+
+
+@router.get("/revisions/{revision_id}", response_model=DocumentRevisionResponse)
+def get_revision_detail(
+    revision_id: UUID,
+    db: Session = Depends(get_db),
+    _current_user: User = Depends(get_current_user),
+):
+    """Xem chi tiết một bản sửa đổi tài liệu."""
+    rev = db.query(DocumentRevision).filter(DocumentRevision.revision_id == revision_id).first()
+    if not rev:
+        raise HTTPException(status_code=404, detail="Không tìm thấy bản sửa đổi")
+    return DocumentRevisionResponse.model_validate(rev)
+
+
+@router.put("/revisions/{revision_id}", response_model=DocumentRevisionResponse)
+def update_document_revision(
+    revision_id: UUID,
+    payload: DocumentRevisionUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "fst_leader", "doc_controller", "manager", "management", "staff", "editor")),
+):
+    """
+    Cập nhật nội dung bản sửa đổi đang ở trạng thái DRAFT hoặc REJECTED.
+    Không cho phép sửa đổi các bản đã được phê duyệt hoặc đã ban hành.
+    """
+    rev = db.query(DocumentRevision).filter(DocumentRevision.revision_id == revision_id).first()
+    if not rev:
+        raise HTTPException(status_code=404, detail="Không tìm thấy bản sửa đổi")
+
+    rev_status = str(rev.status)
+    if rev_status not in ["DRAFT", "REJECTED"]:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Không thể chỉnh sửa bản sửa đổi ở trạng thái '{rev_status}'. Chỉ cho phép sửa khi là DRAFT hoặc REJECTED."
+        )
+
+    if payload.version is not None:
+        new_version = payload.version.strip()
+        if new_version != rev.version:
+            doc = db.query(Document).filter(Document.document_id == rev.document_id).first()
+            if not doc:
+                raise HTTPException(status_code=404, detail="Không tìm thấy tài liệu gốc")
+            dup = (
+                db.query(DocumentRevision)
+                .filter(
+                    DocumentRevision.document_id == rev.document_id,
+                    DocumentRevision.revision_id != rev.revision_id,
+                    DocumentRevision.version == new_version,
+                )
+                .first()
+            )
+            if dup:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Phiên bản '{new_version}' đã tồn tại trong lịch sử sửa đổi của tài liệu này."
+                )
+            rev.version = new_version
+            import uuid
+            rev.revision_code = f"REV-{doc.doc_code}-v{new_version.replace('.', '_')}-{uuid.uuid4().hex[:4].upper()}"
+    if payload.change_description is not None:
+        rev.change_description = payload.change_description
+    if payload.content is not None:
+        rev.content = payload.content
+    if payload.file_url is not None:
+        rev.file_url = payload.file_url
+    if payload.drafter_name is not None:
+        rev.drafter_name = payload.drafter_name
+    if payload.reviewer_name is not None:
+        rev.reviewer_name = payload.reviewer_name
+
+    db.commit()
+    db.refresh(rev)
+    return DocumentRevisionResponse.model_validate(rev)
+
+
+@router.post("/revisions/{revision_id}/submit", response_model=DocumentRevisionResponse)
+def submit_document_revision(
+    revision_id: UUID,
+    payload: DocumentRevisionSubmit,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "fst_leader", "doc_controller", "manager", "management", "staff", "editor")),
+):
+    """
+    Trình duyệt bản sửa đổi (chuyển trạng thái sang UNDER_REVIEW để Trưởng QLCL / Giám đốc thẩm định).
+    """
+    rev = db.query(DocumentRevision).filter(DocumentRevision.revision_id == revision_id).first()
+    if not rev:
+        raise HTTPException(status_code=404, detail="Không tìm thấy bản sửa đổi")
+
+    rev_status = str(rev.status)
+    if rev_status not in ["DRAFT", "REJECTED"]:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Chỉ có thể trình duyệt bản sửa đổi đang ở trạng thái DRAFT hoặc REJECTED (hiện tại: {rev_status})."
+        )
+
+    rev.status = "UNDER_REVIEW"
+
+    approval_rec = DocumentApproval(
+        document_id=rev.document_id,
+        version=rev.version,
+        action="SUBMITTED_REVISION",
+        previous_status="DRAFT",
+        new_status="UNDER_REVIEW",
+        performed_by=current_user.user_id,
+        performed_by_name=current_user.full_name or current_user.username,
+        comments=payload.comments or f"Trình duyệt bản sửa đổi v{rev.version} theo quy trình kiểm soát tài liệu.",
+    )
+    db.add(approval_rec)
+
+    db.commit()
+    db.refresh(rev)
+    return DocumentRevisionResponse.model_validate(rev)
+
+
+@router.post("/revisions/{revision_id}/approve", response_model=DocumentRevisionResponse)
+def approve_document_revision(
+    revision_id: UUID,
+    payload: DocumentRevisionApprove,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "fst_leader", "doc_controller", "director", "manager", "management", "executive")),
+):
+    """
+    Phê duyệt và ban hành chính thức bản sửa đổi (ISO 22000 Cl. 7.5):
+    1. Kiểm tra nguyên tắc Maker-Checker: Người soạn thảo không được tự phê duyệt bản sửa đổi của chính mình.
+    2. Chuyển bản sửa đổi thành EFFECTIVE.
+    3. Đánh dấu các bản hiệu lực cũ thành SUPERSEDED.
+    4. Cập nhật phiên bản, nội dung và ngày hiệu lực của Document gốc.
+    5. Tự động sinh biên bản thông báo phân phối tài liệu BM02-KSTL để thu hồi bản cũ.
+    """
+    rev = db.query(DocumentRevision).filter(DocumentRevision.revision_id == revision_id).first()
+    if not rev:
+        raise HTTPException(status_code=404, detail="Không tìm thấy bản sửa đổi")
+
+    doc = db.query(Document).filter(Document.document_id == rev.document_id).first()
+    if not doc:
+        raise HTTPException(status_code=404, detail="Không tìm thấy tài liệu gốc")
+
+    # Kiểm tra Maker-Checker: Người soạn thảo không tự duyệt (trừ cấp lãnh đạo/admin tối cao)
+    user_roles_list = [r.lower() for r in (role_codes(current_user) or [current_user.role or ""])]
+    if rev.drafter_id == current_user.user_id and not any(r in user_roles_list for r in ["admin", "director", "management", "executive"]):
+        raise HTTPException(
+            status_code=400,
+            detail="Nguyên tắc kiểm soát độc lập ISO 22000 (Maker-Checker): Người soạn thảo không được tự phê duyệt bản sửa đổi của mình."
+        )
+
+    rev_status = str(rev.status)
+    if rev_status != "UNDER_REVIEW":
+        raise HTTPException(
+            status_code=400,
+            detail=f"Chỉ có thể phê duyệt bản sửa đổi đang ở trạng thái 'UNDER_REVIEW' (đã qua bước trình duyệt). Bản sửa đổi hiện đang ở trạng thái '{rev_status}'. Theo quy định ISO 22000 (Maker-Checker), người soạn thảo phải thực hiện trình duyệt trước khi cấp thẩm quyền phê duyệt ban hành."
+        )
+
+    eff_date = payload.effective_date or date.today()
+    old_version = doc.current_version
+
+    # Đánh dấu các revision cũ thành SUPERSEDED
+    old_revisions = (
+        db.query(DocumentRevision)
+        .filter(
+            DocumentRevision.document_id == rev.document_id,
+            DocumentRevision.revision_id != rev.revision_id,
+            DocumentRevision.status == "EFFECTIVE",
+        )
+        .all()
+    )
+    for old_rev in old_revisions:
+        old_rev.status = "SUPERSEDED"
+        old_rev.superseded_date = eff_date
+
+    # Cập nhật revision hiện tại thành EFFECTIVE
+    rev.status = "EFFECTIVE"
+    rev.approver_id = current_user.user_id
+    rev.approver_name = current_user.full_name or current_user.username
+    rev.approval_date = date.today()
+    rev.approval_notes = payload.approval_notes
+    rev.effective_date = eff_date
+
+    # Cập nhật Document gốc
+    doc.current_version = rev.version
+    if rev.content:
+        doc.content = rev.content
+    if rev.file_url:
+        doc.file_url = rev.file_url
+    doc.status = "APPROVED"
+    doc.effective_date = eff_date
+    doc.last_reviewed_date = date.today()
+    doc.review_due_date = date.today() + timedelta(days=int(365 * (doc.review_frequency_years or 3)))
+    doc.drafter_name = rev.drafter_name
+    doc.reviewer_name = rev.reviewer_name
+    doc.approved_by = current_user.user_id
+
+    # Nếu gắn với Phiếu yêu cầu thay đổi, hoàn tất phiếu
+    if rev.change_request_id:
+        cr = db.query(DocumentChangeRequest).filter(DocumentChangeRequest.request_id == rev.change_request_id).first()
+        if cr:
+            cr.status = "COMPLETED"
+            cr.director_approval = "APPROVED"
+
+    # Ghi nhận lịch sử luồng duyệt
+    approval_rec = DocumentApproval(
+        document_id=doc.document_id,
+        version=rev.version,
+        action="APPROVED_REVISION",
+        previous_status=f"Version {old_version}",
+        new_status=f"Version {rev.version} (EFFECTIVE)",
+        performed_by=current_user.user_id,
+        performed_by_name=current_user.full_name or current_user.username,
+        comments=payload.approval_notes or f"Phê duyệt và ban hành chính thức bản sửa đổi v{rev.version} thay thế bản v{old_version}.",
+    )
+    db.add(approval_rec)
+
+    # Tự động tạo bản ghi phân phối tài liệu BM02-KSTL
+    auto_dist = DocumentDistribution(
+        notice_code=f"TB-PPH-{doc.doc_code}-v{rev.version.replace('.', '_')}",
+        document_id=doc.document_id,
+        doc_code=doc.doc_code,
+        doc_title=doc.doc_title,
+        version=rev.version,
+        effective_date=eff_date,
+        change_summary=f"Ban hành phiên bản sửa đổi v{rev.version}. Nội dung: {rev.change_description}. Yêu cầu các đơn vị thu hồi/ngưng sử dụng bản cũ v{old_version}.",
+        department_recipient=doc.department or "Ban QLCL & Các đơn vị liên quan",
+        distribution_method="PORTAL",
+        copy_number=1,
+        distributed_by_name=current_user.full_name or "Document Controller",
+        distribution_date=date.today(),
+        acknowledged=False,
+        obsolete_copy_retrieved=False,
+        notes=f"Tự động sinh từ quyết định phê duyệt bản sửa đổi {rev.revision_code}."
+    )
+    db.add(auto_dist)
+
+    db.commit()
+    db.refresh(rev)
+    return DocumentRevisionResponse.model_validate(rev)
+
+
+@router.post("/revisions/{revision_id}/reject", response_model=DocumentRevisionResponse)
+def reject_document_revision(
+    revision_id: UUID,
+    payload: DocumentRevisionReject,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "fst_leader", "doc_controller", "director", "manager", "management", "executive")),
+):
+    """Từ chối bản sửa đổi và gửi yêu cầu chỉnh sửa lại."""
+    rev = db.query(DocumentRevision).filter(DocumentRevision.revision_id == revision_id).first()
+    if not rev:
+        raise HTTPException(status_code=404, detail="Không tìm thấy bản sửa đổi")
+
+    rev_status = str(rev.status)
+    if rev_status != "UNDER_REVIEW":
+        raise HTTPException(status_code=400, detail=f"Chỉ có thể từ chối bản sửa đổi đang ở trạng thái 'UNDER_REVIEW' (hiện tại: '{rev_status}').")
+
+    prev_status = rev_status
+    rev.status = "REJECTED"
+    rev.approval_notes = payload.rejection_reason
+
+    approval_rec = DocumentApproval(
+        document_id=rev.document_id,
+        version=rev.version,
+        action="REJECTED_REVISION",
+        previous_status=prev_status,
+        new_status="REJECTED",
+        performed_by=current_user.user_id,
+        performed_by_name=current_user.full_name or current_user.username,
+        comments=f"Từ chối bản sửa đổi v{rev.version}. Lý do: {payload.rejection_reason}",
+    )
+    db.add(approval_rec)
+
+    db.commit()
+    db.refresh(rev)
+    return DocumentRevisionResponse.model_validate(rev)
+
+
+@router.delete("/revisions/{revision_id}")
+def delete_document_revision(
+    revision_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "qa", "fst_leader", "doc_controller", "director", "manager", "management")),
+):
+    """
+    Xóa bản nháp sửa đổi (chỉ cho phép xóa khi là DRAFT hoặc REJECTED).
+    Tuyệt đối không cho phép xóa bản đã APPROVED, EFFECTIVE hoặc SUPERSEDED.
+    """
+    rev = db.query(DocumentRevision).filter(DocumentRevision.revision_id == revision_id).first()
+    if not rev:
+        raise HTTPException(status_code=404, detail="Không tìm thấy bản sửa đổi")
+
+    rev_status = str(rev.status)
+    if rev_status in ["EFFECTIVE", "SUPERSEDED", "APPROVED"]:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Quy định kiểm soát hồ sơ ISO 22000: Không được phép xóa bản sửa đổi đã ở trạng thái '{rev_status}'. Bằng chứng lịch sử phải được lưu trữ nguyên vẹn."
+        )
+
+    db.delete(rev)
+    db.commit()
+    return {"message": f"Đã xóa bản sửa đổi '{rev.revision_code}' thành công."}

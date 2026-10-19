@@ -589,6 +589,32 @@ MIGRATION_STATEMENTS = [
     );
     """,
     """
+    CREATE TABLE IF NOT EXISTS document_revisions (
+        revision_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        document_id UUID NOT NULL REFERENCES documents(document_id) ON DELETE CASCADE,
+        change_request_id UUID REFERENCES document_change_requests(request_id) ON DELETE SET NULL,
+        revision_code VARCHAR(50) UNIQUE NOT NULL,
+        version VARCHAR(20) NOT NULL,
+        change_description TEXT NOT NULL,
+        content TEXT,
+        file_url TEXT,
+        status VARCHAR(30) NOT NULL DEFAULT 'DRAFT',
+        drafter_id UUID REFERENCES users(user_id) ON DELETE SET NULL,
+        drafter_name VARCHAR(150) NOT NULL,
+        reviewer_name VARCHAR(150),
+        approver_id UUID REFERENCES users(user_id) ON DELETE SET NULL,
+        approver_name VARCHAR(150),
+        approval_date DATE,
+        approval_notes TEXT,
+        effective_date DATE,
+        superseded_date DATE,
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_doc_rev_doc_id ON document_revisions(document_id);
+    CREATE INDEX IF NOT EXISTS idx_doc_rev_status ON document_revisions(status);
+    """,
+    """
     CREATE TABLE IF NOT EXISTS document_distributions (
         distribution_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         notice_code VARCHAR(50) NOT NULL,

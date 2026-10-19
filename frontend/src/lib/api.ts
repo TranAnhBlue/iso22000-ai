@@ -39,7 +39,11 @@ api.interceptors.response.use(
     if (method === "get" && response.status === 200 && response.data !== undefined) {
       // Lưu vào in-memory cache
       setCachedApi(url, response.data, config.params);
-    } else if (["post", "put", "delete", "patch"].includes(method) && response.status >= 200 && response.status < 300) {
+    } else if (
+      ["post", "put", "delete", "patch"].includes(method) &&
+      response.status >= 200 &&
+      response.status < 300
+    ) {
       // Khi có mutation thành công, tự động xóa cache của module liên quan
       const prefixMatch = url.match(/^\/([a-z0-9_-]+)/i);
       if (prefixMatch) {
@@ -67,4 +71,3 @@ api.interceptors.response.use(
 );
 
 export default api;
-

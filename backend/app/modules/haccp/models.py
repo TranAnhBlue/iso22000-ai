@@ -61,7 +61,7 @@ class HazardAnalysis(Base):
     is_significant: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     control_measure: Mapped[str] = mapped_column(Text, nullable=False)  # Biện pháp kiểm soát
     
-    # Cây quyết định Codex (Decision Tree Q1 - Q4)
+    # Cây quyết định (Decision Tree Q1 - Q4)
     q1: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)  # Có biện pháp kiểm soát tại bước này? (YES/NO)
     q2: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)  # Bước này có loại trừ hoặc giảm thiểu mối nguy? (YES/NO)
     q3: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)  # Có nguy cơ nhiễm bẩn vượt mức chấp nhận? (YES/NO)

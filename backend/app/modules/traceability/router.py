@@ -371,7 +371,7 @@ def seed_traceability_demo_data(
             category="Nguyên liệu tươi sống",
             rating_score=98.5,
             status="APPROVED",
-            certifications=["ISO 22000:2018", "HACCP Codex", "VietGAP"],
+            certifications=["ISO 22000:2018", "HACCP", "VietGAP"],
         )
         db.add(sup_fish)
         db.flush()

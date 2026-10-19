@@ -129,7 +129,7 @@ const MODULE_GUIDES: Record<ModuleKey, GuideContent> = {
     ],
     auditTips: [
       "Lỗi thường gặp nhất khi audit: Tại chuyền sản xuất công nhân vẫn dùng biểu mẫu cũ chưa cập nhật.",
-      "Tất cả tài liệu bên ngoài (tiêu chuẩn Codex, TCVN, thông tư) phải có dấu kiểm soát ngày cập nhật.",
+      "Tất cả tài liệu bên ngoài (tiêu chuẩn ISO, TCVN, thông tư) phải có dấu kiểm soát ngày cập nhật.",
     ],
   },
   audits: {
@@ -166,7 +166,7 @@ const MODULE_GUIDES: Record<ModuleKey, GuideContent> = {
     title: "Kế Hoạch HACCP & Kiểm Soát Mối Nguy",
     badge: "Vận Hành Cốt Lõi",
     objective:
-      "Xây dựng lưu đồ công đoạn, tiến hành phân tích mối nguy (Sinh học, Hóa học, Vật lý, Dị nguyên), áp dụng Cây quyết định Codex để xác định Điểm kiểm soát tới hạn (CCP) và Chương trình tiên quyết vận hành (oPRP).",
+      "Xây dựng lưu đồ công đoạn, tiến hành phân tích mối nguy (Sinh học, Hóa học, Vật lý, Dị nguyên), áp dụng Cây quyết định để xác định Điểm kiểm soát tới hạn (CCP) và Chương trình tiên quyết vận hành (oPRP).",
     steps: [
       {
         title: "Bước 1: Xây dựng Lưu đồ Quy trình (Flowchart)",
@@ -174,7 +174,7 @@ const MODULE_GUIDES: Record<ModuleKey, GuideContent> = {
       },
       {
         title: "Bước 2: Phân tích Mối nguy & Cây Quyết định",
-        desc: "Xác định mối nguy tiềm ẩn ở từng bước, đánh giá rủi ro và trả lời bộ câu hỏi Q1 - Q4 Codex để phân loại CCP / oPRP.",
+        desc: "Xác định mối nguy tiềm ẩn ở từng bước, đánh giá rủi ro và trả lời bộ câu hỏi Q1 - Q4 để phân loại CCP / oPRP.",
       },
       {
         title: "Bước 3: Thiết lập Ngưỡng tới hạn & Giám sát theo Ca",
@@ -183,7 +183,7 @@ const MODULE_GUIDES: Record<ModuleKey, GuideContent> = {
     ],
     forms: [
       "Bảng Kế hoạch HACCP Tổng thể (HACCP Plan)",
-      "Bảng Phân tích Mối nguy & Cây Quyết định Codex",
+      "Bảng Phân tích Mối nguy & Cây Quyết định ISO 22000",
       "Nhật ký Giám sát Điểm Kiểm soát Tới hạn (BM-CCP-01)",
       "Biên bản Xử lý Sai lệch Ngưỡng Tới hạn",
     ],

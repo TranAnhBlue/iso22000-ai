@@ -748,9 +748,7 @@ export function AppShell({ children, module }: { children: ReactNode; module?: M
                   <span className="text-sm font-bold tracking-tight text-emerald-800 leading-tight">
                     WCERT FSMS
                   </span>
-                  <span className="text-[10px] text-emerald-700 font-bold">
-                    ISO 22000:2018
-                  </span>
+                  <span className="text-[10px] text-emerald-700 font-bold">ISO 22000:2018</span>
                 </div>
               </div>
               <button
@@ -1039,9 +1037,7 @@ export function AppShell({ children, module }: { children: ReactNode; module?: M
                   <div className="pt-2.5 border-t border-slate-700/80 space-y-1.5 text-xs text-slate-200">
                     <div className="flex items-center justify-between">
                       <span className="text-slate-200 font-medium">Vai trò:</span>
-                      <span className="font-bold text-emerald-300">
-                        {roleLabel(session.role)}
-                      </span>
+                      <span className="font-bold text-emerald-300">{roleLabel(session.role)}</span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-slate-200 font-medium">Phòng ban:</span>

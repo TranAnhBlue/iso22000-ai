@@ -184,7 +184,7 @@ SEED_SUPPLIERS = [
             "address": "Lô B2, KCN Thủy sản Vũng Tàu, BR-VT",
             "tax_code": "3501289456"
         },
-        "certifications": ["HACCP Codex", "ISO 22000:2018", "BRC Food Grade A"],
+        "certifications": ["HACCP", "ISO 22000:2018", "BRC Food Grade A"],
         "rating_score": 96.5,
         "status": "APPROVED",
         "risk_level": "LOW",
@@ -1060,7 +1060,7 @@ def delete_iqc_inspection(
 @router.post("/ai/analyze-coa", response_model=AICoAAnalysisResponse)
 def analyze_coa_with_ai(req: AICoAAnalysisRequest):
     """
-    AI COA Inspector: Tự động đối chiếu thông số COA nguyên liệu với quy chuẩn an toàn thực phẩm ISO 22000 / QCVN / Codex.
+    AI COA Inspector: Tự động đối chiếu thông số COA nguyên liệu với quy chuẩn an toàn thực phẩm ISO 22000 / QCVN / TCVN.
     """
     sample_type = req.sample_type or "SEAFOOD"
 

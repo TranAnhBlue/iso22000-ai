@@ -165,7 +165,7 @@ export function cleanTextToHtml(text: string): string {
     if (isHeading) {
       flushList();
       htmlParts.push(
-        `<h2 style="font-size: 13px; font-weight: bold; margin-top: 14px; margin-bottom: 6px; color: #0f172a;">${trimmed}</h2>`
+        `<h2 style="font-size: 13px; font-weight: bold; margin-top: 14px; margin-bottom: 6px; color: #0f172a;">${trimmed}</h2>`,
       );
       continue;
     }
@@ -184,7 +184,9 @@ export function cleanTextToHtml(text: string): string {
     flushList();
 
     // Dòng văn bản bình thường
-    htmlParts.push(`<p style="margin-top: 0; margin-bottom: 8px; line-height: 1.65;">${trimmed}</p>`);
+    htmlParts.push(
+      `<p style="margin-top: 0; margin-bottom: 8px; line-height: 1.65;">${trimmed}</p>`,
+    );
   }
 
   flushList();

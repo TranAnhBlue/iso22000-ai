@@ -43,9 +43,10 @@ Quản trị vào **Tổ chức** để xem yêu cầu **Chờ duyệt**, kiểm
 2. Tạo tài liệu với mã, tên, loại (Policy/Manual/SOP/WI/Form), phiên bản, phòng ban, hạn soát xét và mức bảo mật.
 3. Đính kèm file gốc bằng chức năng tải tệp. Chỉ tải định dạng được hệ thống cho phép.
 4. Khi cần thay đổi, lập **Phiếu yêu cầu xem xét**; thực hiện lần lượt xem xét trưởng đơn vị, QA và phê duyệt lãnh đạo.
-5. Phát hành tài liệu qua **Phân phối**, chỉ định phòng ban/người nhận và theo dõi xác nhận nhận tài liệu, thu hồi bản lỗi thời.
-6. Khai báo luật, tiêu chuẩn và tài liệu khách hàng trong **Tài liệu ngoài**, đặt chu kỳ rà soát.
-7. Vào **Lưu giữ hồ sơ** để lập danh mục thời hạn lưu. Khi đến hạn, chỉ sử dụng luồng tiêu hủy có hội đồng, mã biên bản và xác nhận quá hạn; không chuyển thẳng sang `DISPOSED`.
+5. Quản lý bản sửa đổi độc lập (**Document Revision Control** - ISO 22000 Điều khoản 7.5): Tạo bản sửa đổi độc lập ở trạng thái `DRAFT` (bản hiệu lực cũ vẫn duy trì cho vận hành). Trình duyệt sang `UNDER_REVIEW`; cấp thẩm quyền (QA/Lãnh đạo) phê duyệt sang `EFFECTIVE` theo nguyên tắc Maker-Checker (người soạn thảo không tự phê duyệt bản của chính mình). Khi phê duyệt, hệ thống tự động chuyển bản cũ thành `SUPERSEDED`, cập nhật phiên bản tài liệu gốc và tự động sinh Thông báo phân phối tài liệu `BM02-KSTL` để thu hồi bản cũ.
+6. Phát hành tài liệu qua **Phân phối**, chỉ định phòng ban/người nhận và theo dõi xác nhận nhận tài liệu, thu hồi bản lỗi thời.
+7. Khai báo luật, tiêu chuẩn và tài liệu khách hàng trong **Tài liệu ngoài**, đặt chu kỳ rà soát.
+8. Vào **Lưu giữ hồ sơ** để lập danh mục thời hạn lưu. Khi đến hạn, chỉ sử dụng luồng tiêu hủy có hội đồng, mã biên bản và xác nhận quá hạn; không chuyển thẳng sang `DISPOSED`.
 
 **Lưu ý tài liệu An Giang:** 96 file nguồn được nhập với mã `AG-*` và trạng thái `PENDING_APPROVAL`. QA cần kiểm tra nội dung, phiên bản, ngày hiệu lực rồi phát hành từng tài liệu áp dụng.
 

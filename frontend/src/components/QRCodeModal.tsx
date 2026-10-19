@@ -9,9 +9,9 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { QrCode, Printer, ShieldCheck, Smartphone, CheckCircle2 } from "lucide-react";
+import { QrCode, FileDown, ShieldCheck, Smartphone, CheckCircle2 } from "lucide-react";
 import logoImg from "@/assets/logo.png";
-import { printHtml } from "@/lib/print";
+import { exportElementToPdf } from "@/lib/pdfExporter";
 
 interface QRCodeModalProps {
   open: boolean;
@@ -65,13 +65,7 @@ export function QRCodeModal({
   const printQRLabel = () => {
     const el = document.getElementById("printable-qr-label");
     if (el) {
-      printHtml(el.innerHTML);
-    } else {
-      document.body.classList.add("printing-qr-label-only");
-      window.print();
-      setTimeout(() => {
-        document.body.classList.remove("printing-qr-label-only");
-      }, 1200);
+      exportElementToPdf(el, `Tem_QR_${lotNumber || "label"}.pdf`);
     }
   };
 
@@ -227,8 +221,8 @@ export function QRCodeModal({
               onClick={printQRLabel}
               className="w-full sm:w-auto gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold"
             >
-              <Printer className="h-4 w-4" />
-              In Tem Nhãn QR
+              <FileDown className="h-4 w-4" />
+              Xuất File PDF Tem Nhãn
             </Button>
           </DialogFooter>
         </DialogContent>

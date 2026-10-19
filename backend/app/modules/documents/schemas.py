@@ -2,6 +2,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 from typing import Optional
 from datetime import datetime, date
 from uuid import UUID
+from app.core.html_sanitizer import sanitize_document_html
 
 class DocumentBase(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -22,6 +23,11 @@ class DocumentBase(BaseModel):
     drafter_name: Optional[str] = None
     reviewer_name: Optional[str] = None
     security_level: str = "INTERNAL"
+
+    @field_validator("content")
+    @classmethod
+    def sanitize_content(cls, value: Optional[str]) -> Optional[str]:
+        return sanitize_document_html(value)
 
 class DocumentCreate(DocumentBase):
     approved_by: Optional[UUID] = None
@@ -45,6 +51,11 @@ class DocumentUpdate(BaseModel):
     reviewer_name: Optional[str] = None
     security_level: Optional[str] = None
     approval_note: Optional[str] = None
+
+    @field_validator("content")
+    @classmethod
+    def sanitize_content(cls, value: Optional[str]) -> Optional[str]:
+        return sanitize_document_html(value)
 
 class DocumentApproveRequest(BaseModel):
     effective_date: Optional[date] = None
@@ -88,6 +99,11 @@ class DocumentChangeRequestBase(BaseModel):
     target_completion_date: Optional[date] = None
     assigned_drafter: Optional[str] = None
 
+    @field_validator("proposed_content")
+    @classmethod
+    def sanitize_proposed_content(cls, value: Optional[str]) -> Optional[str]:
+        return sanitize_document_html(value)
+
 class DocumentChangeRequestCreate(DocumentChangeRequestBase):
     pass
 
@@ -100,6 +116,11 @@ class DocumentChangeRequestUpdate(BaseModel):
     target_completion_date: Optional[date] = None
     assigned_drafter: Optional[str] = None
     status: Optional[str] = None
+
+    @field_validator("proposed_content")
+    @classmethod
+    def sanitize_proposed_content(cls, value: Optional[str]) -> Optional[str]:
+        return sanitize_document_html(value)
 
 class DeptHeadReviewRequest(BaseModel):
     opinion: str  # AGREE, DISAGREE
@@ -312,5 +333,84 @@ class RecordRetentionResponse(RecordRetentionBase):
     is_expiring_soon: Optional[bool] = None  # Sắp hết hạn trong vòng 30 ngày
     is_expired: Optional[bool] = None  # Đã quá hạn lưu trữ
     days_remaining: Optional[int] = None  # Số ngày còn lại đến hạn
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+
+# ==================== DOCUMENT REVISION SCHEMAS (ISO 22000 Cl. 7.5) ====================
+class DocumentRevisionBase(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    version: str = Field(..., max_length=20, description="Số hiệu phiên bản sửa đổi (VD: 1.1, 2.0)")
+    change_description: str = Field(..., min_length=5, description="Tóm tắt lý do và nội dung sửa đổi theo ISO 22000 Điều khoản 7.5.2")
+    content: Optional[str] = None
+    file_url: Optional[str] = None
+    drafter_name: str = Field(..., min_length=2, max_length=150, description="Họ tên người soạn thảo bản sửa đổi")
+    reviewer_name: Optional[str] = Field(None, max_length=150, description="Người soát xét / thẩm định chuyên môn")
+
+
+    @field_validator("content")
+    @classmethod
+    def sanitize_content(cls, value: Optional[str]) -> Optional[str]:
+        return sanitize_document_html(value)
+
+
+class DocumentRevisionCreate(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    change_request_id: Optional[UUID] = Field(None, description="Mã phiếu yêu cầu thay đổi BM01-KSTL liên quan")
+    version: Optional[str] = Field(None, max_length=20, description="Gợi ý phiên bản mới (nếu để trống hệ thống tự tăng)")
+    change_description: str = Field(..., min_length=5, description="Lý do và nội dung sửa đổi")
+    content: Optional[str] = None
+    file_url: Optional[str] = None
+    drafter_name: Optional[str] = Field(None, max_length=150)
+    reviewer_name: Optional[str] = Field(None, max_length=150)
+
+    @field_validator("content")
+    @classmethod
+    def sanitize_content(cls, value: Optional[str]) -> Optional[str]:
+        return sanitize_document_html(value)
+
+
+class DocumentRevisionUpdate(BaseModel):
+    version: Optional[str] = None
+    change_description: Optional[str] = None
+    content: Optional[str] = None
+    file_url: Optional[str] = None
+    drafter_name: Optional[str] = None
+    reviewer_name: Optional[str] = None
+
+    @field_validator("content")
+    @classmethod
+    def sanitize_content(cls, value: Optional[str]) -> Optional[str]:
+        return sanitize_document_html(value)
+
+
+class DocumentRevisionSubmit(BaseModel):
+    comments: Optional[str] = Field(None, description="Ý kiến / ghi chú khi trình duyệt bản sửa đổi")
+
+
+class DocumentRevisionApprove(BaseModel):
+    approval_notes: Optional[str] = Field(None, description="Ghi chú phê duyệt của cấp có thẩm quyền")
+    effective_date: Optional[date] = Field(None, description="Ngày chính thức có hiệu lực của phiên bản mới")
+
+
+class DocumentRevisionReject(BaseModel):
+    rejection_reason: str = Field(..., min_length=3, description="Lý do từ chối bản sửa đổi")
+
+
+class DocumentRevisionResponse(DocumentRevisionBase):
+    revision_id: UUID
+    document_id: UUID
+    change_request_id: Optional[UUID] = None
+    revision_code: str
+    status: str  # DRAFT, UNDER_REVIEW, APPROVED, REJECTED, EFFECTIVE, SUPERSEDED
+    drafter_id: Optional[UUID] = None
+    approver_id: Optional[UUID] = None
+    approver_name: Optional[str] = None
+    approval_date: Optional[date] = None
+    approval_notes: Optional[str] = None
+    effective_date: Optional[date] = None
+    superseded_date: Optional[date] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None

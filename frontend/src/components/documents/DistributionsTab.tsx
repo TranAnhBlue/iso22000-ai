@@ -8,6 +8,7 @@ import {
   Clock,
   AlertTriangle,
   Printer,
+  FileDown,
   Trash2,
   Check,
   Building2,
@@ -468,10 +469,10 @@ export function DistributionsTab({
                       <div className="flex items-center justify-end gap-1">
                         <button
                           onClick={() => handlePrintDist(dist)}
-                          title="In Thông báo BM02-KSTL"
+                          title="Xuất PDF Thông báo BM02-KSTL"
                           className="rounded p-1.5 text-muted-foreground hover:bg-primary/10 hover:text-primary transition"
                         >
-                          <Printer className="h-3.5 w-3.5" />
+                          <FileDown className="h-3.5 w-3.5" />
                         </button>
 
                         {canEdit && (

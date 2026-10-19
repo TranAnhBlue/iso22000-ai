@@ -4,6 +4,7 @@ import {
   Search,
   RefreshCw,
   Printer,
+  FileDown,
   CheckCircle2,
   AlertTriangle,
   Clock,
@@ -145,8 +146,8 @@ export function PeriodicReviewTab({
             onClick={handlePrintMasterList}
             className="gap-1.5 text-xs"
           >
-            <Printer className="h-3.5 w-3.5" />
-            In Sổ BM05-KSTL
+            <FileDown className="h-3.5 w-3.5" />
+            Xuất PDF BM05-KSTL
           </Button>
 
           <Button

@@ -34,6 +34,7 @@ class Document(Base):
     approver: Mapped[Optional[User]] = relationship("User", foreign_keys=[approved_by], lazy="joined")
     approvals: Mapped[list["DocumentApproval"]] = relationship("DocumentApproval", back_populates="document", cascade="all, delete-orphan", order_by="desc(DocumentApproval.created_at)")
     distributions: Mapped[list["DocumentDistribution"]] = relationship("DocumentDistribution", back_populates="document", cascade="all, delete-orphan", order_by="desc(DocumentDistribution.distribution_date)")
+    revisions: Mapped[list["DocumentRevision"]] = relationship("DocumentRevision", back_populates="document", cascade="all, delete-orphan", order_by="desc(DocumentRevision.created_at)")
 
     @property
     def approver_name(self) -> Optional[str]:
@@ -99,6 +100,44 @@ class DocumentChangeRequest(Base):
     updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
     document: Mapped[Optional["Document"]] = relationship("Document", foreign_keys=[document_id])
+    revisions: Mapped[list["DocumentRevision"]] = relationship("DocumentRevision", back_populates="change_request")
+
+
+class DocumentRevision(Base):
+    """
+    ISO 22000:2018 Điều khoản 7.5 & Quy trình 02 KSTL An Giang:
+    Quản lý các bản sửa đổi tài liệu độc lập (Draft Revision).
+    Bản hiệu lực (Effective) được bảo toàn nguyên vẹn trong suốt quá trình soạn thảo và thẩm định.
+    Khi bản sửa đổi được phê duyệt, phiên bản cũ chuyển sang SUPERSEDED/OBSOLETE và bản mới chính thức có hiệu lực.
+    """
+    __tablename__ = "document_revisions"
+
+    revision_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    document_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("documents.document_id", ondelete="CASCADE"), nullable=False)
+    change_request_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), ForeignKey("document_change_requests.request_id", ondelete="SET NULL"), nullable=True)
+    revision_code: Mapped[str] = mapped_column(String(50), unique=True, index=True, nullable=False)
+    version: Mapped[str] = mapped_column(String(20), nullable=False)
+    change_description: Mapped[str] = mapped_column(Text, nullable=False)
+    content: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    file_url: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    status: Mapped[str] = mapped_column(String(30), default="DRAFT", nullable=False)  # DRAFT, UNDER_REVIEW, APPROVED, REJECTED, EFFECTIVE, SUPERSEDED
+
+    drafter_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), ForeignKey("users.user_id", ondelete="SET NULL"), nullable=True)
+    drafter_name: Mapped[str] = mapped_column(String(150), nullable=False)
+    reviewer_name: Mapped[Optional[str]] = mapped_column(String(150), nullable=True)
+
+    approver_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), ForeignKey("users.user_id", ondelete="SET NULL"), nullable=True)
+    approver_name: Mapped[Optional[str]] = mapped_column(String(150), nullable=True)
+    approval_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
+    approval_notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    effective_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
+    superseded_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
+
+    created_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    document: Mapped["Document"] = relationship("Document", back_populates="revisions")
+    change_request: Mapped[Optional["DocumentChangeRequest"]] = relationship("DocumentChangeRequest", back_populates="revisions")
 
 
 class DocumentDistribution(Base):

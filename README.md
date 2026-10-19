@@ -25,7 +25,7 @@
 
 ## 🌟 GIỚI THIỆU TỔNG QUAN
 
-**WCERT FSMS AI Platform** là giải pháp phần mềm chuyên biệt cấp doanh nghiệp (Enterprise SaaS), được thiết kế để chuyển đổi số toàn diện Hệ thống Quản lý An toàn Thực phẩm (Food Safety Management System - FSMS) theo tiêu chuẩn quốc tế **ISO 22000:2018** và hướng dẫn thực hành của **CODEX Alimentarius (HACCP 7 nguyên tắc & 12 bước)**.
+**WCERT FSMS AI Platform** là giải pháp phần mềm chuyên biệt cấp doanh nghiệp (Enterprise SaaS), được thiết kế để chuyển đổi số toàn diện Hệ thống Quản lý An toàn Thực phẩm (Food Safety Management System - FSMS) theo tiêu chuẩn quốc tế **ISO 22000:2018** (bao gồm 7 nguyên tắc & 12 bước HACCP).
 
 Hệ thống giúp các doanh nghiệp sản xuất, chế biến thực phẩm - thủy hải sản - đồ uống:
 * **Loại bỏ 100% hồ sơ giấy tờ cồng kềnh**, chuyển dịch sang nhật ký số theo ca thời gian thực.
@@ -290,7 +290,7 @@ Các vai trò nghiệp vụ chính gồm: Quản trị hệ thống, Ban lãnh �
 
 Hệ thống WCERT FSMS được xây dựng tuân thủ nghiêm ngặt các tiêu chuẩn và quy chuẩn quốc tế:
 * **ISO 22000:2018:** Food safety management systems — Requirements for any organization in the food chain.
-* **CODEX Alimentarius (CXC 1-1969 Rev. 2020):** General Principles of Food Hygiene & HACCP System.
+* **ISO/TS 22002-1:** Prerequisite programmes on food safety — Part 1: Food manufacturing.
 * **Quy chuẩn Việt Nam:** Luật An toàn Thực phẩm số 55/2010/QH12 & Nghị định số 15/2018/NĐ-CP của Chính phủ.
 
 ---

@@ -1,8 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import {
-  Dialog,
-  DialogContent,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import {
   Save,
@@ -44,6 +41,7 @@ import {
   generateCleanWordDocHtml,
 } from "@/lib/documentContentHelper";
 import { exportElementToPdf } from "@/lib/pdfExporter";
+import { sanitizePrintableHtml } from "@/lib/sanitizeHtml";
 
 interface WordDocumentEditorModalProps {
   open: boolean;
@@ -71,10 +69,29 @@ export const WordDocumentEditorModal: React.FC<WordDocumentEditorModalProps> = (
     "Ban Giám đốc & HSE",
   ],
 }) => {
-  if (!doc) return null;
-
   // Local draft state cho toàn bộ thuộc tính văn bản
-  const [draftDoc, setDraftDoc] = useState<DocumentItem>({ ...doc });
+  const [draftDoc, setDraftDoc] = useState<DocumentItem>(
+    () =>
+      doc || {
+        document_id: "",
+        doc_code: "",
+        doc_title: "",
+        doc_type: "Quy trình",
+        current_version: "1.0",
+        status: "DRAFT",
+        department: "Ban QLCL & ATTP",
+        standard: "ISO 22000:2018",
+        content: "",
+        file_url: "",
+        effective_date: null,
+        review_due_date: null,
+        last_reviewed_date: null,
+        review_frequency_years: 3,
+        drafter_name: "",
+        reviewer_name: "",
+        security_level: "INTERNAL",
+      },
+  );
   const [isSaving, setIsSaving] = useState(false);
   const [isExportingPdf, setIsExportingPdf] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
@@ -86,13 +103,13 @@ export const WordDocumentEditorModal: React.FC<WordDocumentEditorModalProps> = (
 
   // Khởi tạo nội dung vào editor khi mở modal
   useEffect(() => {
-    if (!open) return;
+    if (!open || !doc) return;
     setDraftDoc({ ...doc });
     setIsDirty(false);
 
     // Chuyển đổi nội dung đầu vào: nếu là plain text thì parse sang HTML đẹp
     const rawContent = initialContent || doc.content || "";
-    const htmlContent = cleanTextToHtml(rawContent);
+    const htmlContent = sanitizePrintableHtml(cleanTextToHtml(rawContent));
 
     // Đặt nội dung vào contentEditable
     setTimeout(() => {
@@ -168,7 +185,12 @@ export const WordDocumentEditorModal: React.FC<WordDocumentEditorModalProps> = (
 
     if (type === "POLICY") {
       newDocType = "POLICY";
-      if (!newTitle || newTitle === "Tài liệu ISO 22000" || newTitle.includes("Quy trình") || newTitle.includes("Biểu mẫu")) {
+      if (
+        !newTitle ||
+        newTitle === "Tài liệu ISO 22000" ||
+        newTitle.includes("Quy trình") ||
+        newTitle.includes("Biểu mẫu")
+      ) {
         newTitle = "Chính sách An toàn Thực phẩm & Cam kết Lãnh đạo";
       }
       if (newDocCode.startsWith("SOP-") || newDocCode.startsWith("FORM-")) {
@@ -177,7 +199,12 @@ export const WordDocumentEditorModal: React.FC<WordDocumentEditorModalProps> = (
       templateHtml = ISO_TEMPLATES.POLICY.html;
     } else if (type === "FORM") {
       newDocType = "FORM";
-      if (!newTitle || newTitle === "Tài liệu ISO 22000" || newTitle.includes("Chính sách") || newTitle.includes("Quy trình")) {
+      if (
+        !newTitle ||
+        newTitle === "Tài liệu ISO 22000" ||
+        newTitle.includes("Chính sách") ||
+        newTitle.includes("Quy trình")
+      ) {
         newTitle = "Biểu mẫu Nhật ký Giám sát Thông số Vận hành ATTP";
       }
       if (newDocCode.startsWith("SOP-") || newDocCode.startsWith("POL-")) {
@@ -186,7 +213,12 @@ export const WordDocumentEditorModal: React.FC<WordDocumentEditorModalProps> = (
       templateHtml = ISO_TEMPLATES.FORM.html;
     } else {
       newDocType = "SOP";
-      if (!newTitle || newTitle === "Tài liệu ISO 22000" || newTitle.includes("Chính sách") || newTitle.includes("Biểu mẫu")) {
+      if (
+        !newTitle ||
+        newTitle === "Tài liệu ISO 22000" ||
+        newTitle.includes("Chính sách") ||
+        newTitle.includes("Biểu mẫu")
+      ) {
         newTitle = "Quy trình Vận hành Chuẩn & Kiểm soát An toàn Thực phẩm";
       }
       if (newDocCode.startsWith("FORM-") || newDocCode.startsWith("POL-")) {
@@ -206,7 +238,9 @@ export const WordDocumentEditorModal: React.FC<WordDocumentEditorModalProps> = (
       editorRef.current.innerHTML = templateHtml;
       setIsDirty(true);
       updateCounts();
-      toast.success(`Đã nạp khung ${type === "POLICY" ? "Chính sách" : type === "FORM" ? "Biểu mẫu" : "Quy trình SOP"} chuẩn ISO 22000!`);
+      toast.success(
+        `Đã nạp khung ${type === "POLICY" ? "Chính sách" : type === "FORM" ? "Biểu mẫu" : "Quy trình SOP"} chuẩn ISO 22000!`,
+      );
     }
   };
 
@@ -293,14 +327,13 @@ export const WordDocumentEditorModal: React.FC<WordDocumentEditorModalProps> = (
     };
 
     window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
   }, [draftDoc]);
+
+  if (!doc) return null;
 
   return (
     <Dialog open={open} onOpenChange={(val) => !val && onClose()}>
-      <DialogContent
-        className="max-w-[96vw] w-[1300px] h-[95vh] p-0 flex flex-col bg-slate-900 border-slate-800 text-slate-100 overflow-hidden shadow-2xl z-[60] [&>button:last-child]:hidden [&>button.absolute]:hidden"
-      >
+      <DialogContent className="max-w-[96vw] w-[1300px] h-[95vh] p-0 flex flex-col bg-slate-900 border-slate-800 text-slate-100 overflow-hidden shadow-2xl z-[60] [&>button:last-child]:hidden [&>button.absolute]:hidden">
         <style>{`
           .word-editor-body:empty:before {
             content: attr(data-placeholder);
@@ -380,7 +413,8 @@ export const WordDocumentEditorModal: React.FC<WordDocumentEditorModalProps> = (
                 )}
               </div>
               <p className="text-[10.5px] text-slate-400">
-                Trình soạn thảo văn bản trực tiếp (Google Docs / MS Word Clone) • Chuẩn hóa ISO 22000:2018
+                Trình soạn thảo văn bản trực tiếp (Google Docs / MS Word Clone) • Chuẩn hóa ISO
+                22000:2018
               </p>
             </div>
           </div>
@@ -425,7 +459,11 @@ export const WordDocumentEditorModal: React.FC<WordDocumentEditorModalProps> = (
               className="h-8 gap-1 text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white border-slate-700 transition"
               title="Sao chép toàn bộ nội dung sạch không chứa thẻ code"
             >
-              {isCopied ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
+              {isCopied ? (
+                <Check className="h-3.5 w-3.5 text-emerald-400" />
+              ) : (
+                <Copy className="h-3.5 w-3.5" />
+              )}
               {isCopied ? "Đã copy" : "Copy"}
             </Button>
 
@@ -885,7 +923,9 @@ export const WordDocumentEditorModal: React.FC<WordDocumentEditorModalProps> = (
                 <div className="space-y-10">
                   <div>
                     <div className="font-bold uppercase text-slate-900">NGƯỜI THẨM TRA</div>
-                    <div className="text-[10px] text-slate-500 italic">(Trưởng Ban ATTP / Trưởng phòng)</div>
+                    <div className="text-[10px] text-slate-500 italic">
+                      (Trưởng Ban ATTP / Trưởng phòng)
+                    </div>
                   </div>
                   <div className="pt-6 border-t border-dashed border-slate-400 mx-2">
                     <input
@@ -905,7 +945,9 @@ export const WordDocumentEditorModal: React.FC<WordDocumentEditorModalProps> = (
                 <div className="space-y-10">
                   <div>
                     <div className="font-bold uppercase text-slate-900">NGƯỜI PHÊ DUYỆT</div>
-                    <div className="text-[10px] text-slate-500 italic">(Tổng Giám đốc / Đại diện LĐ)</div>
+                    <div className="text-[10px] text-slate-500 italic">
+                      (Tổng Giám đốc / Đại diện LĐ)
+                    </div>
                   </div>
                   <div className="pt-6 border-t border-dashed border-slate-400 mx-2">
                     <input
@@ -941,12 +983,19 @@ export const WordDocumentEditorModal: React.FC<WordDocumentEditorModalProps> = (
         {/* ================= 4. THANH TRẠNG THÁI ĐÁY (WORD STATUS BAR) ================= */}
         <div className="flex items-center justify-between px-4 py-2 bg-slate-950 border-t border-slate-800 text-[11px] text-slate-400 shrink-0">
           <div className="flex items-center gap-4">
-            <span>Trang: <b>1 / 1 (A4 Chuẩn)</b></span>
-            <span>Số từ: <b>{wordCount.words}</b></span>
-            <span>Ký tự: <b>{wordCount.chars}</b></span>
+            <span>
+              Trang: <b>1 / 1 (A4 Chuẩn)</b>
+            </span>
+            <span>
+              Số từ: <b>{wordCount.words}</b>
+            </span>
+            <span>
+              Ký tự: <b>{wordCount.chars}</b>
+            </span>
             <span className="text-slate-600">|</span>
             <span className="text-slate-400">
-              💡 Phím tắt: <b>Ctrl + S</b> (Lưu) • <b>Ctrl + P</b> (Xuất PDF) • <b>Ctrl + B</b> (In đậm)
+              💡 Phím tắt: <b>Ctrl + S</b> (Lưu) • <b>Ctrl + P</b> (Xuất PDF) • <b>Ctrl + B</b> (In
+              đậm)
             </span>
           </div>
 

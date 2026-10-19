@@ -13,6 +13,7 @@ import {
   RefreshCw,
   Plus,
   Printer,
+  FileDown,
   Award,
   Layers,
   Search,
@@ -37,7 +38,7 @@ import { ModuleGuideModal } from "@/components/ModuleGuideModal";
 import api from "@/lib/api";
 import { initCached, isCached, getCachedApi } from "@/lib/apiCache";
 import { printHtml } from "@/lib/print";
-import { useDepartments } from "@/lib/departments";
+import { useOrgData } from "@/lib/departments";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/dashboard")({
@@ -202,18 +203,26 @@ interface ManagementReview {
 }
 
 function ExecutiveDashboard() {
-  const { departments } = useDepartments();
+  const { departments, users, userNames } = useOrgData();
   const [activeTab, setActiveTab] = useState<"overview" | "objectives" | "reviews" | "ai_studio">(
     "overview",
   );
-  const [stats, setStats] = useState<ExecutiveOverviewStats | null>(() => initCached("/dashboard/overview-stats", null));
+  const [stats, setStats] = useState<ExecutiveOverviewStats | null>(() =>
+    initCached("/dashboard/overview-stats", null),
+  );
   const [hoveredRadarPillar, setHoveredRadarPillar] = useState<{
     label: string;
     value: number;
   } | null>(null);
-  const [alerts, setAlerts] = useState<ExecutiveAlertItem[]>(() => initCached("/dashboard/executive-alerts", []));
-  const [objectives, setObjectives] = useState<QualityObjective[]>(() => initCached("/dashboard/quality-objectives", []));
-  const [reviews, setReviews] = useState<ManagementReview[]>(() => initCached("/dashboard/management-reviews", []));
+  const [alerts, setAlerts] = useState<ExecutiveAlertItem[]>(() =>
+    initCached("/dashboard/executive-alerts", []),
+  );
+  const [objectives, setObjectives] = useState<QualityObjective[]>(() =>
+    initCached("/dashboard/quality-objectives", []),
+  );
+  const [reviews, setReviews] = useState<ManagementReview[]>(() =>
+    initCached("/dashboard/management-reviews", []),
+  );
   const [selectedReview, setSelectedReview] = useState<ManagementReview | null>(() => {
     const cached = getCachedApi<ManagementReview[]>("/dashboard/management-reviews");
     return cached && cached.length > 0 ? cached[0] : null;
@@ -224,7 +233,9 @@ function ExecutiveDashboard() {
     ...pillar,
     value: stats?.radar_pillars[pillar.key] ?? 0,
   }));
-  const radarDataPoints = radarValues.map((pillar) => radarPoint(pillar.point, pillar.value)).join(" ");
+  const radarDataPoints = radarValues
+    .map((pillar) => radarPoint(pillar.point, pillar.value))
+    .join(" ");
 
   // Cửa sổ biểu mẫu & lưu đồ
   const [showAddObjectiveModal, setShowAddObjectiveModal] = useState(false);
@@ -636,7 +647,7 @@ function ExecutiveDashboard() {
               onClick={() => triggerPrintManagementReview(selectedReview)}
               className="gap-1.5 text-xs border border-slate-300 bg-white text-slate-800 hover:bg-slate-900 hover:text-white hover:border-slate-900 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700 font-semibold shadow-sm transition-all duration-150 w-full sm:w-auto"
             >
-              <Printer className="h-3.5 w-3.5 transition-colors" /> In Báo Cáo BM-MR-01
+              <FileDown className="h-3.5 w-3.5 transition-colors" /> Xuất PDF (BM-MR-01)
             </Button>
           )}
         </div>
@@ -888,7 +899,9 @@ function ExecutiveDashboard() {
                     {[100, 75, 50, 25].map((percentage) => (
                       <polygon
                         key={percentage}
-                        points={RADAR_PILLAR_META.map((pillar) => radarPoint(pillar.point, percentage)).join(" ")}
+                        points={RADAR_PILLAR_META.map((pillar) =>
+                          radarPoint(pillar.point, percentage),
+                        ).join(" ")}
                         fill="none"
                         stroke="currentColor"
                         strokeOpacity={percentage === 100 ? 0.14 : 0.08}
@@ -1046,7 +1059,8 @@ function ExecutiveDashboard() {
                 className="mt-3 w-full text-xs gap-1.5 border border-emerald-400/80 bg-emerald-50 text-emerald-800 hover:bg-emerald-600 hover:text-white hover:border-emerald-600 font-bold shadow-sm transition-all duration-150 group"
                 onClick={() => setActiveTab("ai_studio")}
               >
-                <Sparkles className="h-3.5 w-3.5 text-emerald-600 group-hover:text-white transition-colors" /> Phân Tích Rủi Ro Với Cố Vấn AI
+                <Sparkles className="h-3.5 w-3.5 text-emerald-600 group-hover:text-white transition-colors" />{" "}
+                Phân Tích Rủi Ro Với Cố Vấn AI
               </Button>
             </div>
           </div>
@@ -1129,7 +1143,9 @@ function ExecutiveDashboard() {
                 <div className="mt-2 text-xl font-black text-slate-900">
                   {stats?.inventory_traceability.total_batches ?? 0} Lô SX
                 </div>
-                <div className="text-[11px] font-semibold text-slate-700">Xuất nhập tồn theo hạn dùng</div>
+                <div className="text-[11px] font-semibold text-slate-700">
+                  Xuất nhập tồn theo hạn dùng
+                </div>
               </div>
 
               <div className="rounded-xl border border-slate-300 bg-white p-3 shadow-sm hover:border-amber-500 transition-all">
@@ -1364,7 +1380,7 @@ function ExecutiveDashboard() {
                     onClick={() => triggerPrintManagementReview(selectedReview)}
                     className="gap-1.5 text-xs shadow-sm w-full sm:w-auto"
                   >
-                    <Printer className="h-3.5 w-3.5" /> In Biểu Mẫu BM-MR-01
+                    <FileDown className="h-3.5 w-3.5" /> Xuất PDF (BM-MR-01)
                   </Button>
                 </div>
 
@@ -1627,7 +1643,7 @@ function ExecutiveDashboard() {
                     triggerPrintManagementReview(sampleReview);
                   }}
                 >
-                  <Printer className="h-3.5 w-3.5 mr-1.5" /> In Báo Cáo Đã Sinh Ra (BM-MR-01)
+                  <FileDown className="h-3.5 w-3.5 mr-1.5" /> Xuất File PDF Báo Cáo (BM-MR-01)
                 </Button>
               </div>
             ) : (
@@ -1815,11 +1831,22 @@ function ExecutiveDashboard() {
               </div>
               <div>
                 <label className="font-semibold">Người Chịu Trách Nhiệm</label>
-                <Input
+                <select
                   value={newObjPerson}
                   onChange={(e) => setNewObjPerson(e.target.value)}
-                  className="mt-1 text-xs"
-                />
+                  className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-xs font-semibold shadow-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                >
+                  <option value="">-- Chọn người chịu trách nhiệm từ CSDL --</option>
+                  {users.map((u) => (
+                    <option key={u.id} value={`${u.name} (${u.role})`}>
+                      {u.name} — {u.role} [{u.dept}]
+                    </option>
+                  ))}
+                  {newObjPerson &&
+                    !users.some(
+                      (u) => `${u.name} (${u.role})` === newObjPerson || u.name === newObjPerson,
+                    ) && <option value={newObjPerson}>{newObjPerson}</option>}
+                </select>
               </div>
               <div className="flex justify-end gap-2 pt-3 border-t">
                 <Button
@@ -1889,19 +1916,41 @@ function ExecutiveDashboard() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <div>
                   <label className="font-semibold">Chủ Trì (Tổng Giám Đốc)</label>
-                  <Input
+                  <select
                     value={newRevChair}
                     onChange={(e) => setNewRevChair(e.target.value)}
-                    className="mt-1 text-xs"
-                  />
+                    className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-xs font-semibold shadow-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                  >
+                    <option value="">-- Chọn chủ trì từ CSDL --</option>
+                    {users.map((u) => (
+                      <option key={u.id} value={`${u.name} (${u.role})`}>
+                        {u.name} — {u.role} [{u.dept}]
+                      </option>
+                    ))}
+                    {newRevChair &&
+                      !users.some(
+                        (u) => `${u.name} (${u.role})` === newRevChair || u.name === newRevChair,
+                      ) && <option value={newRevChair}>{newRevChair}</option>}
+                  </select>
                 </div>
                 <div>
                   <label className="font-semibold">Thư Ký (Trưởng Ban ISO)</label>
-                  <Input
+                  <select
                     value={newRevSec}
                     onChange={(e) => setNewRevSec(e.target.value)}
-                    className="mt-1 text-xs"
-                  />
+                    className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-xs font-semibold shadow-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                  >
+                    <option value="">-- Chọn thư ký từ CSDL --</option>
+                    {users.map((u) => (
+                      <option key={u.id} value={`${u.name} (${u.role})`}>
+                        {u.name} — {u.role} [{u.dept}]
+                      </option>
+                    ))}
+                    {newRevSec &&
+                      !users.some(
+                        (u) => `${u.name} (${u.role})` === newRevSec || u.name === newRevSec,
+                      ) && <option value={newRevSec}>{newRevSec}</option>}
+                  </select>
                 </div>
               </div>
               <div>

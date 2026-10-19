@@ -75,6 +75,7 @@ import { PeriodicReviewTab } from "@/components/documents/PeriodicReviewTab";
 import { RecordsRetentionTab } from "@/components/documents/RecordsRetentionTab";
 import { generateMasterDocumentListHtml } from "@/components/documents/dmsPrintHelpers";
 import { WordDocumentEditorModal } from "@/components/documents/WordDocumentEditorModal";
+import { DocumentRevisionsModal } from "@/components/documents/DocumentRevisionsModal";
 
 export const Route = createFileRoute("/documents")({
   head: () => ({
@@ -232,7 +233,7 @@ Nhiệt độ tâm sản phẩm ≥ 85.0°C. Thời gian lưu giữ ≥ 15 giây
     summary:
       "Tiêu chuẩn 8 lĩnh vực SSOP cốt lõi: nguồn nước, bề mặt tiếp xúc, nhiễm chéo, vệ sinh cá nhân, hóa chất, động vật gây hại và chất thải.",
     content: `1. PHẠM VI SSOP:
-Bao gồm 8 chuyên đề vệ sinh chuẩn hóa theo Codex và ISO 22000:2018.
+Bao gồm 8 chuyên đề vệ sinh chuẩn hóa theo tiêu chuẩn ISO 22000:2018.
 
 2. HÓA CHẤT & NỒNG ĐỘ:
 - Tẩy rửa ban đầu: Xà phòng thực phẩm 1 - 2%.
@@ -268,19 +269,29 @@ function DocumentsPage() {
   const [activeTab, setActiveTab] = useState<DocumentSubTab>("INTERNAL_DOCS");
 
   // Dữ liệu cho các tab nghiệp vụ
-  const [changeRequests, setChangeRequests] = useState<DocumentChangeRequest[]>(() => initCached("/documents/change-requests", []));
+  const [changeRequests, setChangeRequests] = useState<DocumentChangeRequest[]>(() =>
+    initCached("/documents/change-requests", []),
+  );
   const [loadingCR, setLoadingCR] = useState(() => !isCached("/documents/change-requests"));
 
-  const [distributions, setDistributions] = useState<DocumentDistribution[]>(() => initCached("/documents/distributions", []));
+  const [distributions, setDistributions] = useState<DocumentDistribution[]>(() =>
+    initCached("/documents/distributions", []),
+  );
   const [loadingDist, setLoadingDist] = useState(() => !isCached("/documents/distributions"));
 
-  const [externalDocs, setExternalDocs] = useState<ExternalDocument[]>(() => initCached("/documents/external-documents", []));
+  const [externalDocs, setExternalDocs] = useState<ExternalDocument[]>(() =>
+    initCached("/documents/external-documents", []),
+  );
   const [loadingExt, setLoadingExt] = useState(() => !isCached("/documents/external-documents"));
 
-  const [periodicReviews, setPeriodicReviews] = useState<PeriodicReviewItem[]>(() => initCached("/documents/periodic-reviews", []));
+  const [periodicReviews, setPeriodicReviews] = useState<PeriodicReviewItem[]>(() =>
+    initCached("/documents/periodic-reviews", []),
+  );
   const [loadingPR, setLoadingPR] = useState(() => !isCached("/documents/periodic-reviews"));
 
-  const [retentionRecords, setRetentionRecords] = useState<RecordRetention[]>(() => initCached("/documents/retention", []));
+  const [retentionRecords, setRetentionRecords] = useState<RecordRetention[]>(() =>
+    initCached("/documents/retention", []),
+  );
   const [loadingRetention, setLoadingRetention] = useState(() => !isCached("/documents/retention"));
 
   const fetchChangeRequests = async () => {
@@ -356,6 +367,8 @@ function DocumentsPage() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingDoc, setEditingDoc] = useState<DocumentItem | null>(null);
   const [viewingDoc, setViewingDoc] = useState<DocumentItem | null>(null);
+  const [revisionsDoc, setRevisionsDoc] = useState<DocumentItem | null>(null);
+  const [revisionInitialCR, setRevisionInitialCR] = useState<DocumentChangeRequest | null>(null);
   const [isAIAssistantOpen, setIsAIAssistantOpen] = useState(false);
   const [selectedAITemplate, setSelectedAITemplate] = useState(AI_SOP_TEMPLATES[0]);
   const [isCopiedUrl, setIsCopiedUrl] = useState(false);
@@ -789,7 +802,9 @@ Quy định trình tự và các bước thao tác chuẩn cho: ${doc.doc_title}
         }));
         setExportingDoc({ ...updatedDoc, content: cleanContent });
         setExportContent(cleanContent);
-        toast.success("Đã đồng bộ toàn bộ tài liệu (mã số, tiêu đề, phòng ban, toàn văn sạch) vào biểu mẫu!");
+        toast.success(
+          "Đã đồng bộ toàn bộ tài liệu (mã số, tiêu đề, phòng ban, toàn văn sạch) vào biểu mẫu!",
+        );
       }
 
       // 2. Nếu là tài liệu đã lưu trên hệ thống (có UUID thực tế)
@@ -836,9 +851,7 @@ Quy định trình tự và các bước thao tác chuẩn cho: ${doc.doc_title}
       }
     } catch (err: any) {
       console.error("Lỗi khi lưu tài liệu:", err);
-      toast.error(
-        err?.response?.data?.detail || "Không thể lưu thông tin tài liệu",
-      );
+      toast.error(err?.response?.data?.detail || "Không thể lưu thông tin tài liệu");
     }
   };
 
@@ -1169,10 +1182,9 @@ Quy định trình tự và các bước thao tác chuẩn cho: ${doc.doc_title}
     return { checks, passedCount, total: checks.length, percentage };
   };
 
-  // In danh mục tài liệu nội bộ BM03-KSTL
   const handlePrintInternalMasterList = () => {
     const html = generateMasterDocumentListHtml(documents);
-    printHtml(html);
+    printHtml(html, "Danh_Muc_Tai_Lieu_Noi_Bo_BM03-KSTL.pdf", "landscape");
   };
 
   return (
@@ -1223,7 +1235,9 @@ Quy định trình tự và các bước thao tác chuẩn cho: ${doc.doc_title}
               disabled={loading}
               className="gap-1.5 border border-slate-300 bg-white text-slate-800 hover:bg-slate-900 hover:text-white hover:border-slate-900 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-700 dark:hover:bg-slate-700 dark:hover:text-white text-xs font-semibold shadow-sm transition-all duration-150"
             >
-              <RefreshCw className={`h-3.5 w-3.5 transition-colors ${loading ? "animate-spin text-primary" : ""}`} />
+              <RefreshCw
+                className={`h-3.5 w-3.5 transition-colors ${loading ? "animate-spin text-primary" : ""}`}
+              />
               Làm mới
             </Button>
 
@@ -1315,9 +1329,7 @@ Quy định trình tự và các bước thao tác chuẩn cho: ${doc.doc_title}
               {typeof tab.badge === "number" && tab.badge > 0 && (
                 <span
                   className={`rounded-full px-1.5 py-0.2 text-[10px] font-bold ${
-                    isActive
-                      ? "bg-emerald-600 text-white"
-                      : "bg-slate-200 text-slate-800"
+                    isActive ? "bg-emerald-600 text-white" : "bg-slate-200 text-slate-800"
                   }`}
                 >
                   {tab.badge}
@@ -1654,6 +1666,18 @@ Quy định trình tự và các bước thao tác chuẩn cho: ${doc.doc_title}
                                   <Eye className="h-3.5 w-3.5" />
                                 </button>
 
+                                {/* Nút Lịch sử & Sửa đổi phiên bản (ISO 22000 Cl. 7.5) */}
+                                <button
+                                  onClick={() => {
+                                    setRevisionsDoc(doc);
+                                    setRevisionInitialCR(null);
+                                  }}
+                                  title="Lịch sử phiên bản & Bản sửa đổi (ISO 22000 Cl. 7.5)"
+                                  className="rounded p-1.5 text-blue-600 hover:bg-blue-500/10 dark:text-blue-400 transition"
+                                >
+                                  <GitFork className="h-3.5 w-3.5" />
+                                </button>
+
                                 {/* Nút Duyệt nhanh nếu chưa duyệt (Chỉ BGĐ hoặc Admin) */}
                                 {doc.status !== "APPROVED" && (isManagement || isAdmin) && (
                                   <button
@@ -1725,6 +1749,21 @@ Quy định trình tự và các bước thao tác chuẩn cho: ${doc.doc_title}
           internalDocs={documents}
           canEdit={canEdit}
           isManagement={isManagement}
+          onOpenRevision={(cr) => {
+            const foundDoc = documents.find(
+              (d) =>
+                (cr.document_id && d.document_id === cr.document_id) ||
+                (cr.doc_code && d.doc_code.toLowerCase() === cr.doc_code.toLowerCase()),
+            );
+            if (foundDoc) {
+              setRevisionsDoc(foundDoc);
+              setRevisionInitialCR(cr);
+            } else {
+              toast.error(
+                `Không tìm thấy tài liệu gốc tương ứng với mã "${cr.doc_code || "liên quan"}".`,
+              );
+            }
+          }}
         />
       )}
 
@@ -1965,7 +2004,8 @@ Quy định trình tự và các bước thao tác chuẩn cho: ${doc.doc_title}
                   className="h-9 text-xs font-mono bg-muted/20"
                 />
                 <p className="text-[10.5px] text-muted-foreground">
-                  🔗 Link truy cập nhanh trực tiếp vào giao diện Form văn bản chuẩn ISO 22000 & Xuất file PDF.
+                  🔗 Link truy cập nhanh trực tiếp vào giao diện Form văn bản chuẩn ISO 22000 & Xuất
+                  file PDF.
                 </p>
               </div>
 
@@ -2232,6 +2272,20 @@ Quy định trình tự và các bước thao tác chuẩn cho: ${doc.doc_title}
                     </Button>
                     <Button
                       size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        const target = viewingDoc;
+                        setViewingDoc(null);
+                        setRevisionsDoc(target);
+                        setRevisionInitialCR(null);
+                      }}
+                      className="gap-1.5 border border-blue-300 text-blue-700 hover:bg-blue-50 dark:border-blue-800 dark:text-blue-300 dark:hover:bg-blue-900/40 text-xs font-semibold shadow-sm"
+                    >
+                      <GitFork className="h-3.5 w-3.5" />
+                      Lịch sử & Sửa đổi (ISO 7.5)
+                    </Button>
+                    <Button
+                      size="sm"
                       onClick={() => {
                         const docToEdit = viewingDoc;
                         setViewingDoc(null);
@@ -2383,6 +2437,25 @@ Quy định trình tự và các bước thao tác chuẩn cho: ${doc.doc_title}
         onSave={handleSaveWordDocument}
         onExportPDF={handleExportPDFFromEditor}
         departments={DEPARTMENTS}
+      />
+
+      {/* Modal Quản lý Phiên bản & Bản sửa đổi độc lập (ISO 22000:2018 Cl. 7.5) */}
+      <DocumentRevisionsModal
+        open={!!revisionsDoc}
+        doc={revisionsDoc}
+        onClose={() => {
+          setRevisionsDoc(null);
+          setRevisionInitialCR(null);
+        }}
+        onDocumentUpdated={() => {
+          fetchDocuments();
+          fetchDistributions();
+        }}
+        canEdit={canEdit}
+        isManagement={isManagement}
+        isAdmin={isAdmin}
+        changeRequests={changeRequests}
+        initialChangeRequest={revisionInitialCR}
       />
 
       {/* CSS cho In ấn & Xuất PDF A4 sắc nét */}

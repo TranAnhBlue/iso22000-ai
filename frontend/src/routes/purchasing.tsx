@@ -34,6 +34,7 @@ import {
   Layers,
   FileSpreadsheet,
   Printer,
+  FileDown,
   Award,
   Link as LinkIcon,
   ChevronRight,
@@ -62,6 +63,7 @@ import type { FormTemplateData } from "@/components/builder/types";
 import { printHtml } from "@/lib/print";
 import { EmptyState } from "@/components/EmptyState";
 import { ModuleGuideModal } from "@/components/ModuleGuideModal";
+import { useOrgData } from "@/lib/departments";
 
 export const Route = createFileRoute("/purchasing")({
   head: () => ({
@@ -225,7 +227,7 @@ export const SUPPLIER_CATEGORIES = [
 
 export const CERTIFICATION_OPTIONS = [
   "ISO 22000:2018",
-  "HACCP Codex",
+  "HACCP",
   "FSSC 22000",
   "BRC Food Grade A",
   "VietGAP",
@@ -354,18 +356,31 @@ const AI_COA_TEMPLATES = [
 ];
 
 function PurchasingPage() {
+  const { departments, users, userNames } = useOrgData();
   const [activeTab, setActiveTab] = useState<
     "suppliers" | "lots" | "inspections" | "eval_plans" | "evaluations" | "ai_coa"
   >("suppliers");
 
   // Data States
-  const [stats, setStats] = useState<PurchasingStats | null>(() => initCached("/purchasing/stats", null));
-  const [suppliers, setSuppliers] = useState<SupplierItem[]>(() => initCached("/purchasing/suppliers", []));
+  const [stats, setStats] = useState<PurchasingStats | null>(() =>
+    initCached("/purchasing/stats", null),
+  );
+  const [suppliers, setSuppliers] = useState<SupplierItem[]>(() =>
+    initCached("/purchasing/suppliers", []),
+  );
   const [lots, setLots] = useState<MaterialLotItem[]>(() => initCached("/purchasing/lots", []));
-  const [inspections, setInspections] = useState<IQCInspectionItem[]>(() => initCached("/purchasing/inspections", []));
-  const [evaluationPlans, setEvaluationPlans] = useState<SupplierEvaluationPlanItem[]>(() => initCached("/purchasing/evaluation-plans", []));
-  const [evaluations, setEvaluations] = useState<SupplierEvaluationItem[]>(() => initCached("/purchasing/evaluations", []));
-  const [criteriaTemplates, setCriteriaTemplates] = useState<any>(() => initCached("/purchasing/evaluation-criteria-templates", null));
+  const [inspections, setInspections] = useState<IQCInspectionItem[]>(() =>
+    initCached("/purchasing/inspections", []),
+  );
+  const [evaluationPlans, setEvaluationPlans] = useState<SupplierEvaluationPlanItem[]>(() =>
+    initCached("/purchasing/evaluation-plans", []),
+  );
+  const [evaluations, setEvaluations] = useState<SupplierEvaluationItem[]>(() =>
+    initCached("/purchasing/evaluations", []),
+  );
+  const [criteriaTemplates, setCriteriaTemplates] = useState<any>(() =>
+    initCached("/purchasing/evaluation-criteria-templates", null),
+  );
   const [loading, setLoading] = useState(() => !isCached("/purchasing/suppliers"));
   const [showGuide, setShowGuide] = useState(false);
 
@@ -627,7 +642,7 @@ function PurchasingPage() {
       email: "",
       address: "",
       tax_code: "",
-      certifications: ["ISO 22000:2018", "HACCP Codex"],
+      certifications: ["ISO 22000:2018", "HACCP"],
       rating_score: 95.0,
       status: "APPROVED",
       risk_level: "LOW",
@@ -1781,8 +1796,8 @@ function PurchasingPage() {
             onClick={() => setIsPrintAslOpen(true)}
             className="border border-slate-300 bg-white text-slate-800 hover:bg-slate-900 hover:text-white hover:border-slate-900 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700 flex items-center gap-1.5 text-xs font-semibold shadow-sm transition-all duration-150"
           >
-            <Printer className="h-4 w-4 transition-colors" />
-            <span>In Danh bạ ASL</span>
+            <FileDown className="h-4 w-4 transition-colors" />
+            <span>Xuất PDF Danh bạ ASL</span>
           </Button>
 
           <Button
@@ -2733,14 +2748,14 @@ function PurchasingPage() {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                title="In Phiếu Kiểm nghiệm IQC"
+                                title="Xuất PDF Phiếu Kiểm nghiệm IQC"
                                 onClick={() => {
                                   setViewingInspection(insp);
                                   setIsPrintIqcOpen(true);
                                 }}
                                 className="h-8 w-8 p-0 text-primary hover:bg-primary/10"
                               >
-                                <Printer className="h-4 w-4" />
+                                <FileDown className="h-4 w-4" />
                               </Button>
 
                               <Button
@@ -2924,7 +2939,7 @@ function PurchasingPage() {
                       <tr>
                         <th className="px-4 py-3">Chỉ tiêu kiểm nghiệm</th>
                         <th className="px-4 py-3">Giá trị trên COA NCC</th>
-                        <th className="px-4 py-3">Giới hạn Quy chuẩn (QCVN/Codex)</th>
+                        <th className="px-4 py-3">Giới hạn Quy chuẩn (QCVN/ISO)</th>
                         <th className="px-4 py-3">Đánh giá</th>
                         <th className="px-4 py-3">Ghi chú & Rủi ro</th>
                       </tr>
@@ -3089,10 +3104,10 @@ function PurchasingPage() {
                                   variant="ghost"
                                   size="sm"
                                   onClick={() => handlePrintEvaluationPlan(plan)}
-                                  title="In Kế Hoạch ĐG (BM02-KHĐGNCC)"
+                                  title="Xuất PDF Kế Hoạch ĐG (BM02-KHĐGNCC)"
                                   className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
                                 >
-                                  <Printer className="h-4 w-4" />
+                                  <FileDown className="h-4 w-4" />
                                 </Button>
                                 <Button
                                   variant="ghost"
@@ -3314,10 +3329,10 @@ function PurchasingPage() {
                                   variant="ghost"
                                   size="sm"
                                   onClick={() => handlePrintEvaluation(ev)}
-                                  title="In Phiếu ĐG (BM03/04)"
+                                  title="Xuất PDF Phiếu ĐG (BM03/04)"
                                   className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
                                 >
-                                  <Printer className="h-4 w-4" />
+                                  <FileDown className="h-4 w-4" />
                                 </Button>
                                 <Button
                                   variant="ghost"
@@ -4469,13 +4484,12 @@ function PurchasingPage() {
                   variant="outline"
                   onClick={() => {
                     const el = document.getElementById("iqc-print-area");
-                    if (el) printHtml(el.innerHTML);
-                    else window.print();
+                    if (el) printHtml(el, "Phieu_Kiem_Nghiem_IQC.pdf");
                   }}
                   className="gap-1.5"
                 >
-                  <Printer className="h-4 w-4" />
-                  <span>In Phiếu này</span>
+                  <FileDown className="h-4 w-4" />
+                  <span>Xuất File PDF</span>
                 </Button>
                 <Button onClick={() => setIsPrintIqcOpen(false)}>Đóng</Button>
               </DialogFooter>
@@ -4581,13 +4595,12 @@ function PurchasingPage() {
                 variant="outline"
                 onClick={() => {
                   const el = document.getElementById("asl-print-area");
-                  if (el) printHtml(el.innerHTML);
-                  else window.print();
+                  if (el) printHtml(el, "Danh_Ba_Nha_Cung_Cap_ASL.pdf");
                 }}
                 className="gap-1.5"
               >
-                <Printer className="h-4 w-4" />
-                <span>In Danh bạ ASL</span>
+                <FileDown className="h-4 w-4" />
+                <span>Xuất File PDF</span>
               </Button>
               <Button onClick={() => setIsPrintAslOpen(false)}>Đóng</Button>
             </DialogFooter>
@@ -4847,21 +4860,44 @@ function PurchasingPage() {
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <Label>Phòng ban chủ trì *</Label>
-                <Input
+                <select
                   value={planForm.department}
                   onChange={(e) => setPlanForm({ ...planForm, department: e.target.value })}
-                  placeholder="Phòng Đảm Bảo Chất Lượng (QA/QC)"
+                  className="w-full rounded-md border border-input bg-background p-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
                   required
-                />
+                >
+                  <option value="">-- Chọn phòng ban chủ trì --</option>
+                  {departments.map((d) => (
+                    <option key={d} value={d}>
+                      {d}
+                    </option>
+                  ))}
+                  {planForm.department && !departments.includes(planForm.department) && (
+                    <option value={planForm.department}>{planForm.department}</option>
+                  )}
+                </select>
               </div>
 
               <div className="space-y-1.5">
                 <Label>Người phê duyệt (BGĐ)</Label>
-                <Input
+                <select
                   value={planForm.approved_by}
                   onChange={(e) => setPlanForm({ ...planForm, approved_by: e.target.value })}
-                  placeholder="Giám Đốc Nhà Máy"
-                />
+                  className="w-full rounded-md border border-input bg-background p-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring font-medium"
+                >
+                  <option value="">-- Chọn đại diện BGĐ từ CSDL --</option>
+                  {users.map((u) => (
+                    <option key={u.id} value={`${u.name} (${u.role})`}>
+                      {u.name} — {u.role} [{u.dept}]
+                    </option>
+                  ))}
+                  {planForm.approved_by &&
+                    !users.some(
+                      (u) =>
+                        `${u.name} (${u.role})` === planForm.approved_by ||
+                        u.name === planForm.approved_by,
+                    ) && <option value={planForm.approved_by}>{planForm.approved_by}</option>}
+                </select>
               </div>
             </div>
 
@@ -5008,12 +5044,25 @@ function PurchasingPage() {
 
               <div className="space-y-1.5">
                 <Label>Chuyên viên đánh giá *</Label>
-                <Input
+                <select
                   value={evalForm.evaluator_name}
                   onChange={(e) => setEvalForm({ ...evalForm, evaluator_name: e.target.value })}
-                  placeholder="Họ tên chuyên viên QA/QC"
+                  className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm font-medium"
                   required
-                />
+                >
+                  <option value="">-- Chọn chuyên viên đánh giá từ CSDL --</option>
+                  {users.map((u) => (
+                    <option key={u.id} value={`${u.name} (${u.role})`}>
+                      {u.name} — {u.role} [{u.dept}]
+                    </option>
+                  ))}
+                  {evalForm.evaluator_name &&
+                    !users.some(
+                      (u) =>
+                        `${u.name} (${u.role})` === evalForm.evaluator_name ||
+                        u.name === evalForm.evaluator_name,
+                    ) && <option value={evalForm.evaluator_name}>{evalForm.evaluator_name}</option>}
+                </select>
               </div>
             </div>
 
@@ -5161,11 +5210,24 @@ function PurchasingPage() {
 
               <div className="space-y-1.5">
                 <Label>Đại diện Ban Giám Đốc phê duyệt</Label>
-                <Input
+                <select
                   value={evalForm.approved_by || ""}
                   onChange={(e) => setEvalForm({ ...evalForm, approved_by: e.target.value })}
-                  placeholder="Giám Đốc Nhà Máy"
-                />
+                  className="w-full rounded-md border border-input bg-background p-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring font-medium"
+                >
+                  <option value="">-- Chọn đại diện BGĐ từ CSDL --</option>
+                  {users.map((u) => (
+                    <option key={u.id} value={`${u.name} (${u.role})`}>
+                      {u.name} — {u.role} [{u.dept}]
+                    </option>
+                  ))}
+                  {evalForm.approved_by &&
+                    !users.some(
+                      (u) =>
+                        `${u.name} (${u.role})` === evalForm.approved_by ||
+                        u.name === evalForm.approved_by,
+                    ) && <option value={evalForm.approved_by}>{evalForm.approved_by}</option>}
+                </select>
               </div>
             </div>
 

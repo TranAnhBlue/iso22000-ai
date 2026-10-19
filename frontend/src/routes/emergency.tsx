@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import api from "@/lib/api";
 import { useModuleAccess } from "@/lib/rbac";
 import { printHtml } from "@/lib/print";
+import { LOGO_BASE64 } from "@/assets/logoBase64";
 import {
   Siren,
   Phone,
@@ -17,6 +18,7 @@ import {
   AlertTriangle,
   FileCheck2,
   Printer,
+  FileDown,
   Plus,
   Edit2,
   Trash2,
@@ -573,7 +575,7 @@ function EmergencyPage() {
             .filter(Boolean)
             .map((s: string, idx: number) => ({
               step: idx + 1,
-              action: s.replace(/^\d+[\.\)\-]\s*/, ""),
+              action: s.replace(/^\d+[.)-]\s*/, ""),
               responsible: procForm.responsible_role || "Đội ứng phó khẩn cấp",
               deadline_minutes: 5,
             }))
@@ -739,18 +741,23 @@ function EmergencyPage() {
         <!-- Header -->
         <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
           <tr>
-            <td style="width: 25%; text-align: center; border: 1px solid #333; padding: 8px;">
-              <strong style="font-size: 14pt; color: #047857;">WCERT FOOD</strong><br/>
-              <span style="font-size: 9pt;">HỆ THỐNG FSMS ISO 22000</span>
+            <td style="width: 28%; text-align: left; border: 1px solid #333; padding: 6px 10px;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <img src="${LOGO_BASE64}" style="height: 44px; width: auto; object-fit: contain;" alt="Logo" />
+                <div>
+                  <div style="font-weight: 800; font-size: 10.5px; text-transform: uppercase; color: #0f172a; line-height: 1.25;">CÔNG TY CP CHẾ BIẾN THỰC PHẨM WCERT</div>
+                  <div style="font-size: 8pt; color: #475569; margin-top: 2px;">Ban Chỉ huy PCCC & ATTP (FSMS)</div>
+                </div>
+              </div>
             </td>
-            <td style="width: 50%; text-align: center; border: 1px solid #333; padding: 8px;">
+            <td style="width: 48%; text-align: center; border: 1px solid #333; padding: 8px;">
               <strong style="font-size: 13pt; text-transform: uppercase;">BIÊN BẢN ĐÁNH GIÁ ỨNG PHÓ KHẨN CẤP</strong><br/>
-              <span style="font-size: 10pt; font-weight: bold;">(Theo Điều khoản 8.4 ISO 22000:2018)</span>
+              <span style="font-size: 10pt; font-weight: bold; color: #475569;">(Theo Điều khoản 8.4 ISO 22000:2018)</span>
             </td>
-            <td style="width: 25%; border: 1px solid #333; padding: 8px; font-size: 10pt;">
-              Mã biểu mẫu: <strong>BM-EMERGENCY-01</strong><br/>
-              Lần ban hành: <strong>02</strong><br/>
-              Ngày hiệu lực: <strong>01/01/2026</strong>
+            <td style="width: 24%; border: 1px solid #333; padding: 8px; font-size: 9pt;">
+              Biểu mẫu: <strong>BM-EMERGENCY-01</strong><br/>
+              Tiêu chuẩn: <strong>ISO 22000:2018</strong><br/>
+              Lần ban hành: <strong>02/2026</strong>
             </td>
           </tr>
         </table>
@@ -865,7 +872,9 @@ function EmergencyPage() {
               disabled={loading}
               className="gap-2 border border-slate-300 bg-white text-slate-800 hover:bg-slate-900 hover:text-white hover:border-slate-900 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700 text-xs font-semibold shadow-sm transition-all duration-150"
             >
-              <RefreshCw className={`h-4 w-4 transition-colors ${loading ? "animate-spin text-primary" : ""}`} />
+              <RefreshCw
+                className={`h-4 w-4 transition-colors ${loading ? "animate-spin text-primary" : ""}`}
+              />
               Làm mới
             </Button>
             {canEdit && (
@@ -1460,9 +1469,9 @@ function EmergencyPage() {
                               size="sm"
                               className="h-8 text-xs gap-1 border border-slate-300 bg-white text-slate-800 hover:bg-slate-900 hover:text-white hover:border-slate-900 shadow-sm transition-all duration-150 font-semibold"
                               onClick={() => handlePrintDrill(d)}
-                              title="In biên bản A4 BM-EMERGENCY-01"
+                              title="Xuất PDF biên bản BM-EMERGENCY-01"
                             >
-                              <Printer className="h-3.5 w-3.5" /> In BM-01
+                              <FileDown className="h-3.5 w-3.5" /> Xuất PDF (BM-01)
                             </Button>
                             {canEdit && (
                               <>

@@ -22,6 +22,7 @@ import {
   RefreshCw,
   Search,
   Printer,
+  FileDown,
   Sparkles,
   Layers,
   Clock,
@@ -52,7 +53,7 @@ import api from "@/lib/api";
 import { initCached, isCached } from "@/lib/apiCache";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { useDepartments } from "@/lib/departments";
+import { useOrgData } from "@/lib/departments";
 import logoImg from "@/assets/logo.png";
 import { DynamicFormRenderer } from "@/components/builder/DynamicFormRenderer";
 import type { FormTemplateData } from "@/components/builder/types";
@@ -210,18 +211,36 @@ const DEFAULT_CHECKLIST_QUESTIONS: Record<string, string[]> = {
 };
 
 function PRPModule() {
-  const { departments } = useDepartments();
+  const { departments, users, userNames } = useOrgData();
   const [activeTab, setActiveTab] = useState<
-    "programs" | "checklists" | "pest_control" | "allergens" | "visitor_health" | "first_aid" | "water_chemical"
+    | "programs"
+    | "checklists"
+    | "pest_control"
+    | "allergens"
+    | "visitor_health"
+    | "first_aid"
+    | "water_chemical"
   >("programs");
 
   // Data states
-  const [programs, setPrograms] = useState<PRPProgram[]>(() => initCached("/haccp/prp-programs", []));
-  const [checklists, setChecklists] = useState<PRPChecklistLog[]>(() => initCached("/haccp/prp-checklists", []));
-  const [pestLogs, setPestLogs] = useState<PestControlLog[]>(() => initCached("/haccp/pest-control-logs", []));
-  const [allergens, setAllergens] = useState<AllergenControl[]>(() => initCached("/haccp/allergen-controls", []));
-  const [visitorDeclarations, setVisitorDeclarations] = useState<VisitorHealthDeclaration[]>(() => initCached("/haccp/visitor-health-declarations", []));
-  const [firstAidLogs, setFirstAidLogs] = useState<FirstAidLog[]>(() => initCached("/haccp/first-aid-logs", []));
+  const [programs, setPrograms] = useState<PRPProgram[]>(() =>
+    initCached("/haccp/prp-programs", []),
+  );
+  const [checklists, setChecklists] = useState<PRPChecklistLog[]>(() =>
+    initCached("/haccp/prp-checklists", []),
+  );
+  const [pestLogs, setPestLogs] = useState<PestControlLog[]>(() =>
+    initCached("/haccp/pest-control-logs", []),
+  );
+  const [allergens, setAllergens] = useState<AllergenControl[]>(() =>
+    initCached("/haccp/allergen-controls", []),
+  );
+  const [visitorDeclarations, setVisitorDeclarations] = useState<VisitorHealthDeclaration[]>(() =>
+    initCached("/haccp/visitor-health-declarations", []),
+  );
+  const [firstAidLogs, setFirstAidLogs] = useState<FirstAidLog[]>(() =>
+    initCached("/haccp/first-aid-logs", []),
+  );
   const [loading, setLoading] = useState<boolean>(() => !isCached("/haccp/prp-programs"));
   const [showGuide, setShowGuide] = useState(false);
 
@@ -1588,7 +1607,9 @@ function PRPModule() {
             disabled={loading}
             className="border border-slate-300 bg-white text-slate-800 hover:bg-slate-900 hover:text-white hover:border-slate-900 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700 text-xs font-semibold shadow-sm transition-all duration-150"
           >
-            <RefreshCw className={`h-4 w-4 mr-1.5 transition-colors ${loading ? "animate-spin text-primary" : ""}`} />
+            <RefreshCw
+              className={`h-4 w-4 mr-1.5 transition-colors ${loading ? "animate-spin text-primary" : ""}`}
+            />
             Làm mới
           </Button>
           <Button
@@ -1597,9 +1618,9 @@ function PRPModule() {
             onClick={() => setShowPrintModal(true)}
             className="border border-purple-400/80 bg-purple-50 text-purple-800 hover:bg-purple-600 hover:text-white hover:border-purple-600 dark:bg-purple-950/40 dark:text-purple-300 dark:hover:bg-purple-600 dark:hover:text-white font-bold text-xs shadow-sm transition-all duration-150"
           >
-            <Printer className="h-4 w-4 mr-1.5 transition-colors" />
-            <span className="hidden sm:inline">In Bảng Đánh Giá PRP (BM-PRP-01)</span>
-            <span className="sm:hidden">In BM-PRP-01</span>
+            <FileDown className="h-4 w-4 mr-1.5 transition-colors" />
+            <span className="hidden sm:inline">Xuất PDF Đánh Giá PRP (BM-PRP-01)</span>
+            <span className="sm:hidden">Xuất PDF (BM-PRP-01)</span>
           </Button>
           <Button
             size="sm"
@@ -1968,9 +1989,7 @@ function PRPModule() {
                   <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-xs space-y-1">
                     <p>
                       <span className="text-slate-600 font-semibold">Phạm vi:</span>{" "}
-                      <span className="font-bold text-slate-900">
-                        {p.scope || "Toàn nhà máy"}
-                      </span>
+                      <span className="font-bold text-slate-900">{p.scope || "Toàn nhà máy"}</span>
                     </p>
                     <p>
                       <span className="text-slate-600 font-semibold">Tần suất:</span>{" "}
@@ -2255,9 +2274,9 @@ function PRPModule() {
                               size="sm"
                               className="h-8 w-8 p-0 text-primary hover:text-primary/80"
                               onClick={() => handlePrintPestLog(log)}
-                              title="In phiếu BM01-SVGH"
+                              title="Xuất PDF phiếu BM01-SVGH"
                             >
-                              <Printer className="h-4 w-4" />
+                              <FileDown className="h-4 w-4" />
                             </Button>
                             <Button
                               variant="ghost"
@@ -2312,8 +2331,8 @@ function PRPModule() {
                 onClick={handlePrintAllergens}
                 className="gap-2 border border-slate-300 bg-white text-slate-800 hover:bg-slate-900 hover:text-white hover:border-slate-900 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700 text-xs font-semibold shadow-sm transition-all duration-150"
               >
-                <Printer className="h-4 w-4" />
-                In Danh Mục (BM01-CGDU)
+                <FileDown className="h-4 w-4" />
+                Xuất PDF (BM01-CGDU)
               </Button>
               <Button
                 onClick={handleOpenCreateAllergen}
@@ -2562,9 +2581,9 @@ function PRPModule() {
                                 size="sm"
                                 className="h-8 w-8 p-0 text-primary hover:text-primary/80"
                                 onClick={() => handlePrintVisitor(v)}
-                                title="In phiếu BM03-KSSK"
+                                title="Xuất PDF phiếu BM03-KSSK"
                               >
-                                <Printer className="h-4 w-4" />
+                                <FileDown className="h-4 w-4" />
                               </Button>
                               <Button
                                 variant="ghost"
@@ -2706,9 +2725,9 @@ function PRPModule() {
                               size="sm"
                               className="h-8 w-8 p-0 text-primary hover:text-primary/80"
                               onClick={() => handlePrintFirstAid(fa)}
-                              title="In phiếu BM01-KSSK"
+                              title="Xuất PDF phiếu BM01-KSSK"
                             >
-                              <Printer className="h-4 w-4" />
+                              <FileDown className="h-4 w-4" />
                             </Button>
                             <Button
                               variant="ghost"
@@ -3011,15 +3030,15 @@ function PRPModule() {
               </h1>
             </div>
 
-            <table className="w-full border-collapse border border-slate-400 text-[11px]">
+            <table className="w-full table-fixed border-collapse border border-slate-400 text-[11px]">
               <thead>
                 <tr className="bg-slate-100 border-b border-slate-400 font-bold text-slate-900 text-center">
-                  <th className="border border-slate-400 p-2 w-14">STT</th>
+                  <th className="border border-slate-400 p-2 w-12">STT</th>
                   <th className="border border-slate-400 p-2 w-20">Mã hiệu</th>
                   <th className="border border-slate-400 p-2">Tên chương trình</th>
-                  <th className="border border-slate-400 p-2 w-20">Nhóm</th>
+                  <th className="border border-slate-400 p-2 w-16">Nhóm</th>
                   <th className="border border-slate-400 p-2">Phạm vi kiểm soát</th>
-                  <th className="border border-slate-400 p-2 w-24">Tần suất</th>
+                  <th className="border border-slate-400 p-2 w-20">Tần suất</th>
                   <th className="border border-slate-400 p-2 w-28">Bộ phận phụ trách</th>
                   <th className="border border-slate-400 p-2 w-20">Trạng thái</th>
                 </tr>
@@ -3065,12 +3084,11 @@ function PRPModule() {
             <Button
               onClick={() => {
                 const el = document.getElementById("printable-prp");
-                if (el) printHtml(el.innerHTML);
-                else window.print();
+                if (el) printHtml(el, "Bieu_Mau_Danh_Gia_PRP_BM-PRP-01.pdf");
               }}
               className="bg-primary text-primary-foreground"
             >
-              <Printer className="h-4 w-4 mr-2" /> In Biểu mẫu
+              <FileDown className="h-4 w-4 mr-2" /> Xuất File PDF
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -3145,12 +3163,25 @@ function PRPModule() {
               </div>
               <div className="space-y-1">
                 <Label className="text-xs">Người kiểm tra *</Label>
-                <Input
+                <select
                   required
-                  placeholder="Họ tên KTV"
+                  className="w-full border border-slate-300 rounded-md px-3 py-2 text-xs bg-background text-foreground"
                   value={pestForm.inspector_name}
                   onChange={(e) => setPestForm({ ...pestForm, inspector_name: e.target.value })}
-                />
+                >
+                  <option value="">-- Chọn nhân viên kiểm tra --</option>
+                  {users.map((u) => (
+                    <option key={u.id} value={`${u.name} (${u.role})`}>
+                      {u.name} — {u.role} [{u.dept}]
+                    </option>
+                  ))}
+                  {pestForm.inspector_name &&
+                    !users.some(
+                      (u) =>
+                        `${u.name} (${u.role})` === pestForm.inspector_name ||
+                        u.name === pestForm.inspector_name,
+                    ) && <option value={pestForm.inspector_name}>{pestForm.inspector_name}</option>}
+                </select>
               </div>
               <div className="space-y-1">
                 <Label className="text-xs">Trạng thái báo cáo *</Label>
@@ -3427,14 +3458,31 @@ function PRPModule() {
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <Label className="text-xs">Người phụ trách giám sát *</Label>
-                <Input
+                <select
                   required
-                  placeholder="Họ tên KTV QA / Tổ trưởng"
+                  className="w-full border border-slate-300 rounded-md px-3 py-2 text-xs bg-background text-foreground"
                   value={allergenForm.responsible_person}
                   onChange={(e) =>
                     setAllergenForm({ ...allergenForm, responsible_person: e.target.value })
                   }
-                />
+                >
+                  <option value="">-- Chọn nhân sự phụ trách --</option>
+                  {users.map((u) => (
+                    <option key={u.id} value={`${u.name} (${u.role})`}>
+                      {u.name} — {u.role} [{u.dept}]
+                    </option>
+                  ))}
+                  {allergenForm.responsible_person &&
+                    !users.some(
+                      (u) =>
+                        `${u.name} (${u.role})` === allergenForm.responsible_person ||
+                        u.name === allergenForm.responsible_person,
+                    ) && (
+                      <option value={allergenForm.responsible_person}>
+                        {allergenForm.responsible_person}
+                      </option>
+                    )}
+                </select>
               </div>
               <div className="space-y-1">
                 <Label className="text-xs">Trạng thái *</Label>
@@ -3509,14 +3557,29 @@ function PRPModule() {
               </div>
               <div className="space-y-1">
                 <Label className="text-xs">Người tiếp đón / Bảo lãnh *</Label>
-                <Input
+                <select
                   required
-                  placeholder="Cán bộ công ty"
+                  className="w-full border border-slate-300 rounded-md px-3 py-2 text-xs bg-background text-foreground"
                   value={visitorForm.escort_person}
                   onChange={(e) =>
                     setVisitorForm({ ...visitorForm, escort_person: e.target.value })
                   }
-                />
+                >
+                  <option value="">-- Chọn cán bộ tiếp đón từ CSDL --</option>
+                  {users.map((u) => (
+                    <option key={u.id} value={`${u.name} (${u.role})`}>
+                      {u.name} — {u.role} [{u.dept}]
+                    </option>
+                  ))}
+                  {visitorForm.escort_person &&
+                    !users.some(
+                      (u) =>
+                        `${u.name} (${u.role})` === visitorForm.escort_person ||
+                        u.name === visitorForm.escort_person,
+                    ) && (
+                      <option value={visitorForm.escort_person}>{visitorForm.escort_person}</option>
+                    )}
+                </select>
               </div>
             </div>
 
@@ -3654,37 +3717,81 @@ function PRPModule() {
               </div>
               <div className="space-y-1">
                 <Label className="text-xs">Người nhận thuốc *</Label>
-                <Input
+                <select
                   required
-                  placeholder="Họ tên công nhân"
+                  className="w-full border border-slate-300 rounded-md px-3 py-2 text-xs bg-background text-foreground"
                   value={firstAidForm.recipient_name}
                   onChange={(e) =>
                     setFirstAidForm({ ...firstAidForm, recipient_name: e.target.value })
                   }
-                />
+                >
+                  <option value="">-- Chọn nhân sự nhận thuốc từ CSDL --</option>
+                  {users.map((u) => (
+                    <option key={u.id} value={`${u.name} (${u.role})`}>
+                      {u.name} — {u.role} [{u.dept}]
+                    </option>
+                  ))}
+                  {firstAidForm.recipient_name &&
+                    !users.some(
+                      (u) =>
+                        `${u.name} (${u.role})` === firstAidForm.recipient_name ||
+                        u.name === firstAidForm.recipient_name,
+                    ) && (
+                      <option value={firstAidForm.recipient_name}>
+                        {firstAidForm.recipient_name}
+                      </option>
+                    )}
+                </select>
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <Label className="text-xs">Bộ phận / Dây chuyền *</Label>
-                <Input
+                <select
                   required
-                  placeholder="Tổ Sơ chế, Tổ Sấy..."
+                  className="w-full border border-slate-300 rounded-md px-3 py-2 text-xs bg-background text-foreground"
                   value={firstAidForm.department}
                   onChange={(e) => setFirstAidForm({ ...firstAidForm, department: e.target.value })}
-                />
+                >
+                  <option value="">-- Chọn phòng ban / tổ --</option>
+                  {departments.map((d) => (
+                    <option key={d} value={d}>
+                      {d}
+                    </option>
+                  ))}
+                  {firstAidForm.department && !departments.includes(firstAidForm.department) && (
+                    <option value={firstAidForm.department}>{firstAidForm.department}</option>
+                  )}
+                </select>
               </div>
               <div className="space-y-1">
                 <Label className="text-xs">Người cấp phát thuốc *</Label>
-                <Input
+                <select
                   required
-                  placeholder="Y tá / KTV phụ trách"
+                  className="w-full border border-slate-300 rounded-md px-3 py-2 text-xs bg-background text-foreground"
                   value={firstAidForm.dispenser_name}
                   onChange={(e) =>
                     setFirstAidForm({ ...firstAidForm, dispenser_name: e.target.value })
                   }
-                />
+                >
+                  <option value="">-- Chọn nhân sự cấp phát --</option>
+                  {users.map((u) => (
+                    <option key={u.id} value={`${u.name} (${u.role})`}>
+                      {u.name} — {u.role} [{u.dept}]
+                    </option>
+                  ))}
+                  {firstAidForm.dispenser_name &&
+                    !users.some(
+                      (u) =>
+                        `${u.name} (${u.role})` === firstAidForm.dispenser_name ||
+                        u.name === firstAidForm.dispenser_name,
+                    ) && (
+                      <option value={firstAidForm.dispenser_name}>
+                        {firstAidForm.dispenser_name}
+                      </option>
+                    )}
+                </select>
               </div>
             </div>
 

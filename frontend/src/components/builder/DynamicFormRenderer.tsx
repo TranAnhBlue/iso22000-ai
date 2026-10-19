@@ -363,7 +363,9 @@ export const DynamicFormRenderer: React.FC<DynamicFormRendererProps> = ({
                     <span className="font-bold flex items-center gap-1.5">
                       <PenTool className="w-3.5 h-3.5 text-blue-600" /> Ký tên điện tử xác nhận
                     </span>
-                    <span className="text-[10px] text-slate-700 font-bold">Ký họ tên hoặc mã KCS</span>
+                    <span className="text-[10px] text-slate-700 font-bold">
+                      Ký họ tên hoặc mã KCS
+                    </span>
                   </div>
                   <input
                     type="text"

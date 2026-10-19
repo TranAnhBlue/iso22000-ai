@@ -41,7 +41,9 @@ export function EmptyState({
             <RefreshCw className="h-6 w-6 text-primary animate-spin" />
           </div>
         </div>
-        <h3 className="text-base font-semibold tracking-tight text-foreground">Đang đồng bộ dữ liệu...</h3>
+        <h3 className="text-base font-semibold tracking-tight text-foreground">
+          Đang đồng bộ dữ liệu...
+        </h3>
         <p className="mt-1 text-xs text-muted-foreground">Vui lòng chờ trong giây lát</p>
       </div>
     );

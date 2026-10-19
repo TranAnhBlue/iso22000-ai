@@ -7,9 +7,15 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, type ReactNode, lazy, Suspense } from "react";
 
 import { Toaster } from "@/components/ui/sonner";
+
+const UniversalPrintPreviewModal = lazy(() =>
+  import("@/components/UniversalPrintPreviewModal").then((m) => ({
+    default: m.UniversalPrintPreviewModal,
+  })),
+);
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -145,6 +151,9 @@ function RootComponent() {
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <Outlet />
       <Toaster position="top-right" richColors />
+      <Suspense fallback={null}>
+        <UniversalPrintPreviewModal />
+      </Suspense>
     </QueryClientProvider>
   );
 }

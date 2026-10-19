@@ -65,9 +65,7 @@ function BuilderManagementPage() {
   const [showWfGuide, setShowWfGuide] = useState(false);
 
   // Forms state (initialized synchronously from cache)
-  const [forms, setForms] = useState<FormTemplateData[]>(() =>
-    initCached("/builders/forms", [])
-  );
+  const [forms, setForms] = useState<FormTemplateData[]>(() => initCached("/builders/forms", []));
   const [selectedModule, setSelectedModule] = useState<string>("ALL");
   const [searchForm, setSearchForm] = useState<string>("");
   const [editingForm, setEditingForm] = useState<FormTemplateData | null>(null);
@@ -76,7 +74,7 @@ function BuilderManagementPage() {
 
   // Workflows state
   const [workflows, setWorkflows] = useState<WorkflowTemplateData[]>(() =>
-    initCached("/builders/workflows", [])
+    initCached("/builders/workflows", []),
   );
   const [selectedWfModule, setSelectedWfModule] = useState<string>("ALL");
   const [searchWf, setSearchWf] = useState<string>("");
@@ -85,12 +83,10 @@ function BuilderManagementPage() {
 
   // Submissions state
   const [submissions, setSubmissions] = useState<any[]>(() =>
-    initCached("/builders/submissions", [])
+    initCached("/builders/submissions", []),
   );
   const [viewingSubmission, setViewingSubmission] = useState<any | null>(null);
-  const [instances, setInstances] = useState<any[]>(() =>
-    initCached("/builders/instances", [])
-  );
+  const [instances, setInstances] = useState<any[]>(() => initCached("/builders/instances", []));
   const [pendingInstanceAction, setPendingInstanceAction] = useState<{
     instanceId: string;
     action: "ADVANCE" | "APPROVE" | "REJECT";
@@ -359,7 +355,9 @@ function BuilderManagementPage() {
       ]),
     ];
     const csv = rows
-      .map((row) => row.map((value: any) => `"${String(value ?? "").replaceAll('"', '""')}"`).join(","))
+      .map((row) =>
+        row.map((value: any) => `"${String(value ?? "").replaceAll('"', '""')}"`).join(","),
+      )
       .join("\n");
     const url = URL.createObjectURL(new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" }));
     const anchor = document.createElement("a");
@@ -594,7 +592,9 @@ function BuilderManagementPage() {
 
                       <div className="mt-4 pt-3 border-t border-slate-200 flex items-center justify-between text-xs font-bold text-slate-700">
                         <span>{f.fields?.length || 0} trường dữ liệu</span>
-                        <span className="font-mono text-[11px] text-slate-900 font-extrabold">v{f.version || "1.0"}</span>
+                        <span className="font-mono text-[11px] text-slate-900 font-extrabold">
+                          v{f.version || "1.0"}
+                        </span>
                       </div>
                       <div className="mt-2 text-[11px] font-bold">
                         {f.is_approved && f.status === "ACTIVE" ? (

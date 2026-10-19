@@ -151,8 +151,6 @@ export async function warmFSMSCache(apiInstance: any): Promise<void> {
         "/equipment/devices",
         "/audits/plans",
         "/capa/non-conformities",
-        "/traceability/backward?query_code=LOT-202608-B01",
-        "/traceability/mock-drills",
         "/emergency/stats",
         "/emergency/contacts",
         "/emergency/procedures",

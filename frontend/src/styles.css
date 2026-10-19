@@ -86,7 +86,7 @@
   --sidebar-primary-foreground: oklch(0.99 0 0);
   --sidebar-accent: oklch(0.95 0.02 160);
   --sidebar-accent-foreground: oklch(0.2 0.04 180);
-  --sidebar-border: oklch(0.90 0.01 170);
+  --sidebar-border: oklch(0.9 0.01 170);
   --sidebar-ring: oklch(0.62 0.16 152);
 }
 
@@ -108,40 +108,113 @@
 }
 
 /* Global contrast enhancements to eliminate faint/submerged text across all modules */
-.text-slate-400 {
-  color: #475569;
+.text-muted-foreground {
+  color: #334155 !important;
+  font-weight: 500;
 }
-.text-slate-500 {
-  color: #334155;
-}
+
+.text-slate-400,
 .text-gray-400,
 .text-zinc-400,
 .text-neutral-400 {
-  color: #475569;
+  color: #334155 !important;
+  font-weight: 500;
 }
+
+.text-slate-500,
 .text-gray-500,
 .text-zinc-500,
 .text-neutral-500 {
-  color: #334155;
+  color: #1e293b !important;
+  font-weight: 500;
 }
 
-/* Ensure text on dark containers/gradients remains crisp and high-contrast */
-.dark .text-slate-400,
-[class*="bg-slate-900"] .text-slate-400,
-[class*="bg-slate-800"] .text-slate-400,
-[class*="from-slate-900"] .text-slate-400,
-[class*="from-slate-800"] .text-slate-400,
-[class*="bg-emerald-900"] .text-slate-400 {
-  color: #e2e8f0 !important;
+/* Ensure table headers and column titles are prominently legible */
+th,
+th span,
+table thead th {
+  color: #0f172a !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.01em;
 }
 
-.dark .text-slate-500,
-[class*="bg-slate-900"] .text-slate-500,
-[class*="bg-slate-800"] .text-slate-500,
-[class*="from-slate-900"] .text-slate-500,
-[class*="from-slate-800"] .text-slate-500,
-[class*="bg-emerald-900"] .text-slate-500 {
-  color: #f1f5f9 !important;
+/* Ensure white and light surfaces (dialogs, modals, popovers, white cards) NEVER suffer from white/faint text */
+.bg-white,
+[class*="bg-white"],
+.bg-slate-50,
+[class*="bg-slate-50"],
+.bg-slate-100,
+[class*="bg-slate-100"],
+.bg-card,
+[role="dialog"] {
+  color: #0f172a;
+}
+
+.bg-white .text-muted-foreground,
+[class*="bg-white"] .text-muted-foreground,
+.bg-slate-50 .text-muted-foreground,
+[class*="bg-slate-50"] .text-muted-foreground,
+.bg-slate-100 .text-muted-foreground,
+[class*="bg-slate-100"] .text-muted-foreground,
+.bg-card .text-muted-foreground,
+[role="dialog"] .text-muted-foreground,
+.bg-white .text-slate-400,
+[class*="bg-white"] .text-slate-400,
+.bg-slate-50 .text-slate-400,
+[class*="bg-slate-50"] .text-slate-400,
+.bg-slate-100 .text-slate-400,
+[class*="bg-slate-100"] .text-slate-400,
+.bg-card .text-slate-400,
+[role="dialog"] .text-slate-400 {
+  color: #475569 !important;
+  font-weight: 500;
+}
+
+.bg-white .text-slate-500,
+[class*="bg-white"] .text-slate-500,
+.bg-slate-50 .text-slate-500,
+[class*="bg-slate-50"] .text-slate-500,
+.bg-slate-100 .text-slate-500,
+[class*="bg-slate-100"] .text-slate-500,
+.bg-card .text-slate-500,
+[role="dialog"] .text-slate-500,
+.bg-white .text-gray-500,
+[class*="bg-white"] .text-gray-500,
+.bg-slate-50 .text-gray-500,
+[class*="bg-slate-50"] .text-gray-500,
+#universal-print-preview-sheet,
+#universal-print-preview-sheet *,
+.iso-preview-inner,
+.iso-preview-inner * {
+  color: #1e293b;
+}
+
+#universal-print-preview-sheet .text-muted-foreground,
+.iso-preview-inner .text-muted-foreground,
+#universal-print-preview-sheet .text-slate-400,
+.iso-preview-inner .text-slate-400,
+#universal-print-preview-sheet .text-slate-500,
+.iso-preview-inner .text-slate-500 {
+  color: #334155 !important;
+}
+
+/* Dark mode ONLY when .dark is active on root and NOT inside a light/white container */
+.dark:not(.bg-white)
+  .text-muted-foreground:not(.bg-white *):not(.bg-card *):not(.bg-slate-50 *):not(
+    .bg-slate-100 *
+  ):not([role="dialog"] *),
+.dark:not(.bg-white)
+  .text-slate-400:not(.bg-white *):not(.bg-card *):not(.bg-slate-50 *):not(.bg-slate-100 *):not(
+    [role="dialog"] *
+  ) {
+  color: #94a3b8 !important;
+}
+
+.dark:not(.bg-white)
+  .text-slate-500:not(.bg-white *):not(.bg-card *):not(.bg-slate-50 *):not(.bg-slate-100 *):not(
+    [role="dialog"] *
+  ) {
+  color: #cbd5e1 !important;
 }
 
 ::placeholder {

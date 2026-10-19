@@ -20,6 +20,7 @@ import {
   Trash2,
   Search,
   Printer,
+  FileDown,
   CheckCircle2,
   X,
   Target,
@@ -43,6 +44,7 @@ import { toast } from "sonner";
 import { DEFAULT_DEPARTMENTS } from "@/lib/departments";
 import { useModuleAccess } from "@/lib/rbac";
 import { printHtml } from "@/lib/print";
+import { LOGO_BASE64 } from "@/assets/logoBase64";
 import { EmptyState } from "@/components/EmptyState";
 import { ModuleGuideModal } from "@/components/ModuleGuideModal";
 
@@ -199,21 +201,33 @@ function Org() {
     | "communications"
     | "food_safety_team"
   >("policy_objectives");
-  const [objectives, setObjectives] = useState<QualityObjectiveItem[]>(() => initCached("/dashboard/quality-objectives", []));
+  const [objectives, setObjectives] = useState<QualityObjectiveItem[]>(() =>
+    initCached("/dashboard/quality-objectives", []),
+  );
   const [depts, setDepts] = useState<any[]>(() => initCached("/organization/departments", []));
   const [users, setUsers] = useState<any[]>(() => initCached("/organization/users", []));
-  const [parties, setParties] = useState<InterestedPartyItem[]>(() => initCached("/organization/interested-parties", []));
-  const [risks, setRisks] = useState<ContextRiskItem[]>(() => initCached("/organization/context-risks", []));
-  const [communications, setCommunications] = useState<CommunicationLogItem[]>(() => initCached("/organization/communications", []));
-  const [fstMembers, setFstMembers] = useState<FoodSafetyTeamMemberItem[]>(() => initCached("/organization/food-safety-team-normalized", []));
-  const [contextStats, setContextStats] = useState<any>(() => initCached("/organization/context-stats", {
-    total_parties: 0,
-    internal_parties: 0,
-    external_parties: 0,
-    total_risks: 0,
-    high_risks: 0,
-    controlled_risks: 0,
-  }));
+  const [parties, setParties] = useState<InterestedPartyItem[]>(() =>
+    initCached("/organization/interested-parties", []),
+  );
+  const [risks, setRisks] = useState<ContextRiskItem[]>(() =>
+    initCached("/organization/context-risks", []),
+  );
+  const [communications, setCommunications] = useState<CommunicationLogItem[]>(() =>
+    initCached("/organization/communications", []),
+  );
+  const [fstMembers, setFstMembers] = useState<FoodSafetyTeamMemberItem[]>(() =>
+    initCached("/organization/food-safety-team-normalized", []),
+  );
+  const [contextStats, setContextStats] = useState<any>(() =>
+    initCached("/organization/context-stats", {
+      total_parties: 0,
+      internal_parties: 0,
+      external_parties: 0,
+      total_risks: 0,
+      high_risks: 0,
+      controlled_risks: 0,
+    }),
+  );
   const [loading, setLoading] = useState(() => !isCached("/organization/departments"));
 
   // Search & Filter
@@ -921,18 +935,23 @@ function Org() {
       <div style="font-family: 'Times New Roman', serif; font-size: 11pt; line-height: 1.4; color: #111; padding: 20px;">
         <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
           <tr>
-            <td style="width: 25%; text-align: center; border: 1px solid #333; padding: 6px;">
-              <strong style="font-size: 13pt; color: #047857;">WCERT FOOD</strong><br/>
-              <span style="font-size: 9pt;">HỆ THỐNG FSMS ISO 22000</span>
+            <td style="width: 28%; text-align: left; border: 1px solid #333; padding: 6px 10px;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <img src="${LOGO_BASE64}" style="height: 42px; width: auto; object-fit: contain;" alt="Logo" />
+                <div>
+                  <div style="font-weight: 800; font-size: 10.5px; text-transform: uppercase; color: #0f172a; line-height: 1.25;">CÔNG TY CP CHẾ BIẾN THỰC PHẨM WCERT</div>
+                  <div style="font-size: 8pt; color: #475569; margin-top: 2px;">Ban Quản lý CL & ATTP (FSMS)</div>
+                </div>
+              </div>
             </td>
-            <td style="width: 50%; text-align: center; border: 1px solid #333; padding: 6px;">
-              <strong style="font-size: 13pt; text-transform: uppercase;">SỔ NHẬT KÝ TRAO ĐỔI THÔNG TIN ATTP</strong><br/>
-              <span style="font-size: 10pt; font-weight: bold;">(Căn cứ Điều 7.4 Tiêu chuẩn ISO 22000:2018)</span>
+            <td style="width: 48%; text-align: center; border: 1px solid #333; padding: 6px;">
+              <strong style="font-size: 12.5pt; text-transform: uppercase;">SỔ NHẬT KÝ TRAO ĐỔI THÔNG TIN ATTP</strong><br/>
+              <span style="font-size: 9.5pt; font-weight: bold; color: #475569;">(Căn cứ Điều 7.4 Tiêu chuẩn ISO 22000:2018)</span>
             </td>
-            <td style="width: 25%; border: 1px solid #333; padding: 6px; font-size: 9pt;">
+            <td style="width: 24%; border: 1px solid #333; padding: 6px; font-size: 8.5pt;">
               Biểu mẫu: <strong>BM-COMM-01</strong><br/>
-              Lần ban hành: <strong>01</strong><br/>
-              Ngày áp dụng: <strong>01/01/2026</strong>
+              Tiêu chuẩn: <strong>ISO 22000:2018</strong><br/>
+              Lần ban hành: <strong>02/2026</strong>
             </td>
           </tr>
         </table>
@@ -1014,18 +1033,23 @@ function Org() {
       <div style="font-family: 'Times New Roman', serif; font-size: 12pt; line-height: 1.4; color: #111; padding: 20px;">
         <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
           <tr>
-            <td style="width: 25%; text-align: center; border: 1px solid #333; padding: 6px;">
-              <strong style="font-size: 13pt; color: #047857;">WCERT FOOD</strong><br/>
-              <span style="font-size: 9pt;">HỆ THỐNG FSMS ISO 22000</span>
+            <td style="width: 28%; text-align: left; border: 1px solid #333; padding: 6px 10px;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <img src="${LOGO_BASE64}" style="height: 42px; width: auto; object-fit: contain;" alt="Logo" />
+                <div>
+                  <div style="font-weight: 800; font-size: 10.5px; text-transform: uppercase; color: #0f172a; line-height: 1.25;">CÔNG TY CP CHẾ BIẾN THỰC PHẨM WCERT</div>
+                  <div style="font-size: 8pt; color: #475569; margin-top: 2px;">Ban Quản lý CL & ATTP (FSMS)</div>
+                </div>
+              </div>
             </td>
-            <td style="width: 50%; text-align: center; border: 1px solid #333; padding: 6px;">
-              <strong style="font-size: 13pt; text-transform: uppercase;">BẢNG THEO DÕI BỐI CẢNH VÀ CÁC BÊN QUAN TÂM</strong><br/>
-              <span style="font-size: 10pt; font-weight: bold;">(Căn cứ Điều 4.1 & 4.2 Tiêu chuẩn ISO 22000:2018)</span>
+            <td style="width: 48%; text-align: center; border: 1px solid #333; padding: 6px;">
+              <strong style="font-size: 12.5pt; text-transform: uppercase;">BẢNG THEO DÕI BỐI CẢNH VÀ CÁC BÊN QUAN TÂM</strong><br/>
+              <span style="font-size: 9.5pt; font-weight: bold; color: #475569;">(Căn cứ Điều 4.1 & 4.2 Tiêu chuẩn ISO 22000:2018)</span>
             </td>
-            <td style="width: 25%; border: 1px solid #333; padding: 6px; font-size: 9pt;">
+            <td style="width: 24%; border: 1px solid #333; padding: 6px; font-size: 8.5pt;">
               Biểu mẫu: <strong>BM-CTX-01</strong><br/>
-              Lần ban hành: <strong>02</strong><br/>
-              Ngày áp dụng: <strong>01/01/2026</strong>
+              Tiêu chuẩn: <strong>ISO 22000:2018</strong><br/>
+              Lần ban hành: <strong>02/2026</strong>
             </td>
           </tr>
         </table>
@@ -1094,18 +1118,23 @@ function Org() {
       <div style="font-family: 'Times New Roman', serif; font-size: 11pt; line-height: 1.35; color: #111; padding: 20px;">
         <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
           <tr>
-            <td style="width: 25%; text-align: center; border: 1px solid #333; padding: 6px;">
-              <strong style="font-size: 13pt; color: #047857;">WCERT FOOD</strong><br/>
-              <span style="font-size: 9pt;">HỆ THỐNG FSMS ISO 22000</span>
+            <td style="width: 28%; text-align: left; border: 1px solid #333; padding: 6px 10px;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <img src="${LOGO_BASE64}" style="height: 42px; width: auto; object-fit: contain;" alt="Logo" />
+                <div>
+                  <div style="font-weight: 800; font-size: 10.5px; text-transform: uppercase; color: #0f172a; line-height: 1.25;">CÔNG TY CP CHẾ BIẾN THỰC PHẨM WCERT</div>
+                  <div style="font-size: 8pt; color: #475569; margin-top: 2px;">Ban Quản lý CL & ATTP (FSMS)</div>
+                </div>
+              </div>
             </td>
-            <td style="width: 50%; text-align: center; border: 1px solid #333; padding: 6px;">
-              <strong style="font-size: 13pt; text-transform: uppercase;">PHIẾU XÁC ĐỊNH VÀ ĐÁNH GIÁ RỦI RO BỐI CẢNH</strong><br/>
-              <span style="font-size: 10pt; font-weight: bold;">(Căn cứ Điều 6.1 & 4.1 Tiêu chuẩn ISO 22000:2018)</span>
+            <td style="width: 48%; text-align: center; border: 1px solid #333; padding: 6px;">
+              <strong style="font-size: 12.5pt; text-transform: uppercase;">PHIẾU XÁC ĐỊNH VÀ ĐÁNH GIÁ RỦI RO BỐI CẢNH</strong><br/>
+              <span style="font-size: 9.5pt; font-weight: bold; color: #475569;">(Căn cứ Điều 6.1 & 4.1 Tiêu chuẩn ISO 22000:2018)</span>
             </td>
-            <td style="width: 25%; border: 1px solid #333; padding: 6px; font-size: 9pt;">
+            <td style="width: 24%; border: 1px solid #333; padding: 6px; font-size: 8.5pt;">
               Biểu mẫu: <strong>BM-CTX-02</strong><br/>
-              Lần ban hành: <strong>02</strong><br/>
-              Ngày áp dụng: <strong>01/01/2026</strong>
+              Tiêu chuẩn: <strong>ISO 22000:2018</strong><br/>
+              Lần ban hành: <strong>02/2026</strong>
             </td>
           </tr>
         </table>
@@ -1315,7 +1344,9 @@ function Org() {
               disabled={loading}
               className="gap-2 border border-slate-300 bg-white text-slate-800 hover:bg-slate-900 hover:text-white hover:border-slate-900 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700 text-xs font-semibold shadow-sm transition-all duration-150"
             >
-              <RefreshCw className={`h-4 w-4 transition-colors ${loading ? "animate-spin text-primary" : ""}`} />
+              <RefreshCw
+                className={`h-4 w-4 transition-colors ${loading ? "animate-spin text-primary" : ""}`}
+              />
               Làm mới
             </Button>
             {activeTab === "policy_objectives" && (
@@ -1325,7 +1356,7 @@ function Org() {
                 onClick={handlePrintPolicy}
                 className="gap-1.5 border border-slate-300 bg-white text-slate-800 hover:bg-slate-900 hover:text-white hover:border-slate-900 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700 text-xs font-semibold shadow-sm transition-all duration-150"
               >
-                <Printer className="h-4 w-4" /> In Chính Sách & Mục Tiêu (01-CS & BM03)
+                <FileDown className="h-4 w-4" /> Xuất PDF (01-CS & BM03)
               </Button>
             )}
             {activeTab === "food_safety_team" && (
@@ -1336,7 +1367,7 @@ function Org() {
                   onClick={handlePrintFSTDecision}
                   className="gap-1.5 border border-slate-300 bg-white text-slate-800 hover:bg-slate-900 hover:text-white hover:border-slate-900 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700 text-xs font-semibold shadow-sm transition-all duration-150"
                 >
-                  <Printer className="h-4 w-4" /> In Quyết định Đội ATTP (BM-FST-01)
+                  <FileDown className="h-4 w-4" /> Xuất PDF Đội ATTP (BM-FST-01)
                 </Button>
                 {canEdit && (
                   <Button
@@ -1357,7 +1388,7 @@ function Org() {
                   onClick={handlePrintCommunications}
                   className="gap-1.5 border border-slate-300 bg-white text-slate-800 hover:bg-slate-900 hover:text-white hover:border-slate-900 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700 text-xs font-semibold shadow-sm transition-all duration-150"
                 >
-                  <Printer className="h-4 w-4" /> In Sổ nhật ký (BM-COMM-01)
+                  <FileDown className="h-4 w-4" /> Xuất PDF Nhật ký (BM-COMM-01)
                 </Button>
                 {canEdit && (
                   <Button
@@ -1378,7 +1409,7 @@ function Org() {
                   onClick={handlePrintParties}
                   className="gap-1.5 border border-slate-300 bg-white text-slate-800 hover:bg-slate-900 hover:text-white hover:border-slate-900 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700 text-xs font-semibold shadow-sm transition-all duration-150"
                 >
-                  <Printer className="h-4 w-4" /> In Phụ lục 1 (BM-01)
+                  <FileDown className="h-4 w-4" /> Xuất PDF Phụ lục 1 (BM-01)
                 </Button>
                 {canEdit && (
                   <Button
@@ -1399,7 +1430,7 @@ function Org() {
                   onClick={handlePrintRisks}
                   className="gap-1.5 border border-slate-300 bg-white text-slate-800 hover:bg-slate-900 hover:text-white hover:border-slate-900 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700 text-xs font-semibold shadow-sm transition-all duration-150"
                 >
-                  <Printer className="h-4 w-4" /> In Ma trận rủi ro (BM-02)
+                  <FileDown className="h-4 w-4" /> Xuất PDF Ma trận rủi ro (BM-02)
                 </Button>
                 {canEdit && (
                   <Button
@@ -1640,7 +1671,10 @@ function Org() {
                 Chính Sách & Mục Tiêu An Toàn Thực Phẩm Năm 2026
               </h2>
               <p className="text-slate-300 text-xs sm:text-sm leading-relaxed">
-                Thiết lập bởi Ban Giám đốc Công ty TNHH SX TM Tiến Anh theo yêu cầu của Điều khoản 5.2 (Chính sách ATTP), Điều khoản 6.2 (Mục tiêu ATTP & Kế hoạch BM03) và Điều khoản 4.3 (Phạm vi áp dụng FSMS). Toàn bộ cán bộ nhân viên có trách nhiệm thấu hiểu và thực thi nghiêm ngặt.
+                Thiết lập bởi Ban Giám đốc Công ty TNHH SX TM Tiến Anh theo yêu cầu của Điều khoản
+                5.2 (Chính sách ATTP), Điều khoản 6.2 (Mục tiêu ATTP & Kế hoạch BM03) và Điều khoản
+                4.3 (Phạm vi áp dụng FSMS). Toàn bộ cán bộ nhân viên có trách nhiệm thấu hiểu và
+                thực thi nghiêm ngặt.
               </p>
               <div className="flex flex-wrap items-center gap-3 pt-2 text-xs">
                 <span className="inline-flex items-center gap-1.5 bg-white/10 px-3 py-1.5 rounded-lg border border-white/10 font-medium">
@@ -1685,7 +1719,7 @@ function Org() {
                     onClick={handlePrintPolicy}
                     className="gap-1.5 text-xs font-semibold"
                   >
-                    <Printer className="h-3.5 w-3.5" /> In Chính Sách
+                    <FileDown className="h-3.5 w-3.5" /> Xuất PDF Chính Sách
                   </Button>
                 </div>
 
@@ -1755,9 +1789,11 @@ function Org() {
                   <p className="text-xs text-teal-900/90 dark:text-teal-200/90 leading-relaxed">
                     Hệ thống Quản lý An toàn Thực phẩm ISO 22000:2018 áp dụng cho:{" "}
                     <strong>
-                      Sơ chế, cấp đông (IQF, cấp đông tiếp xúc), đóng gói, dán nhãn và lưu trữ bảo quản các mặt hàng thủy hải sản (cá tra/basa phi lê đông lạnh)
+                      Sơ chế, cấp đông (IQF, cấp đông tiếp xúc), đóng gói, dán nhãn và lưu trữ bảo
+                      quản các mặt hàng thủy hải sản (cá tra/basa phi lê đông lạnh)
                     </strong>{" "}
-                    tại Nhà máy chế biến và hệ thống Kho lạnh bảo quản 1 & 2 của Công ty TNHH SX TM Tiến Anh.
+                    tại Nhà máy chế biến và hệ thống Kho lạnh bảo quản 1 & 2 của Công ty TNHH SX TM
+                    Tiến Anh.
                   </p>
                 </div>
               </div>
@@ -1797,7 +1833,10 @@ function Org() {
                     if (isZeroTarget) {
                       pctProgress = actual === 0 ? 100 : 0;
                     } else if (isInverse) {
-                      pctProgress = actual <= target ? 100 : Math.max(0, Math.round((target / (actual || 1)) * 100));
+                      pctProgress =
+                        actual <= target
+                          ? 100
+                          : Math.max(0, Math.round((target / (actual || 1)) * 100));
                     } else if (isPct) {
                       pctProgress = Math.min(100, Math.round((actual / (target || 1)) * 100));
                     }
@@ -1826,8 +1865,8 @@ function Org() {
                               obj.status === "ACHIEVED"
                                 ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
                                 : obj.status === "ON_TRACK"
-                                ? "bg-blue-100 text-blue-800 border border-blue-300"
-                                : "bg-amber-100 text-amber-800 border border-amber-300"
+                                  ? "bg-blue-100 text-blue-800 border border-blue-300"
+                                  : "bg-amber-100 text-amber-800 border border-amber-300"
                             }`}
                           >
                             {obj.status === "ACHIEVED" ? "ĐẠT CHỈ TIÊU" : "ĐÚNG TIẾN ĐỘ"}
@@ -1838,12 +1877,24 @@ function Org() {
                         <div className="space-y-1.5">
                           <div className="flex justify-between items-center text-xs">
                             <span className="text-slate-500">
-                              Kế hoạch: <strong className="text-slate-700 dark:text-slate-300">{isInverse ? "< " : ""}{target}{obj.unit ? " " + obj.unit : ""}</strong>
+                              Kế hoạch:{" "}
+                              <strong className="text-slate-700 dark:text-slate-300">
+                                {isInverse ? "< " : ""}
+                                {target}
+                                {obj.unit ? " " + obj.unit : ""}
+                              </strong>
                             </span>
                             <span className="text-slate-500">
                               Hiện tại:{" "}
-                              <strong className={obj.status === "ACHIEVED" ? "text-emerald-600 font-bold" : "text-blue-600 font-bold"}>
-                                {actual}{obj.unit ? " " + obj.unit : ""}
+                              <strong
+                                className={
+                                  obj.status === "ACHIEVED"
+                                    ? "text-emerald-600 font-bold"
+                                    : "text-blue-600 font-bold"
+                                }
+                              >
+                                {actual}
+                                {obj.unit ? " " + obj.unit : ""}
                               </strong>
                             </span>
                           </div>
@@ -1853,8 +1904,8 @@ function Org() {
                                 pctProgress >= 100
                                   ? "bg-emerald-500"
                                   : pctProgress >= 80
-                                  ? "bg-blue-500"
-                                  : "bg-amber-500"
+                                    ? "bg-blue-500"
+                                    : "bg-amber-500"
                               }`}
                               style={{ width: `${pctProgress}%` }}
                             />
@@ -1864,8 +1915,12 @@ function Org() {
                         {/* Phân công & Phương pháp tính */}
                         <div className="pt-2 border-t border-slate-100 dark:border-slate-700/60 text-[11px] space-y-1 text-slate-600 dark:text-slate-400">
                           <div className="flex justify-between">
-                            <span>Bộ phận: <strong>{obj.department}</strong></span>
-                            <span>Chịu trách nhiệm: <strong>{obj.responsible_person}</strong></span>
+                            <span>
+                              Bộ phận: <strong>{obj.department}</strong>
+                            </span>
+                            <span>
+                              Chịu trách nhiệm: <strong>{obj.responsible_person}</strong>
+                            </span>
                           </div>
                           <div className="text-[10.5px] text-slate-500 italic bg-slate-50 dark:bg-slate-800 p-2 rounded border border-slate-100 dark:border-slate-700">
                             <strong>Biện pháp:</strong> {obj.action_plan}
@@ -1899,7 +1954,7 @@ function Org() {
                 onClick={handlePrintPolicy}
                 className="gap-1.5 text-xs font-semibold"
               >
-                <Printer className="h-3.5 w-3.5" /> In Biểu Mẫu BM 03
+                <FileDown className="h-3.5 w-3.5" /> Xuất PDF (BM 03)
               </Button>
             </div>
 
@@ -1937,12 +1992,17 @@ function Org() {
                         </span>
                       </td>
                       <td className="px-3 py-3 text-center font-bold text-slate-700 dark:text-slate-300">
-                        {obj.objective_code === "OBJ-2026-02" ? "< " : ""}{obj.target_value}{obj.unit ? " " + obj.unit : ""}
+                        {obj.objective_code === "OBJ-2026-02" ? "< " : ""}
+                        {obj.target_value}
+                        {obj.unit ? " " + obj.unit : ""}
                       </td>
                       <td className="px-3 py-3 text-center font-bold text-emerald-600">
-                        {obj.actual_value !== undefined ? obj.actual_value : "-"}{obj.unit ? " " + obj.unit : ""}
+                        {obj.actual_value !== undefined ? obj.actual_value : "-"}
+                        {obj.unit ? " " + obj.unit : ""}
                       </td>
-                      <td className="px-3 py-3 text-slate-700 dark:text-slate-300">{obj.department}</td>
+                      <td className="px-3 py-3 text-slate-700 dark:text-slate-300">
+                        {obj.department}
+                      </td>
                       <td className="px-3 py-3 text-slate-700 dark:text-slate-300 font-medium">
                         {obj.responsible_person}
                       </td>
@@ -2068,7 +2128,7 @@ function Org() {
                   onClick={handlePrintFSTDecision}
                   className="gap-1.5 text-slate-700 bg-white"
                 >
-                  <Printer className="h-4 w-4" /> In Quyết định (BM-FST-01)
+                  <FileDown className="h-4 w-4" /> Xuất PDF (BM-FST-01)
                 </Button>
                 {canEdit && (
                   <Button

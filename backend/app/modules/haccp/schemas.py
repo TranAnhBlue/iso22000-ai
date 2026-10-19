@@ -80,7 +80,7 @@ class HazardAnalysisBase(BaseModel):
     is_significant: bool = Field(default=True, description="Mối nguy có ý nghĩa an toàn thực phẩm?")
     control_measure: str = Field(..., description="Biện pháp kiểm soát đề xuất")
     
-    # Cây quyết định Codex
+    # Cây quyết định Q1-Q4
     q1: Optional[str] = Field(default="YES", description="Q1: Có biện pháp kiểm soát?")
     q2: Optional[str] = Field(default="NO", description="Q2: Bước này có loại trừ/giảm thiểu mối nguy?")
     q3: Optional[str] = Field(default="YES", description="Q3: Nguy cơ nhiễm bẩn vượt mức chấp nhận?")

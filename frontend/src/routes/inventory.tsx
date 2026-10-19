@@ -38,6 +38,7 @@ import {
   QrCode,
   Flame,
   Printer,
+  FileDown,
   CheckSquare,
   X,
   BookOpen,
@@ -51,6 +52,8 @@ import { ModuleGuideModal } from "@/components/ModuleGuideModal";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { printHtml } from "@/lib/print";
+import { LOGO_BASE64 } from "@/assets/logoBase64";
+import { useOrgData } from "@/lib/departments";
 
 export const Route = createFileRoute("/inventory")({
   head: () => ({
@@ -199,6 +202,7 @@ interface DisposalRecordItem {
 }
 
 export function InventoryPage() {
+  const { departments, users, userNames } = useOrgData();
   const [activeTab, setActiveTab] = useState<
     "stock" | "bins" | "samples" | "production" | "vehicles" | "disposal"
   >("stock");
@@ -206,29 +210,41 @@ export function InventoryPage() {
 
   // Data states
   const [stocks, setStocks] = useState<StockItem[]>(() => initCached("/inventory/stock", []));
-  const [samples, setSamples] = useState<RetainedSampleItem[]>(() => initCached("/inventory/samples", []));
+  const [samples, setSamples] = useState<RetainedSampleItem[]>(() =>
+    initCached("/inventory/samples", []),
+  );
   const [batches, setBatches] = useState<BatchItem[]>(() => initCached("/inventory/batches", []));
-  const [dispatches, setDispatches] = useState<DispatchItem[]>(() => initCached("/inventory/dispatches", []));
-  const [vehicleInspections, setVehicleInspections] = useState<VehicleInspectionItem[]>(() => initCached("/inventory/vehicle-inspections", []));
-  const [disposalRecords, setDisposalRecords] = useState<DisposalRecordItem[]>(() => initCached("/inventory/disposal-records", []));
-  const [logisticsStats, setLogisticsStats] = useState(() => initCached("/inventory/logistics-stats", {
-    total_vehicle_inspections: 0,
-    passed_inspections: 0,
-    failed_inspections: 0,
-    total_disposal_records: 0,
-    total_disposed_qty_kg: 0,
-  }));
+  const [dispatches, setDispatches] = useState<DispatchItem[]>(() =>
+    initCached("/inventory/dispatches", []),
+  );
+  const [vehicleInspections, setVehicleInspections] = useState<VehicleInspectionItem[]>(() =>
+    initCached("/inventory/vehicle-inspections", []),
+  );
+  const [disposalRecords, setDisposalRecords] = useState<DisposalRecordItem[]>(() =>
+    initCached("/inventory/disposal-records", []),
+  );
+  const [logisticsStats, setLogisticsStats] = useState(() =>
+    initCached("/inventory/logistics-stats", {
+      total_vehicle_inspections: 0,
+      passed_inspections: 0,
+      failed_inspections: 0,
+      total_disposal_records: 0,
+      total_disposed_qty_kg: 0,
+    }),
+  );
   const [loading, setLoading] = useState(() => !isCached("/inventory/stock"));
-  const [kpi, setKpi] = useState(() => initCached("/inventory/kpi-stats", {
-    total_stock_items: 0,
-    total_stock_quantity: 0,
-    expired_items: 0,
-    near_expiry_items: 0,
-    total_retained_samples: 0,
-    active_retained_samples: 0,
-    total_production_batches: 0,
-    total_order_dispatches: 0,
-  }));
+  const [kpi, setKpi] = useState(() =>
+    initCached("/inventory/kpi-stats", {
+      total_stock_items: 0,
+      total_stock_quantity: 0,
+      expired_items: 0,
+      near_expiry_items: 0,
+      total_retained_samples: 0,
+      active_retained_samples: 0,
+      total_production_batches: 0,
+      total_order_dispatches: 0,
+    }),
+  );
 
   // Filters
   const [search, setSearch] = useState("");
@@ -595,18 +611,23 @@ export function InventoryPage() {
       <div style="font-family: 'Times New Roman', serif; font-size: 12pt; line-height: 1.4; color: #111; max-width: 800px; margin: 0 auto; padding: 20px;">
         <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
           <tr>
-            <td style="width: 25%; text-align: center; border: 1px solid #333; padding: 6px;">
-              <strong style="font-size: 13pt; color: #047857;">WCERT FOOD</strong><br/>
-              <span style="font-size: 9pt;">HỆ THỐNG FSMS ISO 22000</span>
+            <td style="width: 28%; text-align: left; border: 1px solid #333; padding: 6px 10px;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <img src="${LOGO_BASE64}" style="height: 42px; width: auto; object-fit: contain;" alt="Logo" />
+                <div>
+                  <div style="font-weight: 800; font-size: 10.5px; text-transform: uppercase; color: #0f172a; line-height: 1.25;">CÔNG TY CP CHẾ BIẾN THỰC PHẨM WCERT</div>
+                  <div style="font-size: 8pt; color: #475569; margin-top: 2px;">Ban Quản lý Kho & Vận Tải (FSMS)</div>
+                </div>
+              </div>
             </td>
-            <td style="width: 50%; text-align: center; border: 1px solid #333; padding: 6px;">
-              <strong style="font-size: 13pt; text-transform: uppercase;">PHIẾU KIỂM TRA PHƯƠNG TIỆN VẬN CHUYỂN</strong><br/>
-              <span style="font-size: 10pt; font-weight: bold;">(Trước khi bốc xếp hàng hóa lên xe)</span>
+            <td style="width: 48%; text-align: center; border: 1px solid #333; padding: 6px;">
+              <strong style="font-size: 12.5pt; text-transform: uppercase;">PHIẾU KIỂM TRA PHƯƠNG TIỆN VẬN CHUYỂN</strong><br/>
+              <span style="font-size: 9.5pt; font-weight: bold; color: #475569;">(Trước khi bốc xếp hàng hóa lên xe)</span>
             </td>
-            <td style="width: 25%; border: 1px solid #333; padding: 6px; font-size: 9.5pt;">
+            <td style="width: 24%; border: 1px solid #333; padding: 6px; font-size: 8.5pt;">
               Biểu mẫu: <strong>BM01-PTVC</strong><br/>
-              Lần ban hành: <strong>02</strong><br/>
-              Ngày áp dụng: <strong>01/01/2026</strong>
+              Tiêu chuẩn: <strong>ISO 22000:2018</strong><br/>
+              Lần ban hành: <strong>02/2026</strong>
             </td>
           </tr>
         </table>
@@ -720,18 +741,23 @@ export function InventoryPage() {
       <div style="font-family: 'Times New Roman', serif; font-size: 12pt; line-height: 1.45; color: #111; max-width: 800px; margin: 0 auto; padding: 20px;">
         <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
           <tr>
-            <td style="width: 25%; text-align: center; border: 1px solid #333; padding: 6px;">
-              <strong style="font-size: 13pt; color: #047857;">WCERT FOOD</strong><br/>
-              <span style="font-size: 9pt;">HỆ THỐNG FSMS ISO 22000</span>
+            <td style="width: 28%; text-align: left; border: 1px solid #333; padding: 6px 10px;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <img src="${LOGO_BASE64}" style="height: 42px; width: auto; object-fit: contain;" alt="Logo" />
+                <div>
+                  <div style="font-weight: 800; font-size: 10.5px; text-transform: uppercase; color: #0f172a; line-height: 1.25;">CÔNG TY CP CHẾ BIẾN THỰC PHẨM WCERT</div>
+                  <div style="font-size: 8pt; color: #475569; margin-top: 2px;">Ban Quản lý Kho & Vận Tải (FSMS)</div>
+                </div>
+              </div>
             </td>
-            <td style="width: 50%; text-align: center; border: 1px solid #333; padding: 6px;">
-              <strong style="font-size: 13pt; text-transform: uppercase;">BIÊN BẢN TIÊU HỦY SẢN PHẨM KHÔNG PHÙ HỢP</strong><br/>
-              <span style="font-size: 10pt; font-weight: bold;">(Căn cứ Điều khoản 8.9.3 & 8.9.4 Tiêu chuẩn ISO 22000:2018)</span>
+            <td style="width: 48%; text-align: center; border: 1px solid #333; padding: 6px;">
+              <strong style="font-size: 12.5pt; text-transform: uppercase;">BIÊN BẢN TIÊU HỦY SẢN PHẨM KHÔNG PHÙ HỢP</strong><br/>
+              <span style="font-size: 9.5pt; font-weight: bold; color: #475569;">(Căn cứ Điều khoản 8.9.3 & 8.9.4 Tiêu chuẩn ISO 22000:2018)</span>
             </td>
-            <td style="width: 25%; border: 1px solid #333; padding: 6px; font-size: 9.5pt;">
+            <td style="width: 24%; border: 1px solid #333; padding: 6px; font-size: 8.5pt;">
               Biểu mẫu: <strong>BM02-HỦY HÀNG</strong><br/>
-              Lần ban hành: <strong>02</strong><br/>
-              Ngày áp dụng: <strong>01/01/2026</strong>
+              Tiêu chuẩn: <strong>ISO 22000:2018</strong><br/>
+              Lần ban hành: <strong>02/2026</strong>
             </td>
           </tr>
         </table>
@@ -912,7 +938,9 @@ export function InventoryPage() {
             disabled={loading}
             className="gap-2 border border-slate-300 bg-white text-slate-800 hover:bg-slate-900 hover:text-white hover:border-slate-900 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700 text-xs font-semibold shadow-sm transition-all duration-150"
           >
-            <RefreshCw className={`h-4 w-4 transition-colors ${loading ? "animate-spin text-primary" : ""}`} />
+            <RefreshCw
+              className={`h-4 w-4 transition-colors ${loading ? "animate-spin text-primary" : ""}`}
+            />
             Làm mới
           </Button>
           <Link to="/traceability">
@@ -2134,10 +2162,10 @@ export function InventoryPage() {
                                 variant="outline"
                                 size="sm"
                                 onClick={() => handlePrintVehicleInspection(v)}
-                                title="In Phiếu Kiểm Tra PTVC (BM01-PTVC)"
+                                title="Xuất PDF Kiểm Tra PTVC (BM01-PTVC)"
                                 className="h-8 w-8 p-0 text-slate-700 hover:text-primary hover:border-primary"
                               >
-                                <Printer className="h-4 w-4" />
+                                <FileDown className="h-4 w-4" />
                               </Button>
                               <Button
                                 variant="outline"
@@ -2330,10 +2358,10 @@ export function InventoryPage() {
                                 variant="outline"
                                 size="sm"
                                 onClick={() => handlePrintDisposalRecord(d)}
-                                title="In Biên Bản Hủy Hàng (BM02)"
+                                title="Xuất PDF Biên Bản Hủy Hàng (BM02)"
                                 className="h-8 w-8 p-0 text-slate-700 hover:text-rose-600 hover:border-rose-600"
                               >
-                                <Printer className="h-4 w-4" />
+                                <FileDown className="h-4 w-4" />
                               </Button>
                               <Button
                                 variant="outline"
@@ -2684,12 +2712,25 @@ export function InventoryPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <label className="text-xs font-semibold">Người lấy mẫu *</label>
-                  <Input
+                  <select
                     required
                     value={sampleForm.sampled_by}
                     onChange={(e) => setSampleForm({ ...sampleForm, sampled_by: e.target.value })}
-                    className="text-xs sm:text-sm"
-                  />
+                    className="w-full h-9 rounded-md border bg-background px-3 text-xs sm:text-sm font-medium"
+                  >
+                    <option value="">-- Chọn nhân sự lấy mẫu từ CSDL --</option>
+                    {users.map((u) => (
+                      <option key={u.id} value={`${u.name} (${u.role})`}>
+                        {u.name} — {u.role} [{u.dept}]
+                      </option>
+                    ))}
+                    {sampleForm.sampled_by &&
+                      !users.some(
+                        (u) =>
+                          `${u.name} (${u.role})` === sampleForm.sampled_by ||
+                          u.name === sampleForm.sampled_by,
+                      ) && <option value={sampleForm.sampled_by}>{sampleForm.sampled_by}</option>}
+                  </select>
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs font-semibold">Kết quả kiểm nghiệm vi sinh *</label>
@@ -2993,14 +3034,31 @@ export function InventoryPage() {
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs font-semibold">Người kiểm tra (KCS/Thủ kho) *</label>
-                  <Input
+                  <select
                     required
                     value={vehicleForm.inspector_name}
                     onChange={(e) =>
                       setVehicleForm({ ...vehicleForm, inspector_name: e.target.value })
                     }
-                    className="text-xs sm:text-sm"
-                  />
+                    className="w-full h-9 rounded-md border bg-background px-3 text-xs sm:text-sm font-medium"
+                  >
+                    <option value="">-- Chọn cán bộ kiểm tra từ CSDL --</option>
+                    {users.map((u) => (
+                      <option key={u.id} value={`${u.name} (${u.role})`}>
+                        {u.name} — {u.role} [{u.dept}]
+                      </option>
+                    ))}
+                    {vehicleForm.inspector_name &&
+                      !users.some(
+                        (u) =>
+                          `${u.name} (${u.role})` === vehicleForm.inspector_name ||
+                          u.name === vehicleForm.inspector_name,
+                      ) && (
+                        <option value={vehicleForm.inspector_name}>
+                          {vehicleForm.inspector_name}
+                        </option>
+                      )}
+                  </select>
                 </div>
               </div>
             </div>
@@ -3222,15 +3280,29 @@ export function InventoryPage() {
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs font-semibold">Người phê duyệt *</label>
-                  <Input
+                  <select
                     required
                     value={disposalForm.approved_by}
                     onChange={(e) =>
                       setDisposalForm({ ...disposalForm, approved_by: e.target.value })
                     }
-                    placeholder="VD: Giám Đốc Nhà Máy"
-                    className="text-xs sm:text-sm font-semibold"
-                  />
+                    className="w-full h-9 rounded-md border bg-background px-3 text-xs sm:text-sm font-semibold"
+                  >
+                    <option value="">-- Chọn lãnh đạo phê duyệt từ CSDL --</option>
+                    {users.map((u) => (
+                      <option key={u.id} value={`${u.name} (${u.role})`}>
+                        {u.name} — {u.role} [{u.dept}]
+                      </option>
+                    ))}
+                    {disposalForm.approved_by &&
+                      !users.some(
+                        (u) =>
+                          `${u.name} (${u.role})` === disposalForm.approved_by ||
+                          u.name === disposalForm.approved_by,
+                      ) && (
+                        <option value={disposalForm.approved_by}>{disposalForm.approved_by}</option>
+                      )}
+                  </select>
                 </div>
               </div>
             </div>

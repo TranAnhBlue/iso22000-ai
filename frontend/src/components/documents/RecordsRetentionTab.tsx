@@ -5,6 +5,7 @@ import {
   Search,
   RefreshCw,
   Printer,
+  FileDown,
   Trash2,
   Edit,
   Clock,
@@ -263,8 +264,8 @@ export function RecordsRetentionTab({
             onClick={handlePrintMasterList}
             className="gap-1.5 text-xs"
           >
-            <Printer className="h-3.5 w-3.5" />
-            In Danh Mục BM01-KSHS
+            <FileDown className="h-3.5 w-3.5" />
+            Xuất PDF BM01-KSHS
           </Button>
 
           <Button
