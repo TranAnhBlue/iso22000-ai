@@ -174,7 +174,7 @@ def update_change_request_status(
     if not cr:
         raise HTTPException(status_code=404, detail="Không tìm thấy phiếu yêu cầu thay đổi")
 
-    current_status = cr.review_status or "DRAFT"
+    current_status = str(cr.review_status or "DRAFT")
     target_status = payload.status
 
     if target_status == current_status:
@@ -251,7 +251,7 @@ def verify_change_effectiveness(
     if not cr:
         raise HTTPException(status_code=404, detail="Không tìm thấy phiếu yêu cầu thay đổi")
 
-    if cr.review_status != "IMPLEMENTED":
+    if str(cr.review_status) != "IMPLEMENTED":
         raise HTTPException(
             status_code=400,
             detail=f"Chỉ có thể xác nhận hiệu lực sau khi thay đổi đã được áp dụng vào thực tế (Trạng thái hiện tại: '{cr.review_status}', cần là 'IMPLEMENTED').",

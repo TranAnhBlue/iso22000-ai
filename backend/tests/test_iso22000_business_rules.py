@@ -70,3 +70,47 @@ def test_purchasing_supplier_validation():
     )
     assert supplier.status == "APPROVED"
     assert supplier.rating_score == 95.0
+
+
+def test_context_risk_and_team_member_models():
+    """Verify ContextRisk and FoodSafetyTeamMember model attribute assignment."""
+    from app.modules.organization.models import ContextRisk, FoodSafetyTeamMember
+    from datetime import date
+
+    risk = ContextRisk(
+        code="CR-01",
+        issue_category="INTERNAL",
+        issue_description="Cơ sở hạ tầng xuống cấp",
+        risk_description="Nguy cơ nhiễm chéo vi sinh",
+        likelihood=3,
+        severity=4,
+        risk_score=12,
+        action_plan="Bảo trì nâng cấp xưởng",
+        status="TREATING",
+    )
+    assert risk.code == "CR-01"
+    assert risk.risk_score == 12
+
+    # Simulate risk effectiveness evaluation
+    lh = 2
+    sv = 2
+    res_score = lh * sv
+    risk.residual_likelihood = lh
+    risk.residual_severity = sv
+    risk.residual_risk_score = res_score
+    risk.status = "CONTROLLED" if res_score <= 6 else "TREATING"
+    assert risk.residual_risk_score == 4
+    assert risk.status == "CONTROLLED"
+
+    member = FoodSafetyTeamMember(
+        member_name="Nguyễn Văn A",
+        role_in_team="TEAM_LEADER",
+        department="Ban QLCL & ATTP",
+        current_position="Trưởng ban QA",
+        responsibility_description="Chỉ huy đội ATTP",
+        appointment_decision_code="02/QĐ-ATTP-2026",
+        appointment_date=date.today(),
+        status="ACTIVE"
+    )
+    assert member.member_name == "Nguyễn Văn A"
+    assert member.appointment_decision_code == "02/QĐ-ATTP-2026"

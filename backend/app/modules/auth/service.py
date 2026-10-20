@@ -142,10 +142,10 @@ def get_current_user_profile(user: User) -> TokenResponse:
 
 def create_audit_log(
     db: Session,
-    username: str,
+    username: Any,
     action: str,
     entity_type: str,
-    user_id: Optional[uuid.UUID] = None,
+    user_id: Any = None,
     entity_id: Optional[str] = None,
     details: Optional[Dict[str, Any]] = None,
     ip_address: Optional[str] = "127.0.0.1"
@@ -153,9 +153,19 @@ def create_audit_log(
     """
     Ghi vết nhật ký an toàn (Audit Trail) cho các thao tác hệ thống FSMS
     """
+    uid: Optional[uuid.UUID] = None
+    if user_id is not None:
+        if isinstance(user_id, uuid.UUID):
+            uid = user_id
+        else:
+            try:
+                uid = uuid.UUID(str(user_id))
+            except (ValueError, TypeError):
+                uid = None
+
     log = AuditLog(
-        user_id=user_id,
-        username=username,
+        user_id=uid,
+        username=str(username) if username is not None else "",
         action=action,
         entity_type=entity_type,
         entity_id=entity_id,

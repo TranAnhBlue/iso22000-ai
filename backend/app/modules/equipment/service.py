@@ -4,6 +4,7 @@ from datetime import date, datetime, timedelta, timezone
 from typing import Optional, List
 from uuid import UUID
 
+from app.core.demo_data import demo_seed_enabled
 from app.modules.equipment.models import Equipment, EquipmentMaintenanceLog, EquipmentCalibrationLog
 from app.modules.auth.models import User
 from app.modules.equipment.schemas import (
@@ -16,7 +17,8 @@ from app.modules.equipment.schemas import (
 
 
 def seed_default_equipments_if_empty(db: Session):
-    return
+    if not demo_seed_enabled():
+        return
 
     today = date.today()
     admin_user = db.scalars(select(User).order_by(User.created_at.asc())).first()

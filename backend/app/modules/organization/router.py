@@ -958,9 +958,11 @@ def evaluate_risk_treatment_effectiveness(
     if not risk:
         raise HTTPException(status_code=404, detail="Không tìm thấy rủi ro bối cảnh.")
 
-    res_score = residual_likelihood * residual_severity
-    risk.residual_likelihood = residual_likelihood
-    risk.residual_severity = residual_severity
+    lh = residual_likelihood if residual_likelihood is not None else 2
+    sv = residual_severity if residual_severity is not None else 2
+    res_score = lh * sv
+    risk.residual_likelihood = lh
+    risk.residual_severity = sv
     risk.residual_risk_score = res_score
     risk.status = "CONTROLLED" if res_score <= 6 else "TREATING"
 

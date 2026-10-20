@@ -30,7 +30,6 @@ router = APIRouter(tags=["Emergency Preparedness & Response"])
 def seed_emergency_data_if_empty(db: Session):
     if not demo_seed_enabled():
         return
-    return
 
     # 1. Seed Contacts
     contacts_seed = [
@@ -395,7 +394,7 @@ def get_emergency_stats(db: Session = Depends(get_db)):
     drills_this_year = db.query(EmergencyDrill).filter(func.extract('year', EmergencyDrill.drill_date) == curr_year).count()
 
     latest_drill = db.query(EmergencyDrill).order_by(desc(EmergencyDrill.drill_date)).first()
-    last_d = latest_drill.drill_date if latest_drill else None
+    last_d: Optional[date] = latest_drill.drill_date if latest_drill else None
 
     return EmergencyStatsResponse(
         total_contacts=total_c,
